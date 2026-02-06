@@ -36,7 +36,7 @@ jobs:
           mkdir -p deployment/public
 
           # 复制 standalone 输出 (包含 server.js 和 必要的 node_modules)
-          cp -r .next/standalone/* deployment/standalone/
+          cp -r .next/standalone/. deployment/standalone/
 
           # 复制静态资源 (standalone 模式不包含这两部分，需要手动复制)
           cp -r .next/static/* deployment/static/
