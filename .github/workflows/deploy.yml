@@ -37,8 +37,8 @@ jobs:
           cp -r .next/standalone/. deployment/standalone/
 
           # 复制静态资源 (standalone 模式不包含这两部分，需要手动复制)
-          cp -r .next/static/* deployment/static/
-          cp -r public/* deployment/public/
+          cp -r .next/static/. deployment/static/
+          cp -r public/. deployment/public/
 
           # 复制 Dockerfile
           cp Dockerfile deployment/
