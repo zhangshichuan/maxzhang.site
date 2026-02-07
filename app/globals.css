@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme {
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -76,5 +77,35 @@ body {
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+/* 
+  优雅修复：Tailwind Typography Dark Mode Override
+  使用 CSS 变量 + theme() 函数，避免 hard-code 颜色值。
+  这里直接选中带有 .prose 的元素，确保变量在组件层级正确生效。
+*/
+@layer components {
+  .dark .prose {
+    /* 
+      重新定义 Typography 插件使用的 CSS 变量。
+      Zinc-50 (#fafafa) 用于正文，White (#ffffff) 用于标题。
+    */
+    --tw-prose-body: theme('colors.zinc.50');
+    --tw-prose-headings: theme('colors.white');
+    --tw-prose-lead: theme('colors.zinc.300');
+    --tw-prose-links: theme('colors.white');
+    --tw-prose-bold: theme('colors.white');
+    --tw-prose-counters: theme('colors.zinc.400');
+    --tw-prose-bullets: theme('colors.zinc.600');
+    --tw-prose-hr: theme('colors.zinc.700');
+    --tw-prose-quotes: theme('colors.zinc.100');
+    --tw-prose-quote-borders: theme('colors.zinc.700');
+    --tw-prose-captions: theme('colors.zinc.400');
+    --tw-prose-code: theme('colors.white');
+    --tw-prose-pre-code: theme('colors.zinc.200');
+    --tw-prose-pre-bg: theme('colors.zinc.900');
+    --tw-prose-th-borders: theme('colors.zinc.700');
+    --tw-prose-td-borders: theme('colors.zinc.700');
   }
 }

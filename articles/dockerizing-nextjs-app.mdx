@@ -1,0 +1,30 @@
+---
+title: "Docker 化 Next.js 应用的最佳实践"
+date: "2025-12-10"
+summary: "如何使用 Standalone 模式和多阶段构建来创建轻量级的 Next.js Docker 镜像。"
+tags: ["DevOps", "Docker", "Next.js"]
+author: "Max Zhang"
+category: "DevOps"
+---
+
+# Docker 化 Next.js 应用的最佳实践
+
+这是关于 **Docker 化 Next.js 应用** 的文章内容。
+
+如何使用 Standalone 模式和多阶段构建来创建轻量级的 Next.js Docker 镜像。
+
+## Standalone 模式
+Next.js 的 Standalone 输出模式允许你创建一个独立的输出目录，其中包含了运行应用所需的所有文件和依赖。这对于 Docker 容器化非常理想，因为它极大地简化了 Dockerfile。
+
+## 多阶段构建 (Multi-stage Builds)
+利用多阶段构建，我们可以在一个 Dockerfile 中定义多个构建阶段，例如一个阶段用于安装依赖和构建应用，另一个阶段只包含最终运行所需的产物。这样可以有效减小最终镜像的大小。
+
+## 示例 Dockerfile
+一个典型的 Next.js 应用的 Dockerfile 会包含以下步骤：
+1.  选择一个基础镜像 (Node.js)。
+2.  安装依赖。
+3.  构建应用。
+4.  创建一个更小的运行时镜像。
+5.  将构建好的应用文件复制到运行时镜像中。
+
+更多内容，敬请期待...

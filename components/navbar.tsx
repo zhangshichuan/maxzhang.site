@@ -60,7 +60,7 @@ export function Navbar() {
 								<span className="sr-only">GitHub</span>
 							</div>
 						</Link>
-						<ThemeToggle />
+						<ThemeToggle className="cursor-pointer" />
 
 						{/* Mobile Menu Toggle */}
 						<button

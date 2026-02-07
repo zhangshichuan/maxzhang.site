@@ -1,0 +1,27 @@
+---
+title: "深入理解 React Server Components"
+date: "2026-01-20"
+summary: "RSC 到底是什么？它如何改变我们构建 React 应用的方式？"
+tags: ["React", "RSC", "Architecture"]
+author: "Max Zhang"
+category: "前端架构"
+---
+
+# 深入理解 React Server Components
+
+这是关于 **React Server Components (RSC)** 的文章内容。
+
+RSC 到底是什么？它如何改变我们构建 React 应用的方式？
+
+## 什么是 RSC？
+React Server Components 允许开发者在服务端渲染组件，并将渲染结果发送到客户端。这可以显著减少客户端 JavaScript 的负载，提高初始加载性能。
+
+## 工作原理
+RSC 与传统的 SSR 或 CSR 不同，它在服务器上执行 React 组件的渲染逻辑，而不是将整个应用打包发送到客户端。只有最终的 UI 描述和必要的交互代码才会发送到浏览器。
+
+## 优势
+- **性能优化**: 减少客户端 JS 包大小，加快页面加载速度。
+- **数据获取**: 在服务端直接进行数据获取，避免客户端往返请求。
+- **安全性**: 服务端组件的代码不会暴露给客户端，更安全。
+
+更多内容，敬请期待...

@@ -1,36 +1,11 @@
 import { Button } from '@/components/ui/button'
-import { ArrowRight, Calendar, Clock } from 'lucide-react'
+import { ArrowRight, Calendar, Clock, Folder } from 'lucide-react'
 import Link from 'next/link'
-
-// Mock 数据 - 实际项目中这些会来自 contentlayer 或 API
-const posts = [
-	{
-		slug: 'building-modern-site-with-nextjs',
-		title: '使用 Next.js 16 构建现代全栈网站',
-		summary: '探索 Next.js 的最新特性，App Router、Server Actions 以及如何优化性能。',
-		date: '2026-02-05',
-		readTime: '5 min',
-		tags: ['Next.js', 'React', 'Web Dev'],
-	},
-	{
-		slug: 'understanding-react-server-components',
-		title: '深入理解 React Server Components',
-		summary: 'RSC 到底是什么？它如何改变我们构建 React 应用的方式？',
-		date: '2026-01-20',
-		readTime: '8 min',
-		tags: ['React', 'RSC', 'Architecture'],
-	},
-	{
-		slug: 'tailwind-css-v4-features',
-		title: 'Tailwind CSS v4 新特性概览',
-		summary: '更快的构建速度，更强大的 CSS 变量支持，Tailwind v4 来了。',
-		date: '2026-01-15',
-		readTime: '4 min',
-		tags: ['CSS', 'Tailwind'],
-	},
-]
+import { getAllPosts } from '@/lib/posts'
 
 export default function Home() {
+	const posts = getAllPosts().slice(0, 3)
+
 	return (
 		<div className="container max-w-screen-2xl mx-auto px-4 py-10 space-y-20">
 			{/* Hero Section */}
@@ -46,12 +21,12 @@ export default function Home() {
 				</div>
 				<div className="flex gap-4">
 					<Link href="/posts">
-						<Button size="lg">
+						<Button size="lg" className="cursor-pointer">
 							阅读文章 <ArrowRight className="ml-2 h-4 w-4" />
 						</Button>
 					</Link>
 					<Link href="/about">
-						<Button variant="outline" size="lg">
+						<Button variant="outline" size="lg" className="cursor-pointer">
 							关于我
 						</Button>
 					</Link>
@@ -83,8 +58,17 @@ export default function Home() {
 									<span>•</span>
 									<span className="flex items-center gap-1">
 										<Clock className="h-3 w-3" />
-										{post.readTime}
+										{post.readTime.text}
 									</span>
+                  {post.category && (
+                    <>
+                      <span>•</span>
+                      <span className="flex items-center gap-1">
+                        <Folder className="h-3 w-3" />
+                        {post.category}
+                      </span>
+                    </>
+                  )}
 								</div>
 								<h3 className="text-xl font-bold leading-tight group-hover:text-primary transition-colors">
 									{post.title}
