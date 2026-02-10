@@ -1,10 +1,10 @@
+import { GlassCard } from '@/components/glass-card'
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion-wrapper'
 import { Button } from '@/components/ui/button'
 import { Briefcase, Github, GraduationCap, Linkedin, Mail, MapPin } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import Avatar from './avatar.jpg'
-import { GlassCard } from '@/components/glass-card'
 
 export const metadata = {
 	title: '关于我 - Max Zhang',
@@ -18,7 +18,7 @@ export default function AboutPage() {
 			<FadeIn className="flex flex-col md:flex-row gap-10 items-start mb-16">
 				{/* Avatar Placeholder */}
 				<div className="w-32 h-32 md:w-48 md:h-48 rounded-full bg-secondary flex items-center justify-center shrink-0 border-4 border-white/20 shadow-xl overflow-hidden relative group">
-					<div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10" />
+					<div className="absolute inset-0 bg-linear-to-tr from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10" />
 					<Image src={Avatar} alt="Max Zhang" className="rounded-full object-cover" />
 				</div>
 
@@ -40,17 +40,29 @@ export default function AboutPage() {
 
 					<div className="flex gap-4">
 						<Link href="https://github.com/zhangshichuan" target="_blank">
-							<Button variant="outline" size="sm" className="gap-2 bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10">
+							<Button
+								variant="outline"
+								size="sm"
+								className="gap-2 bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10"
+							>
 								<Github className="h-4 w-4" /> GitHub
 							</Button>
 						</Link>
 						<Link href="mailto:zsc.guru@icloud.com">
-							<Button variant="outline" size="sm" className="gap-2 bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10">
+							<Button
+								variant="outline"
+								size="sm"
+								className="gap-2 bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10"
+							>
 								<Mail className="h-4 w-4" /> Email
 							</Button>
 						</Link>
 						<Link href="https://www.linkedin.com/in/maxzhang1010" target="_blank">
-							<Button variant="outline" size="sm" className="gap-2 bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10">
+							<Button
+								variant="outline"
+								size="sm"
+								className="gap-2 bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10"
+							>
 								<Linkedin className="h-4 w-4" /> LinkedIn
 							</Button>
 						</Link>
