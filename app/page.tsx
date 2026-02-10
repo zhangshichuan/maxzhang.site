@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { getAllPosts } from '@/lib/posts'
 import { ArrowRight, Calendar, Clock, Folder } from 'lucide-react'
 import Link from 'next/link'
+import { GlassCard } from '@/components/glass-card'
 
 export default function Home() {
 	const posts = getAllPosts().slice(0, 3)
@@ -19,12 +20,12 @@ export default function Home() {
 				</FadeIn>
 				<FadeIn className="flex gap-4" delay={0.2}>
 					<Link href="/posts">
-						<Button size="lg" className="cursor-pointer">
+						<Button size="lg" className="cursor-pointer bg-primary/80 backdrop-blur hover:bg-primary/90">
 							阅读文章 <ArrowRight className="ml-2 h-4 w-4" />
 						</Button>
 					</Link>
 					<Link href="/about">
-						<Button variant="outline" size="lg" className="cursor-pointer">
+						<Button variant="outline" size="lg" className="cursor-pointer bg-transparent border-white/20 backdrop-blur hover:bg-white/10">
 							关于我
 						</Button>
 					</Link>
@@ -43,46 +44,45 @@ export default function Home() {
 				<StaggerContainer className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" delay={0.5}>
 					{posts.map((post) => (
 						<StaggerItem key={post.slug}>
-							<Link
-								href={`/posts/${post.slug}`}
-								className="group relative flex flex-col justify-between space-y-4 rounded-lg border p-6 shadow-sm transition-all hover:shadow-md bg-card hover:border-primary/50 h-full"
-							>
-								<div className="space-y-2">
-									<div className="flex items-center gap-2 text-xs text-muted-foreground">
-										<span className="flex items-center gap-1">
-											<Calendar className="h-3 w-3" />
-											{post.date}
-										</span>
-										<span>•</span>
-										<span className="flex items-center gap-1">
-											<Clock className="h-3 w-3" />
-											{post.readTime.text}
-										</span>
-										{post.category && (
-											<>
-												<span>•</span>
-												<span className="flex items-center gap-1">
-													<Folder className="h-3 w-3" />
-													{post.category}
-												</span>
-											</>
-										)}
+							<Link href={`/posts/${post.slug}`} className="block h-full">
+								<GlassCard className="h-full p-6 flex flex-col justify-between space-y-4">
+									<div className="space-y-2">
+										<div className="flex items-center gap-2 text-xs text-muted-foreground">
+											<span className="flex items-center gap-1">
+												<Calendar className="h-3 w-3" />
+												{post.date}
+											</span>
+											<span>•</span>
+											<span className="flex items-center gap-1">
+												<Clock className="h-3 w-3" />
+												{post.readTime.text}
+											</span>
+											{post.category && (
+												<>
+													<span>•</span>
+													<span className="flex items-center gap-1">
+														<Folder className="h-3 w-3" />
+														{post.category}
+													</span>
+												</>
+											)}
+										</div>
+										<h3 className="text-xl font-bold leading-tight group-hover:text-primary transition-colors">
+											{post.title}
+										</h3>
+										<p className="text-muted-foreground line-clamp-3">{post.summary}</p>
 									</div>
-									<h3 className="text-xl font-bold leading-tight group-hover:text-primary transition-colors">
-										{post.title}
-									</h3>
-									<p className="text-muted-foreground line-clamp-3">{post.summary}</p>
-								</div>
-								<div className="flex gap-2 pt-4">
-									{post.tags.map((tag) => (
-										<span
-											key={tag}
-											className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold border-transparent bg-secondary text-secondary-foreground"
-										>
-											{tag}
-										</span>
-									))}
-								</div>
+									<div className="flex gap-2 pt-4">
+										{post.tags.map((tag) => (
+											<span
+												key={tag}
+												className="inline-flex items-center rounded-md border border-white/10 px-2.5 py-0.5 text-xs font-semibold bg-white/5 text-muted-foreground"
+											>
+												{tag}
+											</span>
+										))}
+									</div>
+								</GlassCard>
 							</Link>
 						</StaggerItem>
 					))}

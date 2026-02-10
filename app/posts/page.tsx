@@ -3,6 +3,7 @@ import { getAllPosts } from '@/lib/posts'
 import { Folder } from 'lucide-react'
 import Link from 'next/link'
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion-wrapper'
+import { GlassCard } from '@/components/glass-card'
 
 export const metadata = {
 	title: '文章库 - Max Zhang',
@@ -45,14 +46,14 @@ export default function PostsPage() {
 				{/* sticky top-20: 实现侧边栏随页面滚动而固定的效果 */}
 				<FadeIn className="hidden lg:block space-y-8 sticky top-20" delay={0.4}>
 					{/* 热门分类模块 */}
-					<div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+					<GlassCard className="p-6">
 						<h3 className="font-semibold text-lg mb-4">热门分类</h3>
 						<div className="flex flex-col gap-2">
 							{allCategories.map((category) => (
 								<Link
 									key={category}
 									href={`/search?category=${encodeURIComponent(category)}`}
-									className="flex items-center justify-between text-sm hover:text-primary transition-colors"
+									className="flex items-center justify-between text-sm hover:text-primary transition-colors p-2 rounded-md hover:bg-white/5"
 								>
 									<span className="flex items-center gap-2">
 										<Folder className="h-4 w-4" />
@@ -62,24 +63,24 @@ export default function PostsPage() {
 							))}
 							{allCategories.length === 0 && <p className="text-sm text-muted-foreground">暂无分类</p>}
 						</div>
-					</div>
+					</GlassCard>
 
 					{/* 热门标签模块 */}
-					<div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+					<GlassCard className="p-6">
 						<h3 className="font-semibold text-lg mb-4">热门标签</h3>
 						<div className="flex flex-wrap gap-2">
 							{allTags.map((tag) => (
 								<Link
 									key={tag}
 									href={`/search?tag=${encodeURIComponent(tag)}`}
-									className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80"
+									className="inline-flex items-center rounded-md border border-white/10 px-2.5 py-0.5 text-xs font-semibold transition-colors bg-white/5 text-muted-foreground hover:bg-white/10"
 								>
 									{tag}
 								</Link>
 							))}
 							{allTags.length === 0 && <p className="text-sm text-muted-foreground">暂无标签</p>}
 						</div>
-					</div>
+					</GlassCard>
 				</FadeIn>
 			</div>
 		</div>

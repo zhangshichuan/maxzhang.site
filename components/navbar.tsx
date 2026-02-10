@@ -18,23 +18,25 @@ export function Navbar() {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
 
 	return (
-		<header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-			<div className="container mx-auto flex h-14 max-w-screen-2xl items-center px-4">
+		<header className="sticky top-0 z-50 w-full border-b border-white/10 bg-white/10 dark:bg-black/10 backdrop-blur-md supports-backdrop-filter:bg-white/5">
+			<div className="container mx-auto flex h-16 max-w-screen-2xl items-center px-4">
 				{/* Logo */}
 				<div className="mr-4 flex">
 					<Link href="/" className="mr-6 flex items-center space-x-2">
-						<span className="font-bold sm:inline-block">Max Zhang</span>
+						<span className="font-bold sm:inline-block text-lg tracking-tight">Max Zhang</span>
 					</Link>
 
 					{/* Desktop Nav */}
-					<nav className="hidden md:flex items-center gap-6 text-sm">
+					<nav className="hidden md:flex items-center gap-1 text-sm">
 						{navItems.map((item) => (
 							<Link
 								key={item.path}
 								href={item.path}
 								className={cn(
-									'transition-colors hover:text-foreground/80',
-									pathname === item.path ? 'text-foreground font-medium' : 'text-foreground/60',
+									'px-4 py-2 rounded-full transition-all duration-300',
+									pathname === item.path
+										? 'bg-white/10 dark:bg-white/10 text-foreground font-medium shadow-sm ring-1 ring-white/10'
+										: 'text-foreground/70 hover:text-foreground hover:bg-white/5 dark:hover:bg-white/5',
 								)}
 							>
 								{item.name}
@@ -47,7 +49,7 @@ export function Navbar() {
 				<div className="flex flex-1 items-center justify-end space-x-2">
 					{/* Search Icon (Desktop) */}
 					<Link href="/search">
-						<div className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-transparent shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground">
+						<div className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-sm transition-colors hover:bg-white/20 hover:text-accent-foreground backdrop-blur-sm">
 							<Search className="h-4 w-4" />
 							<span className="sr-only">Search</span>
 						</div>
@@ -55,16 +57,18 @@ export function Navbar() {
 
 					<nav className="flex items-center space-x-2">
 						<Link href="https://github.com/zhangshichuan" target="_blank" rel="noreferrer">
-							<div className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-transparent shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground">
+							<div className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-sm transition-colors hover:bg-white/20 hover:text-accent-foreground backdrop-blur-sm">
 								<Github className="h-4 w-4" />
 								<span className="sr-only">GitHub</span>
 							</div>
 						</Link>
-						<ThemeToggle className="cursor-pointer" />
+						<div className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-sm transition-colors hover:bg-white/20 hover:text-accent-foreground backdrop-blur-sm">
+							<ThemeToggle className="cursor-pointer border-0 shadow-none hover:bg-transparent" />
+						</div>
 
 						{/* Mobile Menu Toggle */}
 						<button
-							className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-transparent shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+							className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-sm transition-colors hover:bg-white/20 hover:text-accent-foreground backdrop-blur-sm"
 							onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
 						>
 							{isMobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
@@ -75,15 +79,17 @@ export function Navbar() {
 
 			{/* Mobile Menu */}
 			{isMobileMenuOpen && (
-				<div className="md:hidden border-b border-border/40 bg-background">
-					<div className="container py-4 space-y-1">
+				<div className="md:hidden border-b border-white/10 bg-background/80 backdrop-blur-xl">
+					<div className="container py-4 space-y-2 px-4">
 						{navItems.map((item) => (
 							<Link
 								key={item.path}
 								href={item.path}
 								className={cn(
-									'block px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground rounded-md',
-									pathname === item.path ? 'bg-accent text-accent-foreground' : 'text-foreground/60',
+									'block px-4 py-3 text-sm font-medium transition-colors rounded-xl',
+									pathname === item.path
+										? 'bg-primary/10 text-primary border border-primary/20'
+										: 'text-foreground/70 hover:bg-white/5',
 								)}
 								onClick={() => setIsMobileMenuOpen(false)}
 							>
