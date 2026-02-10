@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
+import { getAllPosts } from '@/lib/posts'
 import { ArrowRight, Calendar, Clock, Folder } from 'lucide-react'
 import Link from 'next/link'
-import { getAllPosts } from '@/lib/posts'
 
 export default function Home() {
 	const posts = getAllPosts().slice(0, 3)
@@ -14,10 +14,7 @@ export default function Home() {
 					<h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none text-foreground">
 						Hi, I&apos;m Max Zhang.
 					</h1>
-					<p className="max-w-150 text-muted-foreground md:text-xl">
-						Software Engineer & Open Source Enthusiast. <br className="hidden sm:inline" />I build accessible,
-						pixel-perfect, performant web experiences.
-					</p>
+					<p className="max-w-150 text-muted-foreground md:text-xl">Build with Purpose. Power with AI.</p>
 				</div>
 				<div className="flex gap-4">
 					<Link href="/posts">
@@ -60,15 +57,15 @@ export default function Home() {
 										<Clock className="h-3 w-3" />
 										{post.readTime.text}
 									</span>
-                  {post.category && (
-                    <>
-                      <span>•</span>
-                      <span className="flex items-center gap-1">
-                        <Folder className="h-3 w-3" />
-                        {post.category}
-                      </span>
-                    </>
-                  )}
+									{post.category && (
+										<>
+											<span>•</span>
+											<span className="flex items-center gap-1">
+												<Folder className="h-3 w-3" />
+												{post.category}
+											</span>
+										</>
+									)}
 								</div>
 								<h3 className="text-xl font-bold leading-tight group-hover:text-primary transition-colors">
 									{post.title}

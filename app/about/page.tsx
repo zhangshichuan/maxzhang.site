@@ -31,8 +31,8 @@ export default function AboutPage() {
 					</div>
 
 					<p className="text-lg leading-relaxed">
-						Hi! I&apos;m a passionate developer focused on building intuitive and performant web applications. I love
-						exploring new technologies and contributing to the open-source community.
+						Hi! I am actively expanding my knowledge in system architecture and low-level programming with Rust, while
+						exploring the decentralized future on Solana.
 					</p>
 
 					<div className="flex gap-4">
