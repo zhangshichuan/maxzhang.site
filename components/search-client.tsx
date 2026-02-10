@@ -4,7 +4,7 @@ import { PostItem } from '@/components/post-item'
 import { Post } from '@/lib/posts'
 import Fuse from 'fuse.js'
 import { Folder, Search, X } from 'lucide-react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
 interface SearchClientProps {
@@ -13,65 +13,50 @@ interface SearchClientProps {
 
 export function SearchClient({ posts }: SearchClientProps) {
 	const searchParams = useSearchParams()
-	const router = useRouter()
 
-	// 从 URL 参数中获取初始状态（作为单一事实来源）
-	const selectedTag = searchParams.get('tag') || ''
-	const selectedCategory = searchParams.get('category') || ''
-	const urlQuery = searchParams.get('q') || ''
+	// 1. 初始化：仅在首次渲染时从 URL 读取参数作为初始状态
+	// 后续 URL 的变化（除非是刷新页面）不会自动影响这些 State，实现了“解耦”
+	// 使用函数式初始化来确保只读取一次
+	const [query, setQuery] = useState(() => searchParams.get('q') || '')
+	const [selectedTag, setSelectedTag] = useState(() => searchParams.get('tag') || '')
+	const [selectedCategory, setSelectedCategory] = useState(() => searchParams.get('category') || '')
 
-	// 本地 state 仅用于输入框的受控显示，以便实现流畅的输入体验
-	// 实际的搜索逻辑依赖于 URL 参数或这个 query 值（取决于具体实现策略）
-	const [query, setQuery] = useState<string>(urlQuery)
-
-	// 仅当 URL 参数由外部改变（如点击后退按钮）时，同步回本地 input state
-	// 我们特意不将 'query' 列入依赖，以避免在输入时重置 input
-	useEffect(() => {
-		if (urlQuery !== query) {
-			setQuery(urlQuery)
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [urlQuery])
-
-	// 初始化 Fuse.js 模糊搜索实例
-	// 使用 useMemo 缓存实例，避免每次渲染都重新建立索引
+	// 2. 初始化 Fuse.js 模糊搜索实例
 	const fuse = useMemo(() => {
 		return new Fuse(posts, {
-			keys: ['title', 'summary', 'tags', 'category', 'content'], // 搜索这些字段
-			threshold: 0.3, // 模糊匹配阈值，越低越精确
+			keys: ['title', 'summary', 'tags', 'category', 'content'],
+			threshold: 0.3,
 			includeScore: true,
 		})
 	}, [posts])
 
-	// 计算所有文章中出现过的唯一标签和分类
+	// 计算唯一标签和分类
 	const { allTags, allCategories } = useMemo(() => {
 		const tags = Array.from(new Set(posts.flatMap((post) => post.tags))).sort()
 		const categories = Array.from(new Set(posts.map((post) => post.category).filter(Boolean))).sort()
 		return { allTags: tags, allCategories: categories }
 	}, [posts])
 
-	// 核心过滤逻辑：根据当前的搜索词、标签和分类筛选文章
+	// 3. 核心过滤逻辑：完全依赖本地 State 进行计算
 	const filteredPosts = useMemo(() => {
-		// 如果没有任何筛选条件，返回空数组（显示“开始搜索”提示）
 		if (!query && !selectedTag && !selectedCategory) {
 			return []
 		}
 
 		let results = posts
 
-		// 1. 文本搜索 (Fuse.js)
-		// 优先使用本地 query 状态，实现输入时的即时反馈
+		// 文本搜索
 		if (query) {
 			const fuseResults = fuse.search(query)
 			results = fuseResults.map((result) => result.item)
 		}
 
-		// 2. 标签过滤 (精确匹配)
+		// 标签过滤
 		if (selectedTag) {
 			results = results.filter((post) => post.tags.includes(selectedTag))
 		}
 
-		// 3. 分类过滤 (精确匹配)
+		// 分类过滤
 		if (selectedCategory) {
 			results = results.filter((post) => post.category === selectedCategory)
 		}
@@ -79,47 +64,51 @@ export function SearchClient({ posts }: SearchClientProps) {
 		return results
 	}, [posts, query, selectedTag, selectedCategory, fuse])
 
-	// 更新 URL 参数的辅助函数
-	const updateUrl = (newQuery: string, newTag: string, newCategory: string) => {
-		const params = new URLSearchParams()
-		if (newQuery) params.set('q', newQuery)
-		if (newTag) params.set('tag', newTag)
-		if (newCategory) params.set('category', newCategory)
-		router.push(`/search?${params.toString()}`)
-	}
+	// 4. URL 同步逻辑：当 State 变化时，防抖更新 URL，不触发 Next.js 导航
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			const params = new URLSearchParams()
+			if (query) params.set('q', query)
+			if (selectedTag) params.set('tag', selectedTag)
+			if (selectedCategory) params.set('category', selectedCategory)
 
-	// 处理搜索框输入
+			// 构建新的 URL query string
+			const queryString = params.toString()
+			const newUrl = queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname
+			
+			// 使用 history.replaceState 修改 URL 而不触发页面刷新或 Next.js 路由跳转
+			// 这样就避免了触发服务端的 RSC 请求
+			window.history.replaceState(null, '', newUrl)
+		}, 300) // 300ms 防抖
+
+		return () => clearTimeout(timer)
+	}, [query, selectedTag, selectedCategory])
+
+	// 事件处理：直接更新 Local State
 	const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const newQuery = e.target.value
-		setQuery(newQuery) // 更新输入框显示
-		updateUrl(newQuery, selectedTag, selectedCategory) // 同步到 URL
+		setQuery(e.target.value)
 	}
 
-	// 处理标签点击
 	const handleTagClick = (tag: string) => {
-		// 如果点击当前已选中的标签，则取消选择
-		const newTag = tag === selectedTag ? '' : tag
-		updateUrl(query, newTag, selectedCategory)
+		setSelectedTag((prev) => (prev === tag ? '' : tag))
 	}
 
-	// 处理分类点击
 	const handleCategoryClick = (category: string) => {
-		// 如果点击当前已选中的分类，则取消选择
-		const newCategory = category === selectedCategory ? '' : category
-		updateUrl(query, selectedTag, newCategory)
+		setSelectedCategory((prev) => (prev === category ? '' : category))
 	}
 
 	const clearFilters = () => {
 		setQuery('')
-		router.push('/search')
+		setSelectedTag('')
+		setSelectedCategory('')
 	}
 
 	const clearTag = () => {
-		updateUrl(query, '', selectedCategory)
+		setSelectedTag('')
 	}
 
 	const clearCategory = () => {
-		updateUrl(query, selectedTag, '')
+		setSelectedCategory('')
 	}
 
 	const hasFilters = Boolean(query || selectedTag || selectedCategory)
@@ -138,10 +127,7 @@ export function SearchClient({ posts }: SearchClientProps) {
 				/>
 				{query && (
 					<button
-						onClick={() => {
-							setQuery('')
-							updateUrl('', selectedTag, selectedCategory)
-						}}
+						onClick={() => setQuery('')}
 						className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-secondary rounded-full"
 					>
 						<X className="h-4 w-4 text-muted-foreground" />
