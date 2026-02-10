@@ -10,6 +10,11 @@ interface Props {
 	}>
 }
 
+/**
+ * 生成静态路由参数 (SSG)
+ * Next.js 在构建时会运行此函数，获取所有文章的 slug，
+ * 并预渲染每篇文章的 HTML 页面。
+ */
 export async function generateStaticParams() {
 	const posts = getPostSlugs()
 	return posts.map((post) => ({
@@ -17,6 +22,10 @@ export async function generateStaticParams() {
 	}))
 }
 
+/**
+ * 生成动态 Metadata (SEO)
+ * 根据 URL 中的 slug 获取文章标题和摘要，用于页面 <head> 中的 meta 标签。
+ */
 export async function generateMetadata({ params }: Props) {
 	const { slug } = await params
 	const post = getPostBySlug(slug)
@@ -39,11 +48,13 @@ export default async function PostPage({ params }: Props) {
 	try {
 		post = getPostBySlug(slug)
 	} catch {
+		// 如果找不到对应的文章，显示 404 页面
 		notFound()
 	}
 
 	return (
 		<article className="container max-w-3xl mx-auto px-4 py-10">
+			{/* 返回链接 */}
 			<Link
 				href="/posts"
 				className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors mb-6 group"
@@ -53,8 +64,10 @@ export default async function PostPage({ params }: Props) {
 			</Link>
 
 			<header className="mb-10 space-y-4">
+				{/* 文章标题 */}
 				<h1 className="text-3xl font-extrabold tracking-tight lg:text-5xl">{post.title}</h1>
 
+				{/* 文章元信息：日期、阅读时间、作者、分类、标签 */}
 				<div className="flex flex-wrap items-center gap-4 text-muted-foreground text-sm">
 					<time dateTime={post.date} className="flex items-center gap-1">
 						<Calendar className="h-4 w-4" />
@@ -86,6 +99,7 @@ export default async function PostPage({ params }: Props) {
 				</div>
 			</header>
 
+			{/* MDX 内容渲染区域 */}
 			<div className="prose prose-zinc dark:prose-invert max-w-none">
 				<MDXRemote source={post.content} />
 			</div>
