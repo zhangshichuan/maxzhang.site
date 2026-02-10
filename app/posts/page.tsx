@@ -2,6 +2,7 @@ import { PostItem } from '@/components/post-item'
 import { getAllPosts } from '@/lib/posts'
 import { Folder } from 'lucide-react'
 import Link from 'next/link'
+import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion-wrapper'
 
 export const metadata = {
 	title: '文章库 - Max Zhang',
@@ -23,24 +24,26 @@ export default function PostsPage() {
 	return (
 		<div className="container max-w-7xl mx-auto px-4 py-10">
 			{/* 页面标题区域 */}
-			<div className="flex flex-col items-start gap-4 pb-10">
+			<FadeIn className="flex flex-col items-start gap-4 pb-10">
 				<h1 className="text-3xl font-bold tracking-tight sm:text-4xl">文章库</h1>
 				<p className="text-muted-foreground text-lg">分享关于技术、设计和生活。</p>
-			</div>
+			</FadeIn>
 
 			{/* 主内容区域：使用 CSS Grid 布局，左侧文章列表，右侧侧边栏 */}
 			<div className="grid gap-10 sm:grid-cols-1 lg:grid-cols-[2fr_1fr]">
 				{/* 左侧：文章列表 */}
-				<div className="space-y-8">
+				<StaggerContainer className="space-y-8" delay={0.2}>
 					{posts.map((post) => (
-						<PostItem key={post.slug} post={post} />
+						<StaggerItem key={post.slug}>
+							<PostItem post={post} />
+						</StaggerItem>
 					))}
 					{posts.length === 0 && <p className="text-muted-foreground py-10">暂无文章。</p>}
-				</div>
+				</StaggerContainer>
 
 				{/* 右侧：侧边栏 (在大屏幕上显示) */}
 				{/* sticky top-20: 实现侧边栏随页面滚动而固定的效果 */}
-				<aside className="hidden lg:block space-y-8 sticky top-20">
+				<FadeIn className="hidden lg:block space-y-8 sticky top-20" delay={0.4}>
 					{/* 热门分类模块 */}
 					<div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
 						<h3 className="font-semibold text-lg mb-4">热门分类</h3>
@@ -77,7 +80,7 @@ export default function PostsPage() {
 							{allTags.length === 0 && <p className="text-sm text-muted-foreground">暂无标签</p>}
 						</div>
 					</div>
-				</aside>
+				</FadeIn>
 			</div>
 		</div>
 	)

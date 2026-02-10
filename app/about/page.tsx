@@ -1,3 +1,4 @@
+import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion-wrapper'
 import { Button } from '@/components/ui/button'
 import { Briefcase, Github, GraduationCap, Linkedin, Mail, MapPin } from 'lucide-react'
 import Image from 'next/image'
@@ -13,7 +14,7 @@ export default function AboutPage() {
 	return (
 		<div className="container max-w-4xl mx-auto px-4 py-10">
 			{/* Header / Intro */}
-			<div className="flex flex-col md:flex-row gap-10 items-start mb-16">
+			<FadeIn className="flex flex-col md:flex-row gap-10 items-start mb-16">
 				{/* Avatar Placeholder */}
 				<div className="w-32 h-32 md:w-48 md:h-48 rounded-full bg-secondary flex items-center justify-center shrink-0 border-4 border-background shadow-xl">
 					<Image src={Avatar} alt="Max Zhang" className="rounded-full" />
@@ -53,13 +54,13 @@ export default function AboutPage() {
 						</Link>
 					</div>
 				</div>
-			</div>
+			</FadeIn>
 
 			<div className="grid gap-12 md:grid-cols-[2fr_1fr]">
 				{/* Main Content */}
-				<div className="space-y-12">
+				<StaggerContainer className="space-y-12" delay={0.2}>
 					{/* Experience */}
-					<section>
+					<StaggerItem>
 						<h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
 							<Briefcase className="h-6 w-6" /> 工作经历
 						</h2>
@@ -81,10 +82,10 @@ export default function AboutPage() {
 								</p>
 							</div>
 						</div>
-					</section>
+					</StaggerItem>
 
 					{/* Education */}
-					<section>
+					<StaggerItem>
 						<h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
 							<GraduationCap className="h-6 w-6" /> 教育经历
 						</h2>
@@ -95,12 +96,12 @@ export default function AboutPage() {
 								<p className="text-muted-foreground">Master&apos;s degree，MCIT</p>
 							</div>
 						</div>
-					</section>
-				</div>
+					</StaggerItem>
+				</StaggerContainer>
 
 				{/* Sidebar: Skills */}
-				<div className="space-y-8">
-					<section className="rounded-xl border bg-card p-6 shadow-sm">
+				<StaggerContainer className="space-y-8" delay={0.4}>
+					<StaggerItem className="rounded-xl border bg-card p-6 shadow-sm">
 						<h3 className="font-bold text-lg mb-4">技术栈</h3>
 						<div className="flex flex-wrap gap-2">
 							{[
@@ -122,9 +123,9 @@ export default function AboutPage() {
 								</span>
 							))}
 						</div>
-					</section>
+					</StaggerItem>
 
-					<section className="rounded-xl border bg-card p-6 shadow-sm">
+					<StaggerItem className="rounded-xl border bg-card p-6 shadow-sm">
 						<h3 className="font-bold text-lg mb-4">我感兴趣的</h3>
 						<ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
 							<li>Open Source</li>
@@ -132,8 +133,8 @@ export default function AboutPage() {
 							<li>Web Performance</li>
 							<li>Artificial Intelligence</li>
 						</ul>
-					</section>
-				</div>
+					</StaggerItem>
+				</StaggerContainer>
 			</div>
 		</div>
 	)
