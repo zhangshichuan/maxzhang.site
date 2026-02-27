@@ -1,10 +1,10 @@
 # Max Zhang's Personal Website
 
-这是一个基于 **Next.js 15 (App Router)** 构建的现代个人博客网站，旨在分享关于软件开发、设计和生活的思考。项目采用 **MDX** 进行内容管理，支持高性能的客户端搜索和响应式设计。
+这是一个基于 **Next.js 16 (App Router)** 构建的现代个人博客网站，旨在分享关于软件开发、设计和生活的思考。项目采用 **MDX** 进行内容管理，支持高性能的客户端搜索和响应式设计。
 
 ## ✨ 核心特性
 
-- **现代架构**: 基于 Next.js 15 App Router 和 React Server Components (RSC) 构建，兼顾 SEO 与性能。
+- **现代架构**: 基于 Next.js 16 App Router 和 React Server Components (RSC) 构建，兼顾 SEO 与性能。
 - **MDX 内容驱动**: 使用 Markdown/MDX 编写文章，支持在文章中直接嵌入 React 组件。
 - **模糊搜索**: 集成 **Fuse.js** 实现客户端模糊搜索，支持按标题、内容、标签和分类进行过滤。
 - **响应式设计**: 使用 Tailwind CSS 构建，适配移动端和桌面端，支持深色模式（可扩展）。
@@ -13,7 +13,7 @@
 
 ## 🛠️ 技术栈
 
-- **框架**: [Next.js 15](https://nextjs.org/)
+- **框架**: [Next.js 16](https://nextjs.org/)
 - **语言**: [TypeScript](https://www.typescriptlang.org/)
 - **样式**: [Tailwind CSS](https://tailwindcss.com/)
 - **内容处理**: [MDX](https://mdxjs.com/), [gray-matter](https://github.com/jonschlinkert/gray-matter), [reading-time](https://github.com/ngryman/reading-time)

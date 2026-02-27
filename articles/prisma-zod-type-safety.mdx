@@ -1,0 +1,201 @@
+---
+title: '全栈进阶：Prisma + TypeScript + Zod 打造端到端类型安全'
+summary: '如何确保你的 API 从数据库到浏览器都拥有“坚不可摧”的类型保护？本文将深度拆解一套基于 Ant Design 与 Zod 的适配器方案，并利用 TypeScript 的 satisfies 特性实现数据库模型与校验逻辑的完美闭环。'
+category: 'Full Stack'
+tags: ['TypeScript', 'Prisma', 'Zod']
+author: 'Max Zhang'
+date: '2026-02-26'
+---
+
+在现代全栈开发中，我们最怕的往往不是业务逻辑的复杂，而是**逻辑的碎片化**。
+
+想象一下一个简单的“用户注册”功能，你通常需要维护三份极其相似却又各自独立的校验逻辑：
+
+1.  **数据库层**：在 Prisma Schema 里规定 `email` 必须是唯一的字符串。
+2.  **API 校验层**：在 Node.js 后端编写逻辑，确保收到的 JSON 字段合法。
+3.  **UI 交互层**：在前端表单（如 Ant Design）里配置 `rules`，给用户实时的反馈。
+
+这种“三重校验”模式是 Bug 的温床。一旦你决定将密码长度从 6 位改为 8 位，只要有一处忘记同步，系统就会在运行时抛出令人沮丧的错误。今天，我们要探讨的就是如何通过 **Prisma + TypeScript + Zod** 的联动，实现“一次编写，处处生效”的**端到端类型安全（End-to-End Type Safety）**。
+
+## 契约之源：建立类型闭环
+
+要实现全链路安全，第一步必须建立一个**“单一真理来源（Single Source of Truth）”**。
+
+在 Prisma 项目中，数据库模型是天然的源头。但 TypeScript 的类型只存在于编译期，一旦数据跨越网络（API 请求），类型保护就会失效。这时，**Zod** 就成了连接“静态类型”与“运行时数据”的强力胶水。
+
+### 核心技巧：使用 `satisfies` 锁定契约
+
+我们不仅要定义 Zod 校验规则，还要确保这个规则与数据库模型**强行对齐**。建议将此逻辑放在项目的 `shared` 目录中：
+
+```typescript
+import { z } from 'zod'
+import { type User } from '@prisma/client' // 引入 Prisma 自动生成的类型
+
+/**
+ * 核心逻辑：利用 satisfies 建立双向约束
+ *
+ * 我们要求 userSchema 必须满足 User 模型中除自动生成字段外的所有定义。
+ * 如果你在 Prisma 增加了一个必填字段，但这里没定义，TS 会立刻在编译期报错。
+ */
+export const userSchema = z.object({
+	username: z.string().min(1, '用户名不能为空').max(20, '用户名过长'),
+	password: z.string().min(6, '密码不能少于 6 位'),
+	email: z.string().email('邮箱格式不正确').optional(),
+}) satisfies z.ZodType<Omit<User, 'id' | 'createdAt' | 'updatedAt'>>
+
+// 推导出供全栈复用的强类型
+export type UserInput = z.infer<typeof userSchema>
+```
+
+> **架构思考：** 这里的 `satisfies` 是最后一块拼图。它既保留了 Zod 的类型推导能力，又强制要求校验规则必须“覆盖”数据库模型。这种双向约束，是你架构健壮性的基石。
+
+## 前端适配：让 Ant Design 自动呼吸
+
+Ant Design 的表单（Form）默认需要手写 `rules`。为了复用上面的 `userSchema`，我们需要编写一个简单的**适配器（Adapter）**。
+
+```tsx
+import { type ZodObject, type ZodType } from 'zod'
+
+interface AntdValidatorResult {
+	validator: (_: any, value: any) => Promise<void>
+	required?: boolean
+}
+
+/**
+ * 创建表单验证器
+ * @param schema
+ * @returns
+ */
+export const createZodFormValidator = <T extends Record<string, any>>(schema: ZodObject<T>) => {
+	const fieldValidators = {} as Record<keyof T, AntdValidatorResult>
+
+	// 为每个字段创建验证器
+	Object.keys(schema.shape ?? {}).forEach((key) => {
+		const fieldSchema = schema.shape[key as keyof T]
+		fieldValidators[key as keyof T] = createZodFieldValidator(fieldSchema)
+	})
+
+	return fieldValidators
+}
+
+// 创建单个字段的验证器
+const createZodFieldValidator = <T>(fieldSchema: ZodType<T>) => {
+	return {
+		validator: async (_: any, value: any) => {
+			const result = await fieldSchema.safeParseAsync(value)
+
+			if (!result.success) {
+				const issue = result.error.issues[0]
+				let errorMessage = '验证失败'
+
+				if (issue) {
+					// 自定义错误提示，目前只需处理必填提示为中文
+					switch (issue.code) {
+						case 'invalid_type':
+						case 'invalid_value':
+							errorMessage = '此字段为必填项'
+							break
+						default:
+							errorMessage = issue.message || '验证失败'
+					}
+				}
+
+				return Promise.reject(new Error(errorMessage))
+			}
+
+			return Promise.resolve()
+		},
+		required: !fieldSchema.safeParse(undefined).success,
+	}
+}
+
+/**
+ * 完整表单验证（当你不用 form 自带的 onFinish 函数，你就可以用这个函数在任何时机校验你的表单数据，比如提交请求前）
+ * @param schema
+ * @param values
+ * @returns
+ */
+export const validateFormWithZod = async <T>(schema: ZodType<T>, values: Partial<T>) => {
+	const result = await schema.safeParseAsync(values)
+
+	if (result.success) {
+		return { success: true, data: result.data, errors: {} }
+	}
+
+	const errors: Record<string, string[]> = {}
+	result.error.issues.forEach((issue) => {
+		const key = issue.path.join('.')
+		errors[key] = [...(errors[key] || []), issue.message]
+	})
+
+	return { success: false, data: null, errors }
+}
+
+```
+
+有了这个适配器，前端页面的编写将变得极其优雅：
+
+```tsx
+const formValidators = createZodFormValidator(userSchema)
+
+export default function RegisterPage() {
+	const [form] = Form.useForm<UserInput>() // 注入强类型提示
+
+	return (
+		<Form form={form} onFinish={handleRegister} layout="vertical">
+			<Form.Item label="用户名" name="username" rules={[formValidators.username]}>
+				<Input placeholder="请输入用户名" />
+			</Form.Item>
+			{/* ... 其他字段 ... */}
+		</Form>
+	)
+}
+```
+
+## 服务端复用：最后的一公里防御
+
+类型安全的终点在服务端。即便前端做了完美校验，我们依然不能信任任何来自网络的输入。得益于 `shared` 目录的复用逻辑，服务端的校验可以变得“不费吹灰之力”。
+
+### 实战示例：登录/注册接口的校验
+
+在 Next.js Route Handler 或 Express 路由中，我们可以直接复用 `userSchema`：
+
+```typescript
+import { userSchema } from '@/shared/schemas'
+import { db } from '@/lib/db'
+
+export async function POST(req: Request) {
+	try {
+		const json = await req.json()
+
+		// 1. 复用 Schema 进行运行时校验
+		// 无论前端怎么传，这里只接受符合 userSchema 契约的数据
+		const body = userSchema.parse(json)
+
+		// 2. 此时 body 的类型已被自动推断为 UserInput，具备完全的代码提示
+		const { username, password } = body
+
+		// 3. 执行业务逻辑
+		const user = await db.user.findUnique({ where: { username } })
+
+		if (!user || user.password !== password) {
+			return Response.json({ message: '凭据无效' }, { status: 401 })
+		}
+
+		return Response.json({ message: '登录成功' })
+	} catch (error) {
+		// 4. 如果校验失败，Zod 会抛出 Issue，我们可以直接返回错误信息
+		return Response.json({ error: '输入数据格式错误' }, { status: 400 })
+	}
+}
+```
+
+> **关键价值：** 注意到了吗？如果以后你把用户名长度限制改为 30 个字符，你只需要修改 `shared/schemas.ts` 这一处代码。前端的表单提示、后端的接口校验都会在瞬间完成同步更新。这就是**“一次编写，处处生效”**的魅力。
+
+## 结语
+
+全栈开发中的“类型安全”，不应只是为了消除 IDE 的红色波浪线。它更像是一份**契约**。
+
+通过 Prisma 定义数据底座，通过 Zod 锚定运行时的契约边界，再通过 TypeScript 将两者缝合。当你能随手在项目中实现这种端到端保护时，你处理的不再只是代码，而是一套可以自证明、自驱动的健壮系统。
+
+这，才是全栈工程师的进阶之路。
