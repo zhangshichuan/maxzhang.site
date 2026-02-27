@@ -1,0 +1,449 @@
+---
+title: 'Next.js 认证实战：JWT + bcrypt 的现代安全架构'
+summary: '在 Next.js 15 的 Server Actions 新范式下，如何构建一套既安全又优雅的认证系统？本文将深度拆解 JWT 与 bcrypt 的组合拳，并揭示面向对象设计在服务端逻辑中的核心价值。'
+category: 'Full Stack'
+tags: ['Next.js', 'Authentication', 'JWT', 'bcrypt']
+author: 'Max Zhang'
+date: '2026-02-27'
+---
+
+## 认证系统的“三重门”与现代解法
+
+认证（Authentication）是 Web 应用中最基础、也最容易出错的功能模块。一个看似简单的登录流程，背后却隐藏着三个关键挑战：
+
+1. **密码安全**：如何存储用户密码，使其即使数据库泄露也不会被轻易破解？
+2. **会话管理**：如何让用户在登录后保持状态，同时避免 CSRF 和 XSS 攻击？
+3. **架构清晰**：如何在 Next.js 15 的 Server Actions 新范式下，保持代码的可维护性？
+
+传统的解决方案往往陷入“功能堆砌”的泥潭：bcrypt 负责密码加密，JWT 负责会话管理，Cookie 负责状态保持。但三者之间缺乏统一的架构设计，导致代码分散、逻辑重复。
+
+今天，我们将通过一套**面向对象的认证服务类**，实现这三者的完美融合。
+
+## 核心架构：面向对象的认证服务
+
+在 Next.js 15 中，Server Actions 要求我们只能导出函数，但这并不妨碍我们在内部使用面向对象的设计。这种“函数式接口 + 面向对象实现”的模式，既满足了框架约束，又保证了代码的组织性。
+
+### 1. 密码安全：告别 SHA256，拥抱 bcrypt
+
+在密码存储领域，`sha256(password + salt)` 的方案已经过时。现代密码学推荐使用**自适应哈希算法**，如 bcrypt 或 Argon2。
+
+```typescript
+import { hash, compare } from 'bcrypt'
+
+class AuthService {
+	/**
+	 * 用 bcrypt 生成 hash, 传统 sha256 + 数据表持久化 salt 已经过时。
+	 */
+	async hashPassword(password: string): Promise<string> {
+		const hashWithSalt = await hash(password, 12) // 12 是成本因子，越高越安全但越慢
+		return hashWithSalt
+	}
+
+	/**
+	 * 验证密码
+	 */
+	async verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+		return compare(password, hashedPassword)
+	}
+}
+```
+
+> **安全思考：** bcrypt 的 `cost factor`（成本因子）是关键参数。值越高，哈希计算越慢，暴力破解的成本就越高。通常 10-12 是生产环境的推荐值。这种“故意变慢”的特性，正是 bcrypt 对抗彩虹表攻击的核心武器。
+
+### 2. 会话管理：JWT 的现代实践
+
+JSON Web Token（JWT）已经成为无状态认证的事实标准。但很多开发者在使用时忽略了两个关键点：**算法选择**和**密钥管理**。
+
+```typescript
+import { jwtVerify, SignJWT } from 'jose'
+
+class AuthService {
+	async generateToken(payload: JWTPayload): Promise<string> {
+		return await new SignJWT(payload as any)
+			.setProtectedHeader({ alg: JWT_ALGORITHM }) // 必须明确指定算法
+			.setIssuedAt()
+			.setExpirationTime(`${JWT_EXPIRY_DAYS}d`)
+			.sign(JWT_SECRET) // 密钥必须足够复杂
+	}
+
+	async verifyToken(token: string): Promise<JWTPayload | null> {
+		try {
+			const { payload } = await jwtVerify(token, JWT_SECRET)
+			return payload as unknown as JWTPayload
+		} catch (error) {
+			console.error('JWT verification error:', error)
+			return null
+		}
+	}
+}
+```
+
+> **关键配置：** 永远不要使用 `HS256` 这样的对称算法，除非你有绝对安全的密钥分发机制。在生产环境中，建议使用 `RS256`（非对称算法），将私钥存储在服务端，公钥分发给客户端验证。
+
+### 3. Cookie 策略：HttpOnly 与 SameSite 的防御组合
+
+Cookie 是 JWT 的传输载体，正确的配置可以抵御大部分 XSS 和 CSRF 攻击。
+
+```typescript
+import { cookies } from 'next/headers'
+
+class AuthService {
+	async login(name: string, password: string) {
+		// ... 验证逻辑
+
+		// 设置 Cookie - Next.js 15 需要 await
+		const cookieStore = await cookies()
+		cookieStore.set(TOKEN_NAME, token, {
+			httpOnly: true, // 防止 XSS 攻击读取 Cookie
+			secure: false, // 开发环境设为 false，生产环境必须为 true
+			sameSite: 'strict', // 防止 CSRF 攻击
+			maxAge: JWT_EXPIRY_DAYS * 24 * 60 * 60, // 与 JWT 过期时间同步
+			path: '/',
+		})
+	}
+}
+```
+
+> **安全分层：** `httpOnly` 防止 JavaScript 读取 Cookie，`sameSite: 'strict'` 防止跨站请求伪造。这两者的组合，构成了 Web 安全的“双重保险”。
+
+## 完整实现：从注册到退出的闭环
+
+让我们看看这三个组件如何协同工作，形成一个完整的认证流程。
+
+### 用户注册：安全的起点
+
+```typescript
+class AuthService {
+	async register(name: string, password: string): Promise<IDataResult<boolean>> {
+		try {
+			// 检查用户是否已存在
+			const existingUser = await this.prisma.user.findFirst({
+				where: { name },
+			})
+
+			if (existingUser) {
+				return {
+					code: -1,
+					message: '用户名已存在',
+					data: false,
+				}
+			}
+
+			// 生成加密密码
+			const hashedPassword = await this.hashPassword(password)
+
+			// 创建用户数据
+			await this.prisma.user.create({
+				data: {
+					name,
+					password: hashedPassword,
+				},
+			})
+
+			return {
+				code: 0,
+				message: '创建用户成功',
+				data: true,
+			}
+		} catch (error) {
+			console.error('Register error:', error)
+			return { code: -1, message: '创建用户失败', data: false }
+		}
+	}
+}
+```
+
+### 用户登录：三要素验证
+
+```typescript
+class AuthService {
+	async login(name: string, password: string): Promise<IDataResult<LoginResult>> {
+		try {
+			// 1. 查找用户
+			const user = await this.prisma.user.findFirst({
+				where: { name },
+			})
+
+			if (!user) {
+				return {
+					code: -1,
+					message: '用户名或密码错误',
+					data: { user: null },
+				}
+			}
+
+			// 2. 验证密码
+			const isPasswordValid = await this.verifyPassword(password, user.password)
+			if (!isPasswordValid) {
+				return {
+					code: -1,
+					message: '用户名或密码错误',
+					data: { user: null },
+				}
+			}
+
+			// 3. 生成 JWT
+			const token = await this.generateToken({
+				userId: user.id,
+				name: user.name,
+			})
+
+			// 4. 设置 Cookie
+			const cookieStore = await cookies()
+			cookieStore.set(TOKEN_NAME, token, {
+				httpOnly: true,
+				secure: false,
+				sameSite: 'strict',
+				maxAge: JWT_EXPIRY_DAYS * 24 * 60 * 60,
+				path: '/',
+			})
+
+			return {
+				code: 0,
+				message: '登录成功',
+				data: {
+					user: {
+						id: user.id,
+						name: user.name,
+					},
+				},
+			}
+		} catch (error) {
+			console.error('Login error:', error)
+			return {
+				code: -1,
+				message: '登录失败，请稍后重试',
+				data: { user: null },
+			}
+		}
+	}
+}
+```
+
+### 会话检查：无缝的用户体验
+
+```typescript
+class AuthService {
+	/**
+	 * 获取当前登录用户信息
+	 */
+	async getCurrentUser(): Promise<JWTPayload | null> {
+		try {
+			const cookieStore = await cookies()
+			const token = cookieStore.get(TOKEN_NAME)
+
+			if (!token) {
+				return null
+			}
+
+			return await this.verifyToken(token.value)
+		} catch (error) {
+			console.error('Get current user error:', error)
+			return null
+		}
+	}
+
+	/**
+	 * 检查用户是否已登录
+	 */
+	async isAuthenticated(): Promise<JWTPayload | null> {
+		return await this.getCurrentUser()
+	}
+}
+```
+
+## Next.js 15 适配：Server Actions 的优雅封装
+
+Next.js 15 的 Server Actions 有一个重要限制：只能导出函数，不能导出类或实例。但这并不妨碍我们在内部使用面向对象的设计。
+
+```typescript
+//  Next.js 15 Server Actions 的限制，无法导出类及实例，只能导出函数
+const authService = new AuthService()
+
+/**
+ * 注册用户
+ */
+export async function register(name: string, password: string) {
+	return await authService.register(name, password)
+}
+
+/**
+ * 登录用户并设置 Cookie
+ */
+export async function login(name: string, password: string) {
+	return await authService.login(name, password)
+}
+
+/**
+ * 退出登录并清除 Cookie
+ */
+export async function logout() {
+	return await authService.logout()
+}
+
+/**
+ * 检查用户是否已登录
+ */
+export async function isAuthenticated() {
+	return await authService.isAuthenticated()
+}
+```
+
+这种设计模式实现了完美的关注点分离：
+
+- **对外接口**：简洁的函数式 API，符合 Server Actions 规范
+- **内部实现**：面向对象的服务类，保证代码的组织性和可测试性
+
+## 前端集成：React Hook 的最佳实践
+
+在客户端，我们可以创建一个自定义 Hook 来封装认证状态的管理。
+
+```typescript
+import { useState, useEffect } from 'react'
+import { isAuthenticated } from '@/lib/auth'
+
+export function useAuth() {
+	const [user, setUser] = useState<JWTPayload | null>(null)
+	const [loading, setLoading] = useState(true)
+
+	useEffect(() => {
+		checkAuth()
+	}, [])
+
+	const checkAuth = async () => {
+		setLoading(true)
+		try {
+			const userData = await isAuthenticated()
+			setUser(userData)
+		} catch (error) {
+			console.error('Auth check failed:', error)
+			setUser(null)
+		} finally {
+			setLoading(false)
+		}
+	}
+
+	return {
+		user,
+		loading,
+		checkAuth,
+	}
+}
+```
+
+然后在页面组件中使用：
+
+```tsx
+import { useAuth } from '@/hooks/useAuth'
+
+export default function DashboardPage() {
+	const { user, loading } = useAuth()
+
+	if (loading) {
+		return <div>加载中...</div>
+	}
+
+	if (!user) {
+		return <div>请先登录</div>
+	}
+
+	return (
+		<div>
+			<h1>欢迎回来，{user.name}！</h1>
+			{/* 受保护的内容 */}
+		</div>
+	)
+}
+```
+
+## 安全加固：下一步该做什么？
+
+虽然我们已经构建了一个相对安全的认证系统，但生产环境还需要考虑更多因素：
+
+### 1. 输入验证：Zod 的运行时保护
+
+```typescript
+import { z } from 'zod'
+
+const loginSchema = z.object({
+	name: z.string().min(1, '用户名不能为空').max(50, '用户名过长'),
+	password: z.string().min(6, '密码不能少于6位').max(100, '密码过长'),
+})
+
+// 在 login 函数中使用
+const validationResult = loginSchema.safeParse({ name, password })
+if (!validationResult.success) {
+	return {
+		code: -1,
+		message: validationResult.error.errors[0].message,
+		data: { user: null },
+	}
+}
+```
+
+### 2. 速率限制：防止暴力破解
+
+```typescript
+import { RateLimiter } from 'rate-limiter-flexible'
+
+const rateLimiter = new RateLimiter({
+	points: 5, // 5 次尝试
+	duration: 60, // 60 秒内
+})
+
+async function login(name: string, password: string) {
+	try {
+		await rateLimiter.consume(name) // 基于用户名的限流
+	} catch (error) {
+		return {
+			code: -1,
+			message: '尝试次数过多，请稍后再试',
+			data: { user: null },
+		}
+	}
+	// ... 原有逻辑
+}
+```
+
+### 3. 审计日志：追踪认证事件
+
+```typescript
+class AuthService {
+	async login(name: string, password: string) {
+		try {
+			// ... 原有逻辑
+
+			// 记录成功登录
+			await this.prisma.auditLog.create({
+				data: {
+					userId: user.id,
+					action: 'LOGIN',
+					ipAddress: getClientIp(request),
+					userAgent: request.headers.get('user-agent'),
+				},
+			})
+
+			return result
+		} catch (error) {
+			// 记录失败尝试
+			await this.prisma.auditLog.create({
+				data: {
+					action: 'LOGIN_FAILED',
+					metadata: { name },
+					ipAddress: getClientIp(request),
+					userAgent: request.headers.get('user-agent'),
+				},
+			})
+			throw error
+		}
+	}
+}
+```
+
+## 结语：安全是一个过程，而非功能
+
+认证系统的构建，从来不是一蹴而就的。从基础的密码加密，到会话管理，再到防御性编程，每一步都需要深思熟虑。
+
+通过面向对象的认证服务类，我们不仅实现了功能的模块化，更重要的是建立了一套**可扩展的安全架构**。当新的安全威胁出现时，我们只需要在相应的类方法中添加防护逻辑，而不需要重构整个系统。
+
+在安全领域，**“足够好”从来都不够好**。只有持续关注安全最佳实践，不断加固你的防御体系，才能在日益复杂的网络环境中保护用户数据的安全。
