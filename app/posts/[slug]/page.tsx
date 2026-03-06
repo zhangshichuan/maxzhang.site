@@ -3,6 +3,8 @@ import { ArrowLeft, Calendar, Clock, Folder, User } from 'lucide-react'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import remarkGfm from 'remark-gfm'
+import Mermaid from '@/components/mdx/mermaid'
 
 interface Props {
 	params: Promise<{
@@ -40,6 +42,24 @@ export async function generateMetadata({ params }: Props) {
 		title: `${post.title} - Max Zhang`,
 		description: post.summary,
 	}
+}
+
+const components = {
+	pre: ({ children, ...props }: any) => {
+		// 检查子元素是否是 code，且类名为 language-mermaid
+		const child = children?.props
+		if (child?.className === 'language-mermaid') {
+			return <Mermaid chart={String(child.children).replace(/\n$/, '')} />
+		}
+		return <pre {...props}>{children}</pre>
+	},
+	code: ({ className, children, ...props }: any) => {
+		return (
+			<code className={className} {...props}>
+				{children}
+			</code>
+		)
+	},
 }
 
 export default async function PostPage({ params }: Props) {
@@ -101,7 +121,15 @@ export default async function PostPage({ params }: Props) {
 
 			{/* MDX 内容渲染区域 */}
 			<div className="prose prose-zinc dark:prose-invert max-w-none">
-				<MDXRemote source={post.content} />
+				<MDXRemote
+					source={post.content}
+					components={components}
+					options={{
+						mdxOptions: {
+							remarkPlugins: [remarkGfm],
+						},
+					}}
+				/>
 			</div>
 		</article>
 	)

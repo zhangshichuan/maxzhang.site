@@ -7,8 +7,6 @@ author: 'Max Zhang'
 date: '2026-02-27'
 ---
 
-## 认证系统的“三重门”与现代解法
-
 认证（Authentication）是 Web 应用中最基础、也最容易出错的功能模块。一个看似简单的登录流程，背后却隐藏着三个关键挑战：
 
 1. **密码安全**：如何存储用户密码，使其即使数据库泄露也不会被轻易破解？
@@ -440,10 +438,577 @@ class AuthService {
 }
 ```
 
+## 生产环境必备：刷新令牌（Refresh Token）机制
+
+在真实的生产环境中，单纯的 JWT 认证存在一个致命缺陷：**令牌过期后的用户体验问题**。如果 Access Token 有效期设置太短（如15分钟），用户需要频繁重新登录；如果设置太长（如7天），一旦令牌泄露，攻击者就有充足的时间进行恶意操作。
+
+刷新令牌机制完美解决了这个矛盾：
+
+- **Access Token**：短有效期（15-30分钟），用于 API 访问
+- **Refresh Token**：长有效期（7-30天），用于获取新的 Access Token
+
+### 1. 刷新令牌的设计权衡
+
+JWT 的初衷是无状态，但刷新令牌似乎又需要服务端状态。实际上，这里有几种设计选择：
+
+#### 方案一：有状态刷新令牌（推荐用于高安全场景）
+
+```prisma
+// prisma/schema.prisma
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revoked   Boolean  @default(false)
+
+  @@index([userId])
+  @@index([token])
+}
+```
+
+**优点**：
+
+- 可以随时撤销单个令牌
+- 支持多设备管理
+- 可以记录令牌使用日志
+- 安全性最高
+
+**缺点**：
+
+- 需要数据库存储
+- 违背了 JWT 的完全无状态理念
+
+#### 方案二：无状态刷新令牌（JWT 作为 Refresh Token）
+
+```typescript
+// 将 Refresh Token 也设计为 JWT
+async generateRefreshToken(userId: string): Promise<string> {
+  return await new SignJWT({ userId, type: 'refresh' })
+    .setProtectedHeader({ alg: JWT_ALGORITHM })
+    .setIssuedAt()
+    .setExpirationTime('7d') // 7天有效期
+    .sign(REFRESH_TOKEN_SECRET) // 使用不同的密钥
+}
+```
+
+**优点**：
+
+- 完全无状态
+- 不需要数据库存储
+- 实现简单
+
+**缺点**：
+
+- 无法主动撤销单个令牌（只能等过期）
+- 泄露后无法立即失效
+- 不支持多设备精细管理
+
+#### 方案三：混合方案（平衡安全性与无状态）
+
+```prisma
+// 只存储令牌的元数据，不存储令牌本身
+model RefreshTokenMetadata {
+  id        String   @id @default(cuid())
+  jti       String   @unique // JWT ID
+  userId    String
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+
+  @@index([userId])
+  @@index([jti])
+}
+```
+
+```typescript
+// 生成带 jti 的 Refresh Token
+async generateRefreshToken(userId: string): Promise<string> {
+  const jti = crypto.randomUUID() // 唯一的 JWT ID
+
+  // 存储元数据
+  await this.prisma.refreshTokenMetadata.create({
+    data: {
+      jti,
+      userId,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
+  })
+
+  return await new SignJWT({ userId, jti, type: 'refresh' })
+    .setProtectedHeader({ alg: JWT_ALGORITHM })
+    .setIssuedAt()
+    .setExpirationTime('7d')
+    .sign(REFRESH_TOKEN_SECRET)
+}
+```
+
+**优点**：
+
+- 可以撤销令牌（通过 jti）
+- 存储的数据量很小（只有元数据）
+- 保持了大部分无状态特性
+
+**实际建议**：对于生产应用，**方案三（混合方案）** 是最佳平衡选择。它既保持了 JWT 的无状态优势，又通过最小化的状态存储实现了必要的安全控制：
+
+1. **Access Token**：完全无状态，短有效期（15-30分钟）
+2. **Refresh Token**：JWT 格式 + 元数据存储，长有效期（7-30天）
+3. **安全控制**：通过 `jti` 实现令牌撤销和轮换
+4. **存储成本**：每条记录约 100-200 字节，定期清理后表大小可控
+
+这种设计既尊重了 JWT 的无状态哲学，又满足了生产环境的安全需求。真正的"无状态"只适用于高频、短期的 Access Token，而长期会话管理需要适当的状态来保证安全。
+
+### 2. 刷新令牌的生成与验证（采用混合方案）
+
+我们采用**方案三（混合方案）**，使用 JWT 作为 Refresh Token，但存储元数据以实现撤销功能：
+
+```typescript
+import { SignJWT, jwtVerify } from 'jose'
+import crypto from 'crypto'
+
+class AuthService {
+	// 配置常量
+	private readonly ACCESS_TOKEN_EXPIRY = '15m' // 15分钟
+	private readonly REFRESH_TOKEN_EXPIRY = '7d' // 7天
+	private readonly REFRESH_TOKEN_SECRET: Uint8Array
+
+	constructor() {
+		// 使用不同的密钥用于 Refresh Token
+		this.REFRESH_TOKEN_SECRET = new TextEncoder().encode(
+			process.env.REFRESH_TOKEN_SECRET || 'your-refresh-token-secret-change-this',
+		)
+	}
+
+	/**
+	 * 生成 Access Token（短有效期）
+	 */
+	async generateAccessToken(payload: JWTPayload): Promise<string> {
+		return await new SignJWT(payload as any)
+			.setProtectedHeader({ alg: JWT_ALGORITHM })
+			.setIssuedAt()
+			.setExpirationTime(this.ACCESS_TOKEN_EXPIRY)
+			.sign(JWT_SECRET)
+	}
+
+	/**
+	 * 生成 Refresh Token（JWT 格式）并存储元数据
+	 */
+	async generateRefreshToken(userId: string): Promise<string> {
+		// 生成唯一的 JWT ID (jti)
+		const jti = crypto.randomUUID()
+
+		// 计算过期时间
+		const expiresAt = new Date()
+		expiresAt.setDate(expiresAt.getDate() + 7) // 7天后
+
+		// 存储元数据到数据库（只存 jti，不存完整的 token）
+		await this.prisma.refreshTokenMetadata.create({
+			data: {
+				jti,
+				userId,
+				expiresAt,
+			},
+		})
+
+		// 生成 JWT 格式的 Refresh Token
+		return await new SignJWT({
+			userId,
+			jti,
+			type: 'refresh',
+		})
+			.setProtectedHeader({ alg: JWT_ALGORITHM })
+			.setIssuedAt()
+			.setExpirationTime(this.REFRESH_TOKEN_EXPIRY)
+			.setJti(jti) // 设置 JWT ID
+			.sign(this.REFRESH_TOKEN_SECRET)
+	}
+
+	/**
+	 * 验证 Refresh Token 是否有效
+	 */
+	async verifyRefreshToken(token: string): Promise<{ isValid: boolean; userId?: string; jti?: string }> {
+		try {
+			// 1. 验证 JWT 签名和过期时间
+			const { payload } = await jwtVerify(token, this.REFRESH_TOKEN_SECRET, {
+				algorithms: [JWT_ALGORITHM],
+			})
+
+			const { userId, jti, type } = payload as any
+
+			if (type !== 'refresh' || !userId || !jti) {
+				return { isValid: false }
+			}
+
+			// 2. 检查元数据是否被撤销
+			const metadata = await this.prisma.refreshTokenMetadata.findUnique({
+				where: { jti },
+			})
+
+			if (!metadata) {
+				return { isValid: false }
+			}
+
+			// 检查是否已撤销
+			if (metadata.revoked) {
+				return { isValid: false }
+			}
+
+			// 检查是否已过期（双重检查）
+			if (metadata.expiresAt < new Date()) {
+				return { isValid: false }
+			}
+
+			return {
+				isValid: true,
+				userId,
+				jti,
+			}
+		} catch (error) {
+			// JWT 验证失败（签名无效、过期等）
+			console.error('Refresh token verification error:', error)
+			return { isValid: false }
+		}
+	}
+
+	/**
+	 * 撤销 Refresh Token（通过 jti）
+	 */
+	async revokeRefreshToken(jti: string): Promise<void> {
+		await this.prisma.refreshTokenMetadata.update({
+			where: { jti },
+			data: { revoked: true },
+		})
+	}
+
+	/**
+	 * 撤销用户的所有 Refresh Token
+	 */
+	async revokeAllUserRefreshTokens(userId: string): Promise<void> {
+		await this.prisma.refreshTokenMetadata.updateMany({
+			where: {
+				userId,
+				revoked: false,
+			},
+			data: { revoked: true },
+		})
+	}
+
+	/**
+	 * 清理过期的 Refresh Token 元数据
+	 */
+	async cleanupExpiredRefreshTokens(): Promise<void> {
+		await this.prisma.refreshTokenMetadata.deleteMany({
+			where: {
+				expiresAt: {
+					lt: new Date(),
+				},
+			},
+		})
+	}
+}
+```
+
+### 3. 登录流程改造
+
+更新登录方法，同时返回 Access Token 和 Refresh Token：
+
+```typescript
+class AuthService {
+	async login(name: string, password: string): Promise<IDataResult<LoginResult>> {
+		try {
+			// ... 原有的用户查找和密码验证逻辑
+
+			// 生成 Access Token
+			const accessToken = await this.generateAccessToken({
+				userId: user.id,
+				name: user.name,
+			})
+
+			// 生成 Refresh Token
+			const refreshToken = await this.generateRefreshToken(user.id)
+
+			// 设置 Cookie - 只存储 Access Token
+			const cookieStore = await cookies()
+			cookieStore.set(ACCESS_TOKEN_NAME, accessToken, {
+				httpOnly: true,
+				secure: process.env.NODE_ENV === 'production',
+				sameSite: 'strict',
+				maxAge: 15 * 60, // 15分钟，与 Access Token 过期时间一致
+				path: '/',
+			})
+
+			// 将 Refresh Token 通过 HTTP-only Cookie 发送（更安全）
+			// 或者通过响应体返回（需要前端存储）
+			cookieStore.set(REFRESH_TOKEN_NAME, refreshToken, {
+				httpOnly: true,
+				secure: process.env.NODE_ENV === 'production',
+				sameSite: 'strict',
+				maxAge: 7 * 24 * 60 * 60, // 7天
+				path: '/api/auth/refresh', // 只对刷新接口有效
+			})
+
+			return {
+				code: 0,
+				message: '登录成功',
+				data: {
+					user: {
+						id: user.id,
+						name: user.name,
+					},
+					// 注意：生产环境中不应将 Refresh Token 返回给前端
+					// 这里只是示例，实际应该使用 HTTP-only Cookie
+					refreshToken,
+				},
+			}
+		} catch (error) {
+			console.error('Login error:', error)
+			return {
+				code: -1,
+				message: '登录失败，请稍后重试',
+				data: { user: null },
+			}
+		}
+	}
+}
+```
+
+### 4. 令牌刷新接口
+
+创建专门的刷新接口来获取新的 Access Token：
+
+```typescript
+// app/api/auth/refresh/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { AuthService } from '@/lib/auth-service'
+
+const authService = new AuthService()
+
+export async function POST(request: NextRequest) {
+	try {
+		// 从 Cookie 中获取 Refresh Token
+		const cookieStore = await cookies()
+		const refreshToken = cookieStore.get(REFRESH_TOKEN_NAME)?.value
+
+		if (!refreshToken) {
+			return NextResponse.json({ code: -1, message: '未提供刷新令牌' }, { status: 401 })
+		}
+
+		// 验证 Refresh Token
+		const verification = await authService.verifyRefreshToken(refreshToken)
+		if (!verification.isValid || !verification.userId || !verification.jti) {
+			return NextResponse.json({ code: -1, message: '刷新令牌无效或已过期' }, { status: 401 })
+		}
+
+		// 获取用户信息
+		const user = await authService.prisma.user.findUnique({
+			where: { id: verification.userId },
+		})
+
+		if (!user) {
+			return NextResponse.json({ code: -1, message: '用户不存在' }, { status: 401 })
+		}
+
+		// 生成新的 Access Token
+		const newAccessToken = await authService.generateAccessToken({
+			userId: user.id,
+			name: user.name,
+		})
+
+		// 设置新的 Access Token Cookie
+		cookieStore.set(ACCESS_TOKEN_NAME, newAccessToken, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: 'strict',
+			maxAge: 15 * 60, // 15分钟
+			path: '/',
+		})
+
+		return NextResponse.json({
+			code: 0,
+			message: '令牌刷新成功',
+			data: { accessToken: newAccessToken },
+		})
+	} catch (error) {
+		console.error('Refresh token error:', error)
+		return NextResponse.json({ code: -1, message: '令牌刷新失败' }, { status: 500 })
+	}
+}
+```
+
+### 5. 前端自动刷新逻辑
+
+更新前端认证逻辑，在 Access Token 过期时自动刷新：
+
+```typescript
+// lib/api-client.ts
+import { cookies } from 'next/headers'
+
+class ApiClient {
+	private async refreshToken(): Promise<boolean> {
+		try {
+			const response = await fetch('/api/auth/refresh', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			})
+
+			if (response.ok) {
+				return true
+			}
+
+			// 刷新失败，需要重新登录
+			return false
+		} catch (error) {
+			console.error('Token refresh failed:', error)
+			return false
+		}
+	}
+
+	async request<T>(url: string, options: RequestInit = {}): Promise<T> {
+		const cookieStore = await cookies()
+		const accessToken = cookieStore.get(ACCESS_TOKEN_NAME)?.value
+
+		const headers = {
+			'Content-Type': 'application/json',
+			...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+			...options.headers,
+		}
+
+		let response = await fetch(url, {
+			...options,
+			headers,
+		})
+
+		// 如果返回 401，尝试刷新令牌
+		if (response.status === 401) {
+			const refreshSuccess = await this.refreshToken()
+
+			if (refreshSuccess) {
+				// 重新获取新的 Access Token
+				const newAccessToken = cookieStore.get(ACCESS_TOKEN_NAME)?.value
+
+				// 重试原始请求
+				response = await fetch(url, {
+					...options,
+					headers: {
+						...headers,
+						...(newAccessToken && { Authorization: `Bearer ${newAccessToken}` }),
+					},
+				})
+			} else {
+				// 刷新失败，跳转到登录页
+				window.location.href = '/login'
+				throw new Error('Authentication required')
+			}
+		}
+
+		if (!response.ok) {
+			throw new Error(`HTTP error! status: ${response.status}`)
+		}
+
+		return response.json()
+	}
+}
+
+export const apiClient = new ApiClient()
+```
+
+### 6. 登出流程更新
+
+更新登出方法，撤销刷新令牌：
+
+```typescript
+class AuthService {
+	async logout(): Promise<IDataResult<boolean>> {
+		try {
+			const cookieStore = await cookies()
+
+			// 获取当前用户的 Refresh Token
+			const refreshToken = cookieStore.get(REFRESH_TOKEN_NAME)?.value
+
+			// 撤销 Refresh Token（需要解析出 jti）
+			if (refreshToken) {
+				try {
+					const verification = await this.verifyRefreshToken(refreshToken)
+					if (verification.jti) {
+						await this.revokeRefreshToken(verification.jti)
+					}
+				} catch (error) {
+					// 令牌可能已过期或无效，忽略错误
+					console.warn('Failed to revoke refresh token:', error)
+				}
+			}
+
+			// 清除 Cookie
+			cookieStore.delete(ACCESS_TOKEN_NAME)
+			cookieStore.delete(REFRESH_TOKEN_NAME)
+
+			return {
+				code: 0,
+				message: '登出成功',
+				data: true,
+			}
+		} catch (error) {
+			console.error('Logout error:', error)
+			return {
+				code: -1,
+				message: '登出失败',
+				data: false,
+			}
+		}
+	}
+}
+```
+
+### 7. 安全增强：令牌轮换（Token Rotation）
+
+为了进一步提高安全性，可以实现令牌轮换机制：每次使用 Refresh Token 获取新的 Access Token 时，同时颁发一个新的 Refresh Token，并撤销旧的。
+
+```typescript
+class AuthService {
+	async rotateRefreshToken(oldJti: string, userId: string): Promise<string> {
+		// 撤销旧的 Refresh Token
+		await this.revokeRefreshToken(oldJti)
+
+		// 生成新的 Refresh Token
+		return await this.generateRefreshToken(userId)
+	}
+}
+```
+
+然后在刷新接口中使用：
+
+```typescript
+// 在刷新接口中（启用令牌轮换）
+const newRefreshToken = await authService.rotateRefreshToken(verification.jti!, verification.userId)
+
+// 设置新的 Refresh Token Cookie
+cookieStore.set(REFRESH_TOKEN_NAME, newRefreshToken, {
+	httpOnly: true,
+	secure: process.env.NODE_ENV === 'production',
+	sameSite: 'strict',
+	maxAge: 7 * 24 * 60 * 60,
+	path: '/api/auth/refresh',
+})
+```
+
+## 刷新令牌的安全优势
+
+1. **缩短攻击窗口**：Access Token 有效期短，即使泄露，攻击者也只有有限的时间窗口
+2. **可控的会话管理**：可以随时撤销 Refresh Token，强制用户重新认证
+3. **减少密码输入**：用户不需要频繁输入密码，提升用户体验
+4. **多设备管理**：可以为每个设备颁发独立的 Refresh Token，单独管理
+5. **泄露检测**：如果发现异常活动，可以立即撤销所有令牌
+
 ## 结语：安全是一个过程，而非功能
 
 认证系统的构建，从来不是一蹴而就的。从基础的密码加密，到会话管理，再到防御性编程，每一步都需要深思熟虑。
 
 通过面向对象的认证服务类，我们不仅实现了功能的模块化，更重要的是建立了一套**可扩展的安全架构**。当新的安全威胁出现时，我们只需要在相应的类方法中添加防护逻辑，而不需要重构整个系统。
 
-在安全领域，**“足够好”从来都不够好**。只有持续关注安全最佳实践，不断加固你的防御体系，才能在日益复杂的网络环境中保护用户数据的安全。
+刷新令牌机制的引入，让我们的认证系统从"可用"升级到了"生产就绪"。它解决了短有效期令牌的用户体验问题，同时保持了高度的安全性。
+
+在安全领域，**"足够好"从来都不够好**。只有持续关注安全最佳实践，不断加固你的防御体系，才能在日益复杂的网络环境中保护用户数据的安全。
