@@ -16,7 +16,7 @@ export default function Mermaid({ chart }: MermaidProps) {
 
 	useEffect(() => {
 		const isDark = resolvedTheme === 'dark'
-		
+
 		mermaid.initialize({
 			startOnLoad: true,
 			theme: isDark ? 'dark' : 'default',
@@ -24,7 +24,7 @@ export default function Mermaid({ chart }: MermaidProps) {
 			fontFamily: 'inherit',
 			themeVariables: {
 				fontFamily: 'inherit',
-			}
+			},
 		})
 
 		const renderChart = async () => {
@@ -51,7 +51,7 @@ export default function Mermaid({ chart }: MermaidProps) {
 
 	return (
 		<div
-			className="flex items-center justify-center my-10 overflow-x-auto w-full bg-white dark:bg-zinc-900/50 py-12 px-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm min-h-[200px]"
+			className="flex items-center justify-center my-10 overflow-x-auto w-full bg-white dark:bg-zinc-900/50 py-12 px-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm min-h-50"
 			dangerouslySetInnerHTML={{ __html: svg }}
 		/>
 	)
