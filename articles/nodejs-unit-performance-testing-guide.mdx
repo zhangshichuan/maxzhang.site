@@ -47,16 +47,15 @@ graph LR
 
 ```javascript
 // math.js
-function add(a, b) {
+export function add(a, b) {
 	return a + b
 }
-module.exports = { add }
 ```
 
 ```javascript
 // test/math.test.js
-const assert = require('assert')
-const { add } = require('../math')
+import assert from 'node:assert'
+import { add } from '../math.js'
 
 describe('add 函数测试', () => {
 	it('应返回两个数的和', () => {
@@ -122,10 +121,10 @@ All files     |   85.71 |       75 |     100 |   85.71 |
 Mocha 是灵活的测试框架，常与 Chai（断言库）和 Sinon（Mock）搭配。
 
 ```javascript
-// 安装：npm install mocha chai sinon --save-dev
-const { expect } = require('chai')
-const sinon = require('sinon')
-const { fetchData } = require('./api')
+import { expect } from 'chai'
+import sinon from 'sinon'
+import axios from 'axios'
+import { fetchData } from './api.js'
 
 describe('fetchData', () => {
 	it('应成功获取数据', async () => {
@@ -150,13 +149,15 @@ Jest 是 Facebook 推出的零配置测试框架，内置断言、Mock 和覆盖
 
 ```javascript
 // user.js
-function createUser(name) {
+export function createUser(name) {
 	return { id: Date.now(), name }
 }
-module.exports = { createUser }
 
 // user.test.js
-const { createUser } = require('./user')
+import { createUser } from './user.js'
+import { fetchData } from './api.js'
+
+jest.mock('./api.js')
 
 test('createUser 应返回包含 name 和 id 的对象', () => {
 	const user = createUser('Alice')
@@ -164,9 +165,6 @@ test('createUser 应返回包含 name 和 id 的对象', () => {
 	expect(user.name).toBe('Alice')
 })
 
-// 模拟模块
-jest.mock('./api')
-const { fetchData } = require('./api')
 fetchData.mockResolvedValue({ data: 'mock' })
 ```
 

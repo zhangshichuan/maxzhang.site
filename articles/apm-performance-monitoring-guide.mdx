@@ -110,8 +110,9 @@ ELK（Elasticsearch, Logstash, Kibana）栈是常见的解决方案，但真正�
 
 ```javascript
 // Node.js 中使用 OpenTelemetry
-const { NodeTracerProvider } = require('@opentelemetry/sdk-trace-node')
-const { ConsoleSpanExporter } = require('@opentelemetry/sdk-trace-base')
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
+import { ConsoleSpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
+import { trace } from '@opentelemetry/api'
 
 const provider = new NodeTracerProvider()
 provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()))

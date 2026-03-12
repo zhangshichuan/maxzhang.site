@@ -41,17 +41,21 @@ sequenceDiagram
 - SameSite Cookie
 - 验证 Referer
 
-**Node.js 示例**（使用 `csurf`）
+**Node.js 示例**（现代安全实践）
+
+在现代 Web 开发中，`csurf` 等传统中间件已不再推荐。建议通过以下组合拳实现防护：
+
+1.  **SameSite Cookie 属性**：将 Cookie 设置为 `SameSite=Lax` 或 `Strict`，从浏览器层面阻止跨站携带。
+2.  **双重 Cookie 校验 (Double Submit Cookie)**：前端读取签名 Cookie 并将其放入自定义 Header。
+3.  **框架内置防护**：如 Next.js 的 Server Actions 已内置 CSRF 校验。
 
 ```javascript
-const csrf = require('csurf')
-const csrfProtection = csrf({ cookie: true })
-app.get('/form', csrfProtection, (req, res) => {
-	res.render('form', { csrfToken: req.csrfToken() })
-})
-app.post('/process', csrfProtection, (req, res) => {
-	/* ... */
-})
+// 使用 Cookie 选项进行基础防御
+res.cookie('session', 'value', {
+  httpOnly: true,
+  secure: true, // 生产环境
+  sameSite: 'strict'
+});
 ```
 
 ---
@@ -92,7 +96,7 @@ sequenceDiagram
 - CSP 头
 
 ```javascript
-const xss = require('xss')
+import xss from 'xss'
 const clean = xss(userInput)
 ```
 
@@ -159,15 +163,15 @@ graph TD
 - 白名单域名。
 
 ```javascript
-const dns = require('dns').promises
-const isInternal = require('is-internal-ip') // 第三方库
+import dns from 'node:dns/promises'
+import { isInternal } from 'is-internal-ip'
 
 app.post('/fetch', async (req, res) => {
 	const { url } = req.body
 	const hostname = new URL(url).hostname
 	const ips = await dns.lookup(hostname, { all: true })
 	for (const ip of ips) {
-		if (isInternal(ip.address)) {
+		if (await isInternal(ip.address)) {
 			return res.status(400).send('内网地址禁止访问')
 		}
 	}
@@ -193,7 +197,7 @@ app.post('/fetch', async (req, res) => {
 使用 `hpp` 中间件清除同名参数。
 
 ```javascript
-const hpp = require('hpp')
+import hpp from 'hpp'
 app.use(hpp())
 ```
 
@@ -262,7 +266,7 @@ graph TD
 使用 `path.resolve` 并检查是否在预期目录内。
 
 ```javascript
-const path = require('path')
+import path from 'node:path'
 const base = '/var/data/'
 app.get('/download', (req, res) => {
 	const file = req.query.file
@@ -305,7 +309,7 @@ graph LR
 ```
 
 ```javascript
-const rateLimit = require('express-rate-limit')
+import rateLimit from 'express-rate-limit'
 
 // 创建限流器：每分钟最多100次请求
 const limiter = rateLimit({

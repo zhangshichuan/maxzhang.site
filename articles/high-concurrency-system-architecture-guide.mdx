@@ -478,10 +478,12 @@ Node.js应用的健康检查端点示例：
 
 ```javascript
 // healthcheck.js
-const express = require('express')
+import express from 'express'
+import mongoose from 'mongoose'
+import { createClient } from 'redis'
+import checkDiskSpace from 'check-disk-space'
+
 const app = express()
-const mongoose = require('mongoose')
-const redis = require('redis')
 
 // 健康检查端点
 app.get('/health', async (req, res) => {
@@ -501,13 +503,13 @@ app.get('/health', async (req, res) => {
 		}
 
 		// 检查Redis连接
-		const redisClient = redis.createClient()
+		const redisClient = createClient()
+		await redisClient.connect()
 		await redisClient.ping()
 		healthcheck.checks.redis = 'up'
-		redisClient.quit()
+		await redisClient.quit()
 
 		// 检查磁盘空间
-		const { checkDiskSpace } = require('check-disk-space')
 		const diskSpace = await checkDiskSpace('/')
 		const freeSpaceGB = diskSpace.free / 1024 / 1024 / 1024
 
@@ -580,12 +582,14 @@ Node.js内置的`cluster`模块允许我们创建多个工作进程（worker）�
 
 ```javascript
 // cluster-app.js
-const cluster = require('cluster')
-const http = require('http')
-const numCPUs = require('os').cpus().length
-const process = require('process')
+import cluster from 'cluster'
+import http from 'http'
+import { cpus } from 'os'
+import process from 'process'
 
-if (cluster.isMaster) {
+const numCPUs = cpus().length
+
+if (cluster.isPrimary) {
 	console.log(`主进程 ${process.pid} 正在运行`)
 	console.log(`CPU核心数: ${numCPUs}`)
 
@@ -1040,50 +1044,26 @@ location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
 
 ```javascript
 // redis-cache.js
-const redis = require('redis')
-const { promisify } = require('util')
+import { createClient } from 'redis'
 
 class RedisCache {
 	constructor(options = {}) {
-		this.client = redis.createClient({
-			host: options.host || 'localhost',
-			port: options.port || 6379,
+		this.client = createClient({
+			url: `redis://${options.host || 'localhost'}:${options.port || 6379}`,
 			password: options.password,
-			db: options.db || 0,
-			retry_strategy: (options) => {
-				if (options.error && options.error.code === 'ECONNREFUSED') {
-					return new Error('Redis连接被拒绝')
-				}
-				if (options.total_retry_time > 1000 * 60 * 60) {
-					return new Error('重试超时')
-				}
-				if (options.attempt > 10) {
-					return new Error('重试次数过多')
-				}
-				return Math.min(options.attempt * 100, 3000)
-			},
+			database: options.db || 0,
 		})
 
-		// Promise化Redis命令
-		this.getAsync = promisify(this.client.get).bind(this.client)
-		this.setAsync = promisify(this.client.set).bind(this.client)
-		this.delAsync = promisify(this.client.del).bind(this.client)
-		this.expireAsync = promisify(this.client.expire).bind(this.client)
-		this.ttlAsync = promisify(this.client.ttl).bind(this.client)
+		this.client.on('error', (err) => console.error('Redis错误:', err))
+		this.client.on('connect', () => console.log('Redis连接成功'))
+
+		this.client.connect().catch(console.error)
 
 		// 默认过期时间（秒）
 		this.defaultTTL = options.defaultTTL || 3600
 
 		// 缓存前缀
 		this.prefix = options.prefix || 'cache:'
-
-		this.client.on('error', (err) => {
-			console.error('Redis错误:', err)
-		})
-
-		this.client.on('connect', () => {
-			console.log('Redis连接成功')
-		})
 	}
 
 	// 生成带前缀的key
@@ -1095,7 +1075,7 @@ class RedisCache {
 	async get(key) {
 		try {
 			const cacheKey = this._getKey(key)
-			const data = await this.getAsync(cacheKey)
+			const data = await this.client.get(cacheKey)
 
 			if (data) {
 				console.log(`缓存命中: ${key}`)
@@ -1117,9 +1097,9 @@ class RedisCache {
 			const data = JSON.stringify(value)
 
 			if (ttl > 0) {
-				await this.setAsync(cacheKey, data, 'EX', ttl)
+				await this.client.set(cacheKey, data, { EX: ttl })
 			} else {
-				await this.setAsync(cacheKey, data)
+				await this.client.set(cacheKey, data)
 			}
 
 			console.log(`缓存设置: ${key}, TTL: ${ttl}s`)
@@ -1134,7 +1114,7 @@ class RedisCache {
 	async del(key) {
 		try {
 			const cacheKey = this._getKey(key)
-			await this.delAsync(cacheKey)
+			await this.client.del(cacheKey)
 			console.log(`缓存删除: ${key}`)
 			return true
 		} catch (err) {
@@ -1172,19 +1152,19 @@ class RedisCache {
 
 	// 获取分布式锁
 	async acquireLock(lockKey, ttl) {
-		const result = await this.setAsync(lockKey, 'locked', 'NX', 'EX', ttl)
+		const result = await this.client.set(lockKey, 'locked', { NX: true, EX: ttl })
 		return result === 'OK'
 	}
 
 	// 释放锁
 	async releaseLock(lockKey) {
-		await this.delAsync(lockKey)
+		await this.client.del(lockKey)
 	}
 
 	// 缓存标签（用于批量失效）
 	async tag(tag, keys) {
 		const tagKey = `tag:${tag}`
-		await this.setAsync(tagKey, JSON.stringify(keys))
+		await this.client.set(tagKey, JSON.stringify(keys))
 
 		// 设置tag永不过期，但可以手动删除
 		return true
@@ -1192,7 +1172,7 @@ class RedisCache {
 
 	async getByTag(tag) {
 		const tagKey = `tag:${tag}`
-		const data = await this.getAsync(tagKey)
+		const data = await this.client.get(tagKey)
 
 		if (!data) return []
 
@@ -1211,14 +1191,14 @@ class RedisCache {
 
 	async flushTag(tag) {
 		const tagKey = `tag:${tag}`
-		const data = await this.getAsync(tagKey)
+		const data = await this.client.get(tagKey)
 
 		if (data) {
 			const keys = JSON.parse(data)
 			for (const key of keys) {
-				await this.del(key)
+				await this.client.del(key)
 			}
-			await this.del(tagKey)
+			await this.client.del(tagKey)
 		}
 
 		return true
@@ -1361,7 +1341,7 @@ async function getWithBackgroundRefresh(key, ttl, fetchFunction) {
 	let value = await cache.get(key)
 
 	// 检查是否需要刷新
-	const ttlRemaining = await cache.ttlAsync(key)
+	const ttlRemaining = await cache.client.ttl(cache._getKey(key))
 
 	// 如果剩余时间小于1/3，异步刷新
 	if (ttlRemaining < ttl / 3) {
@@ -1555,8 +1535,7 @@ class ShardingManager {
 ### 5.3 数据库连接池优化
 
 ```javascript
-// Node.js MySQL连接池配置
-const mysql = require('mysql2')
+import mysql from 'mysql2/promise'
 
 const pool = mysql.createPool({
 	host: 'localhost',
@@ -1573,13 +1552,11 @@ const pool = mysql.createPool({
 	maxUpsertBatchSize: 1000, // 批量操作大小
 })
 
-// 使用Promise
-const promisePool = pool.promise()
-
+// 使用连接池执行查询
 async function queryWithRetry(sql, params, retries = 3) {
 	for (let i = 0; i < retries; i++) {
 		try {
-			const [rows] = await promisePool.query(sql, params)
+			const [rows] = await pool.query(sql, params)
 			return rows
 		} catch (err) {
 			console.error(`查询失败，重试 ${i + 1}/${retries}:`, err)
@@ -1596,7 +1573,7 @@ async function queryWithRetry(sql, params, retries = 3) {
 
 // 使用事务
 async function transactionExample() {
-	const connection = await promisePool.getConnection()
+	const connection = await pool.getConnection()
 
 	try {
 		await connection.beginTransaction()

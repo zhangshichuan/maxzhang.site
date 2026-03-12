@@ -67,7 +67,7 @@ fs.appendFile('app.log', 'log message\n', (err) => {
 更好的方式是使用 `fs.createWriteStream` 创建一个可写流，保持文件打开状态，利用缓冲区批量写入：
 
 ```javascript
-const fs = require('fs')
+import fs from 'fs'
 const logStream = fs.createWriteStream('app.log', { flags: 'a' }) // 'a' 表示追加模式
 
 // 写入日志
@@ -351,7 +351,7 @@ docker-compose up -d
 在 Node.js 中，我们可以使用 `winston` 或 `bunyan` 将日志输出为 JSON 格式，并写入文件。Filebeat 会读取该文件并将日志传输到 Logstash。
 
 ```javascript
-const winston = require('winston')
+import winston from 'winston'
 const logger = winston.createLogger({
 	level: 'info',
 	format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
@@ -407,7 +407,7 @@ pnpm add @sentry/node
 在应用入口初始化：
 
 ```javascript
-const Sentry = require('@sentry/node')
+import * as Sentry from '@sentry/node'
 Sentry.init({
 	dsn: 'https://your-dsn@sentry.io/project-id',
 	environment: process.env.NODE_ENV,
