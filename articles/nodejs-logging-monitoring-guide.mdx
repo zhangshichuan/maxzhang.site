@@ -56,7 +56,7 @@ node app.js &> all.log
 直接将日志写入文件时，新手容易犯的一个错误是使用 `fs.appendFile` 频繁写入：
 
 ```javascript
-const fs = require('fs')
+import fs from 'node:fs'
 fs.appendFile('app.log', 'log message\n', (err) => {
 	if (err) console.error('写入失败')
 })
@@ -257,14 +257,14 @@ function createOrder(orderData) {
 - **chalk**：给文字添加颜色和样式。
 
   ```javascript
-  const chalk = require('chalk')
+  import chalk from 'chalk'
   console.log(chalk.green('Success:'), 'Data saved')
   ```
 
 - **progress**：显示进度条。
 
   ```javascript
-  const ProgressBar = require('progress')
+  import ProgressBar from 'progress'
   const bar = new ProgressBar(':bar :percent', { total: 100 })
   const timer = setInterval(() => {
   	bar.tick()
@@ -275,7 +275,7 @@ function createOrder(orderData) {
 - **inquirer**：交互式命令行提示。
 
   ```javascript
-  const inquirer = require('inquirer')
+  import inquirer from 'inquirer'
   inquirer
   	.prompt([{ type: 'input', name: 'username', message: 'Username:' }])
   	.then((answers) => console.log('Hello', answers.username))
@@ -284,8 +284,8 @@ function createOrder(orderData) {
 - **blessed-contrib**：在终端中绘制仪表盘和图表。
 
   ```javascript
-  const blessed = require('blessed')
-  const contrib = require('blessed-contrib')
+  import blessed from 'blessed'
+  import contrib from 'blessed-contrib'
   const screen = blessed.screen()
   const line = contrib.line({ label: 'Requests' })
   screen.append(line)
@@ -296,14 +296,14 @@ function createOrder(orderData) {
 - **commander.js**：构建复杂的命令行工具。
 
   ```javascript
-  const { Command } = require('commander')
+  import { Command } from 'commander'
   const program = new Command()
   program.version('1.0.0').option('-d, --debug', 'enable debug').parse()
   ```
 
 - **cfonts**：大号艺术字输出。
   ```javascript
-  const cfonts = require('cfonts')
+  import cfonts from 'cfonts'
   cfonts.say('Hello!', { font: 'block', colors: ['red'] })
   ```
 
@@ -348,16 +348,28 @@ docker-compose up -d
 
 ### 6.3 Node.js 应用集成
 
-在 Node.js 中，我们可以使用 `winston` 或 `bunyan` 将日志输出为 JSON 格式，并写入文件。Filebeat 会读取该文件并将日志传输到 Logstash。
+在现代 Node.js 应用中，我们通常选择 **Pino** 或 **Winston**。
+
+- **Pino**：2026 年的性能标杆，开销极低，原生支持结构化 JSON，是高并发场景的首选。
+- **Winston**：功能最丰富，生态最成熟，适合需要多传输通道（Transports）的复杂应用。
+
+```javascript
+// 使用 Pino 记录高性能日志
+import pino from 'pino'
+const logger = pino({
+  level: 'info',
+  base: { service: 'user-service' },
+  timestamp: pino.stdTimeFunctions.isoTime
+})
+
+logger.info({ userId: '1001' }, 'User logged in')
+```
+
+对于 Winston：
 
 ```javascript
 import winston from 'winston'
-const logger = winston.createLogger({
-	level: 'info',
-	format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
-	transports: [new winston.transports.File({ filename: '/var/log/myapp/app.log' })],
-})
-```
+...
 
 Logstash 配置示例（`logstash.conf`）：
 
@@ -425,7 +437,7 @@ try {
 对于 Express 应用，可以使用中间件自动捕获请求错误：
 
 ```javascript
-const express = require('express')
+import express from 'express'
 const app = express()
 
 Sentry.setupExpressErrorHandler(app)

@@ -183,11 +183,11 @@ server {
 
 ```javascript
 // Node.js API网关限流配置示例 (使用 express-rate-limit)
-const rateLimit = require('express-rate-limit');
-const RedisStore = require('rate-limit-redis');
-const { createClient } = require('redis');
+import rateLimit from 'express-rate-limit'
+import RedisStore from 'rate-limit-redis'
+import { createClient } from 'redis'
 
-const redisClient = createClient({ url: 'redis://localhost:6379' });
+const redisClient = createClient({ url: 'redis://localhost:6379' })
 
 const limiter = rateLimit({
     store: new RedisStore({
@@ -295,7 +295,7 @@ class WeightedRoundRobin {
 **IP哈希（IP Hash）** ：
 
 ```javascript
-const crypto = require('crypto');
+import crypto from 'node:crypto'
 
 function ipHash(ipAddress, serverList) {
     /**
@@ -333,7 +333,7 @@ IP 192.168.1.100 -> Server3  # 相同IP始终命中同一台服务器
 一致性哈希在分布式缓存场景中特别有用，当一台机器宕机时，只有少量请求受到影响，有效避免了缓存雪崩 。
 
 ```javascript
-const crypto = require('crypto');
+import crypto from 'node:crypto'
 
 class ConsistentHash {
     constructor(nodes = [], virtualNodes = 150) {
@@ -830,7 +830,7 @@ class GracefulShutdownManager {
 }
 
 // 使用示例
-const http = require('http')
+import http from 'node:http'
 const server = http.createServer((req, res) => {
 	// 模拟请求处理
 	setTimeout(() => {
@@ -876,7 +876,7 @@ server.listen(3000, () => {
 
 ```javascript
 // ecosystem.config.js
-module.exports = {
+export default {
 	apps: [
 		{
 			name: 'my-app',
@@ -944,7 +944,7 @@ PM2原生支持优雅退出，只需在应用中监听SIGINT信号 ：
 
 ```javascript
 // app.js
-const express = require('express')
+import express from 'express'
 const app = express()
 
 // 业务逻辑...
@@ -1839,8 +1839,8 @@ spec:
 
 ```javascript
 // feature-toggle.js
-const redis = require('redis')
-const client = redis.createClient()
+import { createClient } from 'redis'
+const client = createClient()
 
 class FeatureToggle {
 	constructor() {
@@ -1988,8 +1988,8 @@ graph TB
 
 ```javascript
 // metrics.js
-const promClient = require('prom-client')
-const responseTime = require('response-time')
+import promClient from 'prom-client'
+import responseTime from 'response-time'
 
 // 创建Registry
 const register = new promClient.Registry()
@@ -2190,8 +2190,8 @@ groups:
 
 ```javascript
 // logger.js
-const winston = require('winston')
-const { ElasticsearchTransport } = require('winston-elasticsearch')
+import winston from 'winston'
+import { ElasticsearchTransport } from 'winston-elasticsearch'
 
 const esTransport = new ElasticsearchTransport({
 	level: 'info',

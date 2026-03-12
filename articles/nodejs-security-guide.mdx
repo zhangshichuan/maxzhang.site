@@ -282,11 +282,17 @@ app.get('/download', (req, res) => {
 
 ### 9. 其他漏洞
 
-- **SQL 注入**：使用 ORM 或参数化查询。
-- **反序列化**：避免使用 `eval` 或 `node-serialize`，使用 JSON。
-- **RCE**：杜绝 `eval()`、`setTimeout` 字符串参数。
-- **安全配置**：使用 `helmet` 设置安全头。
-- **日志注入**：对用户输入进行转义后再记录。
+- **SQL 注入**：使用 Prisma/TypeORM 等现代 ORM，或严格使用参数化查询。
+- **密码哈希**：**Argon2** 是 2026 年的安全首选，提供了极强的内存抗性，其次是 **bcrypt**。
+- **反序列化**：严禁 `eval` 或 `node-serialize`，仅允许标准 `JSON.parse`。
+- **安全配置**：使用 `helmet` 设置安全响应头。
+- **日志注入**：在记录前转义用户输入的换行符等控制字符。
+
+```javascript
+// 使用 Argon2 快速哈希（示例）
+import { hash } from 'argon2'
+const hashed = await hash(password);
+```
 
 ---
 
