@@ -25,16 +25,75 @@ date: '2026-03-10'
 
 ## 二、Node.js 日志基础
 
-### 2.1 `console` 的真相
+### 2.1 console 的真相
 
-在 Node.js 中，`console.log` 实际上是输出到标准输出流（stdout），而 `console.error` 输出到标准错误流（stderr）。这两个流在底层实现上存在差异，尤其是在不同操作系统和终端环境下：
+在 Node.js 中，`console.log` 实际上是输出到标准输出流（stdout），而 `console.error` 输出到标准错误流（stderr）。
 
-- **TTY（终端）**：当输出到交互式终端时，`stdout` 和 `stderr` 通常是同步的，但 `stdout` 可能会被缓冲。
-- **管道/重定向**：当将输出重定向到文件或管道时，`stdout` 是同步的（Node.js 会等待数据写入完成），但性能较低；而 `stderr` 在管道中通常是同步的。
+#### 2.1.1 玩转 Console API：不仅是 log
 
-> **注意**：在 Windows 和 Linux 上，流的行为可能略有不同。因此，在生产环境中，直接使用 `console.log` 写入日志文件并不是最佳选择，因为它无法提供日志切割、级别过滤等高级功能。
+除了基础的打印，充分利用 `console` 的高级 API 能极大地提升调试效率：
 
-#### 重定向与管道
+- **ES6 变量简写**：利用对象属性简写，一次性打印变量名和值。
+  ```javascript
+  const user = 'Max';
+  const status = 'active';
+  console.log({ user, status }); // 输出: { user: 'Max', status: 'active' }
+  ```
+
+- **表格化显示 (`console.table`)**：将数组或对象以表格形式输出，查看复杂数据结构非常直观。
+  ```javascript
+  const users = [
+    { id: 1, name: 'Alice', role: 'Admin' },
+    { id: 2, name: 'Bob', role: 'User' }
+  ];
+  console.table(users);
+  ```
+
+- **堆栈追踪 (`console.trace`)**：打印当前的调用堆栈，帮助你理清函数的调用链路。
+  ```javascript
+  function deepTask() {
+    console.trace('执行到此处');
+  }
+  deepTask();
+  ```
+
+- **条件断言 (`console.assert`)**：仅在表达式为 `false` 时打印错误信息，非常适合在代码中插入简单的校验。
+  ```javascript
+  const count = 5;
+  console.assert(count > 10, 'Count 必须大于 10'); // 只有不符合时才打印
+  ```
+
+- **性能计时 (`console.time` / `console.timeEnd`)**：快速测量代码块的执行耗时。
+  ```javascript
+  console.time('fetch-data');
+  // ... 执行某些异步操作
+  console.timeEnd('fetch-data'); // 输出: fetch-data: 12.345ms
+  ```
+
+- **层级分组 (`console.group` / `console.groupEnd`)**：在控制台中创建可折叠（在支持的终端或浏览器中）的缩进分组。
+  ```javascript
+  console.group('用户注册流程');
+  console.info('验证表单...');
+  console.info('保存数据库...');
+  console.groupEnd();
+  ```
+
+- **对象深度解析 (`console.dir`)**：相比 `log`，`dir` 可以通过选项控制显示深度和颜色，适合打印复杂的嵌套对象。
+  ```javascript
+  console.dir(bigObject, { depth: null, colors: true });
+  ```
+
+- **样式美化 (`%c`)**：
+  > **注意**：`%c` 样式占位符在 **浏览器** 控制台中广泛支持 CSS 样式，但在 **原生 Node.js 终端** 中是不起作用的（它会直接输出 `%c` 字符串）。在 Node.js 中美化输出通常推荐使用 `chalk` 等库。
+
+- **分级输出**：
+  - `console.info()`：输出常规信息（通常与 `log` 行为一致）。
+  - `console.warn()`：输出警告信息。
+  - `console.error()`：输出错误信息。
+
+#### 2.1.2 stdout 与 stderr 的底层差异
+
+这两个流在底层实现上存在差异...
 
 在命令行中，我们可以使用重定向符号将日志输出到文件：
 
