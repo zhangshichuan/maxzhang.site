@@ -186,7 +186,7 @@ function processFile() {
 
 当流因为错误而终止时，必须确保销毁流并释放资源。可以监听 `error` 事件并调用 `stream.destroy()`。
 
-### 2.5 SSR 环境下的“单例陷阱”（Next.js 特供）
+### 2.5 SSR 环境下的“单例陷阱”
 
 在 Next.js 或 Nuxt.js 等 SSR 框架中，**单例模式是泄露的重灾区**。由于 Node.js 进程是长久运行的，而在服务端渲染期间，如果你在模块顶层定义了一个全局变量或单例（如 `const cache = new Map()`），这个变量将会在**所有用户请求之间共享**。
 
@@ -211,6 +211,7 @@ export async function getUserData(userId) {
 import { LRUCache } from 'lru-cache'
 
 const userCache = new LRUCache({ max: 500, ttl: 1000 * 60 * 10 }) // 最多500条，存活10分钟
+```
 ---
 
 ## 三、2026 现代防御策略
