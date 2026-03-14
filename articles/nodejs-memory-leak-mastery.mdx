@@ -207,11 +207,12 @@ export async function getUserData(userId) {
 
 **防御建议**：在 SSR 环境中，严禁在全局作用域存储请求相关的数据。如果必须使用缓存，请务必设置 **TTL（过期时间）** 或使用 **LRU（最近最少使用）** 策略限制容量，例如使用 `lru-cache` 包。
 
-````javascript
+```javascript
 import { LRUCache } from 'lru-cache'
 
 const userCache = new LRUCache({ max: 500, ttl: 1000 * 60 * 10 }) // 最多500条，存活10分钟
 ```
+
 ---
 
 ## 三、2026 现代防御策略
@@ -253,11 +254,7 @@ const stream = Readable.from([1, 2, 3], { signal })
 
 // 一键清理所有绑定了该信号的监听器、定时器、流或 Fetch 请求
 controller.abort()
-````
-
-controller.abort()
-
-````
+```
 
 当 `controller.abort()` 被调用时，所有注册了该 `signal` 的异步资源都会自动清理，大大降低了资源泄露风险。
 
@@ -283,7 +280,7 @@ let s = createSession('Alice')
 s = null // 解除引用，期待 GC 回收
 
 // 如果你在代码运行很久后依然没看到回调，说明该 session 可能产生了泄露
-````
+```
 
 注意：回调可能在对象被回收后的任意时间触发，且不保证一定触发（例如在进程退出前）。它主要用于调试和监控，不应依赖它来执行关键逻辑。
 
