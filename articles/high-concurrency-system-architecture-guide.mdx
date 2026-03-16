@@ -1375,84 +1375,101 @@ async function refreshCache(key, ttl, fetchFunction) {
 
 ```mermaid
 graph TD
-    A[应用层] --> B[数据库中间件<br/>ProxySQL/MyCat]
+    A[应用层] --> B[数据库中间件<br/>pgpool-II/PgBouncer]
     B --> C[主库<br/>处理写请求]
     B --> D[从库1<br/>处理读请求]
     B --> E[从库2<br/>处理读请求]
     B --> F[从库3<br/>处理读请求]
 
-    C --> G[二进制日志]
-    G --> H[从库1 IO线程]
-    G --> I[从库2 IO线程]
-    G --> J[从库3 IO线程]
+    C --> G[WAL日志流]
+    G --> H[从库1 WAL接收器]
+    G --> I[从库2 WAL接收器]
+    G --> J[从库3 WAL接收器]
 ```
 
-#### MySQL主从复制配置
+#### PostgreSQL流复制配置
 
 ```sql
--- 主库配置 my.cnf
-[mysqld]
-server-id = 1
-log-bin = mysql-bin
-binlog-format = ROW
-binlog-do-db = myapp
-expire_logs_days = 7
-max_binlog_size = 100M
+-- 主库配置 postgresql.conf
+wal_level = replica
+max_wal_senders = 10
+wal_keep_size = 1GB
+max_replication_slots = 10
+hot_standby = on
 
 -- 创建复制用户
-CREATE USER 'repl'@'%' IDENTIFIED BY 'password';
-GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%';
-FLUSH PRIVILEGES;
+CREATE USER replicator WITH REPLICATION ENCRYPTED PASSWORD 'password';
+GRANT CONNECT ON DATABASE myapp TO replicator;
+
+-- 配置pg_hba.conf允许复制连接
+# host replication replicator 0.0.0.0/0 md5
+
+-- 重启PostgreSQL使配置生效
+SELECT pg_reload_conf();
 
 -- 查看主库状态
-SHOW MASTER STATUS;
+SELECT * FROM pg_stat_replication;
 ```
 
 ```sql
 -- 从库配置
-[mysqld]
-server-id = 2
-relay-log = mysql-relay-bin
-read-only = 1
+-- 1. 停止PostgreSQL服务
+pg_ctl stop
 
--- 配置复制
-CHANGE MASTER TO
-    MASTER_HOST='master_host',
-    MASTER_USER='repl',
-    MASTER_PASSWORD='password',
-    MASTER_LOG_FILE='mysql-bin.000001',
-    MASTER_LOG_POS=12345;
+-- 2. 从主库复制数据
+pg_basebackup -h master_host -D /var/lib/postgresql/data -U replicator -P -v -R
 
-START SLAVE;
+-- 3. 配置postgresql.conf
+hot_standby = on
+
+-- 4. 启动从库
+pg_ctl start
 
 -- 查看从库状态
-SHOW SLAVE STATUS\G
+SELECT * FROM pg_stat_wal_receiver;
 ```
 
-#### ProxySQL读写分离配置
+#### pgpool-II读写分离配置
 
 ```ini
-# ProxySQL配置
-mysql_servers:
-(
-    { address="10.0.0.1", port=3306, hostgroup=0, weight=100 },  # 主库组
-    { address="10.0.0.2", port=3306, hostgroup=1, weight=100 },  # 从库组
-    { address="10.0.0.3", port=3306, hostgroup=1, weight=100 },
-    { address="10.0.0.4", port=3306, hostgroup=1, weight=100 }
-)
+# pgpool.conf配置
+backend_hostname0 = '10.0.0.1'
+backend_port0 = 5432
+backend_weight0 = 1
+backend_data_directory0 = '/var/lib/postgresql/data'
+backend_flag0 = 'ALLOW_TO_FAILOVER'
 
-mysql_query_rules:
-(
-    # 写请求路由到主库
-    { rule_id=1, active=1, match_pattern="^SELECT.*FOR UPDATE", destination_hostgroup=0 },
-    { rule_id=2, active=1, match_pattern="^(INSERT|UPDATE|DELETE)", destination_hostgroup=0 },
+backend_hostname1 = '10.0.0.2'
+backend_port1 = 5432
+backend_weight1 = 1
+backend_data_directory1 = '/var/lib/postgresql/data'
+backend_flag1 = 'ALLOW_TO_FAILOVER'
 
-    # 读请求路由到从库
-    { rule_id=3, active=1, match_pattern="^SELECT", destination_hostgroup=1 },
+backend_hostname2 = '10.0.0.3'
+backend_port2 = 5432
+backend_weight2 = 1
+backend_data_directory2 = '/var/lib/postgresql/data'
+backend_flag2 = 'ALLOW_TO_FAILOVER'
 
-    # 默认路由到主库
-    { rule_id=4, active=1, match_pattern=".*", destination_hostgroup=0 }
-)
+# 负载均衡模式
+load_balance_mode = on
+master_slave_mode = on
+master_slave_sub_mode = 'stream'
+
+# 健康检查
+health_check_period = 10
+health_check_timeout = 20
+health_check_user = 'health_check'
+health_check_password = 'password'
+health_check_database = 'postgres'
+
+# 故障转移
+failover_command = '/etc/pgpool-II/failover.sh %d %h %p %D %m %H %M %P %r %R'
+failover_on_backend_error = on
+
+# 读写分离
+# 写操作路由到主节点（backend 0）
+# 读操作根据负载均衡分配到所有节点
 ```
 
 ### 5.2 分库分表策略
@@ -1462,31 +1479,44 @@ mysql_query_rules:
 #### 水平分表示例（用户表）
 
 ```sql
--- 创建分表（按用户ID取模）
-CREATE TABLE user_0 LIKE user_template;
-CREATE TABLE user_1 LIKE user_template;
-CREATE TABLE user_2 LIKE user_template;
-CREATE TABLE user_3 LIKE user_template;
+-- 创建主表和子表（按用户ID取模）
+-- 创建主表（不存储数据，只用于定义结构）
+CREATE TABLE users (
+    id BIGINT PRIMARY KEY,
+    username VARCHAR(50),
+    email VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) PARTITION BY HASH (id);
 
--- 插入数据时路由
-DELIMITER $$
-CREATE PROCEDURE insert_user(
-    IN p_user_id BIGINT,
-    IN p_username VARCHAR(50),
-    IN p_email VARCHAR(100)
-)
-BEGIN
-    DECLARE table_index INT;
-    SET table_index = p_user_id % 4;
+-- 创建分区子表
+CREATE TABLE users_0 PARTITION OF users FOR VALUES WITH (MODULUS 4, REMAINDER 0);
+CREATE TABLE users_1 PARTITION OF users FOR VALUES WITH (MODULUS 4, REMAINDER 1);
+CREATE TABLE users_2 PARTITION OF users FOR VALUES WITH (MODULUS 4, REMAINDER 2);
+CREATE TABLE users_3 PARTITION OF users FOR VALUES WITH (MODULUS 4, REMAINDER 3);
 
-    CASE table_index
-        WHEN 0 THEN INSERT INTO user_0 VALUES (p_user_id, p_username, p_email);
-        WHEN 1 THEN INSERT INTO user_1 VALUES (p_user_id, p_username, p_email);
-        WHEN 2 THEN INSERT INTO user_2 VALUES (p_user_id, p_username, p_email);
-        WHEN 3 THEN INSERT INTO user_3 VALUES (p_user_id, p_username, p_email);
-    END CASE;
-END$$
-DELIMITER ;
+-- 创建索引（自动在所有分区上创建）
+CREATE INDEX idx_users_username ON users (username);
+CREATE INDEX idx_users_email ON users (email);
+
+-- 插入数据（PostgreSQL自动路由到正确的分区）
+INSERT INTO users (id, username, email) VALUES (1001, 'user1', 'user1@example.com');
+INSERT INTO users (id, username, email) VALUES (1002, 'user2', 'user2@example.com');
+INSERT INTO users (id, username, email) VALUES (1003, 'user3', 'user3@example.com');
+INSERT INTO users (id, username, email) VALUES (1004, 'user4', 'user4@example.com');
+
+-- 查询数据（自动查询所有相关分区）
+SELECT * FROM users WHERE id = 1001;
+SELECT * FROM users WHERE username = 'user2';
+
+-- 查看分区信息
+SELECT
+    schemaname,
+    tablename,
+    partitiontablename,
+    partitiontype,
+    partitionboundary
+FROM pg_partitions
+WHERE tablename = 'users';
 ```
 
 #### Node.js 数据库水平分片逻辑
@@ -1494,10 +1524,10 @@ DELIMITER ;
 对于 Node.js 应用，我们可以通过逻辑层来实现数据库的分片路由：
 
 ```javascript
-// Node.js 数据库水平分片路由示例
+// Node.js PostgreSQL数据库水平分片路由示例
 class ShardingManager {
     constructor(dbClusters) {
-        // dbClusters: 数据库连接池数组 [db0, db1, ...]
+        // dbClusters: PostgreSQL数据库连接池数组 [db0, db1, ...]
         this.dbClusters = dbClusters;
     }
 
@@ -1507,27 +1537,40 @@ class ShardingManager {
         return this.dbClusters[dbIndex];
     }
 
-    // 根据订单ID获取对应的表名（表级分片）
+    // 根据订单ID获取对应的表名（表级分片）- 对于PostgreSQL分区表
     getTableName(orderId) {
         const tableIndex = Number(BigInt(orderId) % BigInt(16));
-        return `t_order_${tableIndex}`;
+        return `orders_${tableIndex}`;
     }
 
     /**
      * 执行分片查询
      * @param {string} userId 用户ID
      * @param {string} orderId 订单ID
-     * @param {string} sql 原始SQL（使用逻辑表名 t_order）
+     * @param {string} sql 原始SQL（使用逻辑表名 orders）
      */
     async executeQuery(userId, orderId, sql, params) {
         const db = this.getDatabaseNode(userId);
+
+        // 对于PostgreSQL分区表，可以直接使用主表名，PostgreSQL会自动路由
+        // 但如果需要手动路由到特定分区，可以使用以下逻辑
         const tableName = this.getTableName(orderId);
 
-        // 将逻辑表名替换为实际表名
-        const finalSql = sql.replace('t_order', tableName);
+        // 将逻辑表名替换为实际分区表名
+        const finalSql = sql.replace('orders', tableName);
 
-        console.log(`路由至数据库节点: ${userId % this.dbClusters.length}, 表名: ${tableName}`);
+        console.log(`路由至PostgreSQL节点: ${userId % this.dbClusters.length}, 表名: ${tableName}`);
         return await db.query(finalSql, params);
+    }
+
+    /**
+     * 使用PostgreSQL原生分区表（推荐）
+     * 直接查询主表，PostgreSQL自动路由到正确的分区
+     */
+    async executePartitionedQuery(userId, sql, params) {
+        const db = this.getDatabaseNode(userId);
+        console.log(`路由至PostgreSQL节点: ${userId % this.dbClusters.length}, 使用分区表`);
+        return await db.query(sql, params);
     }
 }
 ```
@@ -1535,31 +1578,62 @@ class ShardingManager {
 ### 5.3 数据库连接池优化
 
 ```javascript
-import mysql from 'mysql2/promise'
+import pg from 'pg'
+const { Pool } = pg
 
-const pool = mysql.createPool({
+const pool = new Pool({
 	host: 'localhost',
-	user: 'root',
+	port: 5432,
+	user: 'postgres',
 	password: 'password',
 	database: 'myapp',
-	waitForConnections: true, // 无连接时等待
-	connectionLimit: 50, // 最大连接数
-	queueLimit: 0, // 队列无限
-	enableKeepAlive: true, // 保持连接
-	keepAliveInitialDelay: 10000, // 保持连接延迟
-	idleTimeout: 60000, // 空闲超时
-	maxIdle: 10, // 最大空闲连接
-	maxUpsertBatchSize: 1000, // 批量操作大小
+	max: 50, // 最大连接数
+	min: 5, // 最小连接数
+	idleTimeoutMillis: 60000, // 空闲连接超时（毫秒）
+	connectionTimeoutMillis: 10000, // 连接超时
+	allowExitOnIdle: false, // 空闲时不允许退出
+	ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+
+	// PostgreSQL特定配置
+	application_name: 'myapp-api',
+	statement_timeout: 30000, // 语句超时（毫秒）
+	query_timeout: 60000, // 查询超时
+	keepAlive: true, // 保持连接
+	keepAliveInitialDelayMillis: 10000, // 保持连接延迟
+})
+
+// 连接池事件监听
+pool.on('connect', (client) => {
+	console.log('PostgreSQL连接建立')
+})
+
+pool.on('acquire', (client) => {
+	console.log('客户端从连接池获取')
+})
+
+pool.on('remove', (client) => {
+	console.log('客户端从连接池移除')
+})
+
+pool.on('error', (err, client) => {
+	console.error('PostgreSQL连接池错误:', err)
 })
 
 // 使用连接池执行查询
 async function queryWithRetry(sql, params, retries = 3) {
 	for (let i = 0; i < retries; i++) {
 		try {
-			const [rows] = await pool.query(sql, params)
-			return rows
+			const result = await pool.query(sql, params)
+			return result.rows
 		} catch (err) {
-			console.error(`查询失败，重试 ${i + 1}/${retries}:`, err)
+			console.error(`查询失败，重试 ${i + 1}/${retries}:`, err.message)
+
+			// 如果是连接错误，尝试重新连接
+			if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
+				console.log('连接失败，等待后重试...')
+				await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)))
+				continue
+			}
 
 			if (i === retries - 1) {
 				throw err
@@ -1571,25 +1645,65 @@ async function queryWithRetry(sql, params, retries = 3) {
 	}
 }
 
-// 使用事务
+// 使用事务（PostgreSQL方式）
 async function transactionExample() {
-	const connection = await pool.getConnection()
+	const client = await pool.connect()
 
 	try {
-		await connection.beginTransaction()
+		await client.query('BEGIN')
 
 		// 执行多个操作
-		await connection.execute('UPDATE accounts SET balance = balance - ? WHERE id = ?', [100, 1])
+		await client.query('UPDATE accounts SET balance = balance - $1 WHERE id = $2', [100, 1])
+		await client.query('UPDATE accounts SET balance = balance + $1 WHERE id = $2', [100, 2])
 
-		await connection.execute('UPDATE accounts SET balance = balance + ? WHERE id = ?', [100, 2])
+		// 检查约束
+		const checkResult = await client.query('SELECT balance FROM accounts WHERE balance < 0')
+		if (checkResult.rows.length > 0) {
+			throw new Error('余额不足，事务回滚')
+		}
 
-		await connection.commit()
+		await client.query('COMMIT')
 		console.log('事务提交成功')
 	} catch (err) {
-		await connection.rollback()
-		console.error('事务回滚:', err)
+		await client.query('ROLLBACK')
+		console.error('事务回滚:', err.message)
+		throw err
 	} finally {
-		connection.release() // 释放连接回池
+		client.release() // 释放连接回池
+	}
+}
+
+// 批量插入优化
+async function batchInsert(tableName, rows) {
+	if (!rows || rows.length === 0) return
+
+	const columns = Object.keys(rows[0])
+	const placeholders = rows.map((_, rowIndex) =>
+		`(${columns.map((_, colIndex) => `$${rowIndex * columns.length + colIndex + 1}`).join(', ')})`
+	).join(', ')
+
+	const values = rows.flatMap(row => columns.map(col => row[col]))
+	const sql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES ${placeholders} ON CONFLICT DO NOTHING`
+
+	try {
+		const result = await pool.query(sql, values)
+		console.log(`批量插入 ${result.rowCount} 行数据`)
+		return result
+	} catch (err) {
+		console.error('批量插入失败:', err.message)
+		throw err
+	}
+}
+
+// 连接池健康检查
+async function checkPoolHealth() {
+	try {
+		const result = await pool.query('SELECT 1 as health, version() as pg_version, current_timestamp as timestamp')
+		console.log('PostgreSQL连接池健康检查通过:', result.rows[0])
+		return true
+	} catch (err) {
+		console.error('PostgreSQL连接池健康检查失败:', err.message)
+		return false
 	}
 }
 ```
@@ -1945,43 +2059,53 @@ app.get('/api/new-payment', async (req, res) => {
 ### 7.1 监控分层架构
 
 ```mermaid
-graph TB
-    subgraph "数据采集层"
+flowchart TD
+    subgraph S1 ["数据采集层"]
+        direction TB
         A1[Node Exporter<br/>主机监控]
-        A2[MySQL Exporter<br/>数据库监控]
+        A2[PostgreSQL Exporter<br/>数据库监控]
         A3[Redis Exporter<br/>缓存监控]
         A4[Custom Metrics<br/>业务监控]
     end
 
-    subgraph "聚合存储层"
+    subgraph S2 ["聚合存储层"]
+        direction TB
         B1[Prometheus<br/>时序数据库]
         B2[AlertManager<br/>告警管理]
     end
 
-    subgraph "可视化层"
+    subgraph S3 ["可视化层"]
+        direction TB
         C1[Grafana<br/>仪表盘]
         C2[Kibana<br/>日志分析]
     end
 
-    subgraph "告警通知层"
+    subgraph S4 ["告警通知层"]
+        direction TB
         D1[钉钉/微信]
         D2[邮件/SMS]
         D3[PagerDuty]
     end
 
-    A1 & A2 & A3 & A4 --> B1
-    B1 --> C1
-    B1 --> B2
-    B2 --> D1 & D2 & D3
-
-    subgraph "日志体系"
+    subgraph S5 ["日志体系"]
+        direction TB
         E1[Filebeat<br/>日志采集]
         E2[Logstash<br/>日志处理]
         E3[Elasticsearch<br/>日志存储]
         E4[Kibana<br/>日志查询]
     end
 
+    %% 数据流向
+    A1 & A2 & A3 & A4 --> B1
+    B1 --> C1
+    B1 --> B2
+    B2 --> D1 & D2 & D3
+
+    %% 日志体系流向
     E1 --> E2 --> E3 --> E4
+
+    %% 使用隐形连接线强制子图垂直排列
+    S1 ~~~ S2 ~~~ S3 ~~~ S4 ~~~ S5
 ```
 
 ### 7.2 Node.js应用监控
@@ -2124,9 +2248,9 @@ scrape_configs:
     static_configs:
       - targets: ['node1:9100', 'node2:9100', 'node3:9100']
 
-  - job_name: 'mysql'
+  - job_name: 'postgresql'
     static_configs:
-      - targets: ['mysql-exporter:9104']
+      - targets: ['postgres-exporter:9187']
 
   - job_name: 'redis'
     static_configs:
@@ -2370,9 +2494,10 @@ app.post('/api/orders', async (req, res) => {
   - Caffeine（本地缓存）
 
 数据库:
-  - MySQL/PostgreSQL
-  - MongoDB
-  - TiDB
+  - PostgreSQL
+  - TimescaleDB (时序数据)
+  - CockroachDB (分布式)
+  - MongoDB (文档数据库)
 
 消息队列:
   - Kafka
