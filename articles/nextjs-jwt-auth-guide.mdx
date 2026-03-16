@@ -1,44 +1,117 @@
 ---
-title: 'JWT + bcrypt 的现代安全架构'
-summary: '在 Next.js 的 Server Actions 新范式下，如何构建一套既安全又优雅的认证系统？本文将深度拆解 JWT 与 bcrypt 的组合拳，并揭示面向对象设计在服务端逻辑中的核心价值。'
+title: 'JWT + Argon2 的现代安全架构'
+summary: '在 Next.js 的 Server Actions 新范式下，如何构建一套既安全又优雅的认证系统？本文将深度拆解 JWT 与 Argon2 的组合拳，并揭示面向对象设计在服务端逻辑中的核心价值。'
 category: 'Full Stack'
-tags: ['Next.js', 'Authentication', 'JWT', 'bcrypt']
+tags: ['Next.js', 'Authentication', 'JWT', 'Argon2']
 author: 'Max Zhang'
 date: '2026-02-27'
 ---
 
 认证（Authentication）是 Web 应用中最基础、也最容易出错的功能模块。在进入 **Next.js 15/16+** 的今天，我们需要应对三个关键挑战：
 
-1. **密码安全**：采用 Argon2 或 bcrypt 存储哈希。
+1. **密码安全**：采用 Argon2 存储哈希。
 2. **会话管理**：利用基于 Edge Runtime 的工具链（如 `jose`）管理无状态 Token。
 3. **架构清晰**：在 Server Actions 与 Middleware 之间保持认证逻辑的单一职责。
 
-### 1. 密码安全：告别 SHA256，拥抱 bcrypt
+### 1. 密码安全：告别 SHA256，拥抱 Argon2
 
-在密码存储领域，`sha256(password + salt)` 的方案已经过时。现代密码学推荐使用**自适应哈希算法**，如 bcrypt 或 Argon2。
+在密码存储领域，`sha256(password + salt)` 的方案已经过时。现代密码学推荐使用**自适应哈希算法**，如 Argon2。
 
 ```typescript
-import { hash, compare } from 'bcrypt'
+import { hash, verify, argon2id } from 'argon2'
 
 class AuthService {
 	/**
-	 * 用 bcrypt 生成 hash, 传统 sha256 + 数据表持久化 salt 已经过时。
+	 * 用 Argon2 生成 hash, 传统 sha256 + 数据表持久化 salt 已经过时。
 	 */
 	async hashPassword(password: string): Promise<string> {
-		const hashWithSalt = await hash(password, 12) // 12 是成本因子，越高越安全但越慢
-		return hashWithSalt
+		return await hash(password, {
+			type: argon2id,        // 混合模式，平衡安全性和性能
+			memoryCost: 65536,     // 64MB 内存使用
+			timeCost: 3,           // 迭代次数
+			parallelism: 4,        // 并行度
+			hashLength: 32,        // 输出哈希长度
+		})
 	}
 
 	/**
 	 * 验证密码
 	 */
 	async verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
-		return compare(password, hashedPassword)
+		return verify(hashedPassword, password)
 	}
 }
 ```
 
-> **安全思考：** bcrypt 的 `cost factor`（成本因子）是关键参数。值越高，哈希计算越慢，暴力破解的成本就越高。通常 10-12 是生产环境的推荐值。这种“故意变慢”的特性，正是 bcrypt 对抗彩虹表攻击的核心武器。
+> **安全思考：** Argon2 提供了三个维度的可调参数：`memoryCost`（内存成本）、`timeCost`（时间成本）和 `parallelism`（并行度）。这种多维度调优能力使得 Argon2 能够更好地抵抗 GPU/ASIC 攻击。`argon2id` 混合模式在抵抗侧信道攻击和 GPU 攻击之间取得了最佳平衡。
+
+### 密码哈希算法的演进：从 md5+盐到 bcrypt 再到 Argon2
+
+密码存储技术的演进反映了安全需求与计算能力之间的持续博弈：
+
+#### 1. **md5 + 数据表盐（已淘汰）**
+```sql
+-- 传统做法：每个用户一个随机盐值
+CREATE TABLE users (
+  id INT PRIMARY KEY,
+  username VARCHAR(50),
+  password_hash VARCHAR(32),  -- md5 输出固定32字符
+  salt VARCHAR(16)            -- 单独存储的盐值
+);
+
+-- 验证时：md5(password + salt)
+```
+**问题**：
+- md5 速度太快，GPU 可每秒计算数十亿次哈希
+- 彩虹表攻击：预计算哈希值反向查找密码
+- 盐值泄露风险：需要安全存储盐值
+
+#### 2. **bcrypt（2010年代主流）**
+```typescript
+// bcrypt 将盐值直接嵌入哈希输出中
+const hash = await bcrypt.hash(password, 12); // 成本因子12
+// 输出格式：$2b$12$盐值(22字符)哈希(31字符)
+```
+**改进**：
+- **自适应成本**：通过 `cost factor` 控制计算时间（故意变慢）
+- **内置盐值**：盐值直接嵌入哈希，无需单独存储
+- **抵抗 GPU**：大量内存访问模式不适合 GPU 并行计算
+
+**局限**：
+- 主要依赖时间成本，对专用硬件（ASIC）防护有限
+- 内存使用相对固定，无法灵活调整
+
+#### 3. **Argon2（现代标准，2015年密码哈希竞赛冠军）**
+```typescript
+import { hash, argon2id } from 'argon2'
+
+// Argon2 提供三个维度的安全调优
+const passwordHash = await hash(password, {
+  type: argon2id,        // 混合模式：70%内存+30%计算
+  memoryCost: 65536,     // 64MB 内存成本
+  timeCost: 3,           // 3次迭代
+  parallelism: 4,        // 4个并行线程
+});
+```
+**优势**：
+- **内存硬函数**：大量内存访问显著增加硬件攻击成本
+- **多维度调优**：时间、内存、并行度三个安全参数
+- **算法变体**：
+  - `argon2d`：最大程度抵抗 GPU，但可能受侧信道攻击
+  - `argon2i`：抵抗侧信道攻击，但对 GPU 防护较弱
+  - `argon2id`（推荐）：前两者的混合，最佳平衡
+
+#### 演进总结
+| 特性 | md5+盐 | bcrypt | Argon2 |
+|------|--------|--------|--------|
+| **设计年代** | 1990s | 1999 | 2015 |
+| **安全理念** | 快速哈希 | 时间成本 | 内存+时间成本 |
+| **抗 GPU** | ❌ 极弱 | ✅ 中等 | ✅✅ 强 |
+| **抗 ASIC** | ❌ 无 | ⚠️ 有限 | ✅✅ 强 |
+| **参数调优** | 固定 | 时间成本 | 时间+内存+并行度 |
+| **现代推荐** | ❌ 绝对禁止 | ⚠️ 可用但非最佳 | ✅✅ 首选 |
+
+**生产建议**：对于新项目，直接使用 Argon2。对于已有 bcrypt 的系统，迁移不是必须的，但新功能应使用 Argon2。关键是要确保成本参数足够高（在用户体验可接受范围内），定期评估硬件进步对安全参数的影响。
 
 ### 2. 会话管理：JWT 的现代实践
 
