@@ -20,12 +20,12 @@ export default function Home() {
 				</FadeIn>
 				<FadeIn className="flex gap-4" delay={0.2}>
 					<Link href="/posts">
-						<Button size="lg" className="cursor-pointer bg-primary/80 backdrop-blur hover:bg-primary/90">
+						<Button size="lg" className="cursor-pointer">
 							阅读文章 <ArrowRight className="ml-2 h-4 w-4" />
 						</Button>
 					</Link>
 					<Link href="/about">
-						<Button variant="outline" size="lg" className="cursor-pointer bg-transparent border-white/20 backdrop-blur hover:bg-white/10">
+						<Button variant="outline" size="lg" className="cursor-pointer">
 							关于我
 						</Button>
 					</Link>
@@ -44,7 +44,7 @@ export default function Home() {
 				<StaggerContainer className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" delay={0.5}>
 					{posts.map((post) => (
 						<StaggerItem key={post.slug}>
-							<Link href={`/posts/${post.slug}`} className="block h-full">
+							<Link href={`/posts/${post.slug}`} className="block h-full group">
 								<GlassCard className="h-full p-6 flex flex-col justify-between space-y-4">
 									<div className="space-y-2">
 										<div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -76,7 +76,7 @@ export default function Home() {
 										{post.tags.map((tag) => (
 											<span
 												key={tag}
-												className="inline-flex items-center rounded-md border border-white/10 px-2.5 py-0.5 text-xs font-semibold bg-white/5 text-muted-foreground"
+												className="inline-flex items-center rounded-md border border-border px-2.5 py-0.5 text-xs font-semibold bg-muted text-muted-foreground"
 											>
 												{tag}
 											</span>

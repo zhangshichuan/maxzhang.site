@@ -18,25 +18,25 @@ export function Navbar() {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
 
 	return (
-		<header className="sticky top-0 z-50 w-full border-b border-white/10 bg-white/10 dark:bg-black/10 backdrop-blur-md supports-backdrop-filter:bg-white/5">
-			<div className="container mx-auto flex h-16 max-w-screen-2xl items-center px-4">
+		<header className="sticky top-0 z-50 w-full bg-background/80">
+			<div className="container mx-auto flex h-16 max-w-screen-2xl items-center px-6">
 				{/* Logo */}
-				<div className="mr-4 flex">
-					<Link href="/" className="mr-6 flex items-center space-x-2">
-						<span className="font-bold sm:inline-block text-lg tracking-tight">Max Zhang</span>
+				<div className="mr-8 flex">
+					<Link href="/" className="mr-8 flex items-center space-x-2">
+						<span className="font-bold text-xl tracking-tighter">Max Zhang</span>
 					</Link>
 
-					{/* Desktop Nav */}
-					<nav className="hidden md:flex items-center gap-1 text-sm">
+					{/* Desktop Nav - 药丸风格激活态 */}
+					<nav className="hidden md:flex items-center gap-2 text-sm font-medium">
 						{navItems.map((item) => (
 							<Link
 								key={item.path}
 								href={item.path}
 								className={cn(
-									'px-4 py-2 rounded-full transition-all duration-300',
+									'px-4 py-1.5 rounded-full transition-all duration-300',
 									pathname === item.path
-										? 'bg-white/10 dark:bg-white/10 text-foreground font-medium shadow-sm ring-1 ring-white/10'
-										: 'text-foreground/70 hover:text-foreground hover:bg-white/5 dark:hover:bg-white/5',
+										? 'bg-primary text-primary-foreground'
+										: 'text-muted-foreground hover:bg-secondary hover:text-foreground',
 								)}
 							>
 								{item.name}
@@ -46,29 +46,28 @@ export function Navbar() {
 				</div>
 
 				{/* Right Actions */}
-				<div className="flex flex-1 items-center justify-end space-x-2">
-					{/* Search Icon (Desktop) */}
+				<div className="flex flex-1 items-center justify-end space-x-1">
 					<Link href="/search">
-						<div className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-sm transition-colors hover:bg-white/20 hover:text-accent-foreground backdrop-blur-sm">
+						<div className="inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-secondary">
 							<Search className="h-4 w-4" />
 							<span className="sr-only">Search</span>
 						</div>
 					</Link>
 
-					<nav className="flex items-center space-x-2">
+					<nav className="flex items-center space-x-1">
 						<Link href="https://github.com/zhangshichuan" target="_blank" rel="noreferrer">
-							<div className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-sm transition-colors hover:bg-white/20 hover:text-accent-foreground backdrop-blur-sm">
+							<div className="inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-secondary">
 								<Github className="h-4 w-4" />
 								<span className="sr-only">GitHub</span>
 							</div>
 						</Link>
-						<div className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-sm transition-colors hover:bg-white/20 hover:text-accent-foreground backdrop-blur-sm">
-							<ThemeToggle className="cursor-pointer border-0 shadow-none hover:bg-transparent" />
+						<div className="inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-secondary">
+							<ThemeToggle className="h-9 w-9 cursor-pointer border-0 shadow-none hover:bg-transparent" />
 						</div>
 
 						{/* Mobile Menu Toggle */}
 						<button
-							className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-sm transition-colors hover:bg-white/20 hover:text-accent-foreground backdrop-blur-sm"
+							className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-secondary"
 							onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
 						>
 							{isMobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
@@ -79,8 +78,8 @@ export function Navbar() {
 
 			{/* Mobile Menu */}
 			{isMobileMenuOpen && (
-				<div className="md:hidden border-b border-white/10 bg-background/80 backdrop-blur-xl">
-					<div className="container py-4 space-y-2 px-4">
+				<div className="md:hidden bg-background shadow-xl animate-in fade-in slide-in-from-top-2 duration-300">
+					<div className="container py-4 space-y-1 px-6">
 						{navItems.map((item) => (
 							<Link
 								key={item.path}
@@ -88,8 +87,8 @@ export function Navbar() {
 								className={cn(
 									'block px-4 py-3 text-sm font-medium transition-colors rounded-xl',
 									pathname === item.path
-										? 'bg-primary/10 text-primary border border-primary/20'
-										: 'text-foreground/70 hover:bg-white/5',
+										? 'bg-primary text-primary-foreground'
+										: 'text-muted-foreground hover:bg-secondary',
 								)}
 								onClick={() => setIsMobileMenuOpen(false)}
 							>

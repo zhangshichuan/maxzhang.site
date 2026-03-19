@@ -17,14 +17,14 @@ export default function AboutPage() {
 			{/* Header / Intro */}
 			<FadeIn className="flex flex-col md:flex-row gap-10 items-start mb-16">
 				{/* Avatar Placeholder */}
-				<div className="w-32 h-32 md:w-48 md:h-48 rounded-full bg-secondary flex items-center justify-center shrink-0 border-4 border-white/20 shadow-xl overflow-hidden relative group">
-					<div className="absolute inset-0 bg-linear-to-tr from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10" />
+				<div className="w-32 h-32 md:w-48 md:h-48 rounded-full bg-secondary flex items-center justify-center shrink-0 border-4 border-card shadow-xl overflow-hidden relative group">
+					<div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10" />
 					<Image src={Avatar} alt="Max Zhang" className="rounded-full object-cover" />
 				</div>
 
 				<div className="space-y-6 flex-1">
 					<div>
-						<h1 className="text-4xl font-bold tracking-tight mb-2 text-foreground drop-shadow-sm">Max Zhang</h1>
+						<h1 className="text-4xl font-bold tracking-tight mb-2 text-foreground">Max Zhang</h1>
 						<p className="text-xl text-muted-foreground flex items-center gap-2">
 							<Briefcase className="h-4 w-4" /> Software Engineer
 						</p>
@@ -43,7 +43,7 @@ export default function AboutPage() {
 							<Button
 								variant="outline"
 								size="sm"
-								className="gap-2 bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10"
+								className="gap-2"
 							>
 								<Github className="h-4 w-4" /> GitHub
 							</Button>
@@ -52,7 +52,7 @@ export default function AboutPage() {
 							<Button
 								variant="outline"
 								size="sm"
-								className="gap-2 bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10"
+								className="gap-2"
 							>
 								<Mail className="h-4 w-4" /> Email
 							</Button>
@@ -61,7 +61,7 @@ export default function AboutPage() {
 							<Button
 								variant="outline"
 								size="sm"
-								className="gap-2 bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10"
+								className="gap-2"
 							>
 								<Linkedin className="h-4 w-4" /> LinkedIn
 							</Button>
@@ -79,9 +79,9 @@ export default function AboutPage() {
 							<Briefcase className="h-6 w-6 text-primary" /> 工作经历
 						</h2>
 						<GlassCard className="p-8 space-y-8" hoverEffect={false}>
-							<div className="relative border-l border-white/10 pl-8 space-y-12">
+							<div className="relative border-l border-border pl-8 space-y-12">
 								<div className="relative">
-									<span className="absolute -left-9.25 top-1 h-4 w-4 rounded-full border border-white/20 bg-primary ring-4 ring-background/50" />
+									<span className="absolute -left-9.25 top-1 h-4 w-4 rounded-full border border-card bg-primary ring-4 ring-background" />
 									<div className="flex flex-col mb-1">
 										<h3 className="font-bold text-lg">前端主管 • 成都睿晟天和传媒科技有限公司</h3>
 										<p className="text-muted-foreground text-sm">产品研发部 • 2021.02 - 2025.12</p>
@@ -101,7 +101,7 @@ export default function AboutPage() {
 										<li>参与跨境电商业务系统搭建与实施，推动业务从无到有的全流程落地</li>
 										<li>
 											负责 AI 混剪及广告批量投放系统的设计与开发，提升广告投放效率与自动化水平，打通从 AI
-											素材制作，素材评级和管理，广告搭建，批量投放，数据回溯等全流程循环
+											素材制作，素材评级 and 管理，广告搭建，批量投放，数据回溯等全流程循环
 										</li>
 										<li>AI 平面素材生成，AI 视频混剪、集成美图 AI 工具，TTS 服务、官网、小程序</li>
 										<li>
@@ -111,7 +111,7 @@ export default function AboutPage() {
 								</div>
 
 								<div className="relative">
-									<span className="absolute -left-9.25 top-1 h-4 w-4 rounded-full border border-white/20 bg-muted-foreground ring-4 ring-background/50" />
+									<span className="absolute -left-9.25 top-1 h-4 w-4 rounded-full border border-card bg-muted-foreground ring-4 ring-background" />
 									<div className="flex flex-col mb-1">
 										<h3 className="font-bold text-lg">前端架构师 • 成都魔方元科技有限公司</h3>
 										<p className="text-muted-foreground text-sm">产品研发部 • 2020.01 - 2021.01</p>
@@ -120,7 +120,7 @@ export default function AboutPage() {
 										{['TypeScript', 'Linux', 'Vue', 'Node.js', 'PHP7', 'React'].map((tag) => (
 											<span
 												key={tag}
-												className="px-2 py-0.5 rounded text-[10px] font-medium bg-white/5 text-muted-foreground border border-white/10"
+												className="px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border"
 											>
 												{tag}
 											</span>
@@ -135,7 +135,7 @@ export default function AboutPage() {
 								</div>
 
 								<div className="relative">
-									<span className="absolute -left-9.25 top-1 h-4 w-4 rounded-full border border-white/20 bg-muted-foreground ring-4 ring-background/50" />
+									<span className="absolute -left-9.25 top-1 h-4 w-4 rounded-full border border-card bg-muted-foreground ring-4 ring-background" />
 									<div className="flex flex-col mb-1">
 										<h3 className="font-bold text-lg">前端开发工程师 • 成都众人安科技有限责任公司</h3>
 										<p className="text-muted-foreground text-sm">产品研发部 • 2018.05 - 2019.12</p>
@@ -144,7 +144,7 @@ export default function AboutPage() {
 										{['Vue', 'TypeScript'].map((tag) => (
 											<span
 												key={tag}
-												className="px-2 py-0.5 rounded text-[10px] font-medium bg-white/5 text-muted-foreground border border-white/10"
+												className="px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border"
 											>
 												{tag}
 											</span>
@@ -157,7 +157,7 @@ export default function AboutPage() {
 								</div>
 
 								<div className="relative">
-									<span className="absolute -left-9.25 top-1 h-4 w-4 rounded-full border border-white/20 bg-muted-foreground ring-4 ring-background/50" />
+									<span className="absolute -left-9.25 top-1 h-4 w-4 rounded-full border border-card bg-muted-foreground ring-4 ring-background" />
 									<div className="flex flex-col mb-1">
 										<h3 className="font-bold text-lg">全栈工程师 • 成都数联医信科技有限公司</h3>
 										<p className="text-muted-foreground text-sm">产品研发 • 2016.03 - 2018.05</p>
@@ -166,7 +166,7 @@ export default function AboutPage() {
 										{['PostgreSQL', 'Vue', 'PHP7', 'Linux', 'AWS'].map((tag) => (
 											<span
 												key={tag}
-												className="px-2 py-0.5 rounded text-[10px] font-medium bg-white/5 text-muted-foreground border border-white/10"
+												className="px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border"
 											>
 												{tag}
 											</span>
@@ -195,9 +195,9 @@ export default function AboutPage() {
 							<GraduationCap className="h-6 w-6 text-primary" /> 教育经历
 						</h2>
 						<GlassCard className="p-8" hoverEffect={false}>
-							<div className="relative border-l border-white/10 pl-8 space-y-8">
+							<div className="relative border-l border-border pl-8 space-y-8">
 								<div className="relative">
-									<span className="absolute -left-9.25 top-1 h-4 w-4 rounded-full border border-white/20 bg-muted-foreground ring-4 ring-background/50" />
+									<span className="absolute -left-9.25 top-1 h-4 w-4 rounded-full border border-card bg-muted-foreground ring-4 ring-background" />
 									<h3 className="font-bold text-lg">Northern Arizona University • 2025 - 2026</h3>
 									<p className="text-muted-foreground">Master&apos;s degree，MCIT</p>
 								</div>
@@ -225,7 +225,7 @@ export default function AboutPage() {
 								].map((skill) => (
 									<span
 										key={skill}
-										className="inline-flex items-center rounded-md border border-white/10 px-2.5 py-0.5 text-xs font-semibold transition-colors bg-white/5 text-foreground hover:bg-white/10"
+										className="inline-flex items-center rounded-md border border-border px-2.5 py-0.5 text-xs font-semibold transition-colors bg-muted text-foreground hover:bg-accent"
 									>
 										{skill}
 									</span>

@@ -3,7 +3,6 @@ import './globals.css'
 import { ThemeProvider } from './providers'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
-import { BackgroundOrbs } from '@/components/background-orbs'
 
 export const metadata: Metadata = {
 	title: 'Max Zhang',
@@ -24,7 +23,6 @@ export default function RootLayout({
 					enableSystem
 					disableTransitionOnChange
 				>
-					<BackgroundOrbs />
 					<Navbar />
 					<main className="flex-1">
 						{children}
