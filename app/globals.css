@@ -11,65 +11,65 @@
 }
 
 :root {
-	--background: #ffffff;
-	--foreground: #09090b; /* Zinc-950 */
+	--background: #f5f5f7; /* 苹果风格的浅灰白，提供更好的层次基底 */
+	--foreground: #1d1d1f;
 
 	--card: #ffffff;
-	--card-foreground: #09090b;
+	--card-foreground: #1d1d1f;
 
 	--popover: #ffffff;
-	--popover-foreground: #09090b;
+	--popover-foreground: #1d1d1f;
 
-	--primary: #18181b; /* Zinc-900 */
-	--primary-foreground: #fafafa; /* Zinc-50 */
+	--primary: #0071e3; /* 纯净的科技蓝 */
+	--primary-foreground: #ffffff;
 
-	--secondary: #f4f4f5; /* Zinc-100 */
-	--secondary-foreground: #18181b;
+	--secondary: #e8e8ed;
+	--secondary-foreground: #1d1d1f;
 
-	--muted: #f4f4f5;
-	--muted-foreground: #71717a; /* Zinc-500 */
+	--muted: #f5f5f7;
+	--muted-foreground: #86868b;
 
-	--accent: #f4f4f5;
-	--accent-foreground: #18181b;
+	--accent: #f5f5f7;
+	--accent-foreground: #1d1d1f;
 
-	--destructive: #ef4444;
-	--destructive-foreground: #fafafa;
+	--destructive: #ff3b30;
+	--destructive-foreground: #ffffff;
 
-	--border: #e4e4e7; /* Zinc-200 */
-	--input: #e4e4e7;
-	--ring: #18181b;
+	--border: transparent; /* 彻底移除可见边框 */
+	--input: #f5f5f7;
+	--ring: #0071e3;
 
-	--radius: 0.5rem;
+	--radius: 1rem; /* 增加圆角，更显柔和与高级 */
 }
 
 .dark {
-	--background: #09090b; /* Zinc-950 */
-	--foreground: #fafafa; /* Zinc-50 */
+	--background: #000000; /* 纯黑背景 */
+	--foreground: #f5f5f7;
 
-	--card: #09090b;
-	--card-foreground: #fafafa;
+	--card: #1c1c1e; /* 经典的深色卡片灰 */
+	--card-foreground: #f5f5f7;
 
-	--popover: #09090b;
-	--popover-foreground: #fafafa;
+	--popover: #1c1c1e;
+	--popover-foreground: #f5f5f7;
 
-	--primary: #fafafa;
-	--primary-foreground: #18181b;
+	--primary: #0a84ff;
+	--primary-foreground: #ffffff;
 
-	--secondary: #27272a; /* Zinc-800 */
-	--secondary-foreground: #fafafa;
+	--secondary: #2c2c2e;
+	--secondary-foreground: #f5f5f7;
 
-	--muted: #27272a;
-	--muted-foreground: #a1a1aa; /* Zinc-400 */
+	--muted: #1c1c1e;
+	--muted-foreground: #86868b;
 
-	--accent: #27272a;
-	--accent-foreground: #fafafa;
+	--accent: #2c2c2e;
+	--accent-foreground: #f5f5f7;
 
-	--destructive: #7f1d1d;
-	--destructive-foreground: #fafafa;
+	--destructive: #ff453a;
+	--destructive-foreground: #ffffff;
 
-	--border: #27272a;
-	--input: #27272a;
-	--ring: #d4d4d8;
+	--border: transparent;
+	--input: #1c1c1e;
+	--ring: #0a84ff;
 }
 
 body {

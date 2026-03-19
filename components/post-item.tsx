@@ -44,7 +44,7 @@ export function PostItem({ post }: PostItemProps) {
 							{post.tags.map((tag) => (
 								<span
 									key={tag}
-									className="inline-flex items-center rounded-md border border-white/10 px-2.5 py-0.5 text-xs font-semibold bg-white/5 text-muted-foreground transition-colors group-hover:bg-white/10"
+									className="inline-flex items-center rounded-md border border-border px-2.5 py-0.5 text-xs font-semibold bg-muted text-muted-foreground transition-colors group-hover:bg-accent group-hover:text-accent-foreground"
 								>
 									{tag}
 								</span>

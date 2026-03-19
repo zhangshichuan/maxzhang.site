@@ -23,7 +23,7 @@ export default function PostsPage() {
 	const allCategories = Array.from(new Set(posts.map((post) => post.category).filter(Boolean)))
 
 	return (
-		<div className="container max-w-7xl mx-auto px-4 py-10">
+		<div className="container max-w-screen-2xl mx-auto px-4 py-10">
 			{/* 页面标题区域 */}
 			<FadeIn className="flex flex-col items-start gap-4 pb-10">
 				<h1 className="text-3xl font-bold tracking-tight sm:text-4xl">文章库</h1>
@@ -53,7 +53,7 @@ export default function PostsPage() {
 								<Link
 									key={category}
 									href={`/search?category=${encodeURIComponent(category)}`}
-									className="flex items-center justify-between text-sm hover:text-primary transition-colors p-2 rounded-md hover:bg-white/5"
+									className="flex items-center justify-between text-sm hover:text-primary transition-colors p-2 rounded-md hover:bg-muted"
 								>
 									<span className="flex items-center gap-2">
 										<Folder className="h-4 w-4" />
@@ -73,7 +73,7 @@ export default function PostsPage() {
 								<Link
 									key={tag}
 									href={`/search?tag=${encodeURIComponent(tag)}`}
-									className="inline-flex items-center rounded-md border border-white/10 px-2.5 py-0.5 text-xs font-semibold transition-colors bg-white/5 text-muted-foreground hover:bg-white/10"
+									className="inline-flex items-center rounded-md border border-border px-2.5 py-0.5 text-xs font-semibold transition-colors bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
 								>
 									{tag}
 								</Link>

@@ -7,21 +7,19 @@ interface GlassCardProps {
 	hoverEffect?: boolean
 }
 
+/**
+ * Modern Borderless Layer.
+ * Defines space through background contrast and soft elevation.
+ */
 export function GlassCard({ children, className, hoverEffect = true }: GlassCardProps) {
 	return (
 		<div
 			className={cn(
-				// 基础玻璃属性
-				'relative overflow-hidden rounded-xl border',
-				// 背景与模糊：使用极低的透明度 + 高斯模糊
-				'bg-white/20 dark:bg-black/20 backdrop-blur-xl',
-				// 边框：细腻的亮色边框，模拟玻璃边缘反光
-				'border-white/20 dark:border-white/10',
-				// 阴影：柔和的阴影提升层次
-				'shadow-sm',
-				// 悬浮效果
+				'relative overflow-hidden rounded-[--radius] bg-card text-card-foreground',
+				// 使用极其微妙的阴影来代替边框
+				'shadow-[0_2px_12px_-3px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_20px_-5px_rgba(0,0,0,0.3)]',
 				hoverEffect &&
-					'transition-all duration-300 hover:shadow-lg hover:bg-white/40 dark:hover:bg-black/40 hover:border-white/30 hover:-translate-y-1',
+					'transition-all duration-500 hover:shadow-[0_8px_30px_-10px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] hover:-translate-y-1',
 				className,
 			)}
 		>

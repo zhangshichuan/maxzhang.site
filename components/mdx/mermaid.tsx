@@ -51,7 +51,7 @@ export default function Mermaid({ chart }: MermaidProps) {
 
 	return (
 		<div
-			className="flex items-center justify-center my-10 overflow-x-auto w-full bg-white dark:bg-zinc-900/50 py-12 px-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm min-h-50"
+			className="flex items-center justify-center my-10 overflow-x-auto w-full bg-card py-12 px-4 rounded-xl border border-border shadow-sm min-h-50"
 			dangerouslySetInnerHTML={{ __html: svg }}
 		/>
 	)
