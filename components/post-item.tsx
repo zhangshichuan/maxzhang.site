@@ -1,8 +1,8 @@
-import { Post } from '@/lib/posts'
-import { Calendar, Clock, Folder, ArrowRight } from 'lucide-react'
-import Link from 'next/link'
 import { GlassCard } from '@/components/glass-card'
+import { Post } from '@/lib/posts'
 import { cn } from '@/lib/utils'
+import { ArrowRight, Calendar, Clock, Folder } from 'lucide-react'
+import Link from 'next/link'
 
 interface PostItemProps {
 	post: Post
@@ -20,7 +20,10 @@ export function PostItem({ post }: PostItemProps) {
 			<GlassCard className="p-8 transition-all duration-300 border-2 border-border/10 hover:border-primary group-hover:bg-secondary/5">
 				<article className="flex flex-col space-y-4">
 					<div className="flex flex-wrap items-center gap-4 text-xs font-black uppercase tracking-widest text-muted-foreground">
-						<time dateTime={post.date} className="flex items-center gap-1.5 bg-muted px-2 py-1 rounded-md border border-border/5">
+						<time
+							dateTime={post.date}
+							className="flex items-center gap-1.5 bg-muted px-2 py-1 rounded-md border border-border/5"
+						>
 							<Calendar className="h-4 w-4" />
 							{post.date}
 						</time>
@@ -51,8 +54,8 @@ export function PostItem({ post }: PostItemProps) {
 							<span
 								key={tag}
 								className={cn(
-									"inline-flex items-center rounded-lg border-2 px-3 py-1 text-[10px] font-black uppercase tracking-tight shadow-[2px_2px_0px_var(--border)] transition-all group-hover:shadow-none group-hover:translate-x-[1px] group-hover:translate-y-[1px]",
-									tagColors[tIdx % tagColors.length]
+									'inline-flex items-center rounded-lg border-2 px-3 py-1 text-[10px] font-black uppercase tracking-tight shadow-[2px_2px_0px_var(--border)] transition-all group-hover:shadow-none group-hover:translate-x-px group-hover:translate-y-px',
+									tagColors[tIdx % tagColors.length],
 								)}
 							>
 								{tag}

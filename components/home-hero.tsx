@@ -25,7 +25,6 @@ export function HomeHero() {
 					<span className="inline-block bg-linear-to-r from-primary via-accent to-secondary bg-clip-text text-transparent pb-3.5">
 						Max Zhang
 					</span>
-					.
 				</h1>
 				<p className="max-w-180 text-muted-foreground md:text-2xl font-medium leading-relaxed">
 					Build with Purpose. Power with AI.

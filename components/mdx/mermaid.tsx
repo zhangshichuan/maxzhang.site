@@ -2,7 +2,7 @@
 
 import mermaid from 'mermaid'
 import { useTheme } from 'next-themes'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 interface MermaidProps {
 	chart: string
@@ -10,7 +10,6 @@ interface MermaidProps {
 
 export default function Mermaid({ chart }: MermaidProps) {
 	const { resolvedTheme } = useTheme()
-	const ref = useRef<HTMLDivElement>(null)
 	const [svg, setSvg] = useState<string>('')
 	const [error, setError] = useState<string | null>(null)
 

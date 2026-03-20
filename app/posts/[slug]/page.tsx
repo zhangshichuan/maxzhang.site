@@ -1,3 +1,4 @@
+import * as React from 'react'
 import { getPostBySlug, getPostSlugs } from '@/lib/posts'
 import { ArrowLeft, Calendar, Clock, Folder, User } from 'lucide-react'
 import { MDXRemote } from 'next-mdx-remote/rsc'
@@ -26,7 +27,7 @@ export async function generateStaticParams() {
 
 /**
  * 生成动态 Metadata (SEO)
- * 根据 URL 中的 slug 获取文章标题和摘要，用于页面 <head> 中的 meta 标签。
+ * 根据 URL 中的 slug 获取文章标题和摘要，用于页面 <head> 中的 meta标签。
  */
 export async function generateMetadata({ params }: Props) {
 	const { slug } = await params
@@ -45,15 +46,14 @@ export async function generateMetadata({ params }: Props) {
 }
 
 const components = {
-	pre: ({ children, ...props }: any) => {
+	pre: ({ children, ...props }: React.ComponentPropsWithoutRef<'pre'>) => {
 		// 检查子元素是否是 code，且类名为 language-mermaid
-		const child = children?.props
-		if (child?.className === 'language-mermaid') {
-			return <Mermaid chart={String(child.children).replace(/\n$/, '')} />
+		if (React.isValidElement(children) && (children.props as any)?.className === 'language-mermaid') {
+			return <Mermaid chart={String((children.props as any).children).replace(/\n$/, '')} />
 		}
 		return <pre {...props}>{children}</pre>
 	},
-	code: ({ className, children, ...props }: any) => {
+	code: ({ className, children, ...props }: React.ComponentPropsWithoutRef<'code'>) => {
 		return (
 			<code className={className} {...props}>
 				{children}

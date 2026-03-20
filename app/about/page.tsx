@@ -36,11 +36,11 @@ export default function AboutPage() {
 						<span className="text-primary font-black">TypeScript</span>. I orchestrate{' '}
 						<span className="text-accent font-black">Docker</span> & <span className="text-accent font-black">K3s</span>{' '}
 						for elite <span className="text-accent font-black">DevOps</span> workflows, scale complex data with{' '}
-						<span className="text-secondary-foreground font-black underline decoration-secondary decoration-4">
+						<span className="text-secondary font-black underline decoration-secondary/30 decoration-4 underline-offset-4">
 							PostgreSQL
 						</span>{' '}
 						&{' '}
-						<span className="text-secondary-foreground font-black underline decoration-secondary decoration-4">MQ</span>
+						<span className="text-secondary font-black underline decoration-secondary/30 decoration-4 underline-offset-4">MQ</span>
 						, and explore the limits of performance with <span className="text-primary font-black">Rust</span>—all while
 						ensuring system observability through <span className="text-accent font-black">ELK</span> and advanced{' '}
 						<span className="text-accent font-black">Monitoring</span>.
@@ -77,7 +77,7 @@ export default function AboutPage() {
 						<GlassCard className="p-8 space-y-8" hoverEffect={false}>
 							<div className="relative border-l-4 border-border/30 pl-8 space-y-12">
 								<div className="relative">
-									<span className="absolute -left-[38px] top-1 h-6 w-6 rounded-full border-4 border-background bg-primary shadow-[2px_2px_0px_#000]" />
+									<span className="absolute -left-9.5 top-1 h-6 w-6 rounded-full border-4 border-background bg-primary shadow-[2px_2px_0px_#000]" />
 									<div className="flex flex-col mb-2">
 										<h3 className="font-black text-xl text-foreground">前端主管 • 成都睿晟天和传媒科技有限公司</h3>
 										<p className="text-muted-foreground font-bold text-sm uppercase tracking-wider">
@@ -109,7 +109,7 @@ export default function AboutPage() {
 								</div>
 
 								<div className="relative">
-									<span className="absolute -left-[38px] top-1 h-6 w-6 rounded-full border-4 border-background bg-secondary shadow-[2px_2px_0px_#000]" />
+									<span className="absolute -left-9.5 top-1 h-6 w-6 rounded-full border-4 border-background bg-secondary shadow-[2px_2px_0px_#000]" />
 									<div className="flex flex-col mb-2">
 										<h3 className="font-black text-xl text-foreground">前端架构师 • 成都魔方元科技有限公司</h3>
 										<p className="text-muted-foreground font-bold text-sm uppercase tracking-wider">
@@ -145,7 +145,7 @@ export default function AboutPage() {
 						<GlassCard className="p-8" hoverEffect={false}>
 							<div className="relative border-l-4 border-border/30 pl-8 space-y-8">
 								<div className="relative">
-									<span className="absolute -left-[38px] top-1 h-6 w-6 rounded-full border-4 border-background bg-accent shadow-[2px_2px_0px_#000]" />
+									<span className="absolute -left-9.5 top-1 h-6 w-6 rounded-full border-4 border-background bg-accent shadow-[2px_2px_0px_#000]" />
 									<h3 className="font-black text-xl text-foreground">Northern Arizona University • 2025 - 2026</h3>
 									<p className="text-muted-foreground font-bold uppercase tracking-wider">Master&apos;s degree，MCIT</p>
 								</div>
@@ -187,7 +187,7 @@ export default function AboutPage() {
 								].map((skill) => (
 									<span
 										key={skill}
-										className="inline-flex items-center rounded-xl border-2 border-border px-3 py-1.5 text-xs font-black transition-all bg-card text-foreground shadow-[2px_2px_0px_var(--border)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none"
+										className="inline-flex items-center rounded-xl border-2 border-border px-3 py-1.5 text-xs font-black transition-all bg-card text-foreground shadow-[2px_2px_0px_var(--border)] hover:translate-x-px hover:translate-y-px hover:shadow-none"
 									>
 										{skill}
 									</span>

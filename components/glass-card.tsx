@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
-import { ReactNode } from 'react'
 import { motion } from 'framer-motion'
+import { ReactNode } from 'react'
 
 interface GlassCardProps {
 	children: ReactNode
@@ -21,8 +21,8 @@ export function GlassCard({ children, className, hoverEffect = true }: GlassCard
 				'relative overflow-hidden rounded-[--radius] bg-card text-card-foreground',
 				'border-2 border-border transition-all duration-200',
 				// 使用 CSS 变量中定义的实体阴影
-				'shadow-[var(--shadow-pop)]',
-				hoverEffect && 'hover:shadow-[var(--shadow-pop-hover)] hover:bg-secondary/5',
+				'shadow-(--shadow-pop)',
+				hoverEffect && 'hover:shadow-(--shadow-pop-hover) hover:bg-secondary/5',
 				className,
 			)}
 		>

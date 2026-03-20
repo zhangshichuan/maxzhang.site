@@ -1,10 +1,10 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import * as React from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 
 export function ThemeToggle({ className }: { className?: string }) {
 	const { theme, setTheme } = useTheme()
@@ -16,9 +16,7 @@ export function ThemeToggle({ className }: { className?: string }) {
 	}, [])
 
 	if (!mounted) {
-		return (
-			<div className={cn('h-10 w-10 rounded-full border-2 border-border/10', className)} />
-		)
+		return <div className={cn('h-10 w-10 rounded-full border-2 border-border/10', className)} />
 	}
 
 	return (
@@ -28,7 +26,7 @@ export function ThemeToggle({ className }: { className?: string }) {
 			onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
 			className={cn(
 				'relative inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-border transition-colors overflow-hidden',
-				'bg-background hover:bg-secondary/20 shadow-[2px_2px_0px_var(--border)] active:shadow-none active:translate-x-[1px] active:translate-y-[1px]',
+				'bg-background hover:bg-secondary/20 shadow-[2px_2px_0px_var(--border)] active:shadow-none active:translate-x-px active:translate-y-px',
 				className,
 			)}
 		>
