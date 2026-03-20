@@ -1,12 +1,23 @@
 import { getAllPosts } from '@/lib/posts'
 import { PostsClient } from '@/components/posts-client'
+import { getTranslations } from 'next-intl/server'
+import { Metadata } from 'next'
 
-export const metadata = {
-	title: '文章库 - Max Zhang',
-	description: 'Read my thoughts on software development, design, and more.',
+export async function generateMetadata({
+	params,
+}: {
+	params: Promise<{ locale: string }>
+}): Promise<Metadata> {
+	const { locale } = await params
+	const t = await getTranslations({ locale, namespace: 'PostsPage' })
+
+	return {
+		title: `${t('title')} - Max Zhang`,
+		description: 'Read my thoughts on software development, design, and more.',
+	}
 }
 
-export default function PostsPage() {
+export default async function PostsPage() {
 	// 获取所有文章数据
 	const posts = getAllPosts()
 

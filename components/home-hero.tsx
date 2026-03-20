@@ -3,9 +3,12 @@
 import { FadeIn } from '@/components/motion-wrapper'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, Sparkles } from 'lucide-react'
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
+import { useTranslations } from 'next-intl'
 
 export function HomeHero() {
+	const t = useTranslations('HomePage.hero')
+
 	return (
 		<section className="relative flex flex-col items-start gap-8 pt-10 md:pt-20 lg:pt-32">
 			{/* 浮动勋章 */}
@@ -34,7 +37,7 @@ export function HomeHero() {
 			<FadeIn className="flex flex-wrap gap-6" delay={0.2}>
 				<Link href="/posts">
 					<Button size="xl" className="font-black text-lg cursor-pointer bg-primary">
-						阅读文章 <ArrowRight className="ml-2 h-5 w-5" />
+						{t('readArticles')} <ArrowRight className="ml-2 h-5 w-5" />
 					</Button>
 				</Link>
 				<Link href="/about">
@@ -43,7 +46,7 @@ export function HomeHero() {
 						size="xl"
 						className="font-black text-lg cursor-pointer border-2 border-border shadow-[6px_6px_0px_var(--muted)]"
 					>
-						关于我
+						{t('aboutMe')}
 					</Button>
 				</Link>
 			</FadeIn>

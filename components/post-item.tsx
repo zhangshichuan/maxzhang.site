@@ -2,21 +2,26 @@ import { GlassCard } from '@/components/glass-card'
 import { Post } from '@/lib/posts'
 import { cn } from '@/lib/utils'
 import { ArrowRight, Calendar, Clock, Folder } from 'lucide-react'
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
+import { useTranslations } from 'next-intl'
 
 interface PostItemProps {
 	post: Post
 }
 
 export function PostItem({ post }: PostItemProps) {
+	const t = useTranslations('Common')
 	const tagColors = [
 		'bg-secondary text-secondary-foreground border-border',
 		'bg-primary text-primary-foreground border-border',
 		'bg-accent text-accent-foreground border-border',
 	]
 
+	// Format reading time
+	const readingTime = Math.ceil(post.readTime.minutes)
+
 	return (
-		<Link href={`/posts/${post.slug}`} className="block group">
+		<Link href={`/posts/${post.slug}` as any} className="block group">
 			<GlassCard className="p-8 transition-all duration-300 border-2 border-border/10 hover:border-primary group-hover:bg-secondary/5">
 				<article className="flex flex-col space-y-4">
 					<div className="flex flex-wrap items-center gap-4 text-xs font-black uppercase tracking-widest text-muted-foreground">
@@ -29,7 +34,7 @@ export function PostItem({ post }: PostItemProps) {
 						</time>
 						<span className="flex items-center gap-1.5 bg-muted px-2 py-1 rounded-md border border-border/5">
 							<Clock className="h-4 w-4" />
-							{post.readTime.text}
+							{t('readingTime', { minutes: readingTime })}
 						</span>
 						{post.category && (
 							<span className="flex items-center gap-1.5 bg-primary/10 text-primary px-2 py-1 rounded-md border border-primary/10">

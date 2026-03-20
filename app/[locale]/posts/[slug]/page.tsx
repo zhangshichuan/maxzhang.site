@@ -2,14 +2,16 @@ import * as React from 'react'
 import { getPostBySlug, getPostSlugs } from '@/lib/posts'
 import { ArrowLeft, Calendar, Clock, Folder, User } from 'lucide-react'
 import { MDXRemote } from 'next-mdx-remote/rsc'
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 import { notFound } from 'next/navigation'
 import remarkGfm from 'remark-gfm'
 import Mermaid from '@/components/mdx/mermaid'
+import { getTranslations } from 'next-intl/server'
 
 interface Props {
 	params: Promise<{
 		slug: string
+		locale: string
 	}>
 }
 
@@ -20,9 +22,18 @@ interface Props {
  */
 export async function generateStaticParams() {
 	const posts = getPostSlugs()
-	return posts.map((post) => ({
-		slug: post.replace(/\.mdx?$/, ''),
-	}))
+	const locales = ['en', 'zh']
+	
+	const params = []
+	for (const locale of locales) {
+		for (const post of posts) {
+			params.push({
+				locale,
+				slug: post.replace(/\.mdx?$/, ''),
+			})
+		}
+	}
+	return params
 }
 
 /**
@@ -63,7 +74,10 @@ const components = {
 }
 
 export default async function PostPage({ params }: Props) {
-	const { slug } = await params
+	const { slug, locale } = await params
+	const t = await getTranslations({ locale, namespace: 'Common' })
+	const tPosts = await getTranslations({ locale, namespace: 'PostsPage' })
+	
 	let post
 	try {
 		post = getPostBySlug(slug)
@@ -71,6 +85,9 @@ export default async function PostPage({ params }: Props) {
 		// 如果找不到对应的文章，显示 404 页面
 		notFound()
 	}
+
+	// Format reading time
+	const readingTime = Math.ceil(post.readTime.minutes)
 
 	return (
 		<article className="container max-w-4xl mx-auto px-6 py-12">
@@ -80,7 +97,7 @@ export default async function PostPage({ params }: Props) {
 				className="inline-flex items-center text-sm font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-all mb-10 group bg-secondary/10 px-4 py-2 rounded-xl border-2 border-transparent hover:border-border"
 			>
 				<ArrowLeft className="mr-2 h-5 w-5 transition-transform group-hover:-translate-x-1" />
-				返回文章列表
+				{tPosts('back')}
 			</Link>
 
 			<header className="mb-16 space-y-8">
@@ -97,7 +114,7 @@ export default async function PostPage({ params }: Props) {
 					</time>
 					<span className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-lg">
 						<Clock className="h-5 w-5 text-accent" />
-						{post.readTime.text}
+						{t('readingTime', { minutes: readingTime })}
 					</span>
 					<span className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-lg">
 						<User className="h-5 w-5 text-secondary-foreground" />

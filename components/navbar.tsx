@@ -3,20 +3,28 @@
 import { ThemeToggle } from '@/components/theme-toggle'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
-import { Github, Menu, Search, X } from 'lucide-react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { Github, Menu, Search, X, Languages } from 'lucide-react'
+import { Link, usePathname, useRouter } from '@/i18n/routing'
+import { useTranslations, useLocale } from 'next-intl'
 import * as React from 'react'
 
-const navItems = [
-	{ name: '首页', path: '/' },
-	{ name: '文章', path: '/posts' },
-	{ name: '关于', path: '/about' },
-]
-
 export function Navbar() {
+	const t = useTranslations('Common.nav')
+	const locale = useLocale()
 	const pathname = usePathname()
+	const router = useRouter()
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
+
+	const navItems = [
+		{ name: t('home'), path: '/' },
+		{ name: t('posts'), path: '/posts' },
+		{ name: t('about'), path: '/about' },
+	]
+
+	const toggleLanguage = () => {
+		const nextLocale = locale === 'zh' ? 'en' : 'zh'
+		router.replace(pathname, { locale: nextLocale })
+	}
 
 	return (
 		<header className="sticky top-0 z-50 w-full border-b-2 border-border/10 bg-background/95 backdrop-blur-md">
@@ -37,7 +45,7 @@ export function Navbar() {
 						{navItems.map((item) => (
 							<Link
 								key={item.path}
-								href={item.path}
+								href={item.path as any}
 								className={cn(
 									'relative px-4 py-2 rounded-full transition-all duration-300 overflow-hidden',
 									pathname === item.path
@@ -64,6 +72,17 @@ export function Navbar() {
 					</Link>
 
 					<nav className="flex items-center space-x-2">
+						<motion.button
+							whileHover={{ scale: 1.1, rotate: 12 }}
+							whileTap={{ scale: 0.9 }}
+							onClick={toggleLanguage}
+							className="inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-border/10 transition-colors hover:border-primary/50 hover:bg-secondary/20"
+							title={t('switchLanguage')}
+						>
+							<Languages className="h-5 w-5" />
+							<span className="sr-only">Language</span>
+						</motion.button>
+
 						<Link href="https://github.com/zhangshichuan" target="_blank" rel="noreferrer">
 							<motion.div
 								whileHover={{ scale: 1.1, rotate: -5 }}
@@ -99,7 +118,7 @@ export function Navbar() {
 						{navItems.map((item) => (
 							<Link
 								key={item.path}
-								href={item.path}
+								href={item.path as any}
 								className={cn(
 									'block px-6 py-4 text-base font-black transition-all rounded-2xl border-2 border-transparent',
 									pathname === item.path

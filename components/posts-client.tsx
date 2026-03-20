@@ -2,10 +2,11 @@
 
 import { PostItem } from '@/components/post-item'
 import { Folder, ArrowRight } from 'lucide-react'
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion-wrapper'
 import { GlassCard } from '@/components/glass-card'
 import { Post } from '@/lib/posts'
+import { useTranslations } from 'next-intl'
 
 interface PostsClientProps {
 	posts: Post[]
@@ -14,12 +15,14 @@ interface PostsClientProps {
 }
 
 export function PostsClient({ posts, allTags, allCategories }: PostsClientProps) {
+	const t = useTranslations('PostsPage')
+
 	return (
 		<div className="container max-w-screen-2xl mx-auto px-4 py-10">
 			{/* 页面标题区域 */}
 			<FadeIn className="flex flex-col items-start gap-4 pb-12 border-b-4 border-border mb-12">
-				<h1 className="text-5xl font-black tracking-tight sm:text-6xl">文章库</h1>
-				<p className="text-muted-foreground text-xl font-medium">探索技术、设计与生活的交汇点。</p>
+				<h1 className="text-5xl font-black tracking-tight sm:text-6xl">{t('title')}</h1>
+				<p className="text-muted-foreground text-xl font-medium">{t('description')}</p>
 			</FadeIn>
 
 			{/* 主内容区域 */}
@@ -33,7 +36,7 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
 					))}
 					{posts.length === 0 && (
 						<GlassCard className="p-12 text-center">
-							<p className="text-muted-foreground font-bold text-xl">暂无文章，敬请期待。</p>
+							<p className="text-muted-foreground font-bold text-xl">{t('noPosts')}</p>
 						</GlassCard>
 					)}
 				</StaggerContainer>
@@ -43,12 +46,12 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
 					<FadeIn className="hidden lg:block space-y-10 sticky top-24" delay={0.4}>
 						{/* 热门分类模块 */}
 						<GlassCard className="p-8">
-							<h3 className="font-black text-xl mb-6 flex items-center gap-2">热门分类</h3>
+							<h3 className="font-black text-xl mb-6 flex items-center gap-2">{t('categories')}</h3>
 							<div className="flex flex-col gap-3">
 								{allCategories.map((category) => (
 									<Link
 										key={category}
-										href={`/search?category=${encodeURIComponent(category)}`}
+										href={`/search?category=${encodeURIComponent(category)}` as any}
 										className="flex items-center justify-between text-base font-bold hover:text-primary transition-all p-3 rounded-xl hover:bg-secondary/20 border-2 border-transparent hover:border-border"
 									>
 										<span className="flex items-center gap-3">
@@ -58,24 +61,24 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
 										<ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
 									</Link>
 								))}
-								{allCategories.length === 0 && <p className="text-sm text-muted-foreground font-medium italic">暂无分类</p>}
+								{allCategories.length === 0 && <p className="text-sm text-muted-foreground font-medium italic">{t('noCategories')}</p>}
 							</div>
 						</GlassCard>
 
 						{/* 热门标签模块 */}
 						<GlassCard className="p-8">
-							<h3 className="font-black text-xl mb-6 flex items-center gap-2">热门标签</h3>
+							<h3 className="font-black text-xl mb-6 flex items-center gap-2">{t('tags')}</h3>
 							<div className="flex flex-wrap gap-3">
 								{allTags.map((tag) => (
 									<Link
 										key={tag}
-										href={`/search?tag=${encodeURIComponent(tag)}`}
+										href={`/search?tag=${encodeURIComponent(tag)}` as any}
 										className="inline-flex items-center rounded-xl border-2 border-border px-4 py-1.5 text-xs font-black transition-all bg-card text-foreground shadow-[3px_3px_0px_var(--border)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none"
 									>
 										{tag}
 									</Link>
 								))}
-								{allTags.length === 0 && <p className="text-sm text-muted-foreground font-medium italic">暂无标签</p>}
+								{allTags.length === 0 && <p className="text-sm text-muted-foreground font-medium italic">{t('noTags')}</p>}
 							</div>
 						</GlassCard>
 					</FadeIn>

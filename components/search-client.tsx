@@ -6,6 +6,7 @@ import Fuse from 'fuse.js'
 import { Folder, Search, X } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 interface SearchClientProps {
 	posts: Post[]
@@ -13,6 +14,7 @@ interface SearchClientProps {
 
 export function SearchClient({ posts }: SearchClientProps) {
 	const searchParams = useSearchParams()
+	const t = useTranslations('SearchPage')
 
 	// 1. 初始化：仅在首次渲染时从 URL 读取参数作为初始状态
 	// 后续 URL 的变化（除非是刷新页面）不会自动影响这些 State，实现了“解耦”
@@ -122,7 +124,7 @@ export function SearchClient({ posts }: SearchClientProps) {
 					type="text"
 					value={query}
 					onChange={handleSearch}
-					placeholder="搜索文章标题、内容、标签..."
+					placeholder={t('placeholder')}
 					className="w-full pl-10 pr-4 py-3 rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
 				/>
 				{query && (
@@ -140,7 +142,7 @@ export function SearchClient({ posts }: SearchClientProps) {
 				{/* 分类列表 */}
 				<div className="space-y-3">
 					<h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-						<Folder className="h-4 w-4" /> 分类
+						<Folder className="h-4 w-4" /> {t('category')}
 					</h3>
 					<div className="flex flex-wrap gap-2">
 						{allCategories.map((category) => (
@@ -161,7 +163,7 @@ export function SearchClient({ posts }: SearchClientProps) {
 
 				{/* 标签列表 */}
 				<div className="space-y-3">
-					<h3 className="text-sm font-medium text-muted-foreground">标签</h3>
+					<h3 className="text-sm font-medium text-muted-foreground">{t('tag')}</h3>
 					<div className="flex flex-wrap gap-2">
 						{allTags.map((tag) => (
 							<button
@@ -183,10 +185,10 @@ export function SearchClient({ posts }: SearchClientProps) {
 			{/* 当前筛选条件展示 */}
 			{hasFilters && (
 				<div className="flex flex-wrap gap-2 items-center pt-4 border-t">
-					<span className="text-sm text-muted-foreground">当前筛选:</span>
+					<span className="text-sm text-muted-foreground">{t('currentFilter')}:</span>
 					{selectedCategory && (
 						<span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary border border-primary/20">
-							分类: {selectedCategory}
+							{t('category')}: {selectedCategory}
 							<button onClick={clearCategory} className="ml-1 hover:text-primary/70">
 								<X className="h-3 w-3" />
 							</button>
@@ -194,20 +196,20 @@ export function SearchClient({ posts }: SearchClientProps) {
 					)}
 					{selectedTag && (
 						<span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary border border-primary/20">
-							标签: {selectedTag}
+							{t('tag')}: {selectedTag}
 							<button onClick={clearTag} className="ml-1 hover:text-primary/70">
 								<X className="h-3 w-3" />
 							</button>
 						</span>
 					)}
 					<button onClick={clearFilters} className="text-xs text-muted-foreground hover:text-primary underline">
-						清除所有
+						{t('clearAll')}
 					</button>
 				</div>
 			)}
 
 			{/* 搜索结果状态 */}
-			{hasFilters && <div className="text-sm text-muted-foreground">找到 {filteredPosts.length} 篇相关文章</div>}
+			{hasFilters && <div className="text-sm text-muted-foreground">{t('found', { count: filteredPosts.length })}</div>}
 
 			{/* 文章列表 */}
 			<div className="space-y-8">
@@ -219,9 +221,9 @@ export function SearchClient({ posts }: SearchClientProps) {
 				{hasFilters && filteredPosts.length === 0 && (
 					<div className="text-center py-20 text-muted-foreground">
 						<Search className="h-10 w-10 mx-auto mb-4 opacity-20" />
-						<p className="text-lg">没有找到匹配的文章</p>
+						<p className="text-lg">{t('noResults')}</p>
 						<button onClick={clearFilters} className="mt-4 text-primary hover:underline">
-							清除筛选条件
+							{t('clearFilters')}
 						</button>
 					</div>
 				)}
@@ -230,7 +232,7 @@ export function SearchClient({ posts }: SearchClientProps) {
 				{!hasFilters && (
 					<div className="text-center py-20 text-muted-foreground">
 						<Search className="h-10 w-10 mx-auto mb-4 opacity-10" />
-						<p className="text-lg">输入关键词或选择标签开始搜索</p>
+						<p className="text-lg">{t('startSearch')}</p>
 					</div>
 				)}
 			</div>
