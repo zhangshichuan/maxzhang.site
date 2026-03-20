@@ -6,6 +6,7 @@ import { Github, Menu, Search, X } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import * as React from 'react'
+import { motion } from 'framer-motion'
 
 const navItems = [
 	{ name: '首页', path: '/' },
@@ -18,25 +19,30 @@ export function Navbar() {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
 
 	return (
-		<header className="sticky top-0 z-50 w-full bg-background/80">
+		<header className="sticky top-0 z-50 w-full border-b-2 border-border/10 bg-background/95 backdrop-blur-md">
 			<div className="container mx-auto flex h-16 max-w-screen-2xl items-center px-6">
 				{/* Logo */}
 				<div className="mr-8 flex">
 					<Link href="/" className="mr-8 flex items-center space-x-2">
-						<span className="font-bold text-xl tracking-tighter">Max Zhang</span>
+						<motion.span 
+							whileHover={{ scale: 1.05, rotate: -2 }}
+							className="inline-block font-black text-2xl tracking-tighter bg-clip-text text-transparent bg-linear-to-r from-primary to-accent pb-1"
+						>
+							Max Zhang
+						</motion.span>
 					</Link>
 
-					{/* Desktop Nav - 药丸风格激活态 */}
-					<nav className="hidden md:flex items-center gap-2 text-sm font-medium">
+					{/* Desktop Nav - 动感药丸风格 */}
+					<nav className="hidden md:flex items-center gap-3 text-sm font-bold">
 						{navItems.map((item) => (
 							<Link
 								key={item.path}
 								href={item.path}
 								className={cn(
-									'px-4 py-1.5 rounded-full transition-all duration-300',
+									'relative px-4 py-2 rounded-full transition-all duration-300 overflow-hidden',
 									pathname === item.path
-										? 'bg-primary text-primary-foreground'
-										: 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+										? 'text-primary-foreground shadow-[var(--shadow-pop)] bg-primary'
+										: 'text-muted-foreground hover:text-foreground hover:bg-secondary/20',
 								)}
 							>
 								{item.name}
@@ -46,49 +52,59 @@ export function Navbar() {
 				</div>
 
 				{/* Right Actions */}
-				<div className="flex flex-1 items-center justify-end space-x-1">
+				<div className="flex flex-1 items-center justify-end space-x-2">
 					<Link href="/search">
-						<div className="inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-secondary">
-							<Search className="h-4 w-4" />
+						<motion.div 
+							whileHover={{ scale: 1.1, rotate: 5 }}
+							className="inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-border/10 transition-colors hover:border-primary/50 hover:bg-secondary/20"
+						>
+							<Search className="h-5 w-5" />
 							<span className="sr-only">Search</span>
-						</div>
+						</motion.div>
 					</Link>
 
-					<nav className="flex items-center space-x-1">
+					<nav className="flex items-center space-x-2">
 						<Link href="https://github.com/zhangshichuan" target="_blank" rel="noreferrer">
-							<div className="inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-secondary">
-								<Github className="h-4 w-4" />
+							<motion.div 
+								whileHover={{ scale: 1.1, rotate: -5 }}
+								className="inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-border/10 transition-colors hover:border-primary/50 hover:bg-secondary/20"
+							>
+								<Github className="h-5 w-5" />
 								<span className="sr-only">GitHub</span>
-							</div>
+							</motion.div>
 						</Link>
-						<div className="inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-secondary">
-							<ThemeToggle className="h-9 w-9 cursor-pointer border-0 shadow-none hover:bg-transparent" />
-						</div>
+						
+						<ThemeToggle className="h-10 w-10 cursor-pointer border-2 border-border/10 bg-background shadow-none hover:border-primary/50" />
 
 						{/* Mobile Menu Toggle */}
-						<button
-							className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-secondary"
+						<motion.button
+							whileTap={{ scale: 0.9 }}
+							className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-border/10 transition-colors hover:bg-secondary"
 							onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
 						>
-							{isMobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-						</button>
+							{isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+						</motion.button>
 					</nav>
 				</div>
 			</div>
 
-			{/* Mobile Menu */}
+			{/* Mobile Menu - 抽屉动画提升能量感 */}
 			{isMobileMenuOpen && (
-				<div className="md:hidden bg-background shadow-xl animate-in fade-in slide-in-from-top-2 duration-300">
-					<div className="container py-4 space-y-1 px-6">
+				<motion.div 
+					initial={{ opacity: 0, y: -10 }}
+					animate={{ opacity: 1, y: 0 }}
+					className="md:hidden bg-background border-b-4 border-border shadow-xl"
+				>
+					<div className="container py-6 space-y-2 px-6">
 						{navItems.map((item) => (
 							<Link
 								key={item.path}
 								href={item.path}
 								className={cn(
-									'block px-4 py-3 text-sm font-medium transition-colors rounded-xl',
+									'block px-6 py-4 text-base font-black transition-all rounded-2xl border-2 border-transparent',
 									pathname === item.path
-										? 'bg-primary text-primary-foreground'
-										: 'text-muted-foreground hover:bg-secondary',
+										? 'bg-primary text-primary-foreground border-border shadow-[4px_4px_0px_#1a1a1a]'
+										: 'text-muted-foreground hover:bg-secondary/30 hover:border-border/10',
 								)}
 								onClick={() => setIsMobileMenuOpen(false)}
 							>
@@ -96,7 +112,7 @@ export function Navbar() {
 							</Link>
 						))}
 					</div>
-				</div>
+				</motion.div>
 			)}
 		</header>
 	)

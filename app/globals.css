@@ -1,81 +1,89 @@
 @import 'tailwindcss';
-/* tailwind v4 默认使用媒体查询（只看系统的深色主题是否开启），所以手动写一个变体让逻辑重新变成读取元素的 class 是否存在 .dark */
 @variant dark (&:where(.dark, .dark *));
 @plugin "@tailwindcss/typography";
 
 @theme {
+	/* 字体定义 */
 	--font-sans:
 		system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif,
 		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 	--font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+	/* 核心色彩映射 - Tailwind v4 使用 --color-* */
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-destructive-foreground: var(--destructive-foreground);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+
+	--radius-lg: var(--radius);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-sm: calc(var(--radius) - 4px);
 }
 
 :root {
-	--background: #f5f5f7; /* 苹果风格的浅灰白，提供更好的层次基底 */
-	--foreground: #1d1d1f;
-
+	--background: #fdfcf0; 
+	--foreground: #1a1a1a;
 	--card: #ffffff;
-	--card-foreground: #1d1d1f;
-
+	--card-foreground: #1a1a1a;
 	--popover: #ffffff;
-	--popover-foreground: #1d1d1f;
-
-	--primary: #0071e3; /* 纯净的科技蓝 */
+	--popover-foreground: #1a1a1a;
+	--primary: #4755f4; 
 	--primary-foreground: #ffffff;
-
-	--secondary: #e8e8ed;
-	--secondary-foreground: #1d1d1f;
-
-	--muted: #f5f5f7;
-	--muted-foreground: #86868b;
-
-	--accent: #f5f5f7;
-	--accent-foreground: #1d1d1f;
-
-	--destructive: #ff3b30;
+	--secondary: #fbe332;
+	--secondary-foreground: #1a1a1a;
+	--muted: #f1f1e6;
+	--muted-foreground: #666666;
+	--accent: #ff61d8;
+	--accent-foreground: #ffffff;
+	--destructive: #ff4747;
 	--destructive-foreground: #ffffff;
-
-	--border: transparent; /* 彻底移除可见边框 */
-	--input: #f5f5f7;
-	--ring: #0071e3;
-
-	--radius: 1rem; /* 增加圆角，更显柔和与高级 */
+	--border: #1a1a1a;
+	--input: #f1f1e6;
+	--ring: #4755f4;
+	--radius: 0.75rem;
+	--shadow-pop: 4px 4px 0px #1a1a1a;
+	--shadow-pop-hover: 6px 6px 0px #1a1a1a;
 }
 
 .dark {
-	--background: #000000; /* 纯黑背景 */
-	--foreground: #f5f5f7;
-
-	--card: #1c1c1e; /* 经典的深色卡片灰 */
-	--card-foreground: #f5f5f7;
-
-	--popover: #1c1c1e;
-	--popover-foreground: #f5f5f7;
-
-	--primary: #0a84ff;
+	--background: #0b0b10;
+	--foreground: #f0f0f0;
+	--card: #161620;
+	--card-foreground: #f0f0f0;
+	--popover: #161620;
+	--popover-foreground: #f0f0f0;
+	--primary: #6366f1;
 	--primary-foreground: #ffffff;
-
-	--secondary: #2c2c2e;
-	--secondary-foreground: #f5f5f7;
-
-	--muted: #1c1c1e;
-	--muted-foreground: #86868b;
-
-	--accent: #2c2c2e;
-	--accent-foreground: #f5f5f7;
-
-	--destructive: #ff453a;
+	--secondary: #eab308;
+	--secondary-foreground: #000000;
+	--muted: #1e1e2d;
+	--muted-foreground: #a0a0b0;
+	--accent: #d946ef;
+	--accent-foreground: #ffffff;
+	--destructive: #ef4444;
 	--destructive-foreground: #ffffff;
-
-	--border: transparent;
-	--input: #1c1c1e;
-	--ring: #0a84ff;
+	--border: #2e2e3e;
+	--input: #1e1e2d;
+	--ring: #6366f1;
+	--shadow-pop: 4px 4px 0px #000000;
+	--shadow-pop-hover: 6px 6px 0px #000000;
 }
 
 body {
 	background-color: var(--background);
 	color: var(--foreground);
-	transition:
-		background-color 0.3s ease,
-		color 0.3s ease;
+	transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+	background-image: radial-gradient(var(--muted) 1px, transparent 1px);
+	background-size: 24px 24px;
 }

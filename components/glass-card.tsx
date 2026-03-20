@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils'
 import { ReactNode } from 'react'
+import { motion } from 'framer-motion'
 
 interface GlassCardProps {
 	children: ReactNode
@@ -8,22 +9,24 @@ interface GlassCardProps {
 }
 
 /**
- * Modern Borderless Layer.
- * Defines space through background contrast and soft elevation.
+ * Dopamine Card (formerly GlassCard)
+ * 使用硬边框、实体阴影和动力学反馈。
  */
 export function GlassCard({ children, className, hoverEffect = true }: GlassCardProps) {
 	return (
-		<div
+		<motion.div
+			whileHover={hoverEffect ? { x: -2, y: -2 } : {}}
+			transition={{ type: 'spring', stiffness: 400, damping: 10 }}
 			className={cn(
 				'relative overflow-hidden rounded-[--radius] bg-card text-card-foreground',
-				// 使用极其微妙的阴影来代替边框
-				'shadow-[0_2px_12px_-3px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_20px_-5px_rgba(0,0,0,0.3)]',
-				hoverEffect &&
-					'transition-all duration-500 hover:shadow-[0_8px_30px_-10px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] hover:-translate-y-1',
+				'border-2 border-border transition-all duration-200',
+				// 使用 CSS 变量中定义的实体阴影
+				'shadow-[var(--shadow-pop)]',
+				hoverEffect && 'hover:shadow-[var(--shadow-pop-hover)] hover:bg-secondary/5',
 				className,
 			)}
 		>
 			<div className="relative z-10">{children}</div>
-		</div>
+		</motion.div>
 	)
 }

@@ -73,44 +73,46 @@ export default async function PostPage({ params }: Props) {
 	}
 
 	return (
-		<article className="container max-w-3xl mx-auto px-4 py-10">
+		<article className="container max-w-4xl mx-auto px-6 py-12">
 			{/* 返回链接 */}
 			<Link
 				href="/posts"
-				className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors mb-6 group"
+				className="inline-flex items-center text-sm font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-all mb-10 group bg-secondary/10 px-4 py-2 rounded-xl border-2 border-transparent hover:border-border"
 			>
-				<ArrowLeft className="mr-1 h-4 w-4 transition-transform group-hover:-translate-x-1" />
+				<ArrowLeft className="mr-2 h-5 w-5 transition-transform group-hover:-translate-x-1" />
 				返回文章列表
 			</Link>
 
-			<header className="mb-10 space-y-4">
+			<header className="mb-16 space-y-8">
 				{/* 文章标题 */}
-				<h1 className="text-3xl font-extrabold tracking-tight lg:text-5xl">{post.title}</h1>
+				<h1 className="text-5xl font-black tracking-tight lg:text-7xl text-foreground leading-[1.1] underline decoration-primary/20 decoration-8 underline-offset-8">
+					{post.title}
+				</h1>
 
-				{/* 文章元信息：日期、阅读时间、作者、分类、标签 */}
-				<div className="flex flex-wrap items-center gap-4 text-muted-foreground text-sm">
-					<time dateTime={post.date} className="flex items-center gap-1">
-						<Calendar className="h-4 w-4" />
+				{/* 文章元信息 */}
+				<div className="flex flex-wrap items-center gap-6 text-muted-foreground text-sm font-bold uppercase tracking-wider">
+					<time dateTime={post.date} className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-lg">
+						<Calendar className="h-5 w-5 text-primary" />
 						{post.date}
 					</time>
-					<span className="flex items-center gap-1">
-						<Clock className="h-4 w-4" />
+					<span className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-lg">
+						<Clock className="h-5 w-5 text-accent" />
 						{post.readTime.text}
 					</span>
-					<span className="flex items-center gap-1">
-						<User className="h-4 w-4" />
+					<span className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-lg">
+						<User className="h-5 w-5 text-secondary-foreground" />
 						{post.author}
 					</span>
-					<span className="flex items-center gap-1">
-						<Folder className="h-4 w-4" />
+					<span className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-lg border-2 border-primary/10">
+						<Folder className="h-5 w-5" />
 						{post.category}
 					</span>
 
-					<div className="flex gap-2 ml-auto">
+					<div className="flex flex-wrap gap-2 ml-auto">
 						{post.tags.map((tag) => (
 							<span
 								key={tag}
-								className="inline-flex items-center rounded-md bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground"
+								className="inline-flex items-center rounded-lg border-2 border-border bg-card px-3 py-1 text-[10px] font-black shadow-[3px_3px_0px_var(--border)]"
 							>
 								{tag}
 							</span>
@@ -120,7 +122,7 @@ export default async function PostPage({ params }: Props) {
 			</header>
 
 			{/* MDX 内容渲染区域 */}
-			<div className="prose prose-zinc dark:prose-invert max-w-none">
+			<div className="prose prose-zinc dark:prose-invert max-w-none prose-h2:text-4xl prose-h2:font-black prose-h3:text-2xl prose-h3:font-black prose-p:text-lg prose-p:leading-relaxed prose-strong:text-primary prose-a:text-accent prose-a:no-underline hover:prose-a:underline">
 				<MDXRemote
 					source={post.content}
 					components={components}
