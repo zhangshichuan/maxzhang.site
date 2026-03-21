@@ -27,30 +27,47 @@ export function Navbar() {
 	}
 
 	return (
-		<header className="sticky top-0 z-50 w-full border-b-2 border-border/10 bg-background/95 backdrop-blur-md">
-			<div className="container mx-auto flex h-16 max-w-screen-2xl items-center px-6">
+		<header className="
+    sticky top-0 z-50 w-full border-b-2 border-border/10 bg-background/95
+    backdrop-blur-md
+  ">
+			<div className="
+     container mx-auto flex h-16 max-w-screen-2xl items-center px-6
+   ">
 				{/* Logo */}
 				<div className="mr-8 flex">
-					<Link href="/" className="mr-8 flex items-center space-x-2 shrink-0">
+					<Link href="/" className="mr-8 flex shrink-0 items-center space-x-2">
 						<motion.span
 							whileHover={{ scale: 1.05, rotate: -2 }}
-							className="inline-block font-black text-2xl tracking-tighter bg-clip-text text-transparent bg-linear-to-r from-primary to-accent pb-1 whitespace-nowrap"
+							className="
+         inline-block bg-linear-to-r from-primary to-accent bg-clip-text pb-1
+         text-2xl font-black tracking-tighter whitespace-nowrap text-transparent
+       "
 						>
 							Max Zhang
 						</motion.span>
 					</Link>
 
 					{/* Desktop Nav - 动感药丸风格 */}
-					<nav className="hidden md:flex items-center gap-3 text-sm font-bold">
+					<nav className="
+       hidden items-center gap-3 text-sm font-bold
+       md:flex
+     ">
 						{navItems.map((item) => (
 							<Link
 								key={item.path}
-								href={item.path as any}
+								href={item.path}
 								className={cn(
-									'relative px-4 py-2 rounded-full transition-all duration-300 overflow-hidden',
+									`
+           relative overflow-hidden rounded-full px-4 py-2 transition-all
+           duration-300
+         `,
 									pathname === item.path
-										? 'text-primary-foreground shadow-(--shadow-pop) bg-primary'
-										: 'text-muted-foreground hover:text-foreground hover:bg-secondary/20',
+										? 'bg-primary text-primary-foreground shadow-(--shadow-pop)'
+										: `
+            text-muted-foreground
+            hover:bg-secondary/20 hover:text-foreground
+          `,
 								)}
 							>
 								{item.name}
@@ -64,7 +81,11 @@ export function Navbar() {
 					<Link href="/search">
 						<motion.div
 							whileHover={{ scale: 1.1, rotate: 5 }}
-							className="inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-border/10 transition-colors hover:border-primary/50 hover:bg-secondary/20"
+							className="
+         inline-flex h-10 w-10 items-center justify-center rounded-full border-2
+         border-border/10 transition-colors
+         hover:border-primary/50 hover:bg-secondary/20
+       "
 						>
 							<Search className="h-5 w-5" />
 							<span className="sr-only">Search</span>
@@ -76,7 +97,11 @@ export function Navbar() {
 							whileHover={{ scale: 1.1, rotate: 12 }}
 							whileTap={{ scale: 0.9 }}
 							onClick={toggleLanguage}
-							className="inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-border/10 transition-colors hover:border-primary/50 hover:bg-secondary/20"
+							className="
+         inline-flex h-10 w-10 items-center justify-center rounded-full border-2
+         border-border/10 transition-colors
+         hover:border-primary/50 hover:bg-secondary/20
+       "
 							title={t('switchLanguage')}
 						>
 							<Languages className="h-5 w-5" />
@@ -86,19 +111,32 @@ export function Navbar() {
 						<Link href="https://github.com/zhangshichuan" target="_blank" rel="noreferrer">
 							<motion.div
 								whileHover={{ scale: 1.1, rotate: -5 }}
-								className="inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-border/10 transition-colors hover:border-primary/50 hover:bg-secondary/20"
+								className="
+          inline-flex h-10 w-10 items-center justify-center rounded-full
+          border-2 border-border/10 transition-colors
+          hover:border-primary/50 hover:bg-secondary/20
+        "
 							>
 								<Github className="h-5 w-5" />
 								<span className="sr-only">GitHub</span>
 							</motion.div>
 						</Link>
 
-						<ThemeToggle className="h-10 w-10 cursor-pointer border-2 border-border/10 bg-background shadow-none hover:border-primary/50" />
+						<ThemeToggle className="
+        h-10 w-10 cursor-pointer border-2 border-border/10 bg-background
+        shadow-none
+        hover:border-primary/50
+      " />
 
 						{/* Mobile Menu Toggle */}
 						<motion.button
 							whileTap={{ scale: 0.9 }}
-							className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-border/10 transition-colors hover:bg-secondary"
+							className="
+         inline-flex h-10 w-10 items-center justify-center rounded-full border-2
+         border-border/10 transition-colors
+         hover:bg-secondary
+         md:hidden
+       "
 							onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
 						>
 							{isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -112,18 +150,30 @@ export function Navbar() {
 				<motion.div
 					initial={{ opacity: 0, y: -10 }}
 					animate={{ opacity: 1, y: 0 }}
-					className="md:hidden bg-background border-b-4 border-border shadow-xl"
+					className="
+       border-b-4 border-border bg-background shadow-xl
+       md:hidden
+     "
 				>
-					<div className="container py-6 space-y-2 px-6">
+					<div className="container space-y-2 px-6 py-6">
 						{navItems.map((item) => (
 							<Link
 								key={item.path}
-								href={item.path as any}
+								href={item.path}
 								className={cn(
-									'block px-6 py-4 text-base font-black transition-all rounded-2xl border-2 border-transparent',
+									`
+           block rounded-2xl border-2 border-transparent px-6 py-4 text-base
+           font-black transition-all
+         `,
 									pathname === item.path
-										? 'bg-primary text-primary-foreground border-border shadow-[4px_4px_0px_#1a1a1a]'
-										: 'text-muted-foreground hover:bg-secondary/30 hover:border-border/10',
+										? `
+            border-border bg-primary text-primary-foreground
+            shadow-[4px_4px_0px_#1a1a1a]
+          `
+										: `
+            text-muted-foreground
+            hover:border-border/10 hover:bg-secondary/30
+          `,
 								)}
 								onClick={() => setIsMobileMenuOpen(false)}
 							>

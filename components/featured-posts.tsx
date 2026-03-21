@@ -24,43 +24,72 @@ export function FeaturedPosts({ posts }: FeaturedPostsProps) {
 
 	return (
 		<section className="space-y-10">
-			<FadeIn className="flex items-end justify-between border-b-4 border-border pb-4" delay={0.4}>
+			<FadeIn className="
+     flex items-end justify-between border-b-4 border-border pb-4
+   " delay={0.4}>
 				<div className="space-y-1">
 					<h2 className="text-3xl font-black tracking-tight">{t('title')}</h2>
-					<p className="text-muted-foreground font-medium">{t('description')}</p>
+					<p className="font-medium text-muted-foreground">{t('description')}</p>
 				</div>
-				<Link href="/posts" className="group flex items-center gap-2 text-sm font-black uppercase tracking-widest text-primary hover:text-accent transition-colors">
-					{t('viewAll')} <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+				<Link href="/posts" className="
+      group flex items-center gap-2 text-sm font-black tracking-widest
+      text-primary uppercase transition-colors
+      hover:text-accent
+    ">
+					{t('viewAll')} <ArrowRight className="
+       size-4 transition-transform
+       group-hover:translate-x-1
+     " />
 				</Link>
 			</FadeIn>
 
-			<StaggerContainer className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3" delay={0.5}>
+			<StaggerContainer className="
+     grid gap-8
+     sm:grid-cols-2
+     lg:grid-cols-3
+   " delay={0.5}>
 				{posts.map((post, idx) => (
 					<StaggerItem key={post.slug}>
-						<Link href={`/posts/${post.slug}` as any} className="block h-full group">
-							<GlassCard className="h-full p-8 flex flex-col justify-between space-y-6">
+						<Link href={`/posts/${post.slug}`} className="group block h-full">
+							<GlassCard className="flex h-full flex-col justify-between space-y-6 p-8">
 								<div className="space-y-4">
-									<div className="flex flex-wrap items-center gap-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-										<span className="flex items-center gap-1.5 bg-muted px-2 py-1 rounded-md">
-											<Calendar className="h-3.5 w-3.5" />
+									<div className="
+           flex flex-wrap items-center gap-3 text-xs font-bold tracking-widest
+           text-muted-foreground uppercase
+         ">
+										<span className="
+            flex items-center gap-1.5 rounded-md bg-muted px-2 py-1
+          ">
+											<Calendar className="size-3.5" />
 											{post.date}
 										</span>
-										<span className="flex items-center gap-1.5 bg-muted px-2 py-1 rounded-md">
-											<Clock className="h-3.5 w-3.5" />
+										<span className="
+            flex items-center gap-1.5 rounded-md bg-muted px-2 py-1
+          ">
+											<Clock className="size-3.5" />
 											{post.readTime.text}
 										</span>
 									</div>
-									<h3 className="text-2xl font-black leading-tight group-hover:text-primary transition-colors line-clamp-2">
+									<h3 className="
+           line-clamp-2 text-2xl/tight font-black transition-colors
+           group-hover:text-primary
+         ">
 										{post.title}
 									</h3>
-									<p className="text-muted-foreground font-medium line-clamp-3 leading-relaxed">{post.summary}</p>
+									<p className="
+           line-clamp-3 leading-relaxed font-medium text-muted-foreground
+         ">{post.summary}</p>
 								</div>
 								<div className="flex flex-wrap gap-2 pt-4">
 									{post.tags.map((tag, tIdx) => (
 										<span
 											key={tag}
 											className={cn(
-												"inline-flex items-center rounded-lg border-2 px-3 py-1 text-xs font-black uppercase tracking-tight shadow-[2px_2px_0px_rgba(0,0,0,1)]",
+												`
+              inline-flex items-center rounded-lg border-2 px-3 py-1 text-xs
+              font-black tracking-tight uppercase
+              shadow-[2px_2px_0px_rgba(0,0,0,1)]
+            `,
 												tagColors[(idx + tIdx) % tagColors.length]
 											)}
 										>

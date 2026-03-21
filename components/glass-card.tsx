@@ -18,11 +18,11 @@ export function GlassCard({ children, className, hoverEffect = true }: GlassCard
 			whileHover={hoverEffect ? { x: -2, y: -2 } : {}}
 			transition={{ type: 'spring', stiffness: 400, damping: 10 }}
 			className={cn(
-				'relative overflow-hidden rounded-[--radius] bg-card text-card-foreground',
+				'bg-card text-card-foreground relative overflow-hidden rounded-[--radius]',
 				'border-2 border-border transition-all duration-200',
 				// 使用 CSS 变量中定义的实体阴影
 				'shadow-(--shadow-pop)',
-				hoverEffect && 'hover:shadow-(--shadow-pop-hover) hover:bg-secondary/5',
+				hoverEffect && 'hover:bg-secondary/5 hover:shadow-(--shadow-pop-hover)',
 				className,
 			)}
 		>

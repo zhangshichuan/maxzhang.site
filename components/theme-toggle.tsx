@@ -25,8 +25,15 @@ export function ThemeToggle({ className }: { className?: string }) {
 			whileTap={{ scale: 0.9, rotate: 15 }}
 			onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
 			className={cn(
-				'relative inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-border transition-colors overflow-hidden',
-				'bg-background hover:bg-secondary/20 shadow-[2px_2px_0px_var(--border)] active:shadow-none active:translate-x-px active:translate-y-px',
+				`
+      relative inline-flex h-10 w-10 items-center justify-center overflow-hidden
+      rounded-full border-2 border-border transition-colors
+    `,
+				`
+      bg-background shadow-[2px_2px_0px_var(--border)]
+      hover:bg-secondary/20
+      active:translate-x-px active:translate-y-px active:shadow-none
+    `,
 				className,
 			)}
 		>

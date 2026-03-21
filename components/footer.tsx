@@ -5,9 +5,19 @@ export function Footer() {
 	const currentYear = new Date().getFullYear()
 
 	return (
-		<footer className="border-t border-border/40 py-6 md:py-0">
-			<div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row max-w-screen-2xl mx-auto px-4">
-				<p className="text-balance text-center text-sm leading-loose text-muted-foreground md:text-left">
+		<footer className="
+    border-t border-border/40 py-6
+    md:py-0
+  ">
+			<div className="
+     container mx-auto flex max-w-screen-2xl flex-col items-center
+     justify-between gap-4 px-4
+     md:h-24 md:flex-row
+   ">
+				<p className="
+      text-center text-sm/loose text-balance text-muted-foreground
+      md:text-left
+    ">
 					{t.rich('builtBy', {
 						name: (chunks) => (
 							<a

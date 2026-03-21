@@ -119,18 +119,27 @@ export function SearchClient({ posts }: SearchClientProps) {
 		<div className="space-y-8">
 			{/* 搜索输入框区域 */}
 			<div className="relative">
-				<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+				<Search className="
+      absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-muted-foreground
+    " />
 				<input
 					type="text"
 					value={query}
 					onChange={handleSearch}
 					placeholder={t('placeholder')}
-					className="w-full pl-10 pr-4 py-3 rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+					className="
+       w-full rounded-lg border bg-background py-3 pr-4 pl-10 transition-all
+       focus:border-transparent focus:ring-2 focus:ring-primary
+       focus:outline-none
+     "
 				/>
 				{query && (
 					<button
 						onClick={() => setQuery('')}
-						className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-secondary rounded-full"
+						className="
+        absolute top-1/2 right-3 -translate-y-1/2 rounded-full p-1
+        hover:bg-secondary
+      "
 					>
 						<X className="h-4 w-4 text-muted-foreground" />
 					</button>
@@ -138,10 +147,15 @@ export function SearchClient({ posts }: SearchClientProps) {
 			</div>
 
 			{/* 分类和标签选择区域 */}
-			<div className="grid gap-6 md:grid-cols-2">
+			<div className="
+     grid gap-6
+     md:grid-cols-2
+   ">
 				{/* 分类列表 */}
 				<div className="space-y-3">
-					<h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+					<h3 className="
+       flex items-center gap-2 text-sm font-medium text-muted-foreground
+     ">
 						<Folder className="h-4 w-4" /> {t('category')}
 					</h3>
 					<div className="flex flex-wrap gap-2">
@@ -149,11 +163,22 @@ export function SearchClient({ posts }: SearchClientProps) {
 							<button
 								key={category}
 								onClick={() => handleCategoryClick(category)}
-								className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+								className={`
+          inline-flex items-center rounded-md border px-2.5 py-1 text-xs
+          font-medium transition-colors
+          focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none
+          ${
 									selectedCategory === category
-										? 'border-transparent bg-primary text-primary-foreground hover:bg-primary/80'
-										: 'border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80'
-								}`}
+										? `
+            border-transparent bg-primary text-primary-foreground
+            hover:bg-primary/80
+          `
+										: `
+            border-transparent bg-secondary text-secondary-foreground
+            hover:bg-secondary/80
+          `
+								}
+        `}
 							>
 								{category}
 							</button>
@@ -169,11 +194,22 @@ export function SearchClient({ posts }: SearchClientProps) {
 							<button
 								key={tag}
 								onClick={() => handleTagClick(tag)}
-								className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+								className={`
+          inline-flex items-center rounded-md border px-2.5 py-1 text-xs
+          font-medium transition-colors
+          focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none
+          ${
 									selectedTag === tag
-										? 'border-transparent bg-primary text-primary-foreground hover:bg-primary/80'
-										: 'border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80'
-								}`}
+										? `
+            border-transparent bg-primary text-primary-foreground
+            hover:bg-primary/80
+          `
+										: `
+            border-transparent bg-secondary text-secondary-foreground
+            hover:bg-secondary/80
+          `
+								}
+        `}
 							>
 								{tag}
 							</button>
@@ -184,25 +220,40 @@ export function SearchClient({ posts }: SearchClientProps) {
 
 			{/* 当前筛选条件展示 */}
 			{hasFilters && (
-				<div className="flex flex-wrap gap-2 items-center pt-4 border-t">
+				<div className="flex flex-wrap items-center gap-2 border-t pt-4">
 					<span className="text-sm text-muted-foreground">{t('currentFilter')}:</span>
 					{selectedCategory && (
-						<span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary border border-primary/20">
+						<span className="
+        inline-flex items-center gap-1 rounded-md border border-primary/20
+        bg-primary/10 px-2 py-1 text-xs font-medium text-primary
+      ">
 							{t('category')}: {selectedCategory}
-							<button onClick={clearCategory} className="ml-1 hover:text-primary/70">
-								<X className="h-3 w-3" />
+							<button onClick={clearCategory} className="
+         ml-1
+         hover:text-primary/70
+       ">
+								<X className="size-3" />
 							</button>
 						</span>
 					)}
 					{selectedTag && (
-						<span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary border border-primary/20">
+						<span className="
+        inline-flex items-center gap-1 rounded-md border border-primary/20
+        bg-primary/10 px-2 py-1 text-xs font-medium text-primary
+      ">
 							{t('tag')}: {selectedTag}
-							<button onClick={clearTag} className="ml-1 hover:text-primary/70">
-								<X className="h-3 w-3" />
+							<button onClick={clearTag} className="
+         ml-1
+         hover:text-primary/70
+       ">
+								<X className="size-3" />
 							</button>
 						</span>
 					)}
-					<button onClick={clearFilters} className="text-xs text-muted-foreground hover:text-primary underline">
+					<button onClick={clearFilters} className="
+       text-xs text-muted-foreground underline
+       hover:text-primary
+     ">
 						{t('clearAll')}
 					</button>
 				</div>
@@ -219,10 +270,13 @@ export function SearchClient({ posts }: SearchClientProps) {
 
 				{/* 状态：有筛选条件但无结果 */}
 				{hasFilters && filteredPosts.length === 0 && (
-					<div className="text-center py-20 text-muted-foreground">
-						<Search className="h-10 w-10 mx-auto mb-4 opacity-20" />
+					<div className="py-20 text-center text-muted-foreground">
+						<Search className="mx-auto mb-4 h-10 w-10 opacity-20" />
 						<p className="text-lg">{t('noResults')}</p>
-						<button onClick={clearFilters} className="mt-4 text-primary hover:underline">
+						<button onClick={clearFilters} className="
+        mt-4 text-primary
+        hover:underline
+      ">
 							{t('clearFilters')}
 						</button>
 					</div>
@@ -230,8 +284,8 @@ export function SearchClient({ posts }: SearchClientProps) {
 
 				{/* 状态：初始状态（无筛选） */}
 				{!hasFilters && (
-					<div className="text-center py-20 text-muted-foreground">
-						<Search className="h-10 w-10 mx-auto mb-4 opacity-10" />
+					<div className="py-20 text-center text-muted-foreground">
+						<Search className="mx-auto mb-4 h-10 w-10 opacity-10" />
 						<p className="text-lg">{t('startSearch')}</p>
 					</div>
 				)}

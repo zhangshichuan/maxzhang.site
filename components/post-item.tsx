@@ -21,35 +21,61 @@ export function PostItem({ post }: PostItemProps) {
 	const readingTime = Math.ceil(post.readTime.minutes)
 
 	return (
-		<Link href={`/posts/${post.slug}` as any} className="block group">
-			<GlassCard className="p-8 transition-all duration-300 border-2 border-border/10 hover:border-primary group-hover:bg-secondary/5">
+		<Link href={`/posts/${post.slug}`} className="group block">
+			<GlassCard className="
+     border-2 border-border/10 p-8 transition-all duration-300
+     group-hover:bg-secondary/5
+     hover:border-primary
+   ">
 				<article className="flex flex-col space-y-4">
-					<div className="flex flex-wrap items-center gap-4 text-xs font-black uppercase tracking-widest text-muted-foreground">
+					<div className="
+       flex flex-wrap items-center gap-4 text-xs font-black tracking-widest
+       text-muted-foreground uppercase
+     ">
 						<time
 							dateTime={post.date}
-							className="flex items-center gap-1.5 bg-muted px-2 py-1 rounded-md border border-border/5"
+							className="
+         flex items-center gap-1.5 rounded-md border border-border/5 bg-muted
+         px-2 py-1
+       "
 						>
-							<Calendar className="h-4 w-4" />
+							<Calendar className="size-4" />
 							{post.date}
 						</time>
-						<span className="flex items-center gap-1.5 bg-muted px-2 py-1 rounded-md border border-border/5">
-							<Clock className="h-4 w-4" />
+						<span className="
+        flex items-center gap-1.5 rounded-md border border-border/5 bg-muted
+        px-2 py-1
+      ">
+							<Clock className="size-4" />
 							{t('readingTime', { minutes: readingTime })}
 						</span>
 						{post.category && (
-							<span className="flex items-center gap-1.5 bg-primary/10 text-primary px-2 py-1 rounded-md border border-primary/10">
-								<Folder className="h-4 w-4" />
+							<span className="
+         flex items-center gap-1.5 rounded-md border border-primary/10
+         bg-primary/10 px-2 py-1 text-primary
+       ">
+								<Folder className="size-4" />
 								{post.category}
 							</span>
 						)}
 					</div>
 
 					<div className="space-y-2">
-						<h2 className="text-3xl font-black tracking-tight group-hover:text-primary transition-colors flex items-center justify-between">
+						<h2 className="
+        flex items-center justify-between text-3xl font-black tracking-tight
+        transition-colors
+        group-hover:text-primary
+      ">
 							{post.title}
-							<ArrowRight className="h-6 w-6 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-primary" />
+							<ArrowRight className="
+         h-6 w-6 -translate-x-4 text-primary opacity-0 transition-all
+         group-hover:translate-x-0 group-hover:opacity-100
+       " />
 						</h2>
-						<p className="text-muted-foreground font-medium text-lg line-clamp-2 leading-relaxed italic border-l-4 border-muted pl-4">
+						<p className="
+        line-clamp-2 border-l-4 border-muted pl-4 text-lg/relaxed font-medium
+        text-muted-foreground italic
+      ">
 							{post.summary}
 						</p>
 					</div>
@@ -59,7 +85,13 @@ export function PostItem({ post }: PostItemProps) {
 							<span
 								key={tag}
 								className={cn(
-									'inline-flex items-center rounded-lg border-2 px-3 py-1 text-[10px] font-black uppercase tracking-tight shadow-[2px_2px_0px_var(--border)] transition-all group-hover:shadow-none group-hover:translate-x-px group-hover:translate-y-px',
+									`
+           inline-flex items-center rounded-lg border-2 px-3 py-1 text-[10px]
+           font-black tracking-tight uppercase
+           shadow-[2px_2px_0px_var(--border)] transition-all
+           group-hover:translate-px
+           group-hover:shadow-none
+         `,
 									tagColors[tIdx % tagColors.length],
 								)}
 							>

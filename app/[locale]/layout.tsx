@@ -36,7 +36,7 @@ export default async function RootLayout({
 	const { locale } = await params
 
 	// Ensure that the incoming `locale` is valid
-	if (!routing.locales.includes(locale as any)) {
+	if (!routing.locales.includes(locale as (typeof routing.locales)[number])) {
 		notFound()
 	}
 
@@ -46,7 +46,7 @@ export default async function RootLayout({
 
 	return (
 		<html lang={locale} suppressHydrationWarning>
-			<body className="antialiased min-h-screen flex flex-col font-sans">
+			<body className="flex min-h-screen flex-col font-sans antialiased">
 				<NextIntlClientProvider messages={messages}>
 					<ThemeProvider
 						attribute="class"

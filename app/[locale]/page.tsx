@@ -11,7 +11,7 @@ export default async function Home({
 	const posts = getAllPosts(locale).slice(0, 3)
 
 	return (
-		<div className="container max-w-screen-2xl mx-auto px-4 py-10 space-y-20">
+		<div className="container mx-auto max-w-screen-2xl space-y-20 px-4 py-10">
 			<HomeHero />
 			<FeaturedPosts posts={posts} />
 		</div>

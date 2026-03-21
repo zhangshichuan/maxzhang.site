@@ -58,8 +58,15 @@ export async function generateMetadata({ params }: Props) {
 const components = {
 	pre: ({ children, ...props }: React.ComponentPropsWithoutRef<'pre'>) => {
 		// 检查子元素是否是 code，且类名为 language-mermaid
-		if (React.isValidElement(children) && (children.props as any)?.className === 'language-mermaid') {
-			return <Mermaid chart={String((children.props as any).children).replace(/\n$/, '')} />
+		if (
+			React.isValidElement(children) &&
+			typeof children.props === 'object' &&
+			children.props !== null &&
+			'className' in children.props &&
+			children.props.className === 'language-mermaid'
+		) {
+			const chart = 'children' in children.props ? String(children.props.children) : ''
+			return <Mermaid chart={chart.replace(/\n$/, '')} />
 		}
 		return <pre {...props}>{children}</pre>
 	},
@@ -82,7 +89,7 @@ export default async function PostPage({ params }: Props) {
 	let post
 	try {
 		post = getPostBySlug(slug, locale)
-	} catch (error) {
+	} catch {
 		// 核心逻辑：如果当前文章没有对应语言的版本，
 		// 不报 404，而是优雅地跳转回该语言的文章列表页
 		console.warn(`Post not found: ${slug} for locale: ${locale}. Redirecting...`)
@@ -93,46 +100,80 @@ export default async function PostPage({ params }: Props) {
 	const readingTime = Math.ceil(post.readTime.minutes)
 
 	return (
-		<article className="container max-w-4xl mx-auto px-6 py-12">
+		<article className="container mx-auto max-w-4xl px-6 py-12">
 			{/* 返回链接 */}
 			<Link
 				href="/posts"
-				className="inline-flex items-center text-sm font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-all mb-10 group bg-secondary/10 px-4 py-2 rounded-xl border-2 border-transparent hover:border-border"
+				className="
+      group mb-10 inline-flex items-center rounded-xl border-2
+      border-transparent bg-secondary/10 px-4 py-2 text-sm font-black
+      tracking-widest text-muted-foreground uppercase transition-all
+      hover:border-border hover:text-primary
+    "
 			>
-				<ArrowLeft className="mr-2 h-5 w-5 transition-transform group-hover:-translate-x-1" />
+				<ArrowLeft
+					className="
+      mr-2 size-5 transition-transform
+      group-hover:-translate-x-1
+    "
+				/>
 				{tPosts('back')}
 			</Link>
 
 			<header className="mb-16 space-y-8">
 				{/* 文章标题 */}
-				<h1 className="text-5xl font-black tracking-tight lg:text-7xl text-foreground leading-[1.1] underline decoration-primary/20 decoration-8 underline-offset-8">
+				<h1
+					className="
+      text-5xl leading-[1.1] font-black tracking-tight text-foreground underline
+      decoration-primary/20 decoration-8 underline-offset-8
+      lg:text-7xl
+    "
+				>
 					{post.title}
 				</h1>
 
 				{/* 文章元信息 */}
-				<div className="flex flex-wrap items-center gap-6 text-muted-foreground text-sm font-bold uppercase tracking-wider">
-					<time dateTime={post.date} className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-lg">
+				<div
+					className="
+      flex flex-wrap items-center gap-6 text-sm font-bold tracking-wider
+      text-muted-foreground uppercase
+    "
+				>
+					<time
+						dateTime={post.date}
+						className="
+       flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5
+     "
+					>
 						<Calendar className="h-5 w-5 text-primary" />
 						{post.date}
 					</time>
-					<span className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-lg">
+					<span className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
 						<Clock className="h-5 w-5 text-accent" />
 						{t('readingTime', { minutes: readingTime })}
 					</span>
-					<span className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-lg">
+					<span className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
 						<User className="h-5 w-5 text-secondary-foreground" />
 						{post.author}
 					</span>
-					<span className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-lg border-2 border-primary/10">
+					<span
+						className="
+       flex items-center gap-2 rounded-lg border-2 border-primary/10
+       bg-primary/10 px-3 py-1.5 text-primary
+     "
+					>
 						<Folder className="h-5 w-5" />
 						{post.category}
 					</span>
 
-					<div className="flex flex-wrap gap-2 ml-auto">
+					<div className="ml-auto flex flex-wrap gap-2">
 						{post.tags.map((tag) => (
 							<span
 								key={tag}
-								className="inline-flex items-center rounded-lg border-2 border-border bg-card px-3 py-1 text-[10px] font-black shadow-[3px_3px_0px_var(--border)]"
+								className="
+          bg-card inline-flex items-center rounded-lg border-2 border-border
+          px-3 py-1 text-[10px] font-black shadow-[3px_3px_0px_var(--border)]
+        "
 							>
 								{tag}
 							</span>
@@ -142,7 +183,18 @@ export default async function PostPage({ params }: Props) {
 			</header>
 
 			{/* MDX 内容渲染区域 */}
-			<div className="prose prose-zinc dark:prose-invert max-w-none prose-h2:text-4xl prose-h2:font-black prose-h3:text-2xl prose-h3:font-black prose-p:text-lg prose-p:leading-relaxed prose-strong:text-primary prose-a:text-accent prose-a:no-underline hover:prose-a:underline">
+			<div
+				className="
+     prose max-w-none prose-zinc
+     dark:prose-invert
+     prose-h2:text-4xl prose-h2:font-black
+     prose-h3:text-2xl prose-h3:font-black
+     prose-p:text-lg/relaxed
+     prose-a:text-accent prose-a:no-underline
+     hover:prose-a:underline
+     prose-strong:text-primary
+   "
+			>
 				<MDXRemote
 					source={post.content}
 					components={components}

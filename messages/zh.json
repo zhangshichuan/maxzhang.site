@@ -1,94 +1,94 @@
 {
-  "Common": {
-    "title": "Max Zhang",
-    "readingTime": "{minutes} 分钟阅读",
-    "nav": {
-      "home": "首页",
-      "posts": "文章",
-      "about": "关于",
-      "switchLanguage": "切换至英文"
-    },
-    "footer": {
-      "builtBy": "由 <name>Max Zhang</name> 构建。© {year} 保留所有权利。"
-    }
-  },
-  "HomePage": {
-    "hero": {
-      "readArticles": "阅读文章",
-      "aboutMe": "关于我"
-    },
-    "featuredPosts": {
-      "title": "最新文章",
-      "description": "探索技术与创意的边界",
-      "viewAll": "查看全部"
-    }
-  },
-  "AboutPage": {
-    "title": "关于我 - Max Zhang",
-    "role": "软件工程师",
-    "location": "中国 成都",
-    "description": "嗨！我是一名全栈架构师，热衷于使用 <primary>Node.js</primary> 和 <primary>TypeScript</primary> 构建高性能系统。我利用 <accent>Docker</accent> 和 <accent>K3s</accent> 编排精英级的 <accent>DevOps</accent> 工作流，使用 <secondary>PostgreSQL</secondary> 和 <secondary>MQ</secondary> 扩展复杂数据，并使用 <primary>Rust</primary> 探索性能极限——同时通过 <accent>ELK</accent> 和高级<accent>监控</accent>确保系统的可观测性。",
-    "workExperience": "工作经历",
-    "education": "教育经历",
-    "techStack": "技术栈",
-    "interests": "兴趣点",
-    "experience": [
-      {
-        "role": "前端主管",
-        "company": "成都睿晟天和传媒科技有限公司",
-        "department": "产品研发部",
-        "period": "2021.02 - 2025.12",
-        "tags": ["React", "Next.js", "Node.js", "Prisma", "PostgreSQL", "Zod"],
-        "points": [
-          "主导广告业务数字化平台从 0 到 1 的建设与落地，实现（业财法）流程线上化与智能化",
-          "参与跨境电商业务系统搭建与实施，推动业务从无到有的全流程落地",
-          "负责 AI 混剪及广告批量投放系统的设计与开发，提升广告投放效率与自动化水平，打通从 AI 素材制作，素材评级 and 管理，广告搭建，批量投放，数据回溯等全流程循环",
-          "AI 平面素材生成，AI 视频混剪、集成美图 AI 工具，TTS 服务、官网、小程序",
-          "各类跨部门、跨公司协作，从追过程到拿结果。基础设施建设（监控、脚手架、AI），团建组织、年会节目、抽奖程序等"
-        ]
-      },
-      {
-        "role": "前端架构师",
-        "company": "成都魔方元科技有限公司",
-        "department": "产品研发部",
-        "period": "2020.01 - 2021.01",
-        "tags": ["TypeScript", "Linux", "Vue", "Node.js", "PHP7", "React"],
-        "points": [
-          "跨国内外多团队、多语种沟通和协作，完成技术需求沟通到落地实现",
-          "维护和迭代 20+ 周期超 10 年的前端（jQuery/原生混合 JSBridge/Vue/聊天室）后端（Node.js/PHP）项目"
-        ]
-      }
-    ],
-    "educationList": [
-      {
-        "school": "Northern Arizona University",
-        "period": "2025 - 2026",
-        "degree": "硕士学位，MCIT"
-      }
-    ],
-    "interestList": ["开源", "UI/UX 设计", "全栈开发", "人工智能"]
-  },
-  "PostsPage": {
-    "title": "文章库",
-    "description": "探索技术、设计与生活的交汇点。",
-    "categories": "热门分类",
-    "tags": "热门标签",
-    "noPosts": "暂无文章，敬请期待。",
-    "noCategories": "暂无分类",
-    "noTags": "暂无标签",
-    "back": "返回文章列表"
-  },
-  "SearchPage": {
-    "title": "搜索文章",
-    "loading": "加载搜索组件...",
-    "placeholder": "搜索文章标题、内容、标签...",
-    "category": "分类",
-    "tag": "标签",
-    "currentFilter": "当前筛选",
-    "clearAll": "清除所有",
-    "found": "找到 {count} 篇相关文章",
-    "noResults": "没有找到匹配的文章",
-    "startSearch": "输入关键词或选择标签开始搜索",
-    "clearFilters": "清除筛选条件"
-  }
+	"Common": {
+		"title": "Max Zhang",
+		"readingTime": "{minutes} 分钟阅读",
+		"nav": {
+			"home": "首页",
+			"posts": "文章",
+			"about": "关于",
+			"switchLanguage": "切换至英文"
+		},
+		"footer": {
+			"builtBy": "由 <name>Max Zhang</name> 构建。© {year} 保留所有权利。"
+		}
+	},
+	"HomePage": {
+		"hero": {
+			"readArticles": "阅读文章",
+			"aboutMe": "关于我"
+		},
+		"featuredPosts": {
+			"title": "最新文章",
+			"description": "探索技术与创意的边界",
+			"viewAll": "查看全部"
+		}
+	},
+	"AboutPage": {
+		"title": "关于我 - Max Zhang",
+		"role": "软件工程师",
+		"location": "中国 成都",
+		"description": "嗨！我是一名全栈架构师，热衷于使用 <primary>Node.js</primary> 和 <primary>TypeScript</primary> 构建高性能系统。我利用 <accent>Docker</accent> 和 <accent>K3s</accent> 编排精英级的 <accent>DevOps</accent> 工作流，使用 <secondary>PostgreSQL</secondary> 和 <secondary>MQ</secondary> 扩展复杂数据，并使用 <primary>Rust</primary> 探索性能极限——同时通过 <accent>ELK</accent> 和高级<accent>监控</accent>确保系统的可观测性。",
+		"workExperience": "工作经历",
+		"education": "教育经历",
+		"techStack": "技术栈",
+		"interests": "兴趣点",
+		"experience": [
+			{
+				"role": "前端主管",
+				"company": "成都睿晟天和传媒科技有限公司",
+				"department": "产品研发部",
+				"period": "2021.02 - 2025.12",
+				"tags": ["React", "Next.js", "Node.js", "Prisma", "PostgreSQL", "Zod"],
+				"points": [
+					"主导广告业务数字化平台从 0 到 1 的建设与落地，实现（业财法）流程线上化与智能化",
+					"参与跨境电商业务系统搭建与实施，推动业务从无到有的全流程落地",
+					"负责 AI 混剪及广告批量投放系统的设计与开发，提升广告投放效率与自动化水平，打通从 AI 素材制作，素材评级 and 管理，广告搭建，批量投放，数据回溯等全流程循环",
+					"AI 平面素材生成，AI 视频混剪、集成美图 AI 工具，TTS 服务、官网、小程序",
+					"各类跨部门、跨公司协作，从追过程到拿结果。基础设施建设（监控、脚手架、AI），团建组织、年会节目、抽奖程序等"
+				]
+			},
+			{
+				"role": "前端架构师",
+				"company": "成都魔方元科技有限公司",
+				"department": "产品研发部",
+				"period": "2020.01 - 2021.01",
+				"tags": ["TypeScript", "Linux", "Vue", "Node.js", "PHP7", "React"],
+				"points": [
+					"跨国内外多团队、多语种沟通和协作，完成技术需求沟通到落地实现",
+					"维护和迭代 20+ 周期超 10 年的前端（jQuery/原生混合 JSBridge/Vue/聊天室）后端（Node.js/PHP）项目"
+				]
+			}
+		],
+		"educationList": [
+			{
+				"school": "Northern Arizona University",
+				"period": "2025 - 2026",
+				"degree": "硕士学位，MCIT"
+			}
+		],
+		"interestList": ["开源", "UI/UX 设计", "全栈开发", "人工智能"]
+	},
+	"PostsPage": {
+		"title": "文章库",
+		"description": "探索技术、设计与生活的交汇点。",
+		"categories": "热门分类",
+		"tags": "热门标签",
+		"noPosts": "暂无文章，敬请期待。",
+		"noCategories": "暂无分类",
+		"noTags": "暂无标签",
+		"back": "返回文章列表"
+	},
+	"SearchPage": {
+		"title": "搜索文章",
+		"loading": "加载搜索组件...",
+		"placeholder": "搜索文章标题、内容、标签...",
+		"category": "分类",
+		"tag": "标签",
+		"currentFilter": "当前筛选",
+		"clearAll": "清除所有",
+		"found": "找到 {count} 篇相关文章",
+		"noResults": "没有找到匹配的文章",
+		"startSearch": "输入关键词或选择标签开始搜索",
+		"clearFilters": "清除筛选条件"
+	}
 }
