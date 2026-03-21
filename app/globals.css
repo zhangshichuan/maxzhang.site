@@ -92,3 +92,7 @@ body {
 	background-image: radial-gradient(var(--muted) 1px, transparent 1px);
 	background-size: 24px 24px;
 }
+
+main {
+	min-height: calc(100vh - 4rem - 6rem);
+}

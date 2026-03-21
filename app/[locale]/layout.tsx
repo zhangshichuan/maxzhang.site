@@ -23,6 +23,11 @@ export async function generateMetadata({
 	return {
 		title: t('title'),
 		description: 'Personal website of Max Zhang',
+		viewport: {
+			width: 'device-width',
+			initialScale: 1,
+			viewportFit: 'cover',
+		},
 	}
 }
 
@@ -55,7 +60,11 @@ export default async function RootLayout({
 						disableTransitionOnChange
 					>
 						<Navbar />
-						<main className="flex-1">{children}</main>
+						<main className="flex-1">
+							{/* 静态滚动锚点：防止 Framer Motion 动画导致刷新时滚动条跳动 */}
+							<div className="h-px w-full opacity-0" aria-hidden="true" />
+							{children}
+						</main>
 						<Footer />
 					</ThemeProvider>
 				</NextIntlClientProvider>

@@ -47,7 +47,7 @@ export default function AboutPage() {
        duration-500
        group-hover:opacity-100
      " />
-					<Image src={Avatar} alt="Max Zhang" className="rounded-full object-cover" />
+					<Image src={Avatar} alt="Max Zhang" className="rounded-full object-cover" priority />
 				</div>
 
 				<div className="flex-1 space-y-6">

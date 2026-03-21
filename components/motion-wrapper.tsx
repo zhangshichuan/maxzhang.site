@@ -13,7 +13,7 @@ interface WrapperProps {
 export function FadeIn({ children, className, delay = 0 }: WrapperProps) {
 	return (
 		<motion.div
-			initial={{ opacity: 0, y: 20 }}
+			initial={{ opacity: 0, y: 10 }}
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ duration: 0.5, delay }}
 			className={className}
@@ -51,7 +51,7 @@ export function StaggerItem({ children, className }: { children: ReactNode; clas
 	return (
 		<motion.div
 			variants={{
-				hidden: { opacity: 0, y: 20 },
+				hidden: { opacity: 0, y: 10 },
 				visible: { opacity: 1, y: 0 },
 			}}
 			className={className}
