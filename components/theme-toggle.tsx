@@ -7,7 +7,7 @@ import { useTheme } from 'next-themes'
 import * as React from 'react'
 
 export function ThemeToggle({ className }: { className?: string }) {
-	const { theme, setTheme } = useTheme()
+	const { resolvedTheme, setTheme } = useTheme()
 	const [mounted, setMounted] = React.useState(false)
 
 	// Avoid hydration mismatch
@@ -23,7 +23,7 @@ export function ThemeToggle({ className }: { className?: string }) {
 		<motion.button
 			whileHover={{ scale: 1.1 }}
 			whileTap={{ scale: 0.9, rotate: 15 }}
-			onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+			onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
 			className={cn(
 				`
       relative inline-flex h-10 w-10 items-center justify-center overflow-hidden
@@ -38,7 +38,7 @@ export function ThemeToggle({ className }: { className?: string }) {
 			)}
 		>
 			<AnimatePresence mode="wait" initial={false}>
-				{theme === 'dark' ? (
+				{resolvedTheme === 'dark' ? (
 					<motion.div
 						key="moon"
 						initial={{ y: 20, rotate: 90, opacity: 0 }}
@@ -46,7 +46,7 @@ export function ThemeToggle({ className }: { className?: string }) {
 						exit={{ y: -20, rotate: -90, opacity: 0 }}
 						transition={{ type: 'spring', stiffness: 300, damping: 20 }}
 					>
-						<Moon className="h-5 w-5 text-primary" />
+						<Moon className="size-5 text-primary" />
 					</motion.div>
 				) : (
 					<motion.div
@@ -56,7 +56,7 @@ export function ThemeToggle({ className }: { className?: string }) {
 						exit={{ y: -20, rotate: -90, opacity: 0 }}
 						transition={{ type: 'spring', stiffness: 300, damping: 20 }}
 					>
-						<Sun className="h-5 w-5 text-secondary-foreground" />
+						<Sun className="size-5 text-secondary-foreground" />
 					</motion.div>
 				)}
 			</AnimatePresence>

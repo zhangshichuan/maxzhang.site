@@ -36,9 +36,9 @@ export function HomeHero() {
 				</div>
 			</div>
 
-			<FadeIn className="flex flex-col gap-4">
+			<FadeIn className="flex max-w-full flex-col gap-4">
 				<h1 className="
-      text-4xl leading-[1.2] font-black tracking-tight text-foreground
+      max-w-full text-4xl leading-[1.2] font-black tracking-tight text-foreground
       sm:text-6xl
       xl:text-8xl/none
     ">

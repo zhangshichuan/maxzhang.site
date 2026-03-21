@@ -100,7 +100,7 @@ export default async function PostPage({ params }: Props) {
 	const readingTime = Math.ceil(post.readTime.minutes)
 
 	return (
-		<article className="container mx-auto max-w-4xl px-6 py-12">
+		<article className="container mx-auto max-w-4xl px-4 py-12 md:px-6">
 			{/* 返回链接 */}
 			<Link
 				href="/posts"
@@ -124,8 +124,9 @@ export default async function PostPage({ params }: Props) {
 				{/* 文章标题 */}
 				<h1
 					className="
-      text-5xl leading-[1.1] font-black tracking-tight text-foreground underline
+      text-4xl leading-[1.1] font-black tracking-tight text-foreground underline
       decoration-primary/20 decoration-8 underline-offset-8
+      sm:text-5xl
       lg:text-7xl
     "
 				>
@@ -145,15 +146,15 @@ export default async function PostPage({ params }: Props) {
        flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5
      "
 					>
-						<Calendar className="h-5 w-5 text-primary" />
+						<Calendar className="size-5 text-primary" />
 						{post.date}
 					</time>
 					<span className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
-						<Clock className="h-5 w-5 text-accent" />
+						<Clock className="size-5 text-accent" />
 						{t('readingTime', { minutes: readingTime })}
 					</span>
 					<span className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
-						<User className="h-5 w-5 text-secondary-foreground" />
+						<User className="size-5 text-secondary-foreground" />
 						{post.author}
 					</span>
 					<span
@@ -162,7 +163,7 @@ export default async function PostPage({ params }: Props) {
        bg-primary/10 px-3 py-1.5 text-primary
      "
 					>
-						<Folder className="h-5 w-5" />
+						<Folder className="size-5" />
 						{post.category}
 					</span>
 
