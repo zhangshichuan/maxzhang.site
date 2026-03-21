@@ -50,8 +50,8 @@ export default async function RootLayout({
 	const messages = await getMessages()
 
 	return (
-		<html lang={locale} suppressHydrationWarning>
-			<body className="flex min-h-screen flex-col font-sans antialiased">
+		<html lang={locale} className="scroll-pt-16" suppressHydrationWarning>
+			<body className="flex min-h-screen flex-col pt-16 font-sans antialiased">
 				<NextIntlClientProvider messages={messages}>
 					<ThemeProvider
 						attribute="class"

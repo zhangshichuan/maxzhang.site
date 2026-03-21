@@ -1,11 +1,11 @@
 'use client'
 
-import { PostItem } from '@/components/post-item'
-import { Folder, ArrowRight } from 'lucide-react'
-import { Link } from '@/i18n/routing'
-import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion-wrapper'
 import { GlassCard } from '@/components/glass-card'
+import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion-wrapper'
+import { PostItem } from '@/components/post-item'
+import { Link } from '@/i18n/routing'
 import { Post } from '@/lib/posts'
+import { ArrowRight, Folder } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 interface PostsClientProps {
@@ -20,22 +20,30 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
 	return (
 		<div className="container mx-auto max-w-screen-2xl px-4 py-10">
 			{/* 页面标题区域 */}
-			<FadeIn className="
+			<FadeIn
+				className="
      mb-12 flex flex-col items-start gap-4 border-b-4 border-border pb-12
-   ">
-				<h1 className="
+   "
+			>
+				<h1
+					className="
       text-5xl font-black tracking-tight
       sm:text-6xl
-    ">{t('title')}</h1>
+    "
+				>
+					{t('title')}
+				</h1>
 				<p className="text-xl font-medium text-muted-foreground">{t('description')}</p>
 			</FadeIn>
 
 			{/* 主内容区域 */}
-			<div className="
+			<div
+				className="
      grid gap-12
      sm:grid-cols-1
      lg:grid-cols-[2fr_1fr]
-   ">
+   "
+			>
 				{/* 左侧：文章列表 */}
 				<StaggerContainer className="space-y-10" delay={0.2}>
 					{posts.map((post) => (
@@ -52,10 +60,13 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
 
 				{/* 右侧：侧边栏 */}
 				<aside className="space-y-10">
-					<FadeIn className="
+					<FadeIn
+						className="
        sticky top-24 hidden space-y-10
        lg:block
-     " delay={0.4}>
+     "
+						delay={0.4}
+					>
 						{/* 热门分类模块 */}
 						<GlassCard className="p-8">
 							<h3 className="mb-6 flex items-center gap-2 text-xl font-black">{t('categories')}</h3>
@@ -74,15 +85,23 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
 											<Folder className="h-5 w-5 text-primary" />
 											{category}
 										</span>
-										<ArrowRight className="
-            h-4 w-4 opacity-0 transition-opacity
+										<ArrowRight
+											className="
+            size-4 opacity-0 transition-opacity
             group-hover:opacity-100
-          " />
+          "
+										/>
 									</Link>
 								))}
-								{allCategories.length === 0 && <p className="
+								{allCategories.length === 0 && (
+									<p
+										className="
           text-sm font-medium text-muted-foreground italic
-        ">{t('noCategories')}</p>}
+        "
+									>
+										{t('noCategories')}
+									</p>
+								)}
 							</div>
 						</GlassCard>
 
@@ -104,9 +123,15 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
 										{tag}
 									</Link>
 								))}
-								{allTags.length === 0 && <p className="
+								{allTags.length === 0 && (
+									<p
+										className="
           text-sm font-medium text-muted-foreground italic
-        ">{t('noTags')}</p>}
+        "
+									>
+										{t('noTags')}
+									</p>
+								)}
 							</div>
 						</GlassCard>
 					</FadeIn>
