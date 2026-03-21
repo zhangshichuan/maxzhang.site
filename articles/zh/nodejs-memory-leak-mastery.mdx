@@ -19,7 +19,7 @@ Node.js 基于 V8 引擎，其内存管理继承了 V8 的分代式垃圾回收�
 V8 将堆进一步划分为几个区域（Space），其中最核心的是**新生代（New Space）**和**老生代（Old Space）**。
 
 ```mermaid
-graph TB
+flowchart TD
     subgraph "V8 堆空间"
         N[新生代<br>（New Space）]
         O[老生代<br>（Old Space）]
@@ -59,12 +59,12 @@ V8 采用分代回收策略，对不同生命周期的对象使用不同算法�
   - 在标记之后，将存活对象向堆的一端移动，然后清理边界外的内存。这解决了碎片问题，但移动对象开销较大，因此 V8 会根据碎片程度决定何时进行整理。
 
 ```mermaid
-graph LR
-    subgraph "标记-清除"
+flowchart TD
+    subgraph Clean ["标记-清除"]
         A[标记前] --> B[标记存活对象]
         B --> C[清除未标记对象]
     end
-    subgraph "标记-整理"
+    subgraph Compact ["标记-整理"]
         D[标记后碎片化] --> E[移动存活对象]
         E --> F[内存连续]
     end

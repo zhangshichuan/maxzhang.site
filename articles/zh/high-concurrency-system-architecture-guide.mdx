@@ -67,7 +67,7 @@ flowchart TD
 在实际架构中，负载均衡往往在多个层面协同工作，形成一个完整的流量分发体系：
 
 ```mermaid
-flowchart TB
+flowchart TD
     User[用户] --> DNS[DNS负载均衡]
     DNS --> CDN[CDN边缘节点]
     DNS --> LVS[LVS四层负载均衡]
@@ -542,14 +542,12 @@ app.listen(3000, () => {
 ```mermaid
 flowchart TD
     subgraph S1 ["1. 单机部署 (基础级)"]
-        direction TB
         A1[客户端] --> B1[Nginx]
         B1 --> C1[App Server 1]
         B1 --> D1[App Server 2]
     end
 
     subgraph S2 ["2. 高可用部署 (企业级)"]
-        direction TB
         E2[客户端] --> F2[Keepalived VIP]
         F2 --> G2[Nginx 主]
         F2 --> H2[Nginx 备]
@@ -558,16 +556,12 @@ flowchart TD
     end
 
     subgraph S3 ["3. 全球部署 (跨国/大规模)"]
-        direction TB
         J3[用户 - 中国] --> K3[CDN - 北京]
         L3[用户 - 美国] --> M3[CDN - 纽约]
         K3 --> N3[源站 - 北京]
         M3 --> O3[源站 - 法兰克福]
         N3 & O3 --> P3[全局负载均衡 GSLB]
     end
-
-    %% 使用隐形连接线强制子图垂直排列
-    S1 ~~~ S2 ~~~ S3
 ```
 
 ---
@@ -1374,7 +1368,7 @@ async function refreshCache(key, ttl, fetchFunction) {
 ### 5.1 读写分离架构
 
 ```mermaid
-graph TD
+flowchart TD
     A[应用层] --> B[数据库中间件<br/>pgpool-II/PgBouncer]
     B --> C[主库<br/>处理写请求]
     B --> D[从库1<br/>处理读请求]
@@ -1726,7 +1720,7 @@ async function checkPoolHealth() {
 ### 6.2 金丝雀发布实现
 
 ```mermaid
-graph TD
+flowchart TD
     subgraph "第一阶段：金丝雀"
         LB[负载均衡器] --> V1_1[旧版本 90%]
         LB --> V1_2[旧版本 90%]
@@ -2061,7 +2055,6 @@ app.get('/api/new-payment', async (req, res) => {
 ```mermaid
 flowchart TD
     subgraph S1 ["数据采集层"]
-        direction TB
         A1[Node Exporter<br/>主机监控]
         A2[PostgreSQL Exporter<br/>数据库监控]
         A3[Redis Exporter<br/>缓存监控]
@@ -2069,26 +2062,22 @@ flowchart TD
     end
 
     subgraph S2 ["聚合存储层"]
-        direction TB
         B1[Prometheus<br/>时序数据库]
         B2[AlertManager<br/>告警管理]
     end
 
     subgraph S3 ["可视化层"]
-        direction TB
         C1[Grafana<br/>仪表盘]
         C2[Kibana<br/>日志分析]
     end
 
     subgraph S4 ["告警通知层"]
-        direction TB
         D1[钉钉/微信]
         D2[邮件/SMS]
         D3[PagerDuty]
     end
 
     subgraph S5 ["日志体系"]
-        direction TB
         E1[Filebeat<br/>日志采集]
         E2[Logstash<br/>日志处理]
         E3[Elasticsearch<br/>日志存储]
@@ -2103,9 +2092,6 @@ flowchart TD
 
     %% 日志体系流向
     E1 --> E2 --> E3 --> E4
-
-    %% 使用隐形连接线强制子图垂直排列
-    S1 ~~~ S2 ~~~ S3 ~~~ S4 ~~~ S5
 ```
 
 ### 7.2 Node.js应用监控

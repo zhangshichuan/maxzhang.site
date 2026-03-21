@@ -17,9 +17,14 @@ export async function generateMetadata({
 	}
 }
 
-export default async function PostsPage() {
+export default async function PostsPage({
+	params,
+}: {
+	params: Promise<{ locale: string }>
+}) {
+	const { locale } = await params
 	// 获取所有文章数据
-	const posts = getAllPosts()
+	const posts = getAllPosts(locale)
 
 	// 动态计算所有文章中出现过的唯一标签
 	const allTags = Array.from(new Set(posts.flatMap((post) => post.tags)))

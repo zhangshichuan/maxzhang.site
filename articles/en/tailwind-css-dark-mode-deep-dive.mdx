@@ -1,0 +1,139 @@
+---
+title: 'Deep Dive into Tailwind CSS v4 Dark Mode and Variant Mechanism'
+summary: 'Starting from a real-world case of GlassCard component failure, we explore the dark mode mechanism of Tailwind CSS v4, the principle of CSS variable overriding, and core concepts like @variant and @layer.'
+category: 'CSS'
+tags: ['Tailwind CSS', 'CSS Variables', 'Dark Mode']
+author: 'Max Zhang'
+date: '2026-02-10'
+---
+
+Recently, after upgrading to Tailwind CSS v4, I encountered an issue: my GlassCard component "failed" in dark mode. While the page background turned dark, the component insisted on staying light.
+
+This article records my findings while solving this problem, hoping to help you understand Tailwind CSS v4's dark mode, CSS variable overriding, and several confusing CSS concepts.
+
+## 1. The Crime Scene: The Mystery of GlassCard Failure
+
+### Phenomenon
+
+I used a `GlassCard` component in my page, with code roughly looking like this:
+
+```tsx
+<div className="bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 ...">{/* Content */}</div>
+```
+
+Meanwhile, I used `next-themes` to manage theme switching, with configuration like:
+
+```tsx
+<ThemeProvider attribute="class" defaultTheme="system">
+```
+
+**Result**:
+
+- When I clicked the toggle button, the page background color (controlled by `body`) successfully turned dark.
+- However, `GlassCard`'s background remained `bg-white/40`, making it extremely eye-straining on the dark background.
+
+### Why did this happen?
+
+The issue lies in a key difference between Tailwind CSS v4 and v3.
+
+**In the v3 era**, I used to write `darkMode: 'class'` in `tailwind.config.js`. This told Tailwind: "Hey, as long as you see a `.dark` class on the HTML tag, activate `dark:` styles."
+
+**In the v4 era**, Tailwind defaults to a **Media Query** strategy. That means the generated CSS rules look like:
+
+```css
+@media (prefers-color-scheme: dark) {
+  .dark\:bg-black\/40 { ... }
+}
+```
+
+This means: **Tailwind only listens to the OS**. If your system is in light mode, even if your webpage HTML has been assigned the `.dark` class by `next-themes`, Tailwind ignores it.
+
+### Fix: @variant
+
+To make Tailwind v4 recognize the `.dark` class again, you must explicitly define this variant in your CSS.
+
+Add this to `app/globals.css`:
+
+```css
+@variant dark (&:where(.dark, .dark *));
+```
+
+**Translation**:
+"Tailwind, please define a variant called `dark`. Its condition is: the current element either has the `.dark` class itself, or is a descendant of something with the `.dark` class."
+
+After adding this line, Tailwind will generate CSS selectors based on classes, working perfectly with `next-themes`.
+
+## 2. Why did some components still work? (The Magic of CSS Variables)
+
+You might ask: "Since `dark:` failed, why did the page background (body) switch correctly?"
+
+This is because the `body` color switch didn't use Tailwind's `dark:` variant at all; it relied purely on **CSS Variables (Custom Properties)**.
+
+Look at `globals.css`:
+
+```css
+:root {
+	--background: #ffffff;
+}
+
+.dark {
+	--background: #09090b; /* Variable is overridden */
+}
+
+body {
+	background-color: var(--background);
+}
+```
+
+**Simply put**:
+
+1. `next-themes` adds the `.dark` class to `<html>`.
+2. The CSS variable `--background` is redefined under the `.dark` class.
+3. The `body` using `var(--background)` automatically turns black.
+
+This is purely CSS's business and has nothing to do with Tailwind, so Tailwind version upgrades don't affect it.
+
+## 3. Core Concepts Clarification
+
+In the process of solving this, several terms kept popping up. I've sorted them out:
+
+### Variant
+
+The word "Variant" is used in several places in frontend, but with different meanings:
+
+- **Tailwind's `hover:`, `dark:`**: These are **State Variants**. Like "change color on hover" or "change background in dark mode".
+- **Component library's `variant="outline"`**: These are **Style Variants**. Like "I want the outlined version, not the filled one".
+- **CSS's `@variant`**: This is **Defining Variant Conditions**. Telling Tailwind "when to apply this variant".
+
+### Layer
+
+Tailwind divides styles into three layers, mainly to control precedence:
+
+1.  **Base (`@layer base`)**: **Foundational**.
+    - Resets default styles for HTML tags, like `h1` font size, `a` underline.
+    - _Basically_: Site-wide uniform default settings.
+
+2.  **Components (`@layer components`)**: **Component-based**.
+    - Packages a long string of Tailwind classes into one class, like `.btn`, `.card`.
+    - _Basically_: Giving common style combinations a short name.
+
+3.  **Utilities (`@layer utilities`)**: **Utility-based**.
+    - These are the `.p-4`, `.flex` atomic classes.
+    - _Basically_: Small tools for fine-tuning details.
+
+### Attribute="class"
+
+This `next-themes` configuration is important; it determines how the theme switch "toggle" is installed.
+
+- **`class`**: Adds/removes `class="dark"` on the `<html>` tag. Most common, best compatibility.
+- **`data-xxx`**: Changes `data-theme="dark"` on the `<html>` tag. Preferred by some component libraries (like DaisyUI).
+
+## Summary
+
+Through this debugging session, I understood several key points:
+
+1.  **Tailwind v4 defaults to system settings**; you need to manually add `@variant` to use `next-themes`.
+2.  **CSS Variables** are another path; they don't depend on Tailwind and aren't affected by version upgrades.
+3.  **Understand how tools work** (like `@layer`, `@variant`), so you'll know where to look next time you encounter a "ghostly phenomenon".
+
+Hope this experience helps you avoid some pitfalls.

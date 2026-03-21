@@ -1,12 +1,11 @@
-import * as React from 'react'
+import Mermaid from '@/components/mdx/mermaid'
+import { Link } from '@/i18n/routing'
 import { getPostBySlug, getPostSlugs } from '@/lib/posts'
 import { ArrowLeft, Calendar, Clock, Folder, User } from 'lucide-react'
-import { MDXRemote } from 'next-mdx-remote/rsc'
-import { Link } from '@/i18n/routing'
-import { notFound } from 'next/navigation'
-import remarkGfm from 'remark-gfm'
-import Mermaid from '@/components/mdx/mermaid'
 import { getTranslations } from 'next-intl/server'
+import { MDXRemote } from 'next-mdx-remote/rsc'
+import * as React from 'react'
+import remarkGfm from 'remark-gfm'
 
 interface Props {
 	params: Promise<{
@@ -21,11 +20,11 @@ interface Props {
  * 并预渲染每篇文章的 HTML 页面。
  */
 export async function generateStaticParams() {
-	const posts = getPostSlugs()
 	const locales = ['en', 'zh']
-	
+
 	const params = []
 	for (const locale of locales) {
+		const posts = getPostSlugs(locale)
 		for (const post of posts) {
 			params.push({
 				locale,
@@ -41,8 +40,8 @@ export async function generateStaticParams() {
  * 根据 URL 中的 slug 获取文章标题和摘要，用于页面 <head> 中的 meta标签。
  */
 export async function generateMetadata({ params }: Props) {
-	const { slug } = await params
-	const post = getPostBySlug(slug)
+	const { slug, locale } = await params
+	const post = getPostBySlug(slug, locale)
 
 	if (!post) {
 		return {
@@ -73,17 +72,21 @@ const components = {
 	},
 }
 
+import { redirect } from 'next/navigation'
+
 export default async function PostPage({ params }: Props) {
 	const { slug, locale } = await params
 	const t = await getTranslations({ locale, namespace: 'Common' })
 	const tPosts = await getTranslations({ locale, namespace: 'PostsPage' })
-	
+
 	let post
 	try {
-		post = getPostBySlug(slug)
-	} catch {
-		// 如果找不到对应的文章，显示 404 页面
-		notFound()
+		post = getPostBySlug(slug, locale)
+	} catch (error) {
+		// 核心逻辑：如果当前文章没有对应语言的版本，
+		// 不报 404，而是优雅地跳转回该语言的文章列表页
+		console.warn(`Post not found: ${slug} for locale: ${locale}. Redirecting...`)
+		redirect(`/${locale}/posts`)
 	}
 
 	// Format reading time

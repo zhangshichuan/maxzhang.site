@@ -35,7 +35,7 @@ date: '2026-03-10'
 **流程图**：
 
 ```mermaid
-graph LR
+flowchart TD
     A[Arrange 准备] --> B[Act 执行]
     B --> C[Assert 断言]
     style A fill:#e1f5e1
@@ -256,9 +256,9 @@ describe('数据库测试', () => {
 **负载曲线示意图**：
 
 ```mermaid
-graph
+flowchart TD
     subgraph 负载曲线
-        direction LR
+        direction TB
         A[用户数] -->|上升| B[达到目标 TPS]
         B -->|继续加压| C[性能拐点]
         C -->|过载| D[响应时间急剧上升]
@@ -280,7 +280,7 @@ graph
 **异常测试示例图**：
 
 ```mermaid
-graph
+flowchart TD
     A[正常负载] -->|瞬间飙升| B[峰值负载]
     B -->|持续几秒| C[负载回落]
     C --> D[系统恢复]
@@ -301,7 +301,7 @@ graph
 **流程图**：
 
 ```mermaid
-graph TD
+flowchart TD
     A[需求指标] --> B[性能模型]
     B --> C[性能方案]
     C --> D[性能监控]
@@ -464,7 +464,7 @@ k6 还支持输出结果到 InfluxDB、Prometheus 等，方便集成监控。
 **最后一张图总结**：
 
 ```mermaid
-graph LR
+flowchart TD
     Dev[开发] --> UT[单元测试]
     UT --> CI[CI 流水线]
     CI --> Perf[性能测试]

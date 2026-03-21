@@ -381,7 +381,7 @@ function createOrder(orderData) {
 ### 6.1 架构示意
 
 ```mermaid
-flowchart TB
+flowchart TD
 		A[应用服务器] -->|日志文件| B[Filebeat]
 		B -->|发送日志| C[Logstash]
 		C -->|存储日志| D[Elasticsearch]

@@ -21,63 +21,87 @@ export interface Post {
 }
 
 /**
- * 获取所有文章的文件名（slugs）
+ * 获取特定语言的所有文章文件名（slugs）
+ * @param locale - 语言环境 ('en' | 'zh')
  * @returns string[] - 包含 .md 或 .mdx 后缀的文件名列表
  */
-export function getPostSlugs() {
-	if (!fs.existsSync(postsDirectory)) {
-		return []
+export function getPostSlugs(locale: string = 'zh') {
+	const localeDir = path.join(postsDirectory, locale)
+	
+	if (!fs.existsSync(localeDir)) {
+		// 如果语言子目录不存在，尝试读取根目录（兜底）
+		if (!fs.existsSync(postsDirectory)) return []
+		return fs.readdirSync(postsDirectory).filter((file) => file.match(/\.mdx?$/))
 	}
-	return fs.readdirSync(postsDirectory).filter((file) => file.match(/\.mdx?$/))
+	
+	return fs.readdirSync(localeDir).filter((file) => file.match(/\.mdx?$/))
 }
 
 /**
  * 根据 slug 获取单篇文章的详细信息
- * @param slug - 文章的文件名（可能包含 URL 编码）
- * @returns Post - 文章对象，包含元数据和内容
+ * @param slug - 文章的文件名
+ * @param locale - 语言环境
+ * @returns Post - 文章对象
  */
-export function getPostBySlug(slug: string): Post {
-	// 解码 URL 编码的 slug（例如处理中文文件名），并移除文件后缀
+export function getPostBySlug(slug: string, locale: string = 'zh'): Post {
+	// 解码 URL 编码的 slug
 	const realSlug = decodeURIComponent(slug).replace(/\.mdx?$/, '')
 
-	// 尝试查找 .mdx 或 .md 文件
-	// 优先查找 .mdx，如果不存在则查找 .md
-	let fullPath = path.join(postsDirectory, `${realSlug}.mdx`)
+	// 尝试在语言子目录下查找
+	let fullPath = path.join(postsDirectory, locale, `${realSlug}.mdx`)
 	if (!fs.existsSync(fullPath)) {
-		fullPath = path.join(postsDirectory, `${realSlug}.md`)
+		fullPath = path.join(postsDirectory, locale, `${realSlug}.md`)
+	}
+
+	// 如果子目录下没找到，尝试在根目录下查找（兜底）
+	if (!fs.existsSync(fullPath)) {
+		fullPath = path.join(postsDirectory, `${realSlug}.mdx`)
+		if (!fs.existsSync(fullPath)) {
+			fullPath = path.join(postsDirectory, `${realSlug}.md`)
+		}
+	}
+
+	// 如果还是没找到，抛出错误
+	if (!fs.existsSync(fullPath)) {
+		throw new Error(`Post not found: ${realSlug} in locale: ${locale}`)
 	}
 
 	// 读取文件内容
 	const fileContents = fs.readFileSync(fullPath, 'utf8')
-	// 使用 gray-matter 解析 frontmatter 元数据和正文内容
 	const { data, content } = matter(fileContents)
-
-	// 使用 reading-time 库计算阅读时间
 	const stats = readingTime(content)
 
 	return {
 		slug: realSlug,
 		title: data.title,
-		date: data.date ? new Date(data.date).toISOString().split('T')[0] : '', // 格式化为 YYYY-MM-DD
+		date: data.date ? new Date(data.date).toISOString().split('T')[0] : '',
 		summary: data.summary || '',
 		content,
 		readTime: stats,
 		tags: data.tags || [],
-		author: data.author || '匿名', // 默认值
-		category: data.category || '未分类', // 默认值
+		author: data.author || 'Max Zhang',
+		category: data.category || 'Uncategorized',
 		...data,
 	}
 }
 
 /**
- * 获取所有文章，并按日期降序排序
+ * 获取特定语言的所有文章，并按日期降序排序
+ * @param locale - 语言环境
  * @returns Post[] - 排序后的文章列表
  */
-export function getAllPosts(): Post[] {
-	const slugs = getPostSlugs()
+export function getAllPosts(locale: string = 'zh'): Post[] {
+	const slugs = getPostSlugs(locale)
 	const posts = slugs
-		.map((slug) => getPostBySlug(slug))
-		// 按日期降序排序（最新的在前面）
+		.map((slug) => {
+			try {
+				return getPostBySlug(slug, locale)
+			} catch (e) {
+				console.error(e)
+				return null
+			}
+		})
+		.filter((post): post is Post => post !== null)
 		.sort((post1, post2) => (post1.date > post2.date ? -1 : 1))
 	return posts
 }
