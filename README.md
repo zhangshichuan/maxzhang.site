@@ -1,98 +1,95 @@
 # Max Zhang's Personal Website
 
-这是一个基于 **Next.js 16 (App Router)** 构建的现代个人博客网站，旨在分享关于软件开发、设计和生活的思考。项目采用 **MDX** 进行内容管理，支持高性能的客户端搜索和响应式设计。
+[中文版本](./README.zh.md)
 
-## ✨ 核心特性
+A modern personal blog website built with **Next.js 16 (App Router)** and **Tailwind CSS 4**, designed to share thoughts on software development, design, and AI. The project leverages **MDX** for content management and features a high-performance client-side search and responsive design with a Neo-brutalism aesthetic.
 
-- **现代架构**: 基于 Next.js 16 App Router 和 React Server Components (RSC) 构建，兼顾 SEO 与性能。
-- **MDX 内容驱动**: 使用 Markdown/MDX 编写文章，支持在文章中直接嵌入 React 组件。
-- **模糊搜索**: 集成 **Fuse.js** 实现客户端模糊搜索，支持按标题、内容、标签和分类进行过滤。
-- **响应式设计**: 使用 Tailwind CSS 构建，适配移动端和桌面端，支持深色模式（可扩展）。
-- **静态生成 (SSG)**: 文章页面在构建时预渲染，加载速度快。
-- **类型安全**: 全面使用 TypeScript 编写，代码健壮易维护。
+## ✨ Key Features
 
-## 🛠️ 技术栈
+-   **Modern Architecture**: Built on Next.js 16 App Router and React 19, utilizing Server Components (RSC) for optimal SEO and performance.
+-   **Neo-brutalism Design**: A bold, energetic UI with high-contrast borders and "pop" shadows, optimized for a Web App feel.
+-   **MDX Content-Driven**: Write articles in Markdown/MDX with the ability to embed React components and **Mermaid** diagrams directly.
+-   **Multi-language Support**: Fully internationalized using `next-intl`, with **English as the default** and Chinese as a secondary locale.
+-   **Fuzzy Search**: Integrated **Fuse.js** for blazing-fast client-side fuzzy searching across titles, content, tags, and categories.
+-   **High Performance**: Optimized layout with minimal CLS (Cumulative Layout Shift) and stable scroll restoration.
+-   **Dark Mode**: Seamless theme switching with system preference detection via `next-themes`.
 
-- **框架**: [Next.js 16](https://nextjs.org/)
-- **语言**: [TypeScript](https://www.typescriptlang.org/)
-- **样式**: [Tailwind CSS](https://tailwindcss.com/)
-- **内容处理**: [MDX](https://mdxjs.com/), [gray-matter](https://github.com/jonschlinkert/gray-matter), [reading-time](https://github.com/ngryman/reading-time)
-- **搜索**: [Fuse.js](https://www.fusejs.io/)
-- **图标**: [Lucide React](https://lucide.dev/)
-- **包管理**: [pnpm](https://pnpm.io/)
+## 🛠️ Tech Stack
 
-## 📂 目录结构
+-   **Framework**: [Next.js 16](https://nextjs.org/) (React 19)
+-   **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
+-   **Animation**: [Framer Motion](https://www.framer.com/motion/)
+-   **I18n**: [next-intl](https://next-intl-docs.vercel.app/)
+-   **Content**: [MDX](https://mdxjs.com/), [gray-matter](https://github.com/jonschlinkert/gray-matter)
+-   **Diagrams**: [Mermaid.js](https://mermaid.js.org/)
+-   **Search**: [Fuse.js](https://www.fusejs.io/)
+-   **Icons**: [Lucide React](https://lucide.dev/)
+
+## 📂 Project Structure
 
 ```bash
-├── app/                  # Next.js App Router 页面路由
-│   ├── posts/            # 文章列表页和详情页 ([slug])
-│   ├── search/           # 统一搜索页面
-│   ├── layout.tsx        # 全局布局
-│   └── page.tsx          # 首页
-├── articles/             # MDX 文章源文件
-├── components/           # React UI 组件
-│   ├── post-item.tsx     # 文章列表项组件
-│   ├── search-client.tsx # 核心搜索逻辑组件
+├── app/[locale]          # Next.js App Router with i18n support
+│   ├── posts/            # Article list and detail ([slug])
+│   ├── search/           # Unified search page
+│   ├── about/            # About me page
+│   └── layout.tsx        # Global layout & Providers
+├── articles/             # MDX article source files
+│   ├── en/               # English articles
+│   └── zh/               # Chinese articles
+├── components/           # Reusable React components
+│   ├── mdx/              # MDX-specific components (e.g., Mermaid)
+│   ├── ui/               # Base UI components (Neo-brutalism style)
 │   └── ...
-├── lib/                  # 工具函数
-│   └── posts.ts          # 文章数据读取与解析逻辑
-├── public/               # 静态资源
-└── ...
+├── i18n/                 # Internationalization config (routing & requests)
+├── messages/             # Translation JSON files (en.json, zh.json)
+├── lib/                  # Utilities and data fetching logic
+├── public/               # Static assets
+└── proxy.ts              # Next.js proxy (replaces middleware in v16)
 ```
 
-## 🚀 本地开发
+## 🚀 Getting Started
 
-1.  **克隆项目**
-
-    ```bash
-    git clone
-    cd maxzhang.site
-    ```
-
-2.  **安装依赖**
-
-    本项目使用 `pnpm` 进行包管理。
-
+1.  **Clone the repository**
+2.  **Install dependencies**
     ```bash
     pnpm install
     ```
-
-3.  **启动开发服务器**
-
+3.  **Start development server**
     ```bash
     pnpm dev
     ```
+    Open [http://localhost:3000](http://localhost:3000) to view the site.
 
-    打开浏览器访问 [http://localhost:3000](http://localhost:3000) 即可预览。
+## ✍️ Content Creation
 
-## ✍️ 撰写文章
+All articles are located in `articles/{locale}/`. Simply create a new `.mdx` file.
 
-所有文章均位于 `articles/` 目录下。只需创建一个新的 `.mdx` 文件即可。
-
-**Frontmatter 格式示例：**
+**Frontmatter Example:**
 
 ```yaml
 ---
-title: '文章标题'
-date: '2026-02-10'
-summary: '这是一段简短的文章摘要，将显示在列表页。'
-tags: ['Next.js', 'React']
-category: '技术'
+title: 'Article Title'
+date: '2026-03-21'
+summary: 'A brief summary of the post.'
+tags: ['Next.js', 'TypeScript']
+category: 'Tech'
 author: 'Max Zhang'
 ---
-这里是文章的正文内容...
+Your content here...
 ```
 
-## 🏗️ 构建与部署
+## 🏗️ Build & Deployment
 
-本项目包含 GitHub Actions 工作流 (`.github/workflows/deploy.yml`)，可自动部署到支持静态托管的平台（如 GitHub Pages, Vercel 等）。
+The project is configured for **Docker** deployment using a standalone output mode.
 
-**本地构建：**
-
+**Local Build:**
 ```bash
 pnpm build
 pnpm start
 ```
+
+**Automated Deployment:**
+Integrated GitHub Actions (`.github/workflows/deploy.yml`) for automated builds and deployment to production servers via SSH/Docker.
 
 ## 📄 License
 
