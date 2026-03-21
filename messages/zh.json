@@ -27,7 +27,7 @@
 		"title": "关于我 - Max Zhang",
 		"role": "软件工程师",
 		"location": "中国 成都",
-		"description": "嗨！我是一名全栈架构师，热衷于使用 <primary>Node.js</primary> 和 <primary>TypeScript</primary> 构建高性能系统。我利用 <accent>Docker</accent> 和 <accent>K3s</accent> 编排精英级的 <accent>DevOps</accent> 工作流，使用 <secondary>PostgreSQL</secondary> 和 <secondary>MQ</secondary> 扩展复杂数据，并使用 <primary>Rust</primary> 探索性能极限——同时通过 <accent>ELK</accent> 和高级<accent>监控</accent>确保系统的可观测性。",
+		"description": "你好！我是一名全栈开发者，始终以学习者的姿态探索高性能系统的构建之道。我热衷于使用 <primary>Node.js</primary> 和 <primary>TypeScript</primary> 开发稳健的应用，并投入于 <secondary>可视化搭建</secondary> 与 <secondary>图形编辑引擎</secondary> 的工程实践。在基础设施层面，我通过 <accent>Docker</accent> 与 <accent>K3s</accent> 的容器化实践不断优化 <accent>DevOps</accent> 工作流。目前，我正研究 <secondary>PostgreSQL</secondary> 与 <secondary>MQ</secondary> 的数据扩展方案，并尝试通过 <primary>Rust</primary> 挑战性能极限，同时利用 <accent>ELK</accent> 与 <accent>Prometheus</accent> 完善系统的可观测性。",
 		"workExperience": "工作经历",
 		"education": "教育经历",
 		"techStack": "技术栈",

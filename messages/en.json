@@ -27,7 +27,7 @@
     "title": "About Me - Max Zhang",
     "role": "Software Engineer",
     "location": "Chengdu, China",
-    "description": "Hi! I'm a Full-stack Architect obsessed with crafting high-performance systems using <primary>Node.js</primary> & <primary>TypeScript</primary>. I orchestrate <accent>Docker</accent> & <accent>K3s</accent> for elite <accent>DevOps</accent> workflows, scale complex data with <secondary>PostgreSQL</secondary> & <secondary>MQ</secondary>, and explore the limits of performance with <primary>Rust</primary>—all while ensuring system observability through <accent>ELK</accent> and advanced <accent>Monitoring</accent>.",
+    "description": "Hi! I'm a Full-stack Developer who approaches high-performance system building with a learner's mindset. I'm passionate about developing robust applications using <primary>Node.js</primary> & <primary>TypeScript</primary>, and am dedicated to the engineering of <secondary>Visual Building</secondary> and <secondary>Graphics Editing Engines</secondary>. On the infrastructure side, I continuously optimize <accent>DevOps</accent> workflows through <accent>Docker</accent> & <accent>K3s</accent> containerization. Currently, I'm researching scaling data with <secondary>PostgreSQL</secondary> & <secondary>MQ</secondary>, exploring performance limits with <primary>Rust</primary>, and enhancing system observability through <accent>ELK</accent> & <accent>Prometheus</accent>.",
     "workExperience": "Work Experience",
     "education": "Education",
     "techStack": "Tech Stack",
