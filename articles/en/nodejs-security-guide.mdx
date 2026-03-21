@@ -1,0 +1,387 @@
+---
+title: 'Node.js Application Security Guide'
+summary: 'Security is the lifeblood of an application. In Node.js development, common security vulnerabilities such as CSRF, XSS, broken access control, and SSRF can lead to data leaks, financial loss, or system compromise if not properly defended.'
+category: 'Node.js'
+tags: ['CSRF', 'XSS', 'SSRF', 'Rate Limiting']
+author: 'Max Zhang'
+date: '2026-03-10'
+---
+
+## Introduction: Why is Security So Important?
+
+Modern Web applications face a wide variety of attacks. Attackers exploit developer oversights, bypassing defenses through carefully crafted requests. As a major backend player, the security of Node.js directly affects the entire system. We will start with common vulnerabilities, each accompanied by attack flowcharts or principle diagrams to aid understanding.
+
+## 1. Common Web Security Vulnerabilities and Protection
+
+### 1. CSRF (Cross-Site Request Forgery)
+
+**Mechanism**
+When a user is logged into a trusted site A, an attacker induces the user to visit a malicious site B. A hidden request in B automatically carries A's Cookie to A, executing unauthorized operations.
+
+**CSRF Attack Flowchart**
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Browser
+    participant TrustedSite as Trusted Site A
+    participant MaliciousSite as Malicious Site B
+
+    User->>TrustedSite: Login
+    TrustedSite-->>Browser: Set Cookie
+    User->>MaliciousSite: Visit B
+    MaliciousSite-->>Browser: Return page with hidden form
+    Browser->>TrustedSite: Auto-submit form (carrying Cookie)
+    TrustedSite->>TrustedSite: Execute action (change password, transfer funds, etc.)
+```
+
+**Protection**
+
+- CSRF Tokens
+- SameSite Cookies
+- Referer Validation
+
+**Node.js Example** (Modern Security Practices)
+
+In modern Web development, traditional middlewares like `csurf` are no longer recommended. A combination of the following is suggested:
+
+1. **SameSite Cookie Attribute**: Set Cookies to `SameSite=Lax` or `Strict` to block cross-site transfers at the browser level.
+2. **Double Submit Cookie**: The frontend reads a signed Cookie and places it into a custom Header.
+3. **Framework Built-in Protection**: Frameworks like Next.js have built-in CSRF validation for Server Actions.
+
+```javascript
+// Basic defense using Cookie options
+res.cookie('session', 'value', {
+  httpOnly: true,
+  secure: true, // Production environment
+  sameSite: 'strict'
+});
+```
+
+---
+
+### 2. XSS (Cross-Site Scripting)
+
+**XSS Classification**
+
+```mermaid
+flowchart TD
+    XSS[XSS Attack] --> Reflected[Reflected XSS]
+    XSS --> Stored[Stored XSS]
+    XSS --> DOM[DOM-based XSS]
+
+    Reflected --> |URL parameter reflected| Example1[Search page shows keywords]
+    Stored --> |Malicious code in database| Example2[Comments, message boards]
+    DOM --> |JS execution via DOM manipulation| Example3[Using innerHTML with user data]
+```
+
+**Reflected XSS Flow**
+
+```mermaid
+sequenceDiagram
+    participant Attacker
+    participant Victim
+    participant Server
+
+    Attacker->>Victim: Send malicious link (with script)
+    Victim->>Server: Click link, request page
+    Server-->>Victim: Return page containing script
+    Victim->>Victim: Script executes, steals Cookie
+```
+
+**Protection**
+
+- Input Filtering (`xss` library)
+- Output Escaping (template engines usually escape by default)
+- Content Security Policy (CSP) headers
+
+```javascript
+import xss from 'xss'
+const clean = xss(userInput)
+```
+
+---
+
+### 3. Broken Access Control
+
+**Horizontal vs. Vertical Privilege Escalation**
+
+```mermaid
+flowchart TD
+    subgraph Horizontal
+        A[User A] -- Access --> B[User B's Resource]
+    end
+    subgraph Vertical
+        C[Regular User] -- Access --> D[Admin Functions]
+    end
+```
+
+**Typical Scenarios**
+
+- Predictable IDs in URL: `/order/1001`, attacker traverses IDs to view others' orders.
+- Unprotected Admin Backends: `/admin/deleteUser` accessed by non-admins.
+
+**Protection**
+
+- Retrieve current user ID from session and compare with resource owner.
+- Use UUIDs instead of auto-incrementing IDs.
+- Clear client info after session expiry.
+
+```javascript
+app.get('/order/:id', async (req, res) => {
+	const order = await Order.findById(req.params.id)
+	if (order.userId !== req.session.userId) {
+		return res.status(403).end()
+	}
+	res.json(order)
+})
+```
+
+---
+
+### 4. SSRF (Server-Side Request Forgery)
+
+**SSRF Attack Path**
+
+```mermaid
+flowchart TD
+    Attacker[Attacker] -->|Crafts malicious URL| App[Node.js App]
+    App -->|Initiates request| Internal[Internal Services<br>(e.g., DB, Admin panel)]
+    Internal -->|Returns sensitive data| App
+    App --> Attacker
+```
+
+**Common Feature Points**
+
+- Image downloads: User inputs an image URL, server fetches and stores it.
+- Webpage screenshots, proxy scraping.
+- Webhook callbacks.
+
+**Protection**
+
+- Resolve URL to IP and ban internal IPs (127.0.0.0/8, 10.0.0.0/8, etc.).
+- Domain allowlists.
+
+```javascript
+import dns from 'node:dns/promises'
+import { isInternal } from 'is-internal-ip'
+
+app.post('/fetch', async (req, res) => {
+	const { url } = req.body
+	const hostname = new URL(url).hostname
+	const ips = await dns.lookup(hostname, { all: true })
+	for (const ip of ips) {
+		if (await isInternal(ip.address)) {
+			return res.status(400).send('Access to internal address forbidden')
+		}
+	}
+	// Fetch request...
+})
+```
+
+---
+
+### 5. HPP (HTTP Parameter Pollution)
+
+**Parameter Pollution Example**
+`GET /search?q=apple&q=banana`
+Different servers parse this differently:
+
+- PHP: `q=banana` (last one wins)
+- ASP.NET: `q=apple,banana` (comma-separated)
+- Node.js (Express): `q='banana'` (last one wins)
+
+Attackers exploit these differences to bypass security filters.
+
+**Protection**
+Use `hpp` middleware to clear duplicate parameters.
+
+```javascript
+import hpp from 'hpp'
+app.use(hpp())
+```
+
+---
+
+### 6. Open Redirect
+
+**Phishing Flow**
+
+```mermaid
+sequenceDiagram
+    Attacker->>Victim: Send disguised link<br>https://trusted.com/logout?redirect=http://evil.com
+    Victim->>Trusted: Click link
+    Trusted-->>Victim: 302 Redirect to http://evil.com
+    Victim->>Evil: Visit phishing page
+```
+
+**Protection**
+Allowlist redirect domains or permit only relative paths.
+
+```javascript
+const allowedHosts = ['example.com']
+app.get('/redirect', (req, res) => {
+	const target = req.query.url
+	const { hostname } = new URL(target, 'http://localhost')
+	if (!allowedHosts.includes(hostname)) {
+		return res.status(400).send('Invalid redirect')
+	}
+	res.redirect(target)
+})
+```
+
+---
+
+### 7. Dependency Vulnerabilities
+
+**Attack Chain**
+
+```mermaid
+flowchart TD
+    A[Developer] -->|Introduces malicious/vulnerable npm package| B[Node.js App]
+    B -->|Calls vulnerable code at runtime| C[Attacker exploits vulnerability]
+    C -->|Executes arbitrary commands/steals data| D[Server Compromised]
+```
+
+**Protection**
+
+- Regular `npm audit` checks.
+- Use Snyk or Dependabot for automatic fixes.
+- Pin versions to avoid auto-upgrades introducing malicious packages.
+
+---
+
+### 8. Directory Traversal
+
+**Path Traversal Example**
+
+```mermaid
+flowchart TD
+    Request["GET /download?file=../../../etc/passwd"] --> App["Node.js App"]
+    App -->|"Direct path concatenation"| FS["fs.readFile('../../../etc/passwd')"]
+    FS -->|"Reads system files"| Return["Returns sensitive content"]
+```
+
+**Protection**
+Use `path.resolve` and verify the result is within the expected directory.
+
+```javascript
+import path from 'node:path'
+const base = '/var/data/'
+app.get('/download', (req, res) => {
+	const file = req.query.file
+	const fullPath = path.normalize(path.join(base, file))
+	if (!fullPath.startsWith(base)) {
+		return res.status(403).send('Invalid path')
+	}
+	res.sendFile(fullPath)
+})
+```
+
+---
+
+### 9. Other Vulnerabilities
+
+- **SQL Injection**: Use modern ORMs like Prisma/TypeORM, or strictly use parameterized queries.
+- **Password Hashing**: **Argon2** is the preferred choice for 2026, offering strong memory resistance, followed by **bcrypt**.
+- **Deserialization**: Strictly forbid `eval` or `node-serialize`; permit only standard `JSON.parse`.
+- **Security Headers**: Use `helmet` to set secure response headers.
+- **Log Injection**: Escape user input before logging to prevent control character injection.
+
+---
+
+## 2. Application Rate Limiting
+
+Rate limiting is crucial for service stability. Here are four common algorithms compared.
+
+### 1. Fixed Window Counter
+
+```mermaid
+flowchart TD
+    subgraph Window1[0:00-1:00]
+        A[Requests 1-100] --> Allow
+        B[Request 101] --> Deny
+    end
+    subgraph Window2[1:00-2:00]
+        C[Requests 1-100] --> Allow
+    end
+    Note[Problem: Bursts at window boundaries can double traffic.<br>e.g., 100 requests at 0:59 and 100 at 1:00.]
+```
+
+```javascript
+import rateLimit from 'express-rate-limit'
+
+const limiter = rateLimit({
+	windowMs: 60 * 1000,
+	max: 100,
+	message: 'Too many requests, please try again later',
+	headers: true,
+	keyGenerator: (req) => req.ip,
+})
+
+app.use('/api/', limiter)
+```
+
+### 2. Sliding Window Counter
+
+```mermaid
+flowchart TD
+    subgraph SlidingWindow["Sliding Window: Rolling 1-minute window"]
+        T1["0-10s: 20 reqs"] --> T2["10-20s: 15 reqs"] --> T3["20-30s: 25 reqs"] --> T4["30-40s: ..."]
+    end
+
+    Note["Uses weighted calculations to smooth out boundary spikes."]
+```
+
+### 3. Leaky Bucket
+
+```mermaid
+flowchart TD
+    Requests[Requests] -->|Enter bucket| Bucket[Leaky Bucket<br>(Queue)]
+    Bucket -->|Flow out at constant rate| Process[Processing]
+    Bucket -->|Bucket full| Drop[Deny]
+```
+
+### 4. Token Bucket
+
+```mermaid
+flowchart TD
+    subgraph TokenBucket
+        Tokens[Tokens<br>Capacity N]
+        Add[Refill tokens periodically]
+    end
+    Request -->|Consumes 1 token| Tokens -->|Has tokens| Allow[Allow]
+    Tokens -->|No tokens| Deny[Deny]
+```
+
+---
+
+## 3. The Trinity of High Availability
+
+Rate limiting, caching, and circuit breaking work together to keep the system running under high load.
+
+```mermaid
+flowchart TD
+    A[High Availability] --> B[Rate Limiting]
+    A --> C[Caching]
+    A --> D[Circuit Breaking]
+
+    B --> |Protects backend| E[Prevents resource exhaustion]
+    C --> |Speeds up response| F[Reduces backend pressure]
+    D --> |Sacrifices non-core features| G[Ensures core availability]
+```
+
+**Why do giants like Alibaba still crash?**
+
+- Traffic spikes far exceeding estimates.
+- Bottlenecks in underlying components (DB, Cache).
+- Human error or bug-triggered cascades.
+- Infrastructure failure (fiber cuts, power outages).
+
+Security and high availability are systemic engineering efforts requiring continuous investment across architecture, operations, and code.
+
+---
+
+## Conclusion
+
+This article reviewed over 10 common Node.js security vulnerabilities and their defenses, alongside rate-limiting algorithms. Security is not a feature but a mindset; developers should integrate it into the entire development lifecycle. I hope this helps you build more robust Node.js applications.

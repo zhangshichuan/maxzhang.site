@@ -27,10 +27,12 @@ export function Navbar() {
 	}
 
 	return (
-		<header className="
+		<header
+			className="
 	fixed top-0 z-50 w-full border-b-2 border-border/10 bg-background/95
 	backdrop-blur-md
-	">
+	"
+		>
 			<div
 				className="
      container mx-auto flex h-16 max-w-screen-2xl items-center px-4 md:px-6
@@ -109,7 +111,7 @@ export function Navbar() {
        "
 							title={t('switchLanguage')}
 						>
-							<Languages className="size-5" />
+							<Languages className="size-5 cursor-pointer" />
 							<span className="sr-only">Language</span>
 						</motion.button>
 

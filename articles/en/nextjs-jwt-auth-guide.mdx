@@ -1,0 +1,836 @@
+---
+title: 'Modern Security Architecture with JWT + Argon2'
+summary: 'In the new paradigm of Next.js Server Actions, how can we build an authentication system that is both secure and elegant? This article deeply dissects the combination of JWT and Argon2, revealing the core value of object-oriented design in server-side logic.'
+category: 'Full Stack'
+tags: ['Next.js', 'Authentication', 'JWT', 'Argon2']
+author: 'Max Zhang'
+date: '2026-02-27'
+---
+
+Authentication is one of the most fundamental yet error-prone modules in Web applications. Today, in the era of **Next.js 15/16+**, we need to address three key challenges:
+
+1. **Password Security**: Using Argon2 for hash storage.
+2. **Session Management**: Leveraging Edge Runtime-based toolchains (like `jose`) to manage stateless tokens.
+3. **Clean Architecture**: Maintaining the single responsibility principle for authentication logic between Server Actions and Middleware.
+
+### 1. Password Security: Farewell SHA256, Welcome Argon2
+
+In the field of password storage, the `sha256(password + salt)` scheme is outdated. Modern cryptography recommends using **adaptive hashing algorithms**, such as Argon2.
+
+```typescript
+import { hash, verify, argon2id } from 'argon2'
+
+class AuthService {
+	/**
+	 * Generate hash using Argon2. Traditional sha256 + persistent salt in DB is outdated.
+	 */
+	async hashPassword(password: string): Promise<string> {
+		return await hash(password, {
+			type: argon2id,        // Hybrid mode, balancing security and performance
+			memoryCost: 65536,     // 64MB memory usage
+			timeCost: 3,           // Iterations
+			parallelism: 4,        // Parallelism
+			hashLength: 32,        // Output hash length
+		})
+	}
+
+	/**
+	 * Verify password
+	 */
+	async verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+		return verify(hashedPassword, password)
+	}
+}
+```
+
+> **Security Perspective:** Argon2 provides three adjustable parameters: `memoryCost`, `timeCost`, and `parallelism`. This multi-dimensional tuning capability allows Argon2 to better resist GPU/ASIC attacks. The `argon2id` hybrid mode achieves the best balance between resisting side-channel attacks and GPU attacks.
+
+### Evolution of Password Hashing: From MD5+Salt to bcrypt to Argon2
+
+The evolution of password storage technology reflects the continuous tug-of-war between security requirements and computing power:
+
+#### 1. **MD5 + Database Salt (Deprecated)**
+```sql
+-- Traditional approach: A random salt for each user
+CREATE TABLE users (
+  id INT PRIMARY KEY,
+  username VARCHAR(50),
+  password_hash VARCHAR(32),  -- Fixed 32 characters for MD5 output
+  salt VARCHAR(16)            -- Salt stored separately
+);
+
+-- During verification: md5(password + salt)
+```
+**Issues**:
+- MD5 is too fast; GPUs can compute billions of hashes per second.
+- Rainbow Table Attacks: Pre-computed hash values for reverse password lookups.
+- Salt Leakage Risk: Salt needs secure storage.
+
+#### 2. **bcrypt (Mainstream in the 2010s)**
+```typescript
+// bcrypt embeds the salt directly into the hash output
+const hash = await bcrypt.hash(password, 12); // Cost factor of 12
+// Output format: $2b$12$salt(22chars)hash(31chars)
+```
+**Improvements**:
+- **Adaptive Cost**: Controls computation time via `cost factor` (deliberately slowed down).
+- **Built-in Salt**: Salt is embedded in the hash, no separate storage needed.
+- **GPU Resistance**: Large memory access patterns are unsuitable for GPU parallel computing.
+
+**Limitations**:
+- Primarily relies on time cost; limited protection against dedicated hardware (ASIC).
+- Relatively fixed memory usage, lacking flexible adjustment.
+
+#### 3. **Argon2 (Modern Standard, 2015 Password Hashing Competition Winner)**
+```typescript
+import { hash, argon2id } from 'argon2'
+
+// Argon2 provides three dimensions of security tuning
+const passwordHash = await hash(password, {
+  type: argon2id,        // Hybrid mode: 70% memory + 30% computation
+  memoryCost: 65536,     // 64MB memory cost
+  timeCost: 3,           // 3 iterations
+  parallelism: 4,        // 4 parallel threads
+});
+```
+**Advantages**:
+- **Memory-Hard Function**: Massive memory access significantly increases the cost of hardware attacks.
+- **Multi-dimensional Tuning**: Three security parameters: time, memory, and parallelism.
+- **Algorithm Variants**:
+  - `argon2d`: Maximum resistance against GPUs, but potentially vulnerable to side-channel attacks.
+  - `argon2i`: Resists side-channel attacks but weaker against GPUs.
+  - `argon2id` (Recommended): A hybrid of the former two, offering the best balance.
+
+#### Evolution Summary
+| Feature | MD5+Salt | bcrypt | Argon2 |
+| :--- | :--- | :--- | :--- |
+| **Design Era** | 1990s | 1999 | 2015 |
+| **Security Philosophy** | Fast Hashing | Time Cost | Memory + Time Cost |
+| **GPU Resistance** | ❌ Extremely Weak | ✅ Moderate | ✅✅ Strong |
+| **ASIC Resistance** | ❌ None | ⚠️ Limited | ✅✅ Strong |
+| **Parameter Tuning** | Fixed | Time Cost | Time+Memory+Parallelism |
+| **Modern Recommendation** | ❌ Strictly Prohibited | ⚠️ Available but not optimal | ✅✅ Preferred |
+
+**Production Advice**: For new projects, use Argon2 directly. For systems already using bcrypt, migration is not mandatory, but new features should use Argon2. The key is to ensure cost parameters are high enough (within user experience limits) and to periodically evaluate the impact of hardware advancements on security parameters.
+
+### 2. Session Management: Modern JWT Practices
+
+JSON Web Token (JWT) has become the de facto standard for stateless authentication. However, many developers overlook two key points: **Algorithm Selection** and **Key Management**.
+
+```typescript
+import { jwtVerify, SignJWT } from 'jose'
+
+class AuthService {
+	async generateToken(payload: JWTPayload): Promise<string> {
+		return await new SignJWT(payload as any)
+			.setProtectedHeader({ alg: JWT_ALGORITHM }) // Must explicitly specify algorithm
+			.setIssuedAt()
+			.setExpirationTime(`${JWT_EXPIRY_DAYS}d`)
+			.sign(JWT_SECRET) // Key must be complex enough
+	}
+
+	async verifyToken(token: string): Promise<JWTPayload | null> {
+		try {
+			const { payload } = await jwtVerify(token, JWT_SECRET)
+			return payload as unknown as JWTPayload
+		} catch (error) {
+			console.error('JWT verification error:', error)
+			return null
+		}
+	}
+}
+```
+
+> **Critical Configuration:** Never use symmetric algorithms like `HS256` unless you have an absolutely secure key distribution mechanism. In production, it's recommended to use `RS256` (asymmetric), storing the private key on the server and distributing the public key to clients for verification.
+
+### 3. Cookie Strategy: Defensive Combination of HttpOnly and SameSite
+
+Cookies are the transport vehicle for JWT. Correct configuration can resist most XSS and CSRF attacks.
+
+```typescript
+import { cookies } from 'next/headers'
+
+class AuthService {
+	async login(name: string, password: string) {
+		// ... Validation logic
+
+		// Set Cookie - Next.js 15 requires await
+		const cookieStore = await cookies()
+		cookieStore.set(TOKEN_NAME, token, {
+			httpOnly: true, // Prevents XSS attacks from reading the Cookie
+			secure: false,  // Set to false for dev, must be true for production
+			sameSite: 'strict', // Prevents CSRF attacks
+			maxAge: JWT_EXPIRY_DAYS * 24 * 60 * 60, // Synced with JWT expiry
+			path: '/',
+		})
+	}
+}
+```
+
+> **Security Layering:** `httpOnly` prevents JavaScript from reading the Cookie, and `sameSite: 'strict'` prevents Cross-Site Request Forgery. The combination of these two forms a "double insurance" for Web security.
+
+## Full Implementation: From Registration to Logout
+
+Let's see how these three components work together to form a complete authentication flow.
+
+### User Registration: The Starting Point of Security
+
+```typescript
+class AuthService {
+	async register(name: string, password: string): Promise<IDataResult<boolean>> {
+		try {
+			// Check if user already exists
+			const existingUser = await this.prisma.user.findFirst({
+				where: { name },
+			})
+
+			if (existingUser) {
+				return {
+					code: -1,
+					message: 'Username already exists',
+					data: false,
+				}
+			}
+
+			// Generate hashed password
+			const hashedPassword = await this.hashPassword(password)
+
+			// Create user data
+			await this.prisma.user.create({
+				data: {
+					name,
+					password: hashedPassword,
+				},
+			})
+
+			return {
+				code: 0,
+				message: 'User created successfully',
+				data: true,
+			}
+		} catch (error) {
+			console.error('Register error:', error)
+			return { code: -1, message: 'Failed to create user', data: false }
+		}
+	}
+}
+```
+
+### User Login: Three-Factor Verification
+
+```typescript
+class AuthService {
+	async login(name: string, password: string): Promise<IDataResult<LoginResult>> {
+		try {
+			// 1. Find user
+			const user = await this.prisma.user.findFirst({
+				where: { name },
+			})
+
+			if (!user) {
+				return {
+					code: -1,
+					message: 'Invalid username or password',
+					data: { user: null },
+				}
+			}
+
+			// 2. Verify password
+			const isPasswordValid = await this.verifyPassword(password, user.password)
+			if (!isPasswordValid) {
+				return {
+					code: -1,
+					message: 'Invalid username or password',
+					data: { user: null },
+				}
+			}
+
+			// 3. Generate JWT
+			const token = await this.generateToken({
+				userId: user.id,
+				name: user.name,
+			})
+
+			// 4. Set Cookie
+			const cookieStore = await cookies()
+			cookieStore.set(TOKEN_NAME, token, {
+				httpOnly: true,
+				secure: false,
+				sameSite: 'strict',
+				maxAge: JWT_EXPIRY_DAYS * 24 * 60 * 60,
+				path: '/',
+			})
+
+			return {
+				code: 0,
+				message: 'Login successful',
+				data: {
+					user: {
+						id: user.id,
+						name: user.name,
+					},
+				},
+			}
+		} catch (error) {
+			console.error('Login error:', error)
+			return {
+				code: -1,
+				message: 'Login failed, please try again later',
+				data: { user: null },
+			}
+		}
+	}
+}
+```
+
+### Session Check: Seamless User Experience
+
+```typescript
+class AuthService {
+	/**
+	 * Get current logged-in user info
+	 */
+	async getCurrentUser(): Promise<JWTPayload | null> {
+		try {
+			const cookieStore = await cookies()
+			const token = cookieStore.get(TOKEN_NAME)
+
+			if (!token) {
+				return null
+			}
+
+			return await this.verifyToken(token.value)
+		} catch (error) {
+			console.error('Get current user error:', error)
+			return null
+		}
+	}
+
+	/**
+	 * Check if user is authenticated
+	 */
+	async isAuthenticated(): Promise<JWTPayload | null> {
+		return await this.getCurrentUser()
+	}
+}
+```
+
+## Next.js 15 Adaptation: Elegant Encapsulation of Server Actions
+
+A major limitation of Server Actions in Next.js 15 is that they can only export functions, not classes or instances. This, however, does not prevent us from using object-oriented design internally.
+
+```typescript
+// Due to Next.js 15 Server Actions limitations (cannot export classes/instances), only functions are exported.
+const authService = new AuthService()
+
+/**
+ * Register user
+ */
+export async function register(name: string, password: string) {
+	return await authService.register(name, password)
+}
+
+/**
+ * Login user and set Cookie
+ */
+export async function login(name: string, password: string) {
+	return await authService.login(name, password)
+}
+
+/**
+ * Logout and clear Cookie
+ */
+export async function logout() {
+	return await authService.logout()
+}
+
+/**
+ * Check if user is authenticated
+ */
+export async function isAuthenticated() {
+	return await authService.isAuthenticated()
+}
+```
+
+This design pattern achieves perfect separation of concerns:
+
+- **Public Interface**: Concise functional APIs conforming to Server Actions specifications.
+- **Internal Implementation**: Object-oriented service classes, ensuring code organization and testability.
+
+## Frontend Integration: Best Practices for React Hooks
+
+On the client side, we can create a custom Hook to encapsulate the management of authentication state.
+
+```typescript
+import { useState, useEffect } from 'react'
+import { isAuthenticated } from '@/lib/auth'
+
+export function useAuth() {
+	const [user, setUser] = useState<JWTPayload | null>(null)
+	const [loading, setLoading] = useState(true)
+
+	useEffect(() => {
+		checkAuth()
+	}, [])
+
+	const checkAuth = async () => {
+		setLoading(true)
+		try {
+			const userData = await isAuthenticated()
+			setUser(userData)
+		} catch (error) {
+			console.error('Auth check failed:', error)
+			setUser(null)
+		} finally {
+			setLoading(false)
+		}
+	}
+
+	return {
+		user,
+		loading,
+		checkAuth,
+	}
+}
+```
+
+Then use it in page components:
+
+```tsx
+import { useAuth } from '@/hooks/useAuth'
+
+export default function DashboardPage() {
+	const { user, loading } = useAuth()
+
+	if (loading) {
+		return <div>Loading...</div>
+	}
+
+	if (!user) {
+		return <div>Please log in first.</div>
+	}
+
+	return (
+		<div>
+			<h1>Welcome back, {user.name}!</h1>
+			{/* Protected content */}
+		</div>
+	)
+}
+```
+
+## Security Hardening: What's Next?
+
+While we've built a relatively secure authentication system, a production environment needs to consider more factors:
+
+### 1. Input Validation: Runtime Protection with Zod
+
+```typescript
+import { z } from 'zod'
+
+const loginSchema = z.object({
+	name: z.string().min(1, 'Username cannot be empty').max(50, 'Username too long'),
+	password: z.string().min(6, 'Password must be at least 6 characters').max(100, 'Password too long'),
+})
+
+// Use in the login function
+const validationResult = loginSchema.safeParse({ name, password })
+if (!validationResult.success) {
+	return {
+		code: -1,
+		message: validationResult.error.errors[0].message,
+		data: { user: null },
+	}
+}
+```
+
+### 2. Rate Limiting: Preventing Brute Force
+
+```typescript
+import { RateLimiter } from 'rate-limiter-flexible'
+
+const rateLimiter = new RateLimiter({
+	points: 5,    // 5 attempts
+	duration: 60,  // within 60 seconds
+})
+
+async function login(name: string, password: string) {
+	try {
+		await rateLimiter.consume(name) // Username-based rate limiting
+	} catch (error) {
+		return {
+			code: -1,
+			message: 'Too many attempts, please try again later.',
+			data: { user: null },
+		}
+	}
+	// ... Original logic
+}
+```
+
+### 3. Audit Logging: Tracking Auth Events
+
+```typescript
+class AuthService {
+	async login(name: string, password: string) {
+		try {
+			// ... Original logic
+
+			// Log successful login
+			await this.prisma.auditLog.create({
+				data: {
+					userId: user.id,
+					action: 'LOGIN',
+					ipAddress: getClientIp(request),
+					userAgent: request.headers.get('user-agent'),
+				},
+			})
+
+			return result
+		} catch (error) {
+			// Log failed attempt
+			await this.prisma.auditLog.create({
+				data: {
+					action: 'LOGIN_FAILED',
+					metadata: { name },
+					ipAddress: getClientIp(request),
+					userAgent: request.headers.get('user-agent'),
+				},
+			})
+			throw error
+		}
+	}
+}
+```
+
+## Essential for Production: Refresh Token Mechanism
+
+In real production environments, pure JWT authentication has a fatal flaw: **User experience issues after token expiration**. If the Access Token validity is too short (e.g., 15 minutes), users need to log in frequently; if it's too long (e.g., 7 days), an attacker has ample time for malicious operations if the token is leaked.
+
+The Refresh Token mechanism perfectly solves this contradiction:
+
+- **Access Token**: Short validity (15-30 minutes), used for API access.
+- **Refresh Token**: Long validity (7-30 days), used to obtain a new Access Token.
+
+### 1. Design Trade-offs for Refresh Tokens
+
+The original intention of JWT is to be stateless, but Refresh Tokens seem to require server-side state. In fact, there are several design choices:
+
+#### Option 1: Stateful Refresh Tokens (Recommended for high security)
+
+```prisma
+// prisma/schema.prisma
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revoked   Boolean  @default(false)
+
+  @@index([userId])
+  @@index([token])
+}
+```
+
+**Pros**:
+- Individual tokens can be revoked anytime.
+- Supports multi-device management.
+- Token usage logs can be recorded.
+- Highest security.
+
+**Cons**:
+- Requires database storage.
+- Contradicts the completely stateless philosophy of JWT.
+
+#### Option 2: Stateless Refresh Tokens (JWT as Refresh Token)
+
+```typescript
+// Designing the Refresh Token also as a JWT
+async generateRefreshToken(userId: string): Promise<string> {
+  return await new SignJWT({ userId, type: 'refresh' })
+    .setProtectedHeader({ alg: JWT_ALGORITHM })
+    .setIssuedAt()
+    .setExpirationTime('7d') // 7-day validity
+    .sign(REFRESH_TOKEN_SECRET) // Use a different secret
+}
+```
+
+**Pros**:
+- Completely stateless.
+- No database storage required.
+- Simple implementation.
+
+**Cons**:
+- Individual tokens cannot be revoked actively (must wait for expiration).
+- Cannot be invalidated immediately upon leakage.
+- No fine-grained multi-device management.
+
+#### Option 3: Hybrid Approach (Balancing security and statelessness)
+
+```prisma
+// Storing only metadata of the token, not the token itself
+model RefreshTokenMetadata {
+  id        String   @id @default(cuid())
+  jti       String   @unique // JWT ID
+  userId    String
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+
+  @@index([userId])
+  @@index([jti])
+}
+```
+
+```typescript
+// Generating Refresh Token with jti
+async generateRefreshToken(userId: string): Promise<string> {
+  const jti = crypto.randomUUID() // Unique JWT ID
+
+  // Store metadata
+  await this.prisma.refreshTokenMetadata.create({
+    data: {
+      jti,
+      userId,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
+  })
+
+  return await new SignJWT({ userId, jti, type: 'refresh' })
+    .setProtectedHeader({ alg: JWT_ALGORITHM })
+    .setIssuedAt()
+    .setExpirationTime('7d')
+    .sign(REFRESH_TOKEN_SECRET)
+}
+```
+
+**Pros**:
+- Tokens can be revoked (via jti).
+- Small storage footprint (only metadata).
+- Maintains most stateless properties.
+
+**Practical Recommendation**: For production applications, **Option 3 (Hybrid Approach)** is the best-balanced choice. It maintains the stateless advantages of JWT while achieving necessary security control through minimal state storage:
+
+1. **Access Token**: Completely stateless, short validity (15-30 minutes).
+2. **Refresh Token**: JWT format + metadata storage, long validity (7-30 days).
+3. **Security Control**: Token revocation and rotation via `jti`.
+4. **Storage Cost**: Each record is about 100-200 bytes; table size is manageable with periodic cleanup.
+
+This design respects JWT's stateless philosophy while meeting production security needs. True "statelessness" is suitable only for high-frequency, short-term Access Tokens, whereas long-term session management requires appropriate state for security assurance.
+
+### 2. Generation and Verification of Refresh Tokens (Hybrid Approach)
+
+Using **Option 3 (Hybrid Approach)**, we use JWT as the Refresh Token but store metadata for revocation:
+
+```typescript
+import { SignJWT, jwtVerify } from 'jose'
+import crypto from 'crypto'
+
+class AuthService {
+	// Configuration constants
+	private readonly ACCESS_TOKEN_EXPIRY = '15m' // 15 minutes
+	private readonly REFRESH_TOKEN_EXPIRY = '7d'  // 7 days
+	private readonly REFRESH_TOKEN_SECRET: Uint8Array
+
+	constructor() {
+		// Use a separate secret for Refresh Tokens
+		this.REFRESH_TOKEN_SECRET = new TextEncoder().encode(
+			process.env.REFRESH_TOKEN_SECRET || 'your-refresh-token-secret-change-this',
+		)
+	}
+
+	/**
+	 * Generate Access Token (short validity)
+	 */
+	async generateAccessToken(payload: JWTPayload): Promise<string> {
+		return await new SignJWT(payload as any)
+			.setProtectedHeader({ alg: JWT_ALGORITHM })
+			.setIssuedAt()
+			.setExpirationTime(this.ACCESS_TOKEN_EXPIRY)
+			.sign(JWT_SECRET)
+	}
+
+	/**
+	 * Generate Refresh Token (JWT format) and store metadata
+	 */
+	async generateRefreshToken(userId: string): Promise<string> {
+		// Generate unique JWT ID (jti)
+		const jti = crypto.randomUUID()
+
+		// Calculate expiry
+		const expiresAt = new Date()
+		expiresAt.setDate(expiresAt.getDate() + 7) // 7 days later
+
+		// Store metadata in DB (jti only, not the full token)
+		await this.prisma.refreshTokenMetadata.create({
+			data: {
+				jti,
+				userId,
+				expiresAt,
+			},
+		})
+
+		// Generate JWT format Refresh Token
+		return await new SignJWT({
+			userId,
+			jti,
+			type: 'refresh',
+		})
+			.setProtectedHeader({ alg: JWT_ALGORITHM })
+			.setIssuedAt()
+			.setExpirationTime(this.REFRESH_TOKEN_EXPIRY)
+			.setJti(jti) // Set JWT ID
+			.sign(this.REFRESH_TOKEN_SECRET)
+	}
+
+	/**
+	 * Verify if Refresh Token is valid
+	 */
+	async verifyRefreshToken(token: string): Promise<{ isValid: boolean; userId?: string; jti?: string }> {
+		try {
+			// 1. Verify JWT signature and expiration
+			const { payload } = await jwtVerify(token, this.REFRESH_TOKEN_SECRET, {
+				algorithms: [JWT_ALGORITHM],
+			})
+
+			const { userId, jti, type } = payload as any
+
+			if (type !== 'refresh' || !userId || !jti) {
+				return { isValid: false }
+			}
+
+			// 2. Check if metadata is revoked
+			const metadata = await this.prisma.refreshTokenMetadata.findUnique({
+				where: { jti },
+			})
+
+			if (!metadata || metadata.revoked || metadata.expiresAt < new Date()) {
+				return { isValid: false }
+			}
+
+			return { isValid: true, userId, jti }
+		} catch (error) {
+			console.error('Refresh token verification error:', error)
+			return { isValid: false }
+		}
+	}
+
+	/**
+	 * Revoke Refresh Token (via jti)
+	 */
+	async revokeRefreshToken(jti: string): Promise<void> {
+		await this.prisma.refreshTokenMetadata.update({
+			where: { jti },
+			data: { revoked: true },
+		})
+	}
+}
+```
+
+### 3. Adapting the Login Flow
+
+Update the login method to return both Access and Refresh Tokens:
+
+```typescript
+class AuthService {
+	async login(name: string, password: string): Promise<IDataResult<LoginResult>> {
+		try {
+			// ... Original user lookup and password validation
+
+			// Generate tokens
+			const accessToken = await this.generateAccessToken({ userId: user.id, name: user.name })
+			const refreshToken = await this.generateRefreshToken(user.id)
+
+			// Set Cookies
+			const cookieStore = await cookies()
+			cookieStore.set(ACCESS_TOKEN_NAME, accessToken, {
+				httpOnly: true,
+				secure: process.env.NODE_ENV === 'production',
+				sameSite: 'strict',
+				maxAge: 15 * 60, // 15 mins
+				path: '/',
+			})
+
+			cookieStore.set(REFRESH_TOKEN_NAME, refreshToken, {
+				httpOnly: true,
+				secure: process.env.NODE_ENV === 'production',
+				sameSite: 'strict',
+				maxAge: 7 * 24 * 60 * 60, // 7 days
+				path: '/api/auth/refresh', // Only valid for refresh endpoint
+			})
+
+			return {
+				code: 0,
+				message: 'Login successful',
+				data: {
+					user: { id: user.id, name: user.name },
+					refreshToken, // Note: In production, use HTTP-only cookies instead
+				},
+			}
+		} catch (error) {
+			console.error('Login error:', error)
+			return { code: -1, message: 'Login failed', data: { user: null } }
+		}
+	}
+}
+```
+
+### 4. Token Refresh Endpoint
+
+Create a dedicated refresh endpoint to obtain a new Access Token:
+
+```typescript
+// app/api/auth/refresh/route.ts
+export async function POST(request: NextRequest) {
+	try {
+		const cookieStore = await cookies()
+		const refreshToken = cookieStore.get(REFRESH_TOKEN_NAME)?.value
+
+		if (!refreshToken) {
+			return NextResponse.json({ code: -1, message: 'No refresh token provided' }, { status: 401 })
+		}
+
+		const verification = await authService.verifyRefreshToken(refreshToken)
+		if (!verification.isValid || !verification.userId || !verification.jti) {
+			return NextResponse.json({ code: -1, message: 'Invalid or expired refresh token' }, { status: 401 })
+		}
+
+		const user = await authService.prisma.user.findUnique({ where: { id: verification.userId } })
+		if (!user) {
+			return NextResponse.json({ code: -1, message: 'User not found' }, { status: 401 })
+		}
+
+		const newAccessToken = await authService.generateAccessToken({ userId: user.id, name: user.name })
+		cookieStore.set(ACCESS_TOKEN_NAME, newAccessToken, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: 'strict',
+			maxAge: 15 * 60,
+			path: '/',
+		})
+
+		return NextResponse.json({ code: 0, message: 'Token refreshed', data: { accessToken: newAccessToken } })
+	} catch (error) {
+		return NextResponse.json({ code: -1, message: 'Refresh failed' }, { status: 500 })
+	}
+}
+```
+
+## Security Benefits of Refresh Tokens
+
+1. **Reduced Attack Window**: Access Tokens have a short validity; even if leaked, attackers have a limited time window.
+2. **Controllable Session Management**: Refresh Tokens can be revoked anytime, forcing users to re-authenticate.
+3. **Improved UX**: Users don't need to enter passwords frequently.
+4. **Multi-device Management**: Independent Refresh Tokens can be issued for each device.
+5. **Leakage Detection**: If abnormal activity is detected, all tokens can be revoked immediately.
+
+## Conclusion: Security is a Process, Not a Feature
+
+Building an authentication system is never a one-off task. From basic password encryption to session management and defensive programming, every step requires careful consideration.
+
+Through object-oriented authentication services, we achieve more than just modularity; we establish an **extensible security architecture**. When new security threats emerge, we only need to add protective logic in the corresponding service methods without refactoring the entire system.
+
+The introduction of the Refresh Token mechanism upgrades our authentication system from "usable" to "production-ready." It addresses user experience issues with short-term tokens while maintaining high security.
+
+In the realm of security, **"good enough" is never good enough**. Only by continuously focusing on security best practices and hardening your defense can you protect user data in an increasingly complex network environment.
