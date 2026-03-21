@@ -9,7 +9,7 @@ date: '2026-03-06'
 
 ## Introduction
 
-In the internet era, successful products must often face massive concurrent access from users. Tens of millions of Daily Active Users (DAU) and tens of thousands of requests per second (QPS) pose immense challenges to backend architecture. From the traffic peaks of Alibaba's Double 11 to the instantaneous burst of Spring Festival red envelopes, these scenarios test the ultimate carrying capacity of systems.
+In the internet era, a successful product often faces massive concurrent access from users. Tens of millions of Daily Active Users (DAU) and tens of thousands of requests per second (QPS) pose immense challenges to backend architecture. From the traffic peaks of Alibaba's Double 11 to the instantaneous burst of Spring Festival red envelopes, these scenarios test the ultimate carrying capacity of systems.
 
 This article systematically explains how to build a website architecture that supports tens of millions of concurrent accesses, covering **load balancing, high availability design, caching strategies, database optimization, canary releases, and containerized deployment**. The text includes a large number of code examples, configuration files, and architectural diagrams, aiming to provide a practical technical guide for readers.
 
@@ -104,7 +104,7 @@ It is usually combined with a CDN to cache static resources at nodes closest to 
 
 #### 2.1.2 Network Layer (LVS / Hardware F5)
 
-LVS (Linux Virtual Server) forwards traffic at the transport layer (TCP/UDP). It has extremely high performance and is often the first checkpoint for incoming traffic. LVS has three working modes. Here is an example of NAT mode:
+LVS (Linux Virtual Server) forwards traffic at the transport layer (TCP/UDP). It has extremely high performance and is often the first checkpoint for incoming traffic. LVS has three working modes:
 
 ```bash
 # LVS NAT mode configuration example
@@ -490,6 +490,33 @@ app.get('/health', async (req, res) => {
 })
 ```
 
+### 2.4 Load Balancer Deployment Modes
+
+```mermaid
+flowchart TD
+    subgraph S1 ["1. Single Node (Basic)"]
+        A1[Client] --> B1[Nginx]
+        B1 --> C1[App Server 1]
+        B1 --> D1[App Server 2]
+    end
+
+    subgraph S2 ["2. High Availability (Enterprise)"]
+        E2[Client] --> F2[Keepalived VIP]
+        F2 --> G2[Nginx Master]
+        F2 --> H2[Nginx Slave]
+        G2 --> I2[App Cluster]
+        H2 --> I2
+    end
+
+    subgraph S3 ["3. Global Deployment (Scale)"]
+        J3[User - China] --> K3[CDN - Beijing]
+        L3[User - USA] --> M3[CDN - NY]
+        K3 --> N3[Origin - Beijing]
+        M3 --> O3[Origin - Frankfurt]
+        N3 & O3 --> P3[Global Server LB GSLB]
+    end
+```
+
 ---
 
 ## 3. High Availability Practices for Node.js Applications
@@ -558,6 +585,70 @@ sequenceDiagram
     Master->>Master: cluster.fork() restart
 ```
 
+Full graceful shutdown implementation:
+
+```javascript
+// graceful-shutdown.js
+class GracefulShutdownManager {
+	constructor(server, options = {}) {
+		this.server = server
+		this.options = {
+			timeout: options.timeout || 10000,
+			connections: new Set(),
+			...options,
+		}
+		this.isShuttingDown = false
+		this.pendingRequests = 0
+		this.trackConnections()
+	}
+
+	trackConnections() {
+		this.server.on('connection', (socket) => {
+			if (this.isShuttingDown) {
+				socket.destroy()
+				return
+			}
+			this.options.connections.add(socket)
+			socket.on('close', () => this.options.connections.delete(socket))
+		})
+
+		this.server.on('request', (req, res) => {
+			if (this.isShuttingDown) res.setHeader('Connection', 'close');
+			this.pendingRequests++
+			res.on('finish', () => {
+				this.pendingRequests--
+				this.checkIfDone()
+			})
+		})
+	}
+
+	shutdown() {
+		if (this.isShuttingDown) return
+		this.isShuttingDown = true
+		this.server.close(() => console.log('Server closed'))
+
+		const forceShutdown = setTimeout(() => {
+			console.error('Shutdown timeout, forcing exit')
+			process.exit(1)
+		}, this.options.timeout)
+
+		const checkInterval = setInterval(() => {
+			if (this.pendingRequests === 0 && this.options.connections.size === 0) {
+				clearInterval(checkInterval)
+				clearTimeout(forceShutdown)
+				process.exit(0)
+			}
+		}, 1000)
+	}
+
+	checkIfDone() {
+		if (this.isShuttingDown && this.pendingRequests === 0 && this.options.connections.size === 0) {
+			process.exit(0)
+		}
+	}
+}
+```
+
 ### 3.3 PM2 Process Manager
 
 PM2 is a mature Node.js process management tool that bundles cluster, graceful shutdown, and auto-restart into simple commands.
@@ -571,6 +662,27 @@ PM2 is a mature Node.js process management tool that bundles cluster, graceful s
 | Auto Restart | `pm2 start app.js --watch` | Restarts on file changes |
 | Monitoring | `pm2 monit` | Real-time CPU/Memory monitoring |
 | Log Management | `pm2 logs` | Centralized log management |
+
+#### 3.3.2 Configuration Example
+
+```javascript
+// ecosystem.config.js
+export default {
+	apps: [{
+		name: 'my-app',
+		script: './app.js',
+		instances: 'max',
+		exec_mode: 'cluster',
+		autorestart: true,
+		max_memory_restart: '500M',
+		kill_timeout: 10000,
+		env: {
+			NODE_ENV: 'production',
+			PORT: 3000
+		}
+	}]
+}
+```
 
 ---
 
@@ -625,9 +737,22 @@ class RedisCache {
 		let value = await this.get(key)
 		if (value !== null) return value;
 
-		value = await callback()
-		await this.set(key, value, ttl)
-		return value;
+		// Using mutex locks to prevent cache breakdown
+		const lockKey = `lock:${key}`
+		const lockAcquired = await this.client.set(lockKey, 'locked', { NX: true, EX: 10 })
+
+		if (lockAcquired) {
+			try {
+				value = await callback()
+				await this.set(key, value, ttl)
+				return value
+			} finally {
+				await this.client.del(lockKey)
+			}
+		} else {
+			await new Promise(resolve => setTimeout(resolve, 100))
+			return this.remember(key, ttl, callback)
+		}
 	}
 }
 ```
@@ -671,11 +796,24 @@ CREATE TABLE users_0 PARTITION OF users FOR VALUES WITH (MODULUS 4, REMAINDER 0)
 CREATE TABLE users_1 PARTITION OF users FOR VALUES WITH (MODULUS 4, REMAINDER 1);
 ```
 
+### 5.3 Connection Pool Optimization
+
+```javascript
+import pg from 'pg'
+const pool = new pg.Pool({
+	max: 50,
+	idleTimeoutMillis: 30000,
+	connectionTimeoutMillis: 2000,
+})
+```
+
 ---
 
 ## 6. Canary Release Mechanism
 
 Full release of a new version is risky. Canary releases allow gradual traffic diversion to the new version.
+
+### 6.1 Strategy Comparison
 
 | Strategy | Pros | Cons | Use Case |
 | :--- | :--- | :--- | :--- |
@@ -683,11 +821,13 @@ Full release of a new version is risky. Canary releases allow gradual traffic di
 | **Blue-Green** | Fast switch, simple rollback | High resource usage | Downtime-sensitive services |
 | **Rolling** | High resource utilization | Complex rollback | Stateless services |
 
-### 6.1 Canary Release via Nginx
+### 6.2 Implementation via Nginx
 
 ```nginx
 upstream backend {
+    # 90% traffic to old version
     server old-version:8080 weight=90;
+    # 10% traffic to new version
     server new-version:8080 weight=10;
 }
 ```
@@ -702,10 +842,13 @@ Monitoring is the "gatekeeper" of system stability.
 
 ```mermaid
 flowchart TD
-    A[Data Collection - Prometheus Exporters] --> B[Aggregation - Prometheus]
-    B --> C[Visualization - Grafana]
-    B --> D[Alerting - AlertManager]
-    D --> E[Notifications - Slack/Email]
+    subgraph S1 ["Collection"]
+        A1[Node Exporter]
+        A2[DB Exporter]
+        A3[Custom Metrics]
+    end
+    S1 --> Prometheus --> Grafana
+    Prometheus --> AlertManager --> Slack
 ```
 
 ### 7.2 Key Metrics for Node.js (RED Method)
@@ -713,6 +856,14 @@ flowchart TD
 - **Rate**: Number of requests per second.
 - **Errors**: Rate of failed requests.
 - **Duration**: Distribution of request processing times.
+
+```javascript
+const httpRequestDuration = new promClient.Histogram({
+	name: 'http_request_duration_seconds',
+	labelNames: ['method', 'route', 'status_code'],
+	buckets: [0.1, 0.5, 1, 2]
+})
+```
 
 ---
 

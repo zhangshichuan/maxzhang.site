@@ -9,7 +9,7 @@ date: '2026-03-10'
 
 ## Introduction
 
-In the software development lifecycle, testing is critical for ensuring code quality and system stability. For Node.js applications, unit testing helps verify module correctness, while performance testing ensures the system remains reliable under load. This article starts with the basics of unit testing, dives into the AAA pattern, test coverage, and compares mainstream frameworks (Mocha, Jest, Vitest). We will then explore performance testing types, workflows, and tools (Artillery, k6), providing a comprehensive testing framework.
+In the software development lifecycle, testing is a critical step for ensuring code quality and system stability. For Node.js applications, unit testing helps verify module correctness, while performance testing ensures the system remains reliable under load. This article starts with the basics of unit testing, dives into the AAA pattern, test coverage, and compares mainstream frameworks (Mocha, Jest, Vitest). We will then explore performance testing types, workflows, and tools (Artillery, k6), providing a comprehensive testing framework.
 
 ## 1. Unit Testing
 
@@ -17,10 +17,10 @@ In the software development lifecycle, testing is critical for ensuring code qua
 
 Unit testing checks the smallest testable parts of software (e.g., functions, methods). Its value includes:
 
-- **Improving Code Quality**: Catch logic errors and boundary conditions early.
-- **Facilitating Refactoring**: Provides a safety net when changing code.
-- **Living Documentation**: Test cases serve as documentation for module functionality.
-- **Increasing Efficiency**: Automated tests reduce manual regression work.
+- **Improving Code Quality**: Catch logic errors and boundary conditions early, preventing defects from leaking into later stages.
+- **Facilitating Refactoring**: Provides a safety net when changing code, ensuring behavior remains as expected.
+- **Living Documentation**: Test cases serve as documentation for module functionality; new members can understand module purposes through tests.
+- **Increasing Efficiency**: Automated tests reduce manual regression work and quickly locate introduced issues.
 
 **Analogy**: Unit testing is like inspecting the steel bars of a building to ensure each one meets standards for overall safety.
 
@@ -60,26 +60,46 @@ import { add } from '../math.js'
 describe('add function test', () => {
 	it('should return the sum of two numbers', () => {
 		// Arrange
-		const a = 2, b = 3;
-		const expected = 5;
+		const a = 2,
+			b = 3
+		const expected = 5
 
 		// Act
-		const result = add(a, b);
+		const result = add(a, b)
 
 		// Assert
-		assert.strictEqual(result, expected);
+		assert.strictEqual(result, expected)
+	})
+
+	it('should handle negative numbers correctly', () => {
+		assert.strictEqual(add(-1, 1), 0)
+	})
+
+	it('should handle zero correctly', () => {
+		assert.strictEqual(add(0, 0), 0)
 	})
 })
 ```
 
 ### 1.3 Test Coverage
 
-**Test coverage** measures how much code is exercised by tests. Key metrics:
+**Test coverage** measures how much code is exercised by tests. Key metrics include:
 
 - **Statement Coverage**: Percentage of executed statements.
 - **Branch Coverage**: Percentage of executed conditional branches (e.g., if-else).
 - **Function Coverage**: Percentage of called functions.
 - **Line Coverage**: Percentage of executed lines of code.
+
+**Coverage Report Example** (using Istanbul/NYC):
+
+```bash
+--------------|---------|----------|---------|---------|-------------------
+File          | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+--------------|---------|----------|---------|---------|-------------------
+All files     |   85.71 |       75 |     100 |   85.71 |
+ math.js      |   85.71 |       75 |     100 |   85.71 | 5-6
+--------------|---------|----------|---------|---------|-------------------
+```
 
 Usually, a threshold (e.g., 80%) is set. However, high coverage doesn't guarantee the absence of bugs; focus should remain on core logic.
 
@@ -94,12 +114,50 @@ Usually, a threshold (e.g., 80%) is set. However, high coverage doesn't guarante
 | **ESM Support** | Needs config | Good | Native support |
 | **Best For** | Flexibility, Customization | React projects, All-in-one | Vite projects, Performance |
 
-#### 1.4.1 Vitest Example
+#### 1.4.1 Mocha Example
 
-Vitest is a blazing fast testing framework designed specifically for Vite projects.
+Mocha is a flexible framework often paired with Chai and Sinon.
 
 ```javascript
-// math.test.js
+import { expect } from 'chai'
+import sinon from 'sinon'
+import axios from 'axios'
+import { fetchData } from './api.js'
+
+describe('fetchData', () => {
+	it('should fetch data successfully', async () => {
+		const stub = sinon.stub(axios, 'get').resolves({ data: { id: 1 } })
+		const result = await fetchData(1)
+		expect(result).to.deep.equal({ id: 1 })
+		expect(stub.calledOnce).to.be.true
+		stub.restore()
+	})
+})
+```
+
+#### 1.4.2 Jest Example
+
+Jest is a zero-config framework by Facebook.
+
+```javascript
+// user.test.js
+import { createUser } from './user.js'
+import { fetchData } from './api.js'
+
+jest.mock('./api.js')
+
+test('createUser should return object with name and id', () => {
+	const user = createUser('Alice')
+	expect(user).toHaveProperty('id')
+	expect(user.name).toBe('Alice')
+})
+```
+
+#### 1.4.3 Vitest Example
+
+Vitest is designed for Vite, compatible with Jest API but faster.
+
+```javascript
 import { describe, it, expect } from 'vitest'
 import { add } from './math'
 
@@ -109,6 +167,10 @@ describe('add', () => {
 	})
 })
 ```
+
+#### 1.4.4 Async Testing and Hooks
+
+All frameworks support `async/await`. Hooks like `before`, `after`, `beforeEach`, `afterEach` are used for setup and teardown.
 
 ---
 
@@ -126,11 +188,33 @@ Acquires system performance metrics under low load (single user) to set a benchm
 #### 2.2.2 Load Test (Capacity Test)
 Verifies system behavior under expected load to ensure it meets requirements.
 
+**Load Curve Diagram**:
+
+```mermaid
+flowchart TD
+    subgraph Curve
+        direction TB
+        A[User Count] -->|Rising| B[Reached Target TPS]
+        B -->|Increasing Pressure| C[Performance Inflection]
+        C -->|Overload| D[Response Time Spikes]
+    end
+```
+
 #### 2.2.3 Endurance Test (Stability Test)
 Validates system stability over long periods (e.g., 8-24 hours) to check for memory or connection leaks.
 
 #### 2.2.4 Stress Test (Spike Test)
 Tests behavior under sudden extreme load and recovery capabilities.
+
+**Anomaly Test Diagram**:
+
+```mermaid
+flowchart TD
+    A[Normal Load] -->|Sudden Spike| B[Peak Load]
+    B -->|Lasts Seconds| C[Load Drops]
+    C --> D[System Recovers]
+    style B fill:#f96
+```
 
 ### 2.3 Performance Testing Workflow
 
@@ -140,6 +224,20 @@ Tests behavior under sudden extreme load and recovery capabilities.
 4. **Monitoring**: Deploy Prometheus + Grafana to collect server metrics.
 5. **Execution**: Run tests, ramp up pressure, and record data.
 6. **Reporting**: Analyze data, locate bottlenecks, and suggest optimizations.
+
+**Workflow Diagram**:
+
+```mermaid
+flowchart TD
+    A[Requirements] --> B[Model]
+    B --> C[Plan]
+    C --> D[Monitoring]
+    D --> E[Execution]
+    E --> F[Reporting]
+    F -->|Fail| G[Optimize]
+    G --> B
+    F -->|Pass| H[Done]
+```
 
 ### 2.4 Performance Testing Tools
 
@@ -171,6 +269,10 @@ export const options = {
 		{ duration: '3m', target: 10 },
 		{ duration: '1m', target: 0 },
 	],
+	thresholds: {
+		http_req_duration: ['p(95)<500'],
+		http_req_failed: ['rate<0.01'],
+	},
 }
 
 export default function () {
@@ -179,6 +281,10 @@ export default function () {
 	sleep(1)
 }
 ```
+
+### 2.5 Combined with APM Tools
+
+Performance testing should be combined with APM tools (e.g., New Relic, Datadog, Prometheus + OpenTelemetry) to analyze code-level bottlenecks like slow DB queries or external service latency.
 
 ---
 

@@ -13,14 +13,14 @@ Node.js is built on the V8 engine, and its memory management inherits V8's gener
 
 ### 1.1 Stack vs. Heap
 
-- **Stack**: Stores primitive types (Number, String, Boolean, etc.) and pointers to objects. It's automatically managed by the OS, released immediately when a function call ends, and offers extremely fast read/write speeds but limited space.
+- **Stack**: Stores primitive types (Number, String, Boolean, etc.) and pointers to objects. It is automatically managed by the operating system and released when a function call ends. It has extremely fast read/write speeds but limited space.
 - **Heap**: Stores complex reference types (Object, Array, Buffer, Closure, etc.). This is the primary battlefield for Garbage Collection (GC). It offers large space but requires GC to reclaim memory that is no longer in use.
 
 V8 further divides the heap into several spaces, the core ones being **New Space** and **Old Space**.
 
 ```mermaid
 flowchart TD
-    subgraph "V8 Heap Space"
+    subgraph "V8 Heap Spaces"
         N[New Space]
         O[Old Space]
         L[Large Object Space]
@@ -36,14 +36,14 @@ V8 employs a generational collection strategy, using different algorithms for ob
 
 #### 1.2.1 New Space (Scavenge Algorithm)
 
-New Space stores short-lived objects (e.g., function local variables). It's divided into two equal-sized semi-spaces: From and To.
+New Space stores short-lived objects (e.g., function local variables). It is divided into two equal-sized semi-spaces: From and To.
 
 - **Allocation**: New objects are always allocated in the From space.
-- **Collection**: Triggered when From space is nearly full.
+- **Collection**: Triggered when the From space is nearly full.
   - Using the **Cheney Algorithm** (breadth-first copy), surviving objects in From are copied to To.
   - Pointers are adjusted during copying to maintain reference relationships.
   - After copying, From and To swap roles.
-- **Promotion**: Objects that survive multiple Scavenge cycles or when To space exceeds 25% occupancy are moved to Old Space.
+- **Promotion**: Objects that survive multiple Scavenge cycles or when the To space exceeds 25% occupancy are moved to Old Space.
 
 **Characteristics**: Fast (only copies survivors, which are usually a small percentage), but space utilization is only 50%.
 
@@ -95,7 +95,7 @@ The essence of a memory leak is that **objects no longer needed are still refere
 Closures are the soul of Node.js but also a frequent source of leaks. When a closure references a large outer object and the closure itself is held long-term, the large object can never be reclaimed.
 
 ```javascript
-// Leaking closure example
+// Incorrect Example
 import fs from 'node:fs'
 
 function createLeakingClosure() {
@@ -110,7 +110,18 @@ const leak = createLeakingClosure()
 // hugeBuffer cannot be reclaimed because 'leak' holds a reference to it
 ```
 
-**Solution**: Ensure closures only reference necessary objects or set references to `null` after use.
+**Solution**: Ensure closures only reference necessary objects or set references to `null` after use. If a large object is only needed once, consider releasing it manually inside the closure:
+
+```javascript
+function createSafeClosure() {
+	let hugeBuffer = Buffer.alloc(1024 * 1024 * 10)
+	return () => {
+		if (!hugeBuffer) return
+		console.log(hugeBuffer[0])
+		hugeBuffer = null // Release reference
+	}
+}
+```
 
 ### 2.2 Forgotten EventEmitter Listeners
 
@@ -125,6 +136,7 @@ export async function handleRequest(req, res) {
 		console.log('Received data')
 	}
 
+	// Add a new listener on every request
 	globalEmitter.on('update', onData)
 
 	// !!! Forgot to remove listener at the end of the request
@@ -132,7 +144,7 @@ export async function handleRequest(req, res) {
 }
 ```
 
-**Solution**: Always remove listeners at appropriate times (e.g., end of request) or use the `once` method.
+**Solution**: Always remove listeners at appropriate times (e.g., end of request) or use the `once` method. Modern Node.js can also use `AbortController` for unified cleanup (see below).
 
 ### 2.3 Ghost Timers
 
@@ -149,103 +161,191 @@ function startTask(data) {
 }
 ```
 
-**Solution**: Always save timer IDs and clear them when no longer needed.
+**Solution**: Always save timer IDs and clear them when no longer needed. For periodic tasks, consider using `setInterval` with conditional checks or recursive `setTimeout` for more flexible control.
 
 ### 2.4 Unclosed Resource Streams
 
 In high-concurrency file or network operations, if streams do not correctly trigger `close` or `end`, underlying file descriptors and buffers will remain in memory.
 
+```javascript
+import fs from 'node:fs'
+
+function processFile() {
+	const stream = fs.createReadStream('large-file.bin')
+	stream.on('data', (chunk) => {
+		// Process data...
+	})
+	// If an error occurs and error/close events are not handled
+	// the internal buffer of the stream might leak
+}
+```
+
 **Solution**: Ensure streams are destroyed and resources released, especially when errors occur. Listen for `error` events and call `stream.destroy()`.
 
 ### 2.5 The "Singleton Trap" in SSR Environments
 
-In SSR frameworks like Next.js, **singletons are a major source of leaks**. Since the Node.js process is long-running, global variables or singletons defined at the module level (e.g., `const cache = new Map()`) will be **shared across all user requests**.
+In SSR frameworks like Next.js or Nuxt.js, **singletons are a major source of leaks**. Since the Node.js process is long-running, global variables or singletons defined at the module level (e.g., `const cache = new Map()`) will be **shared across all user requests**.
 
 ```javascript
 // lib/auth.js (Singleton leak example)
-const userCache = new Map() // Persists across requests
+const userCache = new Map() // Defined at module top-level, persists across requests
 
 export async function getUserData(userId) {
 	if (userCache.has(userId)) return userCache.get(userId)
 
 	const data = await fetchUserData(userId)
-	userCache.set(userId, data) // !!! Leak: cache grows indefinitely with user volume
+	userCache.set(userId, data) // !!! Leak: cache grows indefinitely with user volume until OOM
 	return data
 }
 ```
 
-**Defensive Advice**: Strictly avoid storing request-specific data in the global scope in SSR. If caching is necessary, always use **TTL (Time To Live)** or **LRU (Least Recently Used)** strategies to limit capacity.
+**Defensive Advice**: Strictly avoid storing request-specific data in the global scope in SSR. If caching is necessary, always use **TTL (Time To Live)** or **LRU (Least Recently Used)** strategies to limit capacity using packages like `lru-cache`.
+
+```javascript
+import { LRUCache } from 'lru-cache'
+
+const userCache = new LRUCache({ max: 500, ttl: 1000 * 60 * 10 }) // Max 500 items, 10-minute TTL
+```
 
 ---
 
 ## 3. 2026 Modern Defensive Strategies
 
-As Node.js evolves, the standard library provides more powerful tools to manage resource lifecycles.
+As Node.js evolves, the standard library provides more powerful tools to manage resource lifecycles, avoiding the tedium and errors of manual cleanup.
 
 ### 3.1 AbortController: Unified Disposal Signal
 
 Originally for aborting Fetch requests, `AbortController` now supports `EventEmitter`, streams, timers, etc. It provides a unified mechanism to cancel multiple async operations simultaneously.
 
 ```javascript
+import { EventEmitter } from 'node:events'
+import { setTimeout } from 'node:timers/promises'
+import { Readable } from 'node:stream'
+
 const controller = new AbortController()
 const { signal } = controller
 
 const emitter = new EventEmitter()
+
+// Pass signal to listener
 emitter.on('data', (data) => console.log(data), { signal })
+
+// Also for timers (using Promises API)
+setTimeout(1000, 'Timeout Value', { signal })
+	.then(console.log)
+	.catch((err) => {
+		if (err.name === 'AbortError') console.log('Timer safely cancelled')
+	})
+
+// Or for streams
+const stream = Readable.from([1, 2, 3], { signal })
 
 // Clean up all resources bound to this signal with one call
 controller.abort()
 ```
 
+When `controller.abort()` is called, all asynchronous resources registered with that `signal` are automatically cleaned up, greatly reducing leak risks.
+
 ### 3.2 FinalizationRegistry: An "Automatic Warning System" for Leaks
 
-`FinalizationRegistry` allows you to register a callback that triggers when an object is garbage collected. It's excellent for monitoring if critical objects are being reclaimed correctly.
+`FinalizationRegistry` allows you to register a callback that triggers when an object is garbage collected. While it doesn't prevent leaks, it can monitor if critical objects are being reclaimed correctly.
 
 ```javascript
+// Leak warner
 const registry = new FinalizationRegistry((heldValue) => {
-	console.warn(`[GC Alert]: Object "${heldValue}" reclaimed`)
+	console.warn(`[GC Alert]: Object "${heldValue}" successfully reclaimed`)
 })
 
 function createSession(user) {
 	const session = { id: Math.random(), user }
+	// Register for monitoring
 	registry.register(session, `Session_${session.id}`)
 	return session
 }
+
+// Simulated usage
+let s = createSession('Alice')
+s = null // Dereference, expecting GC reclamation
+
+// If you don't see the callback after a while, the session might be leaking
 ```
 
 ---
 
 ## 4. Detection and Debugging in Practice
 
+When a leak is suspected, we need a scientific troubleshooting process. Here are common tools and methods in the Node.js ecosystem.
+
 ### 4.1 Heap Snapshot Analysis
 
 Comparing snapshots from two different points in time is the most direct way to identify growing object counts.
 
-**Generate Snapshot**: Use `node --inspect` and connect via Chrome DevTools (`chrome://inspect`).
+**Generate Snapshot**:
+```bash
+# Start in inspect mode
+node --inspect app.js
+```
+Then open `chrome://inspect` in Chrome, click "Open dedicated DevTools for Node," go to the **Memory** tab, and click "Take Snapshot."
 
 **Key Metrics**:
-- **Shallow Size**: Memory occupied by the object itself.
-- **Retained Size**: Memory that would be freed if the object were reclaimed (includes referenced children).
+- **Shallow Size**: Memory occupied by the object itself (excluding referenced objects).
+- **Retained Size**: Total memory occupied by the object and all its referenced children. Frees this amount if reclaimed.
+- **Comparison View**: After taking two snapshots, use "Comparison" to see new object types and counts. Focus on those that persist and grow.
+
+**Common Leaking Objects**:
+- Large amount of closures (`(closure)`)
+- Accumulated `EventListener`
+- Detached HTML (if Node.js handles DOM, rare)
+- Uncleared `Buffer`
 
 ### 4.2 Production Diagnostics
 
+In production, you can't freeze processes for snapshots. Monitor memory metrics for warnings instead.
+
 #### 4.2.1 Using `process.memoryUsage()`
-Returns an object with `rss` (physical memory), `heapTotal`, `heapUsed`, and `external` (C++ memory managed by V8).
+Returns an object with:
+- `rss`: Resident Set Size, physical memory occupied by the process.
+- `heapTotal`: Total V8 heap size.
+- `heapUsed`: Heap memory currently in use.
+- `external`: C++ memory managed by V8 (e.g., Buffers).
+- `arrayBuffers`: Memory for `ArrayBuffer` and `SharedArrayBuffer`.
+
+```javascript
+setInterval(() => {
+	const { heapUsed, rss } = process.memoryUsage()
+	console.log(`Heap: ${Math.round(heapUsed / 1024 / 1024)}MB | RSS: ${Math.round(rss / 1024 / 1024)}MB`)
+}, 10000)
+```
 
 #### 4.2.2 Manual GC with `node --expose-gc`
-In debug environments, expose `global.gc()` to manually trigger a full GC and check if memory is truly reclaimable.
+In debug environments, use `--expose-gc` to manually trigger `global.gc()` and verify if memory is truly reclaimable.
+
+```bash
+node --expose-gc inspect.js
+```
 
 ### 4.3 Powerful Weapon: `node --report`
 For production OOMs, Node.js's built-in **Diagnostic Report** is more elegant than snapshots. It generates a JSON report upon fatal errors or specific signals (`SIGUSR2`) without freezing the process.
+
+**Enable Report**:
+```bash
+# Auto-generate on OOM or signal
+node --report-on-fatalerror --report-on-signal --report-signal=SIGUSR2 app.js
+```
+Trigger manually: `kill -USR2 <pid>`.
+
+### 4.4 Third-party Tools
+- **clinic.js**: A diagnostic suite including `clinic doctor`, `clinic flame`, and `clinic bubbleprof` for visual performance analysis.
+- **heapdump**: Allows generating snapshots at runtime via signals.
 
 ---
 
 ## 5. Optimization Summary
 
 1. **Prefer WeakMap/WeakSet**: References are "weak" and don't prevent GC. Ideal for caches.
-2. **Avoid Global Variables**: Global scope objects are permanent residents of Old Space.
-3. **Stream Large Data**: Never use `fs.readFile` for large files; always prefer `fs.createReadStream`.
+2. **Avoid Global Variables**: Global scope objects are permanent residents of Old Space. Be wary of closures when using module-level variables.
+3. **Stream Large Data**: Never use `fs.readFile` for large files; always prefer `fs.createReadStream`. Use streams for writing too.
 4. **Automate Cleanup**: Use `AbortController` to coordinate the lifecycle of async resources.
 5. **Set Cache Limits**: Always implement size limits and TTLs for memory-based caches.
-6. **Regular Load Testing**: Use tools like `k6` to observe if memory trends remain stable over time.
+6. **Regular Load Testing**: Use tools like `k6` to observe if memory trends remain stable over time. Memory usage should fluctuate (drop after GC), not increase monotonically.
 7. **Monitoring & Alerting**: Deploy memory monitoring (e.g., Prometheus + Grafana) with sensible alert thresholds.
