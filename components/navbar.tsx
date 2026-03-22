@@ -105,13 +105,14 @@ export function Navbar() {
 							whileTap={{ scale: 0.9 }}
 							onClick={toggleLanguage}
 							className="
-         inline-flex h-10 w-10 items-center justify-center rounded-full border-2
+							inline-flex
+         h-10 w-10 cursor-pointer items-center justify-center rounded-full border-2
          border-border/10 transition-colors
          hover:border-primary/50 hover:bg-secondary/20
        "
 							title={t('switchLanguage')}
 						>
-							<Languages className="size-5 cursor-pointer" />
+							<Languages className="size-5" />
 							<span className="sr-only">Language</span>
 						</motion.button>
 
