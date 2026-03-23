@@ -90,5 +90,9 @@
     "noResults": "No articles found matching your criteria",
     "startSearch": "Enter keywords or select tags to start searching",
     "clearFilters": "Clear search filters"
+  },
+  "Mermaid": {
+    "clickToZoom": "Click to view full image",
+    "zoomInstruction": "Use toolbar to zoom • Pinch to zoom on mobile"
   }
 }

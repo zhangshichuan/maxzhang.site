@@ -90,5 +90,9 @@
 		"noResults": "没有找到匹配的文章",
 		"startSearch": "输入关键词或选择标签开始搜索",
 		"clearFilters": "清除筛选条件"
+	},
+	"Mermaid": {
+		"clickToZoom": "点击查看高清大图",
+		"zoomInstruction": "使用上方工具栏缩放 • 移动端可双指操作"
 	}
 }

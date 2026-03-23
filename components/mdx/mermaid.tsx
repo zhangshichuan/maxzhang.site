@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Maximize2, RotateCcw, X, ZoomIn, ZoomOut } from 'lucide-react'
 import mermaid from 'mermaid'
+import { useTranslations } from 'next-intl'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
 
@@ -11,6 +12,7 @@ interface MermaidProps {
 }
 
 export default function Mermaid({ chart }: MermaidProps) {
+	const t = useTranslations('Mermaid')
 	const { resolvedTheme } = useTheme()
 	const [svg, setSvg] = useState<string>('')
 	const [error, setError] = useState<string | null>(null)
@@ -143,7 +145,7 @@ export default function Mermaid({ chart }: MermaidProps) {
        text-[10px] font-black tracking-tight text-foreground uppercase
      "
 					>
-						点击查看高清大图
+						{t('clickToZoom')}
 					</span>
 				</div>
 			</div>
@@ -248,7 +250,7 @@ export default function Mermaid({ chart }: MermaidProps) {
         text-[11px] font-black tracking-widest text-primary uppercase shadow-lg
       "
 						>
-							使用上方工具栏缩放 • 移动端可双指操作
+							{t('zoomInstruction')}
 						</div>
 					</motion.div>
 				)}
