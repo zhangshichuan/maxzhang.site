@@ -7,19 +7,50 @@ author: 'Max Zhang'
 date: '2026-03-10'
 ---
 
+> A comprehensive guide for developers who want to understand what "logging" is and how to use it effectively
+
+Have you ever encountered these situations: the website has a problem but you can't find where it went wrong no matter how hard you look through the code? Or a user says "I clicked a button and nothing happened" but you have no idea what happened? Or you get woken up at 3 AM with an alert, but you're staring at a screen full of logs with no clue where to start?
+
+This article explains in plain language this seemingly simple but actually deep topic called logging. Whether you're a Node.js beginner or an experienced developer wanting a systematic review, you'll find something useful here.
+
+---
+
 ## 1. Why Do We Need Logs?
 
-The value of logs is reflected in multiple dimensions:
+### 1.1 Let's Start with a Story: What Are Logs?
 
-| Dimension | Description |
-| :--- | :--- |
-| **Debug & Troubleshooting** | Record error stacks, request parameters, and execution flows to quickly reproduce and locate online issues. |
-| **User Behavior Analysis** | Track user clicks and access paths to provide data for product optimization and recommendation systems. |
-| **Monitoring & Risk Control** | Detect abnormal traffic and attack behaviors, working with alerting systems for timely responses. |
-| **Snapshots & Root Cause Analysis** | Snapshots of crash scenes used to trace the root cause after the fact. |
-| **Product Value** | Analyze user habits through logs to drive product iterations. |
+Imagine you run a 24-hour convenience store with security cameras installed. The footage recorded by these cameras is like "logs"—it faithfully records everything that happens in the store.
 
-Logs are not just "printing information"; they are a piece of infrastructure. Let's see how to implement logging correctly in Node.js.
+Normally, nobody watches the footage. But when problems occur:
+
+- Someone complains they weren't given correct change → Check the footage
+- Someone broke in at night → Check the footage
+- Want to know which time slots have the most customers → Analyze the footage
+
+Logs are the "footage" of your application. They record everything that happens during runtime, allowing us to "replay the footage" afterward.
+
+### 1.2 The Value of Logs
+
+Logs provide value across multiple dimensions:
+
+| Dimension                                | Description                                                                                               | Example                                                                               |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **Debugging**                            | Record error stacks, request parameters, execution flow to quickly reproduce and locate production issues | User's order failed, log shows inventory service timed out                            |
+| **User Behavior Analysis**               | Record user clicks, access paths, providing data for product optimization and recommendation systems      | Discovered users generally spend a long time on payment page, might need optimization |
+| **Monitoring & Risk Control**            | Detect abnormal traffic, attack behaviors, respond quickly with alerting systems                          | Some IP making 1000 requests per second, might be under attack                        |
+| **Site Recording & Root Cause Analysis** | Snapshot of crash scene for post-incident tracing of root causes                                          | Service crashed at 3 AM, logs can reconstruct what happened                           |
+| **Product Value**                        | Analyze user habits through logs to drive product iteration                                               | Found 80% of users only use search function, homepage can be simplified               |
+
+### 1.3 Logs Are Not Just "Printing Information"
+
+Many beginners think logs are just `console.log("hello")`, but this is completely wrong. Good logs should be:
+
+- **Structured**: Not a pile of strings, but parseable JSON
+- **Leveled**: Clear distinction between debug, info, warn, error
+- **Correlated**: Request IDs to link logs from the same request
+- **Sanitized**: Passwords, ID numbers must be masked
+
+> **Note**: Logs are infrastructure for your application, like water, electricity, and network—not a nice-to-have, but a must-have.
 
 ---
 
@@ -27,223 +58,622 @@ Logs are not just "printing information"; they are a piece of infrastructure. Le
 
 ### 2.1 The Truth About console
 
-In Node.js, `console.log` actually outputs to the standard output stream (stdout), while `console.error` outputs to the standard error stream (stderr).
+In Node.js, `console.log` actually outputs to standard output stream (stdout), while `console.error` outputs to standard error stream (stderr).
 
-#### 2.1.1 Mastering the Console API: More Than Just log
-
-Beyond basic printing, utilizing advanced `console` APIs can greatly enhance debugging efficiency:
-
-- **ES6 Variable Shorthand**: Use object property shorthand to print variable names and values at once.
-  ```javascript
-  const user = 'Max';
-  const status = 'active';
-  console.log({ user, status }); // Output: { user: 'Max', status: 'active' }
-  ```
-
-- **Table Display (`console.table`)**: Outputs arrays or objects in a table format, making complex data structures intuitive to view.
-  ```javascript
-  const users = [
-    { id: 1, name: 'Alice', role: 'Admin' },
-    { id: 2, name: 'Bob', role: 'User' }
-  ];
-  console.table(users);
-  ```
-
-- **Stack Tracing (`console.trace`)**: Prints the current call stack, helping you clarify function call chains.
-  ```javascript
-  function deepTask() {
-    console.trace('Executed here');
-  }
-  deepTask();
-  ```
-
-- **Performance Timing (`console.time` / `console.timeEnd`)**: Quickly measure the execution time of code blocks.
-  ```javascript
-  console.time('fetch-data');
-  // ... perform some async operations
-  console.timeEnd('fetch-data'); // Output: fetch-data: 12.345ms
-  ```
-
-- **Hierarchical Grouping (`console.group` / `console.groupEnd`)**: Creates collapsible (in supported terminals or browsers) indented groups in the console.
-  ```javascript
-  console.group('User Registration Flow');
-  console.info('Validating form...');
-  console.info('Saving to DB...');
-  console.groupEnd();
-  ```
-
-- **Deep Object Analysis (`console.dir`)**: Compared to `log`, `dir` can control display depth and colors through options, suitable for complex nested objects.
-  ```javascript
-  console.dir(bigObject, { depth: null, colors: true });
-  ```
-
-- **Level-based Output**:
-  - `console.info()`: Outputs general information (usually consistent with `log`).
-  - `console.warn()`: Outputs warning information.
-  - `console.error()`: Outputs error information.
-
-#### 2.1.2 Underlying Differences Between stdout and stderr
-
-There are differences in the low-level implementation of these two streams...
-
-In the command line, you can use redirection symbols to output logs to a file:
+Understanding the difference is important:
 
 ```bash
-# Write stdout to app.log
-node app.js > app.log
+# Redirect stdout and stderr separately
+node app.js > output.log 2> error.log
 
-# Write stderr to error.log
-node app.js 2> error.log
-
-# Merge stdout and stderr into all.log
+# Redirect both combined
 node app.js &> all.log
+
+# Pipe stdout to another command
+node app.js | grep "error"
 ```
 
-The pipe operator `|` can take the output of one command as the input for another, commonly used for real-time log processing.
+### 2.2 Mastering the Console API: Beyond Just log
 
-### 2.2 Best Practices for Writing to Files
+Many people only know `console.log`, but console has many useful APIs:
 
-When writing logs directly to files, a common mistake for beginners is using `fs.appendFile` for frequent writes:
+#### 2.2.1 ES6 Variable Shorthand
+
+Use object property shorthand to print variable names and values at once:
+
+```javascript
+const user = 'Max'
+const status = 'active'
+
+// Normal approach: can you tell which is the variable name and which is the value?
+console.log('user:', user, 'status:', status)
+
+// Concise approach: crystal clear
+console.log({ user, status })
+// Output: { user: 'Max', status: 'active' }
+```
+
+#### 2.2.2 Tabular Display
+
+Essential for viewing complex data structures:
+
+```javascript
+const users = [
+	{ id: 1, name: 'Alice', role: 'Admin' },
+	{ id: 2, name: 'Bob', role: 'User' },
+	{ id: 3, name: 'Charlie', role: 'User' },
+]
+
+// Normal print is a mess
+console.log(users)
+
+// Tabular print is much clearer
+console.table(users)
+```
+
+Terminal displays:
+
+```
+┌─────────┬──────────┬─────────┐
+│ (index) │   name   │  role   │
+├─────────┼──────────┼─────────┤
+│    0    │  'Alice' │  'Admin'│
+│    1    │  'Bob'   │  'User' │
+│    2    │ 'Charlie'│  'User' │
+└─────────┴──────────┴─────────┘
+```
+
+#### 2.2.3 Stack Tracing
+
+Print the current call stack to understand function call chains:
+
+```javascript
+function level3() {
+	console.trace('Reached here')
+}
+
+function level2() {
+	level3()
+}
+
+function level1() {
+	level2()
+}
+
+level1()
+```
+
+Output:
+
+```
+Trace: Reached here
+    at level3 (/app.js:2:9)
+    at level2 (/app.js:6:5)
+    at level1 (/app.js:10:5)
+    at Object.<anonymous> (/app.js:13:1)
+```
+
+#### 2.2.4 Conditional Assertions
+
+Print only when condition is false, great for simple validations:
+
+```javascript
+const count = 5
+
+// count > 10 is false, so it prints
+console.assert(count > 10, 'Count must be greater than 10')
+// Assertion failed: Count must be greater than 10
+
+// This won't print because condition is true
+console.assert(count > 1, "This won't print")
+```
+
+#### 2.2.5 Performance Timing
+
+Measure code execution time:
+
+```javascript
+console.time('fetch-data')
+
+// Simulate async operation
+setTimeout(() => {
+	console.timeEnd('fetch-data')
+	// Output: fetch-data: 2003.123ms
+}, 2000)
+
+// Can also be nested
+console.time('total')
+console.time('step1')
+// ... operation 1
+console.timeEnd('step1')
+console.time('step2')
+// ... operation 2
+console.timeEnd('step2')
+console.timeEnd('total')
+```
+
+#### 2.2.6 Hierarchical Grouping
+
+Create collapsible log groups:
+
+```javascript
+console.group('User Registration Flow')
+console.info('Step 1: Validate form...')
+console.info('Step 2: Check if username exists')
+
+console.group('Database Operations')
+console.log('Query users table...')
+console.log('User already exists, returning error')
+console.groupEnd()
+
+console.info('Step 3: Create user')
+console.groupEnd()
+```
+
+Terminal shows indented hierarchy for easy reading.
+
+#### 2.2.7 Object Deep Inspection
+
+Control display depth when printing complex nested objects:
+
+```javascript
+const bigObject = {
+	level1: {
+		level2: {
+			level3: {
+				value: 'Deep value',
+			},
+		},
+	},
+}
+
+// Default might only show a few levels
+console.log(bigObject)
+
+// Specify depth null = show all
+console.dir(bigObject, { depth: null, colors: true })
+```
+
+#### 2.2.8 Styling Output
+
+Use CSS styling in browser console:
+
+```javascript
+// Note: This works in browser console, not in Node.js terminal
+console.log('%cSuccess!', 'color: green; font-weight: bold; font-size: 20px;')
+```
+
+> **Tip**: For美化output in Node.js, use libraries like `chalk` which support colors and styles in terminal.
+
+#### 2.2.9 Leveled Output
+
+Print to different streams based on severity:
+
+| Method            | Level | Description                       |
+| ----------------- | ----- | --------------------------------- |
+| `console.log()`   | info  | General information               |
+| `console.info()`  | info  | Information (behaves same as log) |
+| `console.warn()`  | warn  | Warning, outputs to stderr        |
+| `console.error()` | error | Error, outputs to stderr          |
+
+### 2.3 Best Practices for File Writing
+
+#### 2.3.1 Why Can't We Use fs.appendFile?
+
+Many beginners write logs like this:
 
 ```javascript
 import fs from 'node:fs'
-fs.appendFile('app.log', 'log message\n', (err) => {
-	if (err) console.error('Write failed')
-})
+
+// Never do this!
+function logMessage(message) {
+	fs.appendFile('app.log', message + '\n', (err) => {
+		if (err) console.error('Write failed')
+	})
+}
+
+// Business code calls this repeatedly
+logMessage('User logged in')
+logMessage('User placed order')
+logMessage('Payment successful')
+// ... called 1000 times
 ```
 
-Every call to `fs.appendFile` opens the file, writes data, and closes the file. Frequent operations lead to file handle leaks and performance issues. A **file handle** is an abstraction used by the OS to identify an open file; each open file occupies one handle. If not released in time, you hit the system limit, preventing new files from being opened.
+The problem: each `fs.appendFile` call does:
 
-A better way is to use `fs.createWriteStream` to create a writable stream, keeping the file open and using a buffer for batch writes:
+1. Open file
+2. Write data
+3. Close file
+
+This causes "frequent IO", leading to:
+
+- **File handle leaks**: Operating system limits number of open files
+- **Performance issues**: Each call does full open-write-close cycle
+
+#### 2.3.2 Writing with Streams: The Right Way
+
+The correct approach is to use a writable stream, keeping the file open and batching writes through a buffer:
 
 ```javascript
 import fs from 'fs'
-const logStream = fs.createWriteStream('app.log', { flags: 'a' }) // 'a' for append mode
 
-// Write log
-logStream.write('This is a log message.\n')
+// Create write stream in append mode
+const logStream = fs.createWriteStream('app.log', { flags: 'a' })
 
-// Close stream before program ends
-logStream.end()
+// Write logs (automatically buffered)
+logStream.write('User logged in\n')
+logStream.write('User placed order\n')
+logStream.write('Payment successful\n')
+
+// Close stream before program exits
+process.on('SIGINT', () => {
+	logStream.end()
+	process.exit(0)
+})
 ```
 
-Using streams not only improves write performance but also avoids handle leaks. Note that the `write` method returns a boolean indicating if data is fully written to the internal buffer; if it returns `false`, listen for the `'drain'` event to wait for the buffer to clear.
+**Why are streams better?**
 
-### 2.3 inodes and File Handles
+1. File only opened once, continuous writing
+2. OS automatically buffers, reducing IO operations
+3. No file handle leaks
 
-In Linux systems, every file has a unique **inode** that stores file metadata (permissions, size, timestamps, etc.) and pointers to data blocks. When you open a file, the OS returns a file handle associated with the file's inode. Even if the file is moved or deleted, as long as the handle is not closed, the program can still read/write the original file via the handle.
+**Important**: `write()` returns a boolean indicating whether data was fully written to internal buffer. If it returns `false`, wait for 'drain' event:
 
-Understanding inodes helps in designing log rotation strategies because when renaming log files, as long as the stream remains open, writes will continue to flow to the file corresponding to the original inode.
+```javascript
+function safeWrite(stream, message) {
+	if (!stream.write(message)) {
+		// Return false means buffer is full, wait for drain
+		stream.once('drain', () => {
+			stream.write(message)
+		})
+	}
+}
+```
+
+### 2.4 Inodes and File Handles
+
+#### 2.4.1 What Is an Inode?
+
+In Linux systems, every file has a unique **inode** (index node). Inodes store:
+
+- File metadata (permissions, size, timestamps)
+- Pointers to data blocks
+
+View file inodes with `ls -i`:
+
+```bash
+ls -i app.log
+# Output: 1234567 app.log
+# 1234567 is the inode number
+```
+
+#### 2.4.2 Relationship Between Inodes and Logs
+
+When you "delete" a file that's still being used by a process:
+
+```bash
+# Process is writing to app.log
+rm app.log  # File is "deleted"
+```
+
+The file becomes invisible, but the inode still exists and the process can still write to it. Disk space is only freed when all processes close the file handle.
+
+#### 2.4.3 Understanding Inodes Helps with Log Rotation
+
+During log rotation:
+
+1. Rename `app.log` to `app-2025-03-10.log`
+2. Create new `app.log` to continue writing
+
+Because inodes persist, after renaming, the process still writes to the original inode. This explains why logs can "disappear" after rotation—they're being written to the new filename.
 
 ---
 
 ## 3. Server Application Logging Practices
 
-In typical BFF (Backend For Frontend) or Node.js services, we need to record various types of logs.
+### 3.1 Request Logs (Access Log)
 
-### 3.1 Access Logs
-
-Every client request should be logged with information including method, URL, status code, response time, and client IP. This helps monitor traffic and troubleshoot performance issues.
+Every HTTP request should log an entry. This is the most basic requirement.
 
 ```javascript
+import express from 'express'
+
+const app = express()
+
+// Request logging middleware
 app.use((req, res, next) => {
 	const start = Date.now()
+
+	// Callback when request finishes
 	res.on('finish', () => {
 		const duration = Date.now() - start
-		logger.info({
-			type: 'access',
-			method: req.method,
-			url: req.originalUrl,
-			status: res.statusCode,
-			duration,
-			ip: req.ip,
-			userAgent: req.get('User-Agent'),
-		})
+
+		console.log(
+			JSON.stringify({
+				timestamp: new Date().toISOString(),
+				type: 'access',
+				method: req.method,
+				url: req.originalUrl,
+				status: res.statusCode,
+				duration, // Response time in milliseconds
+				ip: req.ip,
+				userAgent: req.get('User-Agent'),
+				userId: req.user?.id, // If user auth is implemented
+				traceId: req.headers['x-trace-id'], // Distributed tracing ID
+			}),
+		)
 	})
+
 	next()
 })
 ```
 
+#### 3.1.1 What to Include in Request Logs?
+
+| Field     | Description                | Example                  |
+| --------- | -------------------------- | ------------------------ |
+| timestamp | Request time               | 2025-03-10T10:00:00.000Z |
+| method    | HTTP method                | GET, POST, PUT, DELETE   |
+| url       | Request path               | /api/users/123           |
+| status    | Response status code       | 200, 404, 500            |
+| duration  | Response time (ms)         | 125                      |
+| ip        | Client IP                  | 192.168.1.100            |
+| userId    | User ID (if authenticated) | user_abc123              |
+| traceId   | Distributed tracing ID     | trace_xyz789             |
+
 ### 3.2 External Service Call Logs
 
-When a Node.js app acts as a BFF layer calling backend services, it's necessary to log request parameters, response results, and time taken to locate issues in dependent services.
+When Node.js acts as a BFF layer calling backend services, log complete call information:
 
 ```javascript
-async function callBackend(serviceUrl, params) {
+async function callBackend(serviceUrl, params, options = {}) {
 	const start = Date.now()
+	const requestId = crypto.randomUUID()
+
 	try {
-		const response = await axios.post(serviceUrl, params)
-		logger.debug({
-			type: 'backend_call',
-			service: serviceUrl,
-			params,
-			response: response.data,
-			duration: Date.now() - start,
+		const response = await axios.post(serviceUrl, params, {
+			headers: {
+				'X-Request-ID': requestId,
+				...options.headers,
+			},
+			timeout: options.timeout || 5000,
 		})
+
+		const duration = Date.now() - start
+
+		console.log(
+			JSON.stringify({
+				type: 'backend_call',
+				requestId,
+				service: serviceUrl,
+				params: params, // Note: Must sanitize in production!
+				responseStatus: response.status,
+				duration,
+				timestamp: new Date().toISOString(),
+			}),
+		)
+
 		return response.data
 	} catch (err) {
-		logger.error({
-			type: 'backend_error',
-			service: serviceUrl,
-			params,
-			error: err.message,
-			stack: err.stack,
-			duration: Date.now() - start,
-		})
+		const duration = Date.now() - start
+
+		console.error(
+			JSON.stringify({
+				type: 'backend_error',
+				requestId,
+				service: serviceUrl,
+				params: params,
+				error: err.message,
+				errorCode: err.code,
+				stack: err.stack,
+				duration,
+				timestamp: new Date().toISOString(),
+			}),
+		)
+
 		throw err
 	}
 }
 ```
 
-### 3.3 Exception Capture and Logging
+#### 3.2.1 Value of Call Logs
 
-After capturing exceptions using `try/catch`, error logs should be recorded immediately with sufficient context (like User ID, request path, etc.).
+- Troubleshoot slow responses from a specific backend service
+- Analyze inter-service dependencies
+- Discover abnormal calling patterns (like circular calls)
+
+### 3.3 Exception Handling and Logging
+
+#### 3.3.1 Try/Catch for Synchronous Code
 
 ```javascript
 app.get('/api/user/:id', async (req, res) => {
 	try {
 		const user = await getUser(req.params.id)
+
+		if (!user) {
+			return res.status(404).json({ error: 'User not found' })
+		}
+
 		res.json(user)
 	} catch (err) {
-		logger.error({
-			message: 'Failed to get user',
-			userId: req.params.id,
-			error: err.message,
-			stack: err.stack,
-		})
-		res.status(500).send('Internal Server Error')
+		// Must log complete context!
+		console.error(
+			JSON.stringify({
+				type: 'error',
+				route: '/api/user/:id',
+				params: req.params,
+				query: req.query,
+				userId: req.user?.id,
+				error: err.message,
+				stack: err.stack,
+				timestamp: new Date().toISOString(),
+			}),
+		)
+
+		res.status(500).json({ error: 'Internal Server Error' })
 	}
 })
 ```
 
-### 3.4 Business Flow Logs
+#### 3.3.2 Special Handling for Async Errors
 
-In critical business processes (like ordering, payment), record business status changes for future tracing and statistics.
+Promise.reject won't be caught by try/catch:
 
 ```javascript
-function createOrder(orderData) {
-	logger.info({
-		type: 'business',
-		action: 'create_order',
-		userId: orderData.userId,
-		productId: orderData.productId,
-		price: orderData.price,
-	})
-	// ... business logic
+// This is wrong!
+try {
+	Promise.reject(new Error('async error'))
+} catch (err) {
+	// This will never execute
+}
+
+// Correct写法
+async function wrong() {
+	try {
+		await Promise.reject(new Error('async error'))
+	} catch (err) {
+		console.error(err)
+	}
+}
+
+// Or use .catch()
+Promise.reject(new Error('async error')).catch((err) => console.error(err))
+```
+
+#### 3.3.3 Global Uncaught Exception Handling
+
+Set up the last line of defense for the process:
+
+```javascript
+// Catch unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+	console.error(
+		JSON.stringify({
+			type: 'unhandled_rejection',
+			reason: reason instanceof Error ? reason.message : reason,
+			stack: reason instanceof Error ? reason.stack : undefined,
+			timestamp: new Date().toISOString(),
+		}),
+	)
+})
+
+// Catch unhandled exceptions
+process.on('uncaughtException', (err) => {
+	console.error(
+		JSON.stringify({
+			type: 'uncaught_exception',
+			error: err.message,
+			stack: err.stack,
+			timestamp: new Date().toISOString(),
+		}),
+	)
+
+	// For uncaught exceptions, usually need graceful exit
+	process.exit(1)
+})
+```
+
+> **Tip**: After catching an unhandled exception, Node.js recommends exiting anyway, because state may already be inconsistent.
+
+### 3.4 Business Process Logs
+
+Record state changes at critical business nodes:
+
+```javascript
+// Order creation
+async function createOrder(orderData) {
+	const orderId = generateOrderId()
+
+	console.log(
+		JSON.stringify({
+			type: 'business',
+			action: 'create_order_start',
+			orderId,
+			userId: orderData.userId,
+			productId: orderData.productId,
+			quantity: orderData.quantity,
+			totalPrice: orderData.totalPrice,
+			timestamp: new Date().toISOString(),
+		}),
+	)
+
+	try {
+		// Check inventory
+		const stockAvailable = await checkStock(orderData.productId, orderData.quantity)
+
+		if (!stockAvailable) {
+			console.log(
+				JSON.stringify({
+					type: 'business',
+					action: 'create_order_failed',
+					orderId,
+					reason: 'stock_insufficient',
+					timestamp: new Date().toISOString(),
+				}),
+			)
+			throw new Error('Insufficient stock')
+		}
+
+		// Reduce stock
+		await reduceStock(orderData.productId, orderData.quantity)
+
+		// Create order
+		const order = await saveOrder(orderId, orderData)
+
+		console.log(
+			JSON.stringify({
+				type: 'business',
+				action: 'create_order_success',
+				orderId,
+				userId: orderData.userId,
+				totalPrice: orderData.totalPrice,
+				timestamp: new Date().toISOString(),
+			}),
+		)
+
+		return order
+	} catch (err) {
+		console.error(
+			JSON.stringify({
+				type: 'business',
+				action: 'create_order_error',
+				orderId,
+				error: err.message,
+				timestamp: new Date().toISOString(),
+			}),
+		)
+		throw err
+	}
 }
 ```
 
-### 3.5 Log Levels and Formats
+#### 3.4.1 Key Points for Business Logs
 
-Commonly used log levels (from low to high):
+- **Complete lifecycle**: Log start, success, failure
+- **ID correlation**: Each order has unique ID for searching
+- **Log key parameters**: Product, quantity, price
+- **Errors need reasons**: Not just "something went wrong", specify what went wrong
 
-- `debug`: Debugging info, enabled during development.
-- `info`: General info, like request start/end.
-- `warn`: Warnings, doesn't affect running but worth attention.
-- `error`: Errors affecting some functionality.
-- `fatal`: Fatal errors, process might exit.
+### 3.5 Log Levels and Format
 
-**Structured logs** (JSON format) are recommended for easy parsing by tools like Logstash. A log entry should contain:
+#### 3.5.1 Log Levels
+
+From low to high:
+
+| Level | English | Description                        | Use Case                                   |
+| ----- | ------- | ---------------------------------- | ------------------------------------------ |
+| trace | TRACE   | Most detailed, usually not enabled | Trace code flow during development         |
+| debug | DEBUG   | Debugging info                     | Troubleshooting during development         |
+| info  | INFO    | Normal info                        | Request start/end, business flows          |
+| warn  | WARN    | Warning                            | High resource usage, triggered degradation |
+| error | ERROR   | Error                              | Request failure, exceptions caught         |
+| fatal | FATAL   | Fatal error                        | Process about to exit                      |
+
+#### 3.5.2 Structured Logs
+
+**Must use JSON format** for easy parsing and analysis:
 
 ```json
 {
@@ -253,195 +683,997 @@ Commonly used log levels (from low to high):
 	"pid": 12345,
 	"hostname": "server-01",
 	"message": "User logged in",
-	"userId": "1001",
-	"ip": "192.168.1.100"
+	"userId": "user_1001",
+	"ip": "192.168.1.100",
+	"requestId": "req_abc123"
 }
 ```
 
+**Why not string logs?**
+
+```
+[2025-03-10 10:00:00] INFO: User logged in, userId=user_1001
+```
+
+Problems with string logs:
+
+- Searching "user_1001" might match other unrelated content
+- Can't filter by field
+- Difficult to parse
+
 ### 3.6 Principles of Logging
 
-- **Logging itself should not produce exceptions**: Ensure the stability of the logging library.
-- **Logging should not produce side effects**: Do not modify business status just to record a log.
-- **Prohibit printing sensitive information**: Like passwords, ID numbers, credit card numbers, etc. Masking is required.
+#### 3.6.1 Logging Should Never Throw Exceptions
+
+```javascript
+// Wrong
+function log(message) {
+	if (!message) {
+		throw new Error('message cannot be empty') // Logging throwing exceptions?
+	}
+	console.log(message)
+}
+
+// Correct
+function log(message) {
+	try {
+		console.log(message)
+	} catch (err) {
+		// Logging failed, but business must continue
+		// Can try writing to a fallback location
+	}
+}
+```
+
+#### 3.6.2 Logging Should Have No Side Effects
+
+```javascript
+// Wrong
+function logUser(user) {
+	console.log(user)
+	user.lastLogged = new Date() // Side effect!
+	db.save(user) // Changed data because of logging
+}
+
+// Correct
+function logUser(user) {
+	console.log({
+		id: user.id,
+		name: user.name,
+		// Only print needed info, don't modify original object
+	})
+}
+```
+
+#### 3.6.3 Never Log Sensitive Information
+
+These must be sanitized:
+
+| Information Type | Sanitization          | Example         |
+| ---------------- | --------------------- | --------------- |
+| Password         | Delete or print `***` | password: `***` |
+| Phone            | Show last 4 digits    | 138\*\*\*\*5678 |
+| ID Number        | Show first 3 last 4   | 110\*\*\*5678   |
+| Bank Card        | Show last 4 digits    | \*\*\*\*1234    |
+| Token            | Show first 5 last 5   | eyJhb...4r3s5   |
+
+```javascript
+function sanitizeObject(obj) {
+	const sensitiveFields = ['password', 'token', 'secret', 'apiKey']
+	const sanitized = { ...obj }
+
+	for (const field of sensitiveFields) {
+		if (sanitized[field]) {
+			if (sanitized[field].length > 10) {
+				sanitized[field] = sanitized[field].slice(0, 5) + '...' + sanitized[field].slice(-5)
+			} else {
+				sanitized[field] = '***'
+			}
+		}
+	}
+
+	return sanitized
+}
+```
 
 ---
 
 ## 4. Log Rotation and Management
 
-As an application runs, log files will grow continuously and must be rotated. Common strategies include:
+### 4.1 Why Do We Need Log Rotation?
 
-- **By Time**: Generate a new file daily, e.g., `app-2025-03-10.log`.
-- **By Size**: Automatically split when the file reaches 100MB.
+Log files grow indefinitely:
 
-Rotation methods are divided into:
+```
+app.log: 10MB
+app.log: 100MB
+app.log: 1GB
+app.log: 10GB  // Disk full!
+```
 
-1. **create method**: Rename the current log file and create a new one with the same name to continue writing. Libraries like `winston` with `DailyRotateFile` use this.
-2. **copytruncate method**: Copy the current log file and then empty the original. This allows rotation without restarting the process but might lose the last few lines of logs. Commonly used by the `logrotate` tool.
+So we must rotate logs periodically.
 
-In Linux, you can configure rotation rules using `logrotate`:
+### 4.2 Rotation Strategies
+
+#### 4.2.1 Time-Based Rotation
+
+New file each day:
+
+```
+app-2025-03-08.log
+app-2025-03-09.log
+app-2025-03-10.log
+app.log  <-- currently writing
+```
+
+Best for: Applications with stable log volume
+
+#### 4.2.2 Size-Based Rotation
+
+New file when reaching 100MB:
+
+```
+app-001.log  (100MB)
+app-002.log  (100MB)
+app-003.log  (80MB)   <-- currently writing
+```
+
+Best for: Applications with variable log volume
+
+### 4.3 Rotation Methods
+
+#### 4.3.1 Create Method (Rename)
+
+How logging libraries like winston's DailyRotateFile work:
+
+1. Rename `app.log` to `app-2025-03-10.log`
+2. Create new `app.log` to continue writing
+
+**Problem**: After renaming, process still holds old inode, new file gets no content.
+
+**Solution**: Notify process to reopen file (send SIGUSR2 signal).
+
+#### 4.3.2 Copytruncate Method (Copy and Clear)
+
+How logrotate tool works:
+
+1. Copy `app.log` content to `app-2025-03-10.log`
+2. Clear original `app.log`
+
+**Pros**: No process restart needed
+**Cons**: May lose data being written at exact moment of clearing
+
+### 4.4 logrotate Configuration
+
+Linux uses logrotate to manage logs:
 
 ```bash
+# /etc/logrotate.d/myapp
+
 /var/log/myapp/*.log {
-    daily
-    rotate 30
-    compress
-    delaycompress
-    missingok
-    notifempty
-    create 0640 myapp myapp
-    sharedscripts
+    daily              # Rotate once daily
+    rotate 30         # Keep 30 days
+    compress          # Compress old logs
+    delaycompress      # Don't compress yesterday's (for debugging)
+    missingok          # No error if log doesn't exist
+    notifempty         # Don't rotate if empty
+    create 0640 myapp myapp  # New file permissions
+    sharedscripts       # Run postrotate only once
+
     postrotate
-        kill -USR2 `cat /var/run/myapp.pid`
+        # Notify process to reopen log file
+        kill -USR2 $(cat /var/run/myapp.pid)
     endscript
 }
 ```
 
-If using streams for logging, the old file is still held by the process after renaming; you need to notify the process to reopen the file (e.g., by sending a `SIGUSR2` signal).
+### 4.5 Log Cleanup Policies
+
+| Strategy      | Description                          | Example        |
+| ------------- | ------------------------------------ | -------------- |
+| Keep by time  | Keep only logs from last N days      | Keep 30 days   |
+| Keep by size  | Auto-delete oldest when disk is full | Keep last 10GB |
+| Keep by count | Keep only last N files               | Keep 100 files |
 
 ---
 
-## 5. Beautifying and Interacting with CLI Logs
+## 5. Command Line Logging Beautification and Interaction
 
-During development or debugging, we want readable, colorful logs in the terminal. The following tools can help:
+During development and debugging, we want to see colorful, readable logs in the terminal.
 
-- **chalk**: Adds color and style to text.
-  ```javascript
-  import chalk from 'chalk'
-  console.log(chalk.green('Success:'), 'Data saved')
-  ```
+### 5.1 chalk: Color Your Text
 
-- **progress**: Displays progress bars.
-  ```javascript
-  import ProgressBar from 'progress'
-  const bar = new ProgressBar(':bar :percent', { total: 100 })
-  const timer = setInterval(() => {
-  	bar.tick()
-  	if (bar.complete) clearInterval(timer)
-  }, 100)
-  ```
+```javascript
+import chalk from 'chalk'
 
-- **inquirer**: Interactive command-line prompts.
-  ```javascript
-  import inquirer from 'inquirer'
-  inquirer
-  	.prompt([{ type: 'input', name: 'username', message: 'Username:' }])
-  	.then((answers) => console.log('Hello', answers.username))
-  ```
+// Various colors
+console.log(chalk.red('Error message'))
+console.log(chalk.green('Success message'))
+console.log(chalk.yellow('Warning message'))
+console.log(chalk.blue('Info'))
+console.log(chalk.cyan('Cyan'))
+console.log(chalk.magenta('Purple'))
 
-- **commander.js**: Build complex command-line tools.
-  ```javascript
-  import { Command } from 'commander'
-  const program = new Command()
-  program.version('1.0.0').option('-d, --debug', 'enable debug').parse()
-  ```
+// Combined styles
+console.log(chalk.bold.red('Bold red'))
+console.log(chalk.bgRed.white('Red background, white text'))
+console.log(chalk.underline('Underlined'))
 
-These tools are usually for development tools, scaffolding, or debug output and are not recommended for production use as they increase output overhead and interfere with structured logs.
+// Template strings
+console.log(chalk`{red Error:} {green Success:} {blue Info:}`)
+```
+
+### 5.2 progress: Progress Bars
+
+```javascript
+import ProgressBar from 'progress'
+
+const bar = new ProgressBar('Downloading: [:bar] :percent :etas', {
+	total: 100,
+	width: 40,
+})
+
+const timer = setInterval(() => {
+	bar.tick()
+
+	if (bar.complete) {
+		clearInterval(timer)
+		console.log('\nDownload complete!')
+	}
+}, 100)
+```
+
+Terminal displays:
+
+```
+Downloading: [████████████████████] 80% 2.0s
+```
+
+### 5.3 inquirer: Interactive CLI
+
+```javascript
+import inquirer from 'inquirer'
+
+async function askQuestions() {
+	const answers = await inquirer.prompt([
+		{
+			type: 'input',
+			name: 'name',
+			message: 'What is your name?',
+		},
+		{
+			type: 'list',
+			name: 'color',
+			message: 'What is your favorite color?',
+			choices: ['Red', 'Green', 'Blue'],
+		},
+		{
+			type: 'confirm',
+			name: 'confirm',
+			message: 'Do you want to continue?',
+		},
+	])
+
+	console.log('Your answers:', answers)
+}
+
+askQuestions()
+```
+
+### 5.4 blessed-contrib: Terminal Dashboard
+
+```javascript
+import blessed from 'blessed'
+import contrib from 'blessed-contrib'
+
+const screen = blessed.screen()
+
+// Create line chart
+const line = contrib.line({
+	label: 'Request Statistics',
+	showLegend: true,
+	legend: { width: 20 },
+})
+
+screen.append(line)
+
+// Update data
+setInterval(() => {
+	const data = Math.random() * 100
+	line.setData([{ x: ['00:00', '00:01', '00:02'], y: [10, 20, data] }])
+	screen.render()
+}, 1000)
+```
+
+### 5.5 commander.js: CLI Tools
+
+```javascript
+import { Command } from 'commander'
+
+const program = new Command()
+
+program.name('myapp').description('My CLI Tool').version('1.0.0')
+
+program
+	.command('serve')
+	.description('Start the server')
+	.option('-p, --port <number>', 'Port number', 3000)
+	.option('-d, --debug', 'Enable debug mode')
+	.action((options) => {
+		console.log('Starting server on port:', options.port)
+		console.log('Debug mode:', options.debug)
+	})
+
+program
+	.command('init')
+	.description('Initialize project')
+	.action(() => {
+		console.log('Initializing...')
+	})
+
+program.parse()
+```
+
+Usage:
+
+```bash
+myapp serve -p 8080 -d
+myapp init
+myapp --version
+```
+
+### 5.6 cfonts: ASCII Art
+
+```javascript
+import cfonts from 'cfonts'
+
+cfonts.say('Hello World!', {
+	font: 'block', // Font: block, huge, simple
+	colors: ['blue', 'yellow'], // Gradient colors
+	background: 'black', // Background color
+	align: 'center', // Alignment
+	letterSpacing: 1,
+})
+```
 
 ---
 
 ## 6. ELK: Log Collection and Analysis Platform
 
-When the number of servers increases and logs are scattered across machines, we need a centralized log analysis platform. **ELK** is the industry-standard solution, consisting of three components:
+### 6.1 Why Do We Need ELK?
 
-- **Elasticsearch**: Distributed search and analysis engine for storing logs and providing fast queries.
-- **Logstash**: Data collection and processing pipeline that collects logs from various sources, filters and transforms them, then sends them to Elasticsearch.
-- **Kibana**: Visualization tool for displaying log data through charts and dashboards.
+When you have multiple servers, logs are scattered across machines. You can't log into each one to check!
 
-### 6.1 Architecture Diagram
+```
+Server 1: app.log
+Server 2: app.log
+Server 3: app.log
+...
+Server 100: app.log
+```
+
+How do you search? Login to each of the 100 machines?
+
+ELK solves this problem—a **centralized logging platform**.
+
+### 6.2 What Is ELK?
+
+ELK is a combination of three open source software:
+
+| Software      | Purpose                  | Analogy                       |
+| ------------- | ------------------------ | ----------------------------- |
+| Elasticsearch | Store and search logs    | Library (storage + retrieval) |
+| Logstash      | Collect and process logs | Librarian (organization)      |
+| Kibana        | Visualize data           | Library search system         |
+
+### 6.3 ELK Architecture
 
 ```mermaid
 flowchart TD
-		A[App Server] -->|Log Files| B[Filebeat]
-		B -->|Send Logs| C[Logstash]
-		C -->|Store Logs| D[Elasticsearch]
-		D -->|Query Logs| E[Kibana]
+    subgraph ApplicationLayer ["Application Layer"]
+        A1[Server 1]
+        A2[Server 2]
+        A3[Server 3]
+    end
+
+    subgraph CollectionLayer ["Collection Layer"]
+        B1[Filebeat]
+        B2[Filebeat]
+        B3[Filebeat]
+    end
+
+    subgraph ProcessingLayer ["Processing Layer"]
+        C[Logstash]
+    end
+
+    subgraph StorageLayer ["Storage Layer"]
+        D[Elasticsearch]
+    end
+
+    subgraph VisualizationLayer ["Visualization Layer"]
+        E[Kibana]
+    end
+
+    A1 -->|Read logs| B1
+    A2 -->|Read logs| B2
+    A3 -->|Read logs| B3
+
+    B1 -->|Send logs| C
+    B2 -->|Send logs| C
+    B3 -->|Send logs| C
+
+    C -->|Clean & transform| D
+
+    D -->|Query| E
 ```
 
-- **Filebeat**: Lightweight log collector that reads log files and sends them to Logstash or directly to Elasticsearch.
-- **Logstash**: Performs data cleaning, such as parsing JSON, adding fields, and filtering sensitive info.
-- **Elasticsearch**: Stores data and builds indexes for fast retrieval.
-- **Kibana**: Provides a Web interface for searching, aggregating, and creating dashboards.
+#### 6.3.1 Filebeat: Lightweight Collector
 
-### 6.2 Node.js Application Integration
+Installed on each server, lightweight, low resource usage:
 
-In modern Node.js apps, we usually choose **Pino** or **Winston**.
+- Monitors log file changes
+- Reads new content in real-time
+- Sends to Logstash or Elasticsearch
 
-- **Pino**: The performance benchmark for 2026, with extremely low overhead and native support for structured JSON. It's the first choice for high-concurrency scenarios.
-- **Winston**: Feature-rich with a mature ecosystem, suitable for complex applications requiring multiple transport channels.
+#### 6.3.2 Logstash: Data Processing Pipeline
+
+Powerful data processing:
+
+- Parse JSON logs
+- Filter sensitive info
+- Add fields (server name, timestamp)
+- Transform formats
+
+#### 6.3.3 Elasticsearch: Distributed Search Engine
+
+Storage and retrieval:
+
+- Distributed storage, large capacity
+- Strong full-text search
+- Complex query support
+
+#### 6.3.4 Kibana: Visualization Interface
+
+- Search logs
+- Create charts
+- Build dashboards
+- Set up alerts
+
+### 6.4 Quick ELK Deployment
+
+Use Docker Compose for one-click startup:
+
+```bash
+# Clone the project
+git clone https://github.com/deviantony/docker-elk.git
+cd docker-elk
+
+# Start
+docker-compose up -d
+
+# Access Kibana
+# http://localhost:5601
+```
+
+### 6.5 Node.js Application Integration
+
+#### 6.5.1 Pino: High-Performance Logger
+
+Pino is the fastest Node.js logger, 10x faster than winston:
 
 ```javascript
-// Using Pino for high-performance logging
 import pino from 'pino'
+
 const logger = pino({
-  level: 'info',
-  base: { service: 'user-service' },
-  timestamp: pino.stdTimeFunctions.isoTime
+	level: 'info', // Log info and above only
+	base: {
+		service: 'user-service', // Add common fields
+		pid: process.pid,
+	},
+	timestamp: pino.stdTimeFunctions.isoTime, // ISO format time
 })
 
+// Usage
 logger.info({ userId: '1001' }, 'User logged in')
+logger.error({ err }, 'Request failed')
+logger.debug({ query }, 'Database query')
 ```
+
+**Why is Pino so fast?**
+
+- Asynchronous writing, non-blocking
+- Minimal serialization (much less than winston)
+- JSON output by default, no configuration needed
+
+#### 6.5.2 Winston: Feature-Rich Logger
+
+More features, more mature ecosystem:
+
+```javascript
+import winston from 'winston'
+import { ElasticsearchTransport } from 'winston-elasticsearch'
+
+// Create logger
+const logger = winston.createLogger({
+	level: 'info',
+	format: winston.format.combine(
+		winston.format.timestamp(),
+		winston.format.json(), // JSON format
+	),
+	defaultMeta: { service: 'user-service' },
+	transports: [
+		// File output
+		new winston.transports.File({
+			filename: 'logs/error.log',
+			level: 'error',
+		}),
+		new winston.transports.File({
+			filename: 'logs/combined.log',
+		}),
+
+		// Console output (colorful for development)
+		new winston.transports.Console({
+			format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
+		}),
+
+		// Elasticsearch output
+		new ElasticsearchTransport({
+			level: 'info',
+			clientOpts: {
+				node: 'http://elasticsearch:9200',
+			},
+			indexPrefix: 'myapp',
+		}),
+	],
+})
+```
+
+### 6.6 Logstash Configuration
+
+```ruby
+# logstash.conf
+
+input {
+  # Receive from Filebeat
+  beats {
+    port => 5044
+  }
+}
+
+filter {
+  # Parse JSON
+  json {
+    source => "message"
+    target => "parsed"
+  }
+
+  # Add timestamp
+  date {
+    match => ["timestamp", "ISO8601"]
+    target => "@timestamp"
+  }
+
+  # Filter sensitive info
+  mutate {
+    gsub => [
+      "password", "\S", "***",
+      "token", "\S", "***"
+    ]
+  }
+
+  # Keep only needed fields
+  if [type] == "access" {
+    mutate {
+      select => ["@timestamp", "method", "url", "status", "duration"]
+    }
+  }
+}
+
+output {
+  # Output to Elasticsearch
+  elasticsearch {
+    hosts => ["elasticsearch:9200"]
+    index => "myapp-%{+YYYY.MM.dd}"
+  }
+
+  # Console output for development
+  stdout {
+    codec => rubydebug
+  }
+}
+```
+
+### 6.7 Using Kibana
+
+#### 6.7.1 Create Index Pattern
+
+1. Open Kibana → Management → Index Patterns
+2. Enter `myapp-*`
+3. Select time field `@timestamp`
+
+#### 6.7.2 Search Logs
+
+```
+# Search all errors
+level: error
+
+# Search specific user's logs
+userId: user_1001
+
+# Search specific time range
+@timestamp: [2025-03-10 TO 2025-03-11]
+
+# Combined search
+level: error AND userId: user_1001
+```
+
+#### 6.7.3 Create Dashboards
+
+Common charts:
+
+- **Error trend chart**: Count errors per hour
+- **Request latency distribution**: P50/P90/P99
+- **Top 10 errors**: Most common error types
+- **Request volume timeline**: Show request volume over time
 
 ---
 
 ## 7. Sentry: Error Monitoring Platform
 
-While logs record errors, they are often passive: developers need to check logs actively to find problems. **Sentry** is an active error monitoring platform that captures exceptions in real-time, aggregating them, alerting, and providing rich context.
+### 7.1 Logs vs Sentry
 
-### 7.1 Key Features of Sentry
+| Dimension   | Logs                         | Sentry                                 |
+| ----------- | ---------------------------- | -------------------------------------- |
+| Proactivity | Passive: Someone has to look | Active: It notifies you                |
+| Real-time   | Post-analysis                | Real-time alerts                       |
+| Aggregation | Weak                         | Strong: Auto-aggregates similar errors |
+| Context     | Need to add manually         | Auto-collected                         |
 
-- **Error Capture**: Automatically captures unhandled exceptions and Promise rejections.
-- **Contextual Info**: Records user IP, browser, OS, request parameters, etc.
-- **Error Aggregation**: Merges identical errors to avoid noise.
-- **Performance Monitoring**: Tracks request duration and slow queries.
-- **Release Tracking**: Associates errors with code versions to quickly locate the introducing version.
+Simply put: **Logs are "footage", Sentry is "alarm system"**.
 
-### 7.2 Node.js Integration
+### 7.2 Core Sentry Features
 
-Install `@sentry/node`:
+#### 7.2.1 Error Capture
 
-```bash
-pnpm add @sentry/node
+- Auto-capture unhandled exceptions
+- Auto-capture Promise rejections
+- Source Map support (can see pre-minified code line numbers)
+
+#### 7.2.2 Rich Context
+
+Auto-collected:
+
+- User info (IP, ID)
+- Browser info
+- Operating system
+- Request parameters
+- Request headers
+- Current page URL
+
+Can also add manually:
+
+```javascript
+Sentry.setUser({
+	id: 'user_123',
+	email: 'user@example.com',
+	username: 'john_doe',
+})
+
+Sentry.setTag('version', '1.0.0')
+Sentry.setExtra('order_id', 'order_456')
 ```
 
-Initialize at the app entry:
+#### 7.2.3 Error Aggregation
+
+1000 users encountering the same bug are aggregated into 1 Issue, not 1000 alerts.
+
+#### 7.2.4 Performance Monitoring
+
+Auto-tracks:
+
+- Page load time
+- API request duration
+- Database query time
+
+### 7.3 Node.js Integration
+
+#### 7.3.1 Installation
+
+```bash
+npm install @sentry/node
+```
+
+#### 7.3.2 Initialization
 
 ```javascript
 import * as Sentry from '@sentry/node'
+
 Sentry.init({
 	dsn: 'https://your-dsn@sentry.io/project-id',
 	environment: process.env.NODE_ENV,
-	tracesSampleRate: 1.0, // Performance monitoring sample rate
+	release: process.env.APP_VERSION,
+
+	// Sample rate: 1.0 = 100%, 0.1 = 10%
+	tracesSampleRate: 1.0,
+
+	// Custom sample rate
+	tracesSampler: (samplingContext) => {
+		if (samplingContext.transactionContext.name === '/health') {
+			return 0 // Don't sample health checks
+		}
+		return 0.1
+	},
 })
 
-// Manually capture errors
+// Use with Express
+import express from 'express'
+const app = express()
+
+Sentry.setupExpressErrorHandler(app)
+
+// Routes...
+```
+
+#### 7.3.3 Manual Error Capture
+
+```javascript
+// Capture exception
 try {
 	riskyOperation()
 } catch (err) {
 	Sentry.captureException(err)
+	throw err // Still throw for other handlers
+}
+
+// Capture message (not an exception)
+Sentry.captureMessage('Something went wrong', 'warning')
+
+// Capture custom event
+Sentry.captureEvent({
+	message: 'Custom event',
+	contexts: {
+		custom: {
+			orderId: '123',
+			action: 'checkout',
+		},
+	},
+})
+```
+
+#### 7.3.4 Request Tracing
+
+```javascript
+// Create transaction
+const transaction = Sentry.startTransaction({
+	op: 'task',
+	name: 'Process Order',
+})
+
+try {
+	await processOrder()
+	transaction.setStatus('ok')
+} catch (err) {
+	transaction.setStatus('error')
+	Sentry.captureException(err)
+} finally {
+	transaction.finish()
 }
 ```
+
+### 7.4 Sentry Data Flow
+
+```mermaid
+flowchart TD
+    subgraph Application ["Application Layer"]
+        A[Node.js App]
+        S[Sentry SDK]
+    end
+
+    subgraph Transport ["Data Transport"]
+        H[HTTPS]
+    end
+
+    subgraph ServerSide ["Sentry Server"]
+        R[Relay]
+        P[Processing]
+        DB[(Database)]
+    end
+
+    subgraph UI_Layer ["Sentry UI"]
+        DASH[Sentry Dashboard]
+    end
+
+    A --> S
+    S --> H
+    H --> R
+    R --> P
+    P --> DB
+    DB --> DASH
+```
+
+### 7.5 Self-Hosted Sentry
+
+Don't want to use Sentry cloud? Self-host:
+
+```bash
+# Clone repo
+git clone https://github.com/getsentry/self-hosted.git
+cd self-hosted
+
+# Install (configures a lot on first run)
+./install.sh
+
+# Start
+docker-compose up -d
+
+# Access
+# http://your-server:9000
+```
+
+> **Tip**: Self-hosting requires significant resources (8GB+ RAM recommended) and maintenance cost is not low. For small projects, use Sentry cloud service directly.
 
 ---
 
 ## 8. Limitations of Logging
 
-While logs and Sentry are extremely useful, they are not omnipotent:
+### 8.1 Logs Are Not a Silver Bullet
 
-- **Consume massive storage space**: Especially full logs; regular cleaning and archiving are needed.
-- **Queries not flexible enough**: While log systems are strong at querying structured data, cross-service call chain tracing still requires APM (Application Performance Monitoring) tools like SkyWalking or Jaeger.
-- **Cannot capture all problems**: Like memory leaks or CPU spikes, which might need metric monitoring (like Prometheus) to be discovered.
-- **Missing context**: Logs often only record information for a single service; distributed tracing requires extra Trace IDs for correlation.
+Although logs and Sentry are very useful, they're not a cure-all:
 
-Therefore, a complete observability system usually includes:
+#### 8.1.1 High Storage Cost
 
-- **Logs**: Record discrete events.
-- **Metrics**: Aggregated numerical data, like QPS, latency, and error rate.
-- **Traces**: Record the complete path of a request through a distributed system.
+- Full logs require lots of disk space
+- Elasticsearch cluster is expensive
+- Need regular cleanup and archival
 
-Combining all three provides full control over the system status.
+#### 8.1.2 Limited Query Flexibility
+
+Logs are good at:
+
+- Searching for specific keywords
+- Filtering by time range
+- Counting errors
+
+Logs are bad at:
+
+- Cross-service call chain tracing
+- Performance trend analysis
+- Real-time alerts (not as convenient as Sentry)
+
+#### 8.1.3 Can't Capture All Problems
+
+These require metric monitoring:
+
+- Slow memory leaks
+- Sustained high CPU
+- Connection pool exhaustion
+- Frequent GC
+
+#### 8.1.4 Missing Context
+
+Logs only record single service info. In distributed systems, one request may cross 10 services. Need **Trace ID** to link them.
+
+### 8.2 The Three Pillars of Observability
+
+Modern operations need a triad of observability:
+
+| Pillar      | English | Question Answered      | Tools                |
+| ----------- | ------- | ---------------------- | -------------------- |
+| **Logs**    | Logs    | What happened?         | ELK, Loki            |
+| **Metrics** | Metrics | Is the system healthy? | Prometheus, InfluxDB |
+| **Traces**  | Traces  | Why is it slow?        | Jaeger, SkyWalking   |
+
+#### 8.2.1 Logs
+
+Records discrete events:
+
+- "User Zhang San logged in"
+- "Order 123 failed to create, reason: insufficient inventory"
+- "Database query timed out"
+
+**Best for**: Troubleshooting, audit trails
+
+#### 8.2.2 Metrics
+
+Aggregated numerical data:
+
+- CPU usage: 75%
+- Request QPS: 1000/s
+- Error rate: 0.1%
+- P99 latency: 250ms
+
+**Best for**: Real-time monitoring, trend analysis, alerting
+
+#### 8.2.3 Traces
+
+Complete path of requests through distributed systems:
+
+```
+User request → API Gateway(50ms)
+             → User Service(30ms)
+             → Inventory Service(150ms)
+             → Database(80ms)
+             → Payment Service(200ms)
+```
+
+**Best for**: Performance analysis, call chain troubleshooting
+
+### 8.3 Complete Observability System Example
+
+```mermaid
+flowchart TD
+    subgraph Collection ["Data Collection"]
+        A[Application Logs] --> E[Elasticsearch]
+        M[Metrics] --> P[Prometheus]
+        T[Traces] --> J[Jaeger]
+    end
+
+    subgraph Alerting ["Alerting"]
+        P --> AM[AlertManager]
+        J --> AM
+    end
+
+    subgraph Visualization ["Visualization"]
+        E --> K[Kibana]
+        P --> G[Grafana]
+        J --> JUI[Jaeger UI]
+    end
+
+    K & G & JUI --> D[DevOps Engineer]
+    AM --> D
+```
 
 ---
 
-## 9. Conclusion
+## 9. Summary
 
-This article covered the basics of Node.js logging, including write methods, structured formats, log rotation, CLI beautification, and integration with ELK and Sentry. I hope you can build an efficient and reliable logging system for your Node.js applications based on these best practices. Logs are not just troubleshooting tools but windows into the system's operational state.
+### 9.1 Key Points Review
+
+| Topic              | Key Points                                                         |
+| ------------------ | ------------------------------------------------------------------ |
+| **Logging Basics** | console is more than log, stream writing is better than appendFile |
+| **Log Format**     | Must use JSON structure, record sufficient context                 |
+| **Log Levels**     | Clearly distinguish debug/info/warn/error/fatal                    |
+| **Log Rotation**   | By time or size, use logrotate or built-in library features        |
+| **ELK Platform**   | Filebeat collection + Logstash processing + Elasticsearch storage  |
+| **Sentry**         | Active alerts, auto-aggregation, complement to logs                |
+| **Observability**  | Logs + Metrics + Traces, all three are essential                   |
+
+### 9.2 Tool Recommendations
+
+```
+Logging Libraries:
+  - Pino          # High performance, first choice
+  - Winston       # Feature-rich, mature ecosystem
+
+Logging Platforms:
+  - ELK Stack     # Classic solution
+  - Loki          # Grafana's, lighter
+  - Splunk        # Commercial, powerful
+
+Error Monitoring:
+  - Sentry        # Open source + cloud, first choice
+  - Bugsnag       # Similar to Sentry
+
+Metrics Monitoring:
+  - Prometheus    # Cloud-native monitoring
+  - Grafana       # Visualization
+
+Distributed Tracing:
+  - Jaeger        # CNCF project
+  - SkyWalking    # Chinese-made, strong APM capabilities
+```
+
+### 9.3 Practical Recommendations
+
+1. **Add logs from day one**: Don't wait until problems occur
+2. **Structured output**: JSON format for easy analysis
+3. **Sanitize sensitive info**: Passwords, Tokens, ID numbers must be masked
+4. **Correct log levels**: Don't log everything as info
+5. **Integrate Sentry**: Let errors come to you proactively
+6. **Learn ELK**: Essential for multi-server environments
+7. **Also watch metrics**: Logs help find problems, metrics confirm them
+
+---
+
+Logs are the "security footage" of your application. Normally no one looks at them, but when problems occur, they're your lifeline. Good logging practices mean that when you're woken up at 3 AM, you can quickly pinpoint the problem instead of staring blankly at a dark screen with no clue.
