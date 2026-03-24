@@ -23,7 +23,7 @@ export default async function PostsPage({
 	params: Promise<{ locale: string }>
 }) {
 	const { locale } = await params
-	// 获取所有文章数据
+	// 获取所有文章数据（仅摘要）
 	const posts = getAllPosts(locale)
 
 	// 动态计算所有文章中出现过的唯一标签

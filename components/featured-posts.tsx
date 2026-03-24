@@ -5,11 +5,11 @@ import { ArrowRight, Calendar, Clock } from 'lucide-react'
 import { Link } from '@/i18n/routing'
 import { GlassCard } from '@/components/glass-card'
 import { cn } from '@/lib/utils'
-import { Post } from '@/lib/posts'
+import { PostSummary } from '@/lib/posts'
 import { useTranslations } from 'next-intl'
 
 interface FeaturedPostsProps {
-	posts: Post[]
+	posts: PostSummary[]
 }
 
 export function FeaturedPosts({ posts }: FeaturedPostsProps) {

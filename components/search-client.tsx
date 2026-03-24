@@ -1,7 +1,7 @@
 'use client'
 
 import { PostItem } from '@/components/post-item'
-import { Post } from '@/lib/posts'
+import { PostSummary } from '@/lib/posts'
 import Fuse from 'fuse.js'
 import { Folder, Search, X } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
@@ -9,7 +9,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 interface SearchClientProps {
-	posts: Post[]
+	posts: PostSummary[]
 }
 
 export function SearchClient({ posts }: SearchClientProps) {
@@ -26,7 +26,7 @@ export function SearchClient({ posts }: SearchClientProps) {
 	// 2. 初始化 Fuse.js 模糊搜索实例
 	const fuse = useMemo(() => {
 		return new Fuse(posts, {
-			keys: ['title', 'summary', 'tags', 'category', 'content'],
+			keys: ['title', 'summary', 'tags', 'category'],
 			threshold: 0.3,
 			includeScore: true,
 		})

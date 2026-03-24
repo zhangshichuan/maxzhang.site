@@ -1,14 +1,10 @@
 import { SearchClient } from '@/components/search-client'
 import { getAllPosts } from '@/lib/posts'
-import { Suspense } from 'react'
-import { getTranslations } from 'next-intl/server'
 import { Metadata } from 'next'
+import { getTranslations } from 'next-intl/server'
+import { Suspense } from 'react'
 
-export async function generateMetadata({
-	params,
-}: {
-	params: Promise<{ locale: string }>
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
 	const { locale } = await params
 	const t = await getTranslations({ locale, namespace: 'SearchPage' })
 
@@ -18,8 +14,13 @@ export async function generateMetadata({
 	}
 }
 
-export default async function SearchPage() {
-	const posts = getAllPosts()
+export default async function SearchPage({
+	params,
+}: {
+	params: Promise<{ locale: string }>
+}) {
+	const { locale } = await params
+	const posts = getAllPosts(locale)
 	const t = await getTranslations('SearchPage')
 
 	return (

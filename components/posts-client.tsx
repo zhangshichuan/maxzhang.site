@@ -4,12 +4,12 @@ import { GlassCard } from '@/components/glass-card'
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion-wrapper'
 import { PostItem } from '@/components/post-item'
 import { Link } from '@/i18n/routing'
-import { Post } from '@/lib/posts'
+import { PostSummary } from '@/lib/posts'
 import { ArrowRight, Folder } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 interface PostsClientProps {
-	posts: Post[]
+	posts: PostSummary[]
 	allTags: string[]
 	allCategories: string[]
 }

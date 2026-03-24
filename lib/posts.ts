@@ -20,6 +20,8 @@ export interface Post {
 	category: string
 }
 
+export type PostSummary = Omit<Post, 'content'>
+
 /**
  * 获取特定语言的所有文章文件名（slugs）
  * @param locale - 语言环境 ('en' | 'zh')
@@ -27,13 +29,13 @@ export interface Post {
  */
 export function getPostSlugs(locale: string = 'zh') {
 	const localeDir = path.join(postsDirectory, locale)
-	
+
 	if (!fs.existsSync(localeDir)) {
 		// 如果语言子目录不存在，尝试读取根目录（兜底）
 		if (!fs.existsSync(postsDirectory)) return []
 		return fs.readdirSync(postsDirectory).filter((file) => file.match(/\.mdx?$/))
 	}
-	
+
 	return fs.readdirSync(localeDir).filter((file) => file.match(/\.mdx?$/))
 }
 
@@ -41,9 +43,11 @@ export function getPostSlugs(locale: string = 'zh') {
  * 根据 slug 获取单篇文章的详细信息
  * @param slug - 文章的文件名
  * @param locale - 语言环境
- * @returns Post - 文章对象
+ * @param includeContent - 是否包含正文内容
  */
-export function getPostBySlug(slug: string, locale: string = 'zh'): Post {
+export function getPostBySlug(slug: string, locale: string, includeContent: false): PostSummary
+export function getPostBySlug(slug: string, locale?: string, includeContent?: true): Post
+export function getPostBySlug(slug: string, locale: string = 'zh', includeContent: boolean = true): Post | PostSummary {
 	// 解码 URL 编码的 slug
 	const realSlug = decodeURIComponent(slug).replace(/\.mdx?$/, '')
 
@@ -71,37 +75,43 @@ export function getPostBySlug(slug: string, locale: string = 'zh'): Post {
 	const { data, content } = matter(fileContents)
 	const stats = readingTime(content)
 
-	return {
+	const postBase = {
 		slug: realSlug,
 		title: data.title,
 		date: data.date ? new Date(data.date).toISOString().split('T')[0] : '',
 		summary: data.summary || '',
-		content,
 		readTime: stats,
 		tags: data.tags || [],
 		author: data.author || 'Max Zhang',
 		category: data.category || 'Uncategorized',
 		...data,
 	}
+
+	if (includeContent) {
+		return { ...postBase, content } as Post
+	}
+
+	return postBase as PostSummary
 }
 
 /**
- * 获取特定语言的所有文章，并按日期降序排序
+ * 获取特定语言的所有文章摘要，并按日期降序排序
+ * 不包含正文内容，节省内存
  * @param locale - 语言环境
- * @returns Post[] - 排序后的文章列表
+ * @returns PostSummary[] - 排序后的文章摘要列表
  */
-export function getAllPosts(locale: string = 'zh'): Post[] {
+export function getAllPosts(locale: string = 'zh'): PostSummary[] {
 	const slugs = getPostSlugs(locale)
 	const posts = slugs
 		.map((slug) => {
 			try {
-				return getPostBySlug(slug, locale)
+				return getPostBySlug(slug, locale, false)
 			} catch (e) {
 				console.error(e)
 				return null
 			}
 		})
-		.filter((post): post is Post => post !== null)
+		.filter((post): post is PostSummary => post !== null)
 		.sort((post1, post2) => (post1.date > post2.date ? -1 : 1))
 	return posts
 }

@@ -1,12 +1,12 @@
 import { GlassCard } from '@/components/glass-card'
-import { Post } from '@/lib/posts'
+import { PostSummary } from '@/lib/posts'
 import { cn } from '@/lib/utils'
 import { ArrowRight, Calendar, Clock, Folder } from 'lucide-react'
 import { Link } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
 
 interface PostItemProps {
-	post: Post
+	post: PostSummary
 }
 
 export function PostItem({ post }: PostItemProps) {
