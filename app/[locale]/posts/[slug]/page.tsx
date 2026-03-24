@@ -52,6 +52,7 @@ export async function generateMetadata({ params }: Props) {
 	return {
 		title: `${post.title} - Max Zhang`,
 		description: post.summary,
+		keywords: post.tags.join(', '),
 	}
 }
 
