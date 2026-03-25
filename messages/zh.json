@@ -61,9 +61,8 @@
 		],
 		"educationList": [
 			{
-				"school": "Northern Arizona University",
-				"period": "2025 - 2026",
-				"degree": "硕士学位，MCIT"
+				"school": "北亚利桑那大学",
+				"degree": "计算机信息技术硕士"
 			}
 		],
 		"interestList": ["开源", "UI/UX 设计", "全栈开发", "人工智能"]

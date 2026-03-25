@@ -1,98 +1,97 @@
 {
-  "Common": {
-    "title": "Max Zhang",
-    "readingTime": "{minutes} min read",
-    "nav": {
-      "home": "Home",
-      "posts": "Posts",
-      "about": "About",
-      "switchLanguage": "Switch to Chinese"
-    },
-    "footer": {
-      "builtBy": "Built by <name>Max Zhang</name>. © {year} All rights reserved."
-    }
-  },
-  "HomePage": {
-    "hero": {
-      "readArticles": "Read Articles",
-      "aboutMe": "About Me"
-    },
-    "featuredPosts": {
-      "title": "Latest Posts",
-      "description": "Exploring boundaries between tech and creativity",
-      "viewAll": "View All"
-    }
-  },
-  "AboutPage": {
-    "title": "About Me - Max Zhang",
-    "role": "Software Engineer",
-    "location": "Chengdu, China",
-    "description": "Hi! I'm a Full-stack Developer who approaches high-performance system building with a learner's mindset. I'm passionate about developing robust applications using <primary>Node.js</primary> & <primary>TypeScript</primary>, and am dedicated to the engineering of <secondary>Visual Building</secondary> and <secondary>Graphics Editing Engines</secondary>. On the infrastructure side, I continuously optimize <accent>DevOps</accent> workflows through <accent>Docker</accent> & <accent>K3s</accent> containerization. Currently, I'm researching scaling data with <secondary>PostgreSQL</secondary> & <secondary>MQ</secondary>, exploring performance limits with <primary>Rust</primary>, and enhancing system observability through <accent>ELK</accent> & <accent>Prometheus</accent>.",
-    "workExperience": "Work Experience",
-    "education": "Education",
-    "techStack": "Tech Stack",
-    "interests": "Interests",
-    "experience": [
-      {
-        "role": "Frontend Lead",
-        "company": "Chengdu Ruisheng Tianhe Media Technology Co., Ltd.",
-        "department": "Product R&D Department",
-        "period": "Feb 2021 - Dec 2025",
-        "tags": ["React", "Next.js", "Node.js", "Prisma", "PostgreSQL", "Zod"],
-        "points": [
-          "Led the 0-to-1 construction and implementation of a digital platform for advertising business, realizing the online and intelligent process of Business, Finance and Law",
-          "Participated in the construction and implementation of cross-border e-commerce business systems, promoting the full-process implementation of the business from scratch",
-          "Responsible for the design and development of AI video editing and advertisement batch delivery systems, improving advertisement delivery efficiency and automation level",
-          "AI image generation, AI video editing, integration of Meitu AI tools, TTS services, official websites, and mini-programs",
-          "Various cross-departmental and cross-company collaborations, from tracking processes to achieving results. Infrastructure construction (monitoring, scaffolding, AI), team building organization, annual meeting programs, lottery programs, etc."
-        ]
-      },
-      {
-        "role": "Frontend Architect",
-        "company": "Chengdu Mofangyuan Technology Co., Ltd.",
-        "department": "Product R&D Department",
-        "period": "Jan 2020 - Jan 2021",
-        "tags": ["TypeScript", "Linux", "Vue", "Node.js", "PHP7", "React"],
-        "points": [
-          "Cross-border communication and collaboration among multiple teams and languages, completing communication from technical requirements to implementation",
-          "Maintenance and iteration of 20+ projects with a cycle of over 10 years, including Frontend (jQuery/Native Hybrid JSBridge/Vue/Chatroom) and Backend (Node.js/PHP)"
-        ]
-      }
-    ],
-    "educationList": [
-      {
-        "school": "Northern Arizona University",
-        "period": "2025 - 2026",
-        "degree": "Master's degree, MCIT"
-      }
-    ],
-    "interestList": ["Open Source", "UI/UX Design", "Full Stack Development", "Artificial Intelligence"]
-  },
-  "PostsPage": {
-    "title": "Article Vault",
-    "description": "Where technology, design, and life intersect.",
-    "categories": "Popular Categories",
-    "tags": "Popular Tags",
-    "noPosts": "No articles yet, stay tuned.",
-    "noCategories": "No categories",
-    "noTags": "No tags",
-    "back": "Back to Posts"
-  },
-  "SearchPage": {
-    "title": "Search Articles",
-    "loading": "Loading search component...",
-    "placeholder": "Search by title, content, or tags...",
-    "category": "Category",
-    "tag": "Tag",
-    "currentFilter": "Filters",
-    "clearAll": "Clear All",
-    "found": "Found {count} articles",
-    "noResults": "No articles found matching your criteria",
-    "startSearch": "Enter keywords or select tags to start searching",
-    "clearFilters": "Clear search filters"
-  },
-  "Mermaid": {
-    "clickToZoom": "Click to view full image",
-    "zoomInstruction": "Use toolbar to zoom • Pinch to zoom on mobile"
-  }
+	"Common": {
+		"title": "Max Zhang",
+		"readingTime": "{minutes} min read",
+		"nav": {
+			"home": "Home",
+			"posts": "Posts",
+			"about": "About",
+			"switchLanguage": "Switch to Chinese"
+		},
+		"footer": {
+			"builtBy": "Built by <name>Max Zhang</name>. © {year} All rights reserved."
+		}
+	},
+	"HomePage": {
+		"hero": {
+			"readArticles": "Read Articles",
+			"aboutMe": "About Me"
+		},
+		"featuredPosts": {
+			"title": "Latest Posts",
+			"description": "Exploring boundaries between tech and creativity",
+			"viewAll": "View All"
+		}
+	},
+	"AboutPage": {
+		"title": "About Me - Max Zhang",
+		"role": "Software Engineer",
+		"location": "Chengdu, China",
+		"description": "Hi! I'm a Full-stack Developer who approaches high-performance system building with a learner's mindset. I'm passionate about developing robust applications using <primary>Node.js</primary> & <primary>TypeScript</primary>, and am dedicated to the engineering of <secondary>Visual Building</secondary> and <secondary>Graphics Editing Engines</secondary>. On the infrastructure side, I continuously optimize <accent>DevOps</accent> workflows through <accent>Docker</accent> & <accent>K3s</accent> containerization. Currently, I'm researching scaling data with <secondary>PostgreSQL</secondary> & <secondary>MQ</secondary>, exploring performance limits with <primary>Rust</primary>, and enhancing system observability through <accent>ELK</accent> & <accent>Prometheus</accent>.",
+		"workExperience": "Work Experience",
+		"education": "Education",
+		"techStack": "Tech Stack",
+		"interests": "Interests",
+		"experience": [
+			{
+				"role": "Frontend Lead",
+				"company": "Chengdu Ruisheng Tianhe Media Technology Co., Ltd.",
+				"department": "Product R&D Department",
+				"period": "Feb 2021 - Dec 2025",
+				"tags": ["React", "Next.js", "Node.js", "Prisma", "PostgreSQL", "Zod"],
+				"points": [
+					"Led the 0-to-1 construction and implementation of a digital platform for advertising business, realizing the online and intelligent process of Business, Finance and Law",
+					"Participated in the construction and implementation of cross-border e-commerce business systems, promoting the full-process implementation of the business from scratch",
+					"Responsible for the design and development of AI video editing and advertisement batch delivery systems, improving advertisement delivery efficiency and automation level",
+					"AI image generation, AI video editing, integration of Meitu AI tools, TTS services, official websites, and mini-programs",
+					"Various cross-departmental and cross-company collaborations, from tracking processes to achieving results. Infrastructure construction (monitoring, scaffolding, AI), team building organization, annual meeting programs, lottery programs, etc."
+				]
+			},
+			{
+				"role": "Frontend Architect",
+				"company": "Chengdu Mofangyuan Technology Co., Ltd.",
+				"department": "Product R&D Department",
+				"period": "Jan 2020 - Jan 2021",
+				"tags": ["TypeScript", "Linux", "Vue", "Node.js", "PHP7", "React"],
+				"points": [
+					"Cross-border communication and collaboration among multiple teams and languages, completing communication from technical requirements to implementation",
+					"Maintenance and iteration of 20+ projects with a cycle of over 10 years, including Frontend (jQuery/Native Hybrid JSBridge/Vue/Chatroom) and Backend (Node.js/PHP)"
+				]
+			}
+		],
+		"educationList": [
+			{
+				"school": "Northern Arizona University",
+				"degree": "Master of Computer Information Technology"
+			}
+		],
+		"interestList": ["Open Source", "UI/UX Design", "Full Stack Development", "Artificial Intelligence"]
+	},
+	"PostsPage": {
+		"title": "Article Vault",
+		"description": "Where technology, design, and life intersect.",
+		"categories": "Popular Categories",
+		"tags": "Popular Tags",
+		"noPosts": "No articles yet, stay tuned.",
+		"noCategories": "No categories",
+		"noTags": "No tags",
+		"back": "Back to Posts"
+	},
+	"SearchPage": {
+		"title": "Search Articles",
+		"loading": "Loading search component...",
+		"placeholder": "Search by title, content, or tags...",
+		"category": "Category",
+		"tag": "Tag",
+		"currentFilter": "Filters",
+		"clearAll": "Clear All",
+		"found": "Found {count} articles",
+		"noResults": "No articles found matching your criteria",
+		"startSearch": "Enter keywords or select tags to start searching",
+		"clearFilters": "Clear search filters"
+	},
+	"Mermaid": {
+		"clickToZoom": "Click to view full image",
+		"zoomInstruction": "Use toolbar to zoom • Pinch to zoom on mobile"
+	}
 }
