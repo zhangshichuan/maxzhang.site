@@ -67,6 +67,26 @@ If there's something more urgent, React pauses the rendering, handles the urgent
 
 **Priority queues** are like a hospital's emergency system. Regular patients check in and wait in line, but if an emergency patient arrives, the nurse prioritizes them. React is similar: urgent requests like user clicks and input have higher priority and can interrupt ongoing rendering.
 
+**How Fiber enables interruption**: Fiber is implemented as a **linked list** structure. Each Fiber node contains pointers to its `child`, `sibling`, and `parent` nodes. This structure allows React to:
+
+1. **Remember the current position**: When interrupting, React only needs to store a reference to the current Fiber node being processed
+2. **Resume from where it left off**: After handling an urgent task, React follows the linked list pointers back to the interrupted node and continues
+3. **Build the tree incrementally**: The linked list structure makes it easy to pause and resume tree construction without losing context
+
+```javascript
+// Simplified Fiber node structure
+const fiber = {
+  type: 'div',           // Component type
+  props: { className: 'container' },
+  child: childFiber,     // First child
+  sibling: nextFiber,    // Next sibling
+  parent: parentFiber,   // Parent node
+  // ... execution context
+}
+```
+
+This linked list design is crucial because it gives React a "bookmark" — when rendering is interrupted, React knows exactly where to continue without recalculating the entire tree.
+
 ### 2.3 A Concrete Example
 
 Imagine an e-commerce website. While browsing a product list, the backend returns thousands of items, and the frontend needs to render this list.
@@ -474,7 +494,48 @@ Static content is created only once, and subsequent updates skip processing this
 
 Both React and Vue use Virtual DOM, but their usage has essential differences.
 
-**React's Virtual DOM is "brute force comparison."** When state changes, React creates a new virtual DOM tree and compares it completely with the old tree (Diff). This comparison's time complexity is O(n³), but React reduces it to O(n) through assumptions ("two elements of different types will produce different trees").
+**React's Virtual DOM is "brute force comparison."** When state changes, React creates a new virtual DOM tree and compares it completely with the old tree (Diff). This comparison's time complexity is O(n³), but React reduces it to O(n) through key assumptions.
+
+Why is naive Diff O(n³)? Imagine two trees with n nodes each. The dumbest approach: for each node in the new tree, search for a match in the old tree — that's O(n²); add the cost of potentially moving nodes, and you get O(n³).
+
+React cuts this to O(n) using **two key assumptions**:
+
+**Assumption 1: Elements of different types produce different trees**
+
+```jsx
+// Old tree
+<div> <span>hello</span> </div>
+
+// New tree (ul vs div = different types)
+<ul> <span>hello</span> </ul>
+```
+
+When React sees `<div>` became `<ul>`, it immediately gives up comparing children — the entire subtree is destroyed and rebuilt. Because "div and ul look completely different, so their subtrees must be different too."
+
+**Assumption 2: Sibling nodes at the same level can be identified by key**
+
+```jsx
+// Without key, React can only guess by position
+[ <li>Alice</li>, <li>Bob</li> ]
+// Becomes
+[ <li>Bob</li>, <li>Alice</li> ]
+// React thinks: first item changed (Alice→Bob), second changed too (Bob→Alice)
+// Result: both nodes destroyed and recreated
+
+// With key, React identifies precisely
+[ <li key="1">Alice</li>, <li key="2">Bob</li> ]
+// Becomes
+[ <li key="2">Bob</li>, <li key="1">Alice</li> ]
+// React sees: key=1 just moved position, key=2 just moved too
+// Result: only repositioning, much less overhead
+```
+
+With these assumptions, the Diff algorithm only needs **a single traversal by level**:
+- Same position, different types → replace the entire subtree
+- Same type, same key → update only attributes
+- List with keys → precise matching and repositioning
+
+This is the secret behind O(n) complexity.
 
 ```javascript
 // React's update flow
