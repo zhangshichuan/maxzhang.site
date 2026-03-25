@@ -1,0 +1,1418 @@
+---
+title: "Why Vue Doesn't Need React's Fiber Architecture"
+summary: "A deep dive into why Vue's reactivity system eliminates the need for Fiber architecture, covering Push vs Pull models, virtual DOM differences, and the fundamental architectural distinctions between React and Vue."
+category: 'Frontend'
+tags: ['Vue', 'React', 'Fiber', 'Reactivity', 'Virtual DOM']
+author: 'Max Zhang'
+date: '2026-03-25'
+---
+
+## Introduction
+
+A friend of mine recently went for a job interview. The interviewer asked him: "Vue 3 has been out for a while now. What do you think is its core advantage compared to React?"
+
+He didn't hesitate: "Vue doesn't need Fiber architecture like React does, so it's simpler to implement and has better performance."
+
+The interviewer followed up: "Do you know why React needs Fiber? And why doesn't Vue need it?"
+
+He was stumped right there.
+
+Have you ever found yourself in a similar situation? After searching online, you either find explanations that are too shallow, or full of source code implementation details. Today's article is designed to explain this thoroughly—not just the "what," but more importantly, the "why."
+
+## Chapter 1: Starting with a Problem
+
+### 1.1 Imagine You're Cooking in a Kitchen
+
+Suppose you're a chef cooking three dishes simultaneously: stir-fried vegetables, soup, and a steak.
+
+**First approach (React's old way):** You start cooking the vegetables. Once you begin, you can't stop—you must finish the vegetables before handling the soup or steak. If the vegetables take 5 minutes, you have to stay by the pot the whole time, doing nothing else.
+
+**Second approach (Vue's way):** You cook the vegetables for 30 seconds, flip them, cook for another 30 seconds, then check on the soup to see if it needs water, and flip the steak in between. A few seconds of switching lets you take care of all three dishes.
+
+The problem with the first approach: if a dish is particularly complex and takes 10 minutes, you just have to wait. The second approach, though it has some switching overhead, is actually more efficient overall.
+
+React's Fiber architecture was created to solve this "long-running task blocking" problem. Vue uses a completely different approach, so it doesn't need this solution at all.
+
+### 1.2 What is "Main Thread Blocking"?
+
+Before discussing Fiber, you must understand a fundamental concept in frontend development: the main thread.
+
+The browser has something called the "main thread"—imagine it's a hotel concierge. The concierge is very busy handling various requests: user clicks, text input, page scrolling, rendering animations... All these "requests" wait in line for the concierge to handle them one by one.
+
+Normally, each request takes only a short time, so you don't notice the queuing. For example, clicking a button might take only a few milliseconds to respond. But when a page becomes complex—like rendering a huge list—the concierge might get overwhelmed, and other requests have to wait.
+
+As they wait, you feel the page "lag"—clicks don't respond, scrolling isn't smooth, input has delays. This phenomenon is called "main thread blocking."
+
+React's early versions faced this problem: when page state changed and required re-rendering, React would complete all the work at once without taking breaks. If the page was complex, this "non-stop" period could last several hundred milliseconds, and users could clearly feel the lag.
+
+Fiber architecture was introduced to solve this problem.
+
+## Chapter 2: What is React Fiber?
+
+### 2.1 Background of Fiber
+
+In 2017, the React team released an important proposal called "Reconciliation." The core content of this proposal was what later became known as Fiber architecture.
+
+Why the name "Fiber"? Fiber means "a thin, filiform structure that can be divided infinitely." The React team used this term to express: breaking rendering work into very small task units, where each unit can be interrupted and resumed.
+
+### 2.2 Core Concepts of Fiber
+
+Fiber architecture has three core concepts: **time slicing**, **priority queues**, and **interruptible rendering**.
+
+**Time slicing** is like dividing an hour-long TV show into countless 30-second clips. After each clip finishes, you can choose to continue to the next one or switch to the news channel to check for updates.
+
+React divides rendering work into many small segments, with each segment taking only a few milliseconds. After completing each segment, React asks the browser: "Is there anything more urgent to handle? For example, did the user click a button?"
+
+If there's something more urgent, React pauses the rendering, handles the urgent request first, and then returns to continue rendering. This is called "interruptible rendering."
+
+**Priority queues** are like a hospital's emergency system. Regular patients check in and wait in line, but if an emergency patient arrives, the nurse prioritizes them. React is similar: urgent requests like user clicks and input have higher priority and can interrupt ongoing rendering.
+
+### 2.3 A Concrete Example
+
+Imagine an e-commerce website. While browsing a product list, the backend returns thousands of items, and the frontend needs to render this list.
+
+In pre-Fiber days, React would do this:
+
+```javascript
+// Pseudocode describing logic, not actual implementation
+function renderProductList(products) {
+	// Render the entire list without stopping
+	return products.map((product) => <ProductCard key={product.id} data={product} />)
+	// Assume this process takes 500ms
+	// During these 500ms, user button clicks won't respond
+}
+```
+
+With Fiber, React does this:
+
+```javascript
+// Rendering approach under Fiber architecture
+function renderProductList(products) {
+	// Break rendering into many small tasks
+	const tasks = products.map((product, index) => createRenderTask(product, index))
+
+	// Each task takes only 1-2ms
+	// After completing each task, check for urgent requests
+	// If user clicks a button, immediately handle the click event
+	// After handling, return to continue rendering
+
+	scheduleWork(tasks, { priority: 'low' })
+}
+```
+
+This way, even if the user clicks something during list rendering, they get an immediate response.
+
+### 2.4 Suspense and Concurrent Mode
+
+Fiber architecture brought two important capabilities: **Suspense** and **Concurrent Mode**.
+
+**Suspense** solves the "asynchronous data loading" problem. In traditional approaches, you'd write lots of useEffect, loading states, and error handling. Suspense allows you to write like this:
+
+```jsx
+function ProductPage({ productId }) {
+	return (
+		<Suspense fallback={<LoadingSpinner />}>
+			{/* This can "pause" waiting for data */}
+			<ProductDetails id={productId} />
+			<RelatedProducts id={productId} />
+		</Suspense>
+	)
+}
+```
+
+This code means: "Show LoadingSpinner first, then display the content when data arrives." More importantly, if the user leaves this page midway, React can "cancel" pending requests and save resources.
+
+**Concurrent Mode** allows React to prepare multiple versions of UI "simultaneously." For example, when a user types in a search box, in traditional mode each input triggers a re-render. With concurrent mode, React can "simultaneously" prepare multiple versions of search results, and when it determines which one to finally display, it switches directly. Users don't feel any delay.
+
+### 2.5 Concurrent Mode Deep Dive: Code Examples
+
+**What does concurrent mode solve?**
+
+Imagine a scenario: the user searches for a keyword, and the backend returns a large amount of data. Without concurrent mode, while the user waits for search results, they can't continue typing—the page feels frozen because React is busy rendering a large amount of DOM.
+
+With concurrent mode, React can "pause" ongoing rendering to respond to user input.
+
+**startTransition: Marking Non-Urgent Updates**
+
+```jsx
+import { useState, startTransition } from 'react'
+
+function SearchResults({ query }) {
+	const [results, setResults] = useState([])
+	const [isPending, setIsPending] = useState(false)
+
+	const handleSearch = (newQuery) => {
+		setIsPending(true)
+
+		// startTransition marks this update as "non-urgent"
+		// If user continues typing, React can interrupt this update
+		startTransition(() => {
+			fetchResults(newQuery).then((data) => {
+				setResults(data)
+				setIsPending(false)
+			})
+		})
+	}
+
+	return (
+		<div>
+			<input onChange={(e) => handleSearch(e.target.value)} />
+			{isPending ? <Spinner /> : null}
+			{results.map((r) => (
+				<ResultItem key={r.id} data={r} />
+			))}
+		</div>
+	)
+}
+```
+
+**useDeferredValue: Defer Non-Critical Values**
+
+```jsx
+import { useState, useDeferredValue } from 'react'
+
+function SearchPage() {
+	const [query, setQuery] = useState('')
+
+	// useDeferredValue creates a "deferred version" of the value
+	// query is updated immediately (for user input)
+	// deferredQuery is updated with a delay (for rendering)
+	const deferredQuery = useDeferredValue(query)
+
+	return (
+		<div>
+			<input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search..." />
+			{/* List uses deferred value - even if rendering is slow, it won't block input */}
+			<SlowList text={deferredQuery} />
+		</div>
+	)
+}
+```
+
+**The Core Value of Concurrent Mode**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   Value of Concurrent Mode                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Scenario: User searches for "react tutorial"                     │
+│                                                                  │
+│  Without concurrent mode:                                         │
+│  1. User types "r" → React starts rendering "r" results (1000)  │
+│  2. User continues typing "re" → Input frozen! Rendering       │
+│  3. User continues typing "rea" → Still frozen!                  │
+│  4. "r" rendering complete                                        │
+│  5. User types "rea" → Starts rendering "rea" results             │
+│  6. ... Repeat this process                                      │
+│                                                                  │
+│  With concurrent mode:                                            │
+│  1. User types "r" → React marks this render as "interruptible"  │
+│  2. User continues typing "re" → React pauses "r" render        │
+│  3. User continues typing "rea" → Continues responding, no lag   │
+│  4. User stops typing                                            │
+│  5. React completes final "rea" rendering                        │
+│                                                                  │
+│  Result: Input always smooth, better user experience              │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 2.6 React 19: Compiler Auto-Optimization
+
+With React 19, a major update is **compiler auto-optimization** (React Compiler). Previously, you had to manually write useMemo and useCallback to avoid unnecessary renders. React 19's compiler will **automatically do these optimizations for you**.
+
+**Previous写法（React 17/18）：**
+
+```jsx
+import { useMemo, useCallback } from 'react'
+
+function ProductList({ products, onSelect }) {
+	// Manually cache computed result
+	const sortedProducts = useMemo(() => {
+		return [...products].sort((a, b) => b.price - a.price)
+	}, [products])
+
+	// Manually cache callback function
+	const handleSelect = useCallback(
+		(product) => {
+			onSelect(product)
+		},
+		[onSelect],
+	)
+
+	return (
+		<div>
+			{sortedProducts.map((product) => (
+				<ProductItem key={product.id} product={product} onSelect={handleSelect} />
+			))}
+		</div>
+	)
+}
+```
+
+**React 19写法（Auto-optimization）：**
+
+```jsx
+function ProductList({ products, onSelect }) {
+	// No useMemo needed! Compiler automatically analyzes and caches
+	const sortedProducts = [...products].sort((a, b) => b.price - a.price)
+
+	// No useCallback needed! Compiler automatically analyzes and caches
+	const handleSelect = (product) => {
+		onSelect(product)
+	}
+
+	return (
+		<div>
+			{sortedProducts.map((product) => (
+				<ProductItem key={product.id} product={product} onSelect={handleSelect} />
+			))}
+		</div>
+	)
+}
+```
+
+**How does the compiler work?**
+
+React Compiler analyzes your code to find which values "should" be cached. It follows several simple rules:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              React Compiler Auto-Optimization Rules                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Rule 1: If a variable's value comes from props or state,        │
+│          and isn't modified in the current component, cache it    │
+│                                                                  │
+│  Rule 2: If a function's return value only depends on props      │
+│          or state, and has no side effects, cache the function   │
+│                                                                  │
+│  Rule 3: Follow React's rules (don't modify state, don't use     │
+│          raw DOM operations)                                     │
+│                                                                  │
+│  As long as you follow these rules, the compiler can safely       │
+│  optimize automatically                                          │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**What does this mean for Vue?**
+
+Vue has always had compile-time optimization (template compilation), but Vue's optimization is "static analysis"—the compiler analyzes templates at build time to find static and dynamic parts.
+
+React Compiler's approach is different: it's "runtime behavior analysis"—the compiler analyzes JavaScript code logic to find values that can be safely cached.
+
+Both approaches have advantages:
+
+- Vue's compile-time optimization: faster, smaller bundles, because optimization results are determined at build time
+- React Compiler: more flexible, can optimize more complex logic, like computations in conditional rendering
+
+However, Vue is also evolving—Vue 3.4+ introduced more aggressive compile optimizations (Ref reactivity transformation, etc.), and the gap between the two is narrowing.
+
+## Chapter 3: Vue's Reactivity System
+
+### 3.1 A Different Approach to the Problem
+
+After discussing React, let's look at Vue. You might ask: How does Vue solve the main thread blocking problem?
+
+The answer: Vue doesn't consider this a problem at all.
+
+This doesn't mean Vue doesn't care about performance. Quite the opposite—Vue's performance optimization strategy is completely different from React's. Vue chose a harder path, but with better results: **reducing unnecessary rendering work from the source**.
+
+React's thinking: "Rendering work might block the main thread, so we make it interruptible." Vue's thinking: "Make rendering work fast enough that interruption isn't needed."
+
+### 3.2 Vue's Reactivity Principle
+
+To understand why Vue doesn't need Fiber, you must first understand Vue's reactivity system.
+
+In the Vue 2 era, Vue used ES5's Object.defineProperty to implement reactivity. You can think of it as a "monitor"—when a variable's value changes, the monitor immediately notifies all "interested" parties.
+
+```javascript
+// Vue 2's reactivity principle (simplified)
+function reactive(obj) {
+	// Set up monitoring for each property
+	Object.keys(obj).forEach((key) => {
+		let value = obj[key]
+
+		Object.defineProperty(obj, key, {
+			get() {
+				// Someone read this property, record it
+				track(key)
+				return value
+			},
+			set(newValue) {
+				value = newValue
+				// Property value changed, notify all dependents
+				trigger(key)
+			},
+		})
+	})
+
+	return obj
+}
+
+// Usage example
+const state = reactive({
+	count: 0,
+	message: 'hello',
+})
+
+// When count changes, only places that depend on count update
+state.count = 1 // Triggers update
+```
+
+Vue 3 upgraded to Proxy, which is JavaScript's native feature with more powerful capabilities:
+
+```javascript
+// Vue 3's reactivity principle (simplified)
+function reactive(obj) {
+	return new Proxy(obj, {
+		get(target, key) {
+			// Collect dependency
+			track(target, key)
+			return Reflect.get(target, key)
+		},
+		set(target, key, value) {
+			const result = Reflect.set(target, key, value)
+			// Trigger update
+			trigger(target, key)
+			return result
+		},
+	})
+}
+
+// Vue 3 also supports ref for primitive types
+function ref(value) {
+	return {
+		get value() {
+			track(this, 'value')
+			return value
+		},
+		set value(newValue) {
+			value = newValue
+			trigger(this, 'value')
+		},
+	}
+}
+```
+
+### 3.3 Dependency Tracking and Precise Updates
+
+This is the key to understanding why Vue doesn't need Fiber.
+
+Vue's reactivity system precisely records "which component depends on which data." When certain data changes, Vue only updates components that depend on this data, not "the entire page."
+
+```vue
+<template>
+	<!-- Only this div updates when message changes -->
+	<div>{{ message }}</div>
+
+	<!-- Only this button's display updates when count changes -->
+	<button>{{ count }}</button>
+</template>
+
+<script setup>
+import { reactive } from 'vue'
+
+const state = reactive({
+	message: 'hello',
+	count: 0,
+})
+
+// Modify message
+state.message = 'world'
+// Vue knows only places displaying message need to update
+// Places displaying count are completely unaffected
+
+// Modify count
+state.count = 1
+// Vue knows only places displaying count need to update
+// Places displaying message are completely unaffected
+</script>
+```
+
+This "precision strike" capability makes Vue's update cost naturally low. Even if a page has 100 components, if only 2 components depend on certain changed data, Vue only updates these 2 components, not all 100.
+
+### 3.4 Compile-Time Optimization
+
+Vue's other secret weapon is **template compilation optimization**.
+
+Vue's templates are not parsed at runtime but pre-compiled. The compiler analyzes templates to find static content (parts that won't change) and dynamic content (parts that might change).
+
+```vue
+<template>
+	<!-- Static content: structure known at compile time, won't change -->
+	<div class="container">
+		<h1>Product List</h1>
+
+		<!-- Dynamic content: Vue precisely tracks this for loop -->
+		<div v-for="product in products" :key="product.id">{{ product.name }} - {{ product.price }}</div>
+	</div>
+</template>
+```
+
+After compilation, Vue generates code like this:
+
+```javascript
+// Compiled render function (simplified)
+function render(ctx) {
+	// Static parts return directly, no need to recreate
+	return h('div', { class: 'container' }, [
+		h('h1', 'Product List'),
+		// Dynamic parts are tracked
+		ctx.products.map((product) => h('div', { key: product.id }, [product.name, ' - ', product.price])),
+	])
+}
+```
+
+Static content is created only once, and subsequent updates skip processing this part. This is one reason Vue is faster than React in many scenarios.
+
+## Chapter 4: Essential Differences Between the Two Architectures
+
+### 4.1 Different Ways of Using Virtual DOM
+
+Both React and Vue use Virtual DOM, but their usage has essential differences.
+
+**React's Virtual DOM is "brute force comparison."** When state changes, React creates a new virtual DOM tree and compares it completely with the old tree (Diff). This comparison's time complexity is O(n³), but React reduces it to O(n) through assumptions ("two elements of different types will produce different trees").
+
+```javascript
+// React's update flow
+function updateState(newState) {
+	// 1. Create new virtual DOM
+	const newVirtualDOM = createVirtualDOM(newState)
+
+	// 2. Compare with old virtual DOM (Diff)
+	const patches = diff(oldVirtualDOM, newVirtualDOM)
+
+	// 3. Apply differences to real DOM
+	applyPatches(patches)
+}
+```
+
+**Vue's Virtual DOM is "precision strike."** Because Vue knows which data changed and which components depend on this data, it can directly locate places that need updating, without complete Diff.
+
+```javascript
+// Vue's update flow (simplified)
+function updateState(key, newValue) {
+	// 1. Notify components depending on this data
+	const subscribers = getSubscribers(key)
+
+	// 2. Only update components depending on this data
+	subscribers.forEach((component) => {
+		// For each component, find parts that need updating
+		const patches = getComponentPatches(component, key, newValue)
+		applyPatches(patches)
+	})
+
+	// 3. Global Diff (only when necessary)
+	// Only when Vue can't precisely track
+}
+```
+
+### 4.2 Differences in Update Granularity
+
+React's smallest update unit is the **component**. When a component's state changes, the entire component re-renders. React relies on Virtual DOM Diff to find specific DOM nodes that need to change.
+
+Vue's smallest update unit is the **precise position within a component**. When a component's reactive data changes, Vue directly knows which template position needs updating, without additional Diff.
+
+```jsx
+// React: Component-level updates
+function Counter() {
+	const [count, setCount] = useState(0)
+
+	return (
+		<div>
+			<span>{count}</span>
+			{/* Even if only count changed, the entire Counter component re-renders */}
+			<ExpensiveComponent /> {/* This might unnecessarily re-render */}
+		</div>
+	)
+}
+```
+
+```vue
+<!-- Vue: Precise updates -->
+<template>
+	<div>
+		<span>{{ count }}</span>
+		<!-- Only {{ count }} here updates -->
+		<ExpensiveComponent />
+		<!-- This component won't re-render at all -->
+	</div>
+</template>
+
+<script setup>
+import { reactive } from 'vue'
+const count = reactive(0)
+</script>
+```
+
+Of course, React later added useMemo, useCallback, and React.memo to reduce unnecessary renders. React 19 even introduced compiler auto-optimization, automatically analyzing code and inserting these optimizations without manual writing. This has narrowed the mental workload gap between React and Vue in this area.
+
+### 4.3 Reactivity vs Virtual DOM
+
+This is the core to understanding the difference:
+
+| Feature               | React                                                       | Vue                                            |
+| --------------------- | ----------------------------------------------------------- | ---------------------------------------------- |
+| Data change detection | Depends on setState calls, React must find changes itself   | Depends on Proxy/defineProperty auto-tracking  |
+| Update scope          | Entire component re-renders, relies on Diff for differences | Precise dependency tracking, on-demand updates |
+| Optimization          | Virtual DOM Diff + Compiler auto-optimization (React 19)    | Reactive tracking + Compile-time optimization  |
+
+React's problem: even with Diff algorithms, comparing two complex component trees still has costs. And Diff happens during JavaScript execution phase, occupying main thread time.
+
+Vue's thinking: rather than optimizing hard in the rendering phase, why not precisely control from the data change phase? The reactivity system already knows where updates are needed, so why still need Diff?
+
+### 4.4 Pull Mode vs Push Mode
+
+This is the key to understanding the essential difference between the two reactivity systems.
+
+**Pull Mode (React): Components actively "pull" the data they need**
+
+React uses "pull" mode. Imagine an office scenario:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      Pull Mode (React)                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Scenario: The office bulletin board (React's state) updated    │
+│                                                                  │
+│  Xiaoming (Component A): Goes to bulletin board, sees update    │
+│  Xiaohong (Component B): Goes to bulletin board, sees update    │
+│  Xiaoli (Component C): Goes to bulletin board, sees no update   │
+│                          (wasted trip)                           │
+│                                                                  │
+│  Characteristic: Components must go "check" themselves to know    │
+│                  if data changed                                │
+│  Problem: Regardless of change or not, every component must go   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+When state changes, React "doesn't know" which components need updating. So it notifies all components: "Re-render yourselves, check if you need to update the DOM." Each component must run through Diff and decide whether to actually update.
+
+**Push Mode (Vue): System actively "pushes" to components that need it**
+
+Vue uses "push" mode. Same scenario:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      Push Mode (Vue)                             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Scenario: The office bulletin board (reactive data) updated      │
+│                                                                  │
+│  Admin (Vue): "The bulletin board updated!"                      │
+│  Admin → Xiaoming (Component A): "Bulletin updated, take a look"│
+│           (Xiaoming needs to see bulletin)                      │
+│  Admin → Xiaohong (Component B): "Bulletin updated, take a look"│
+│           (Xiaohong needs to see bulletin)                      │
+│  Xiaoli (Component C): Didn't receive notice (doesn't need       │
+│                        bulletin)                                 │
+│                                                                  │
+│  Characteristic: Only components that truly need to know receive │
+│                  notices                                        │
+│  Benefit: People who don't need to know are completely unaware  │
+│            of the change, saving overhead                       │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+When reactive data changes, Vue precisely knows which components depend on this data and directly "pushes" updates to components that need them. Other components are completely unaware of the change.
+
+**Comparison Summary**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   Pull vs Push Comparison                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   Pull Mode (React)           Push Mode (Vue)                   │
+│   ─────────────────           ──────────────────                 │
+│                                                                  │
+│   Data changes                     Data changes                   │
+│      │                               │                          │
+│      ▼                               ▼                           │
+│   "Someone changed!"           Precisely find dependents         │
+│      │                               │                          │
+│      ▼                               ▼                           │
+│   All components re-render     Only notify needed components      │
+│      │                               │                          │
+│      │ Rely on diff/memo         │ Precision strike             │
+│      ▼ to decide updates         ▼ Direct updates               │
+│                                                                  │
+│   Advantage: Simple               Advantage: Efficient             │
+│   Disadvantage: May do           Disadvantage: Tracking system   │
+│                 unnecessary work       is complex                │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 4.5 Why Does React Require Immutability?
+
+You might ask: Why does React enforce immutability? Does this relate to functional programming?
+
+**Reason 1: React detects changes through reference comparison**
+
+```javascript
+// What React does internally (roughly)
+if (Object.is(newState, oldState)) {
+	// Data didn't change, no update
+} else {
+	// Data changed, trigger re-render
+}
+```
+
+So if you modify an object directly:
+
+```javascript
+// ❌ Violates immutability (direct modification)
+const user = { name: 'Zhang', age: 25 }
+user.age = 26 // Object reference didn't change!
+
+// React compares references: Object.is(user, user) → true
+// React thinks data didn't change, won't trigger update!
+
+// ✅ Follows immutability (returns new object)
+const user = { name: 'Zhang', age: 25 }
+const newUser = { ...user, age: 26 } // New reference!
+
+// React compares references: Object.is(newUser, user) → false
+// React sees data changed, triggers update
+```
+
+**Reason 2: Functional programming's pure function philosophy**
+
+```javascript
+// Pure function: same input produces same output, no side effects
+// React's setState expects you to return a new state, not modify old state
+
+// ❌ Impure (modifies external state)
+function updateUserAge(user, newAge) {
+	user.age = newAge // Modifies the passed parameter!
+	return user
+}
+
+// ✅ Pure (doesn't modify input, returns new value)
+function updateUserAge(user, newAge) {
+	return { ...user, age: newAge } // Returns new object
+}
+```
+
+**Reason 3: Supports undo/redo and time travel**
+
+```javascript
+// Immutability naturally supports "history"
+const history = []
+
+let state = { count: 0 }
+
+// Each is a new object, old objects preserved
+history.push(state)
+state = { ...state, count: 1 } // New object
+history.push(state)
+state = { ...state, count: 2 } // New object
+history.push(state)
+
+// Can return to any historical state anytime
+console.log(history)
+// [{ count: 0 }, { count: 1 }, { count: 2 }]
+//          ↑            ↑            ↑
+//        index 0      index 1      index 2
+
+// With mutable objects, you only get the final state
+```
+
+**Real-life analogy**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Immutability Analogy                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Mutable objects are like notes written on paper:               │
+│  - You can directly overwrite                                      │
+│  - But you don't know the original content                        │
+│  - Cannot undo                                                    │
+│                                                                  │
+│  Immutable objects are like WeChat messages:                     │
+│  - Each message is independent                                    │
+│  - New messages are new, old messages remain                     │
+│  - You can review history anytime                                │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 4.6 React's State Management Pitfalls
+
+#### Problem Background
+
+Many people developing with React state management have this confusion:
+
+> "I stored a large state in Zustand/Redux, declared it at the root component, passed props down through layers of child components. If I update a small property in this large state at a 5th-level child component, will it cause the entire tree starting from the root to re-render?"
+
+Going further, some people think:
+
+> "Since state changes trigger re-render, if I put all state in the root component and pass props down, won't changing one small piece of data re-render the entire page? That's terrifying!"
+
+With this confusion, many people:
+
+- Scatter state across various child components (leading to scattered state, hard to manage)
+- Overuse React.memo to "optimize" (actually increasing complexity)
+- Have misconceptions about React's performance
+
+#### Core Answer
+
+**Actually, React does NOT "re-render the entire tree."**
+
+Even if you use Zustand to store a large state and update a deep property at the 5th-level child component, React's re-render is at the **component level**, not "the entire tree":
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│     React Update Flow (Key Point: Component-Level Diff)          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Scenario: You updated a comment in the Comments component        │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │                    App (store root node)                   │ │
+│  │                        │                                   │ │
+│  │   ┌────────────────────┼────────────────────┐              │ │
+│  │   │                    │                    │              │ │
+│  │   ▼                    ▼                    ▼              │ │
+│  │ Header              Content             Footer            │ │
+│  │                      │                                   │ │
+│  │                      ▼                                   │ │
+│  │              ┌───────┴───────┐                         │ │
+│  │              │               │                          │ │
+│  │              ▼               ▼                          │ │
+│  │           Sidebar      PostList                        │ │
+│  │                          │                              │ │
+│  │                          ▼                              │ │
+│  │                     Comments ◄── Updated here           │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                                                  │
+│  Update flow:                                                   │
+│  1. setComment() called in Comments, comments data changed      │
+│         │                                                       │
+│         ▼                                                       │
+│  2. Comments component re-renders (because it used useStore)   │
+│         │                                                       │
+│         │ What does this component do when re-rendering?         │
+│         ▼                                                       │
+│  3. Comments's render function executes, returns new VDOM        │
+│         │                                                       │
+│         │ Compare new and old VDOM (diff)                       │
+│         ▼                                                       │
+│  4. Only changed DOM nodes are updated                          │
+│                                                                  │
+│  ★ Header doesn't re-render, because its store content unchanged │
+│  ★ Content doesn't re-render, because it doesn't depend on      │
+│    comments directly                                            │
+│  ★ React diff happens within each component, not "entire tree"   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### When Does "Too Much Rendering" Happen?
+
+Although React doesn't render the entire tree, it can indeed render "too many" components. The problem lies in **how you write selectors**:
+
+```javascript
+// ❌ Bad: Selected too much
+function PostItem() {
+	// This subscription subscribes to the ENTIRE store!
+	const { posts, comments, user, settings, notifications } = useStore()
+
+	// Any change triggers re-render:
+	// posts changes → re-render
+	// comments changes → re-render
+	// user changes → re-render
+	// settings changes → re-render
+	// notifications changes → re-render
+	// Even if this component doesn't use any of these!
+}
+
+// ✅ Good: Precisely select what's needed
+function PostItem({ postId }) {
+	// Only subscribe to the post you need
+	const post = useStore((state) => state.posts.find((p) => p.id === postId))
+	const author = useStore((state) => state.users[post?.authorId])
+
+	// Only re-renders when this post changes
+	// Other data changes won't trigger this component's re-render
+}
+
+// ✅ Better: Use shallow comparison
+import { shallow } from 'zustand/shallow'
+function PostItem({ postId }) {
+	const [post, author] = useStore(
+		(state) => [state.posts.find((p) => p.id === postId), state.users[post?.authorId]],
+		shallow, // Only re-renders when returned array references both change
+	)
+}
+```
+
+#### Summary
+
+- ❌ "It will re-render the entire tree from root" — Not quite right, it's component-level re-render
+- ❌ "Putting state at root and passing down is dangerous" — Wrong, React diff handles this
+- ✅ "Selector precision matters" — Completely right, only subscribe to needed data
+- ✅ "Splitting store by function" — Recommended, but not mandatory
+
+## Chapter 5: The Real Reason Vue Doesn't Need Fiber
+
+### 5.1 Vue's Updates Are Already Fast Enough
+
+Ultimately, Fiber solves the problem of "rendering tasks too heavy causing main thread blocking." But Vue, through reactive tracking and precise updates, makes "rendering tasks" themselves so lightweight that interruption isn't needed at all.
+
+Using a real-life analogy:
+
+React Fiber is like a hospital's "emergency priority" system—because there are too many patients, regular registration waits a long time, so emergency patients can cut in line. This solves the problem of "waiting too long."
+
+Vue is like optimizing the entire hospital's process—making registration itself so fast that everyone's waiting time is short, completely eliminating the need for emergency priority.
+
+### 5.2 Vue's Async Batch Updates
+
+Vue also supports async updates, but its implementation differs from Fiber.
+
+```javascript
+// Vue's async batch updates
+const state = reactive({ count: 0 })
+
+// Consecutive modifications only trigger one update
+state.count++ // Triggers update
+state.count++ // Doesn't trigger (already in queue)
+state.count++ // Doesn't trigger (already in queue)
+
+// Vue updates DOM in the next "tick"
+// User sees count directly become 3, not 0→1→2→3
+```
+
+This batch update mechanism lets Vue merge multiple data changes into one DOM operation. More importantly, this process is automatic, requiring no manual API calls.
+
+### 5.3 Vue 3's Improvements
+
+Vue 3 made many improvements to the reactivity system, further reducing the need for Fiber.
+
+**Better Proxy implementation**: Vue 3 uses Proxy instead of Object.defineProperty, bringing several advantages:
+
+```javascript
+// Object.defineProperty's limitations
+const obj1 = {}
+Object.defineProperty(obj1, 'a', { value: 1 }) // Works
+// But if obj1 originally doesn't have property 'b', newly added properties
+// won't be reactive
+
+// Proxy's advantages
+const obj2 = reactive({})
+obj2.newProperty = 'hello' // Automatically becomes reactive
+```
+
+**Finer-grained reactivity tracking**: Vue 3 can track object property access paths, not just "entire objects":
+
+```javascript
+const state = reactive({
+	user: {
+		name: 'Zhang',
+		address: {
+			city: 'Beijing',
+		},
+	},
+})
+
+// Vue 3 can precisely track:
+// - Only when name changes, places depending on name update
+// - Only when city changes, places depending on city update
+// - Changes are completely isolated, don't affect each other
+```
+
+### 5.4 When Might Vue Also Need Something Like Fiber?
+
+To be fair, Vue might also encounter performance issues in extreme scenarios, but the solution isn't Fiber but other approaches:
+
+```javascript
+// Scenario: Rendering super-large data lists
+// Solution: Virtual lists
+import { useVirtualList } from 'vue-use'
+
+const { list, containerProps, wrapperProps } = useVirtualList(
+	items, // Might have 1 million pieces of data
+	{
+		itemHeight: 50,
+		overscan: 10, // Number of extra items to pre-render
+	},
+)
+```
+
+Virtual lists only render what the user can see (e.g., 20 items that fit on screen), not all 1 million at once. This fundamentally solves the problem of large data volume rendering.
+
+Another solution is using the `v-memo` directive to cache certain parts of the template:
+
+```vue
+<template>
+	<div v-for="item in list" :key="item.id">
+		<!-- Only re-renders when item.name or item.count changes -->
+		<span v-memo="[item.name, item.count]"> {{ item.name }}: {{ item.count }} </span>
+	</div>
+</template>
+```
+
+## Chapter 6: Architecture Diagrams
+
+### 6.1 React Fiber's Work Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    React Fiber Work Flow                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  User actions (clicks, input, scrolling)                        │
+│         │                                                        │
+│         ▼                                                        │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                   Scheduler                               │   │
+│  │                                                          │   │
+│  │   Split rendering tasks into small pieces,               │   │
+│  │   put into priority queue                                │   │
+│  │                                                          │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│         │                                                        │
+│         ▼                                                        │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                   Fiber Tree Building                     │   │
+│  │                                                          │   │
+│  │   Each component creates corresponding fiber node         │   │
+│  │   Node records component state and child node info       │   │
+│  │                                                          │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│         │                                                        │
+│         │ If higher priority task exists                       │
+│         │ (e.g., user clicked)                                  │
+│         ▼                                                        │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                   Interruptible Rendering                 │   │
+│  │                                                          │   │
+│  │   Pause current rendering, handle urgent task             │   │
+│  │   After handling, return and resume from checkpoint       │   │
+│  │                                                          │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│         │                                                        │
+│         ▼                                                        │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                   Commit Phase                             │   │
+│  │                                                          │   │
+│  │   Submit changes to real DOM                              │   │
+│  │   This phase cannot be interrupted                        │   │
+│  │                                                          │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 6.2 Vue's Reactive Update Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                 Vue Reactive Update Flow                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Define reactive data                                            │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ const state = reactive({ count: 0, name: 'Zhang' })    │   │
+│  │                                                          │   │
+│  │ Vue automatically establishes "data → component" mapping │   │
+│  │ count dependency → [ComponentA's count display,         │   │
+│  │                    ComponentB's counter]               │   │
+│  │ name dependency → [ComponentC's name display]           │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│         │                                                        │
+│         ▼                                                        │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                   Data Change Triggers                    │   │
+│  │                                                          │   │
+│  │ state.count = 1                                          │   │
+│  │   │                                                      │   │
+│  │   ▼                                                      │   │
+│  │ Proxy set trap called                                    │   │
+│  │   │                                                      │   │
+│  │   ▼                                                      │   │
+│  │ trigger() notifies all components depending on this data  │   │
+│  │                                                          │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│         │                                                        │
+│         ▼                                                        │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                   Component Updates (Precise)             │   │
+│  │                                                          │   │
+│  │   ComponentA: count display needs update ────► Update   │   │
+│  │   ComponentB: counter needs update ─────────► Update     │   │
+│  │   ComponentC: unaffected (depends on name, not count)    │   │
+│  │                                                          │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│         │                                                        │
+│         ▼                                                        │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                   Batch Update DOM                        │   │
+│  │                                                          │   │
+│  │   Vue merges multiple updates in same tick into one DOM   │   │
+│  │   operation                                              │   │
+│  │   User sees final state, not intermediate states        │   │
+│  │                                                          │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 6.3 Core Differences Between the Two Approaches
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│               Core Differences Between the Two Architectures       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   ┌─────────────────────┐       ┌─────────────────────┐        │
+│   │        React         │       │         Vue          │        │
+│   ├─────────────────────┤       ├─────────────────────┤        │
+│   │                     │       │                     │        │
+│   │ "Brute force render │       │ "Precise tracking,  │        │
+│   │  + post-hoc opt"     │       │  source control"   │        │
+│   │                     │       │                     │        │
+│   │ State changes        │       │ Data changes        │        │
+│   │    │                 │       │    │               │        │
+│   │    ▼                 │       │    ▼               │        │
+│   │ Entire component     │       │ Precisely find     │        │
+│   │ re-renders          │       │ dependent components│        │
+│   │    │                 │       │    │               │        │
+│   │    ▼                 │       │    ▼               │        │
+│   │ Virtual DOM Diff     │       │ Directly update    │        │
+│   │    │                 │       │ needed parts      │        │
+│   │    ▼                 │       │    │               │        │
+│   │ Apply to real DOM    │       │ Apply to real DOM  │        │
+│   │                     │       │                     │        │
+│   │ Fiber solves:        │       │ No need to solve:  │        │
+│   │ "What if diff is     │       │ "Diff barely       │        │
+│   │  too slow?"          │       │  needed"           │        │
+│   │                     │       │                     │        │
+│   └─────────────────────┘       └─────────────────────┘        │
+│                                                                  │
+│  Analogy:                                                        │
+│  React is like general cleaning: take all furniture out,          │
+│          clean and put back, even if only the table is dirty.    │
+│          Fiber is letting you take a water break mid-clean.       │
+│                                                                  │
+│  Vue is like spot cleaning: wipe where it's dirty,                │
+│          the dirty area was never large to begin with,          │
+│          so no need for water breaks.                            │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Chapter 7: Real-World Scenario Comparisons
+
+### 7.1 Scenario One: Form Input
+
+**React implementation**:
+
+```jsx
+function SearchForm() {
+	const [query, setQuery] = useState('')
+	const [results, setResults] = useState([])
+
+	const handleChange = (e) => {
+		const value = e.target.value
+		setQuery(value)
+
+		// If doing real-time search, this triggers on every input
+		// With Fiber, rendering search results can be interrupted
+		search(value).then(setResults)
+	}
+
+	return (
+		<div>
+			<input value={query} onChange={handleChange} />
+			{/* User continues typing, rendering search results can be interrupted */}
+			<SearchResults results={results} />
+		</div>
+	)
+}
+```
+
+**Vue implementation**:
+
+```vue
+<script setup>
+import { ref, watch } from 'vue'
+
+const query = ref('')
+const results = ref([])
+
+// Vue's watch can precisely control when to trigger search
+watch(
+	query,
+	async (newQuery) => {
+		if (newQuery.length > 0) {
+			results.value = await search(newQuery)
+		}
+	},
+	{ debounce: 300 },
+) // 300ms debounce
+</script>
+
+<template>
+	<div>
+		<input v-model="query" />
+		<!-- Only updates when results change -->
+		<SearchResults :results="results" />
+	</div>
+</template>
+```
+
+### 7.2 Scenario Two: Large Data Lists
+
+**React implementation** (needs virtual list):
+
+```jsx
+import { FixedSizeList } from 'react-window'
+
+function BigList({ items }) {
+	return (
+		<FixedSizeList height={400} itemCount={items.length} itemSize={50} width="100%">
+			{({ index, style }) => <div style={style}>{items[index].name}</div>}
+		</FixedSizeList>
+	)
+}
+```
+
+**Vue implementation** (also needs virtual list, but cleaner syntax):
+
+```vue
+<script setup>
+import { ref } from 'vue'
+import { useVirtualList } from '@vueuse/core'
+
+const items = ref(
+	Array.from({ length: 10000 }, (_, i) => ({
+		name: `Item ${i}`,
+	})),
+)
+
+const { list, containerProps, wrapperProps } = useVirtualList(items, {
+	itemHeight: 50,
+})
+</script>
+
+<template>
+	<div v-bind="containerProps" style="height: 400px; overflow: auto;">
+		<div v-bind="wrapperProps">
+			<div v-for="{ data, index } in list" :key="index">
+				{{ data.name }}
+			</div>
+		</div>
+	</div>
+</template>
+```
+
+### 7.3 Scenario Three: Complex State Management
+
+**React implementation** (React 18 style, needs manual optimization):
+
+```jsx
+function Dashboard() {
+	const [user, setUser] = useState(null)
+	const [posts, setPosts] = useState([])
+	const [notifications, setNotifications] = useState([])
+
+	useEffect(() => {
+		fetchUser().then(setUser)
+		fetchPosts().then(setPosts)
+		fetchNotifications().then(setNotifications)
+	}, [])
+
+	// Each setter might trigger entire component re-render
+	// React 18 needs manual optimization:
+	const updateUser = useCallback((newUser) => {
+		setUser(newUser)
+	}, [])
+
+	return (
+		<div>
+			<UserInfo user={user} onUpdate={updateUser} />
+			{/* posts changes won't cause UserInfo re-render */}
+			{/* Only if you use React.memo */}
+			<PostList posts={posts} />
+			<Notifications notifications={notifications} />
+		</div>
+	)
+}
+
+// React 18 needs manual wrapper for child components
+const UserInfo = React.memo(({ user, onUpdate }) => {
+	// ...
+})
+```
+
+**React 19 style** (compiler auto-optimization, no manual writing):
+
+```jsx
+function Dashboard() {
+	const [user, setUser] = useState(null)
+	const [posts, setPosts] = useState([])
+	const [notifications, setNotifications] = useState([])
+
+	useEffect(() => {
+		fetchUser().then(setUser)
+		fetchPosts().then(setPosts)
+		fetchNotifications().then(setNotifications)
+	}, [])
+
+	// No useCallback needed! Compiler auto-optimizes
+	const updateUser = (newUser) => {
+		setUser(newUser)
+	}
+
+	return (
+		<div>
+			{/* No React.memo needed! Compiler handles automatically */}
+			<UserInfo user={user} onUpdate={updateUser} />
+			<PostList posts={posts} />
+			<Notifications notifications={notifications} />
+		</div>
+	)
+}
+
+// No manual wrapper needed
+const UserInfo = ({ user, onUpdate }) => {
+	// ...
+}
+```
+
+**Vue implementation** (auto-optimization):
+
+```vue
+<script setup>
+import { reactive, toRefs } from 'vue'
+
+const state = reactive({
+	user: null,
+	posts: [],
+	notifications: [],
+})
+
+// toRefs converts each property of reactive object to independent ref
+// After destructuring, each ref is still reactive
+const { user, posts, notifications } = toRefs(state)
+
+onMounted(async () => {
+	state.user = await fetchUser()
+	state.posts = await fetchPosts()
+	state.notifications = await fetchNotifications()
+})
+
+// Child components automatically precisely depend on needed data
+// No manual memo needed (Vue has had this capability from the start)
+</script>
+
+<template>
+	<div>
+		<!-- Only updates when user changes -->
+		<UserInfo :user="user" @update="updateUser" />
+
+		<!-- Only updates when posts change -->
+		<PostList :posts="posts" />
+
+		<!-- Only updates when notifications change -->
+		<Notifications :notifications="notifications" />
+	</div>
+</template>
+```
+
+## Chapter 8: FAQ
+
+### Q1: What's the relationship between Vue 3's Composition API and Fiber?
+
+No relationship at all. Composition API is a code organization method launched with Vue 3, letting you reuse logic better. Fiber is React's architecture for handling rendering tasks. They solve completely different problems.
+
+Composition API solves "logic reuse," like if multiple components need "fetch user data and cache" functionality, you can extract it into a `useUser` function.
+
+### Q2: Will Vue introduce Fiber in the future?
+
+Vue core team has repeatedly stated "no current plans." The reason is Vue's reactivity system is already efficient enough, there's no need to introduce extra complexity to solve non-existent problems.
+
+But Vue does have similar explorations: Vue 3.2 introduced `v-memo`, allowing you to mark "this template segment only updates when certain values change." This essentially gives developers more control and has a tiny bit of similarity to Fiber's thinking.
+
+### Q3: Are Svelte and Solid more efficient?
+
+Svelte and Solid represent another approach: **compile-time optimization**.
+
+Svelte determines at compile time which DOM operations each data change will cause; runtime code does almost no Diff. Solid is even more aggressive, completing almost all computations at compile time.
+
+But this extreme optimization also has costs: Svelte's compiled output is relatively large, and debugging in complex scenarios is more difficult. Vue chooses to retain some runtime flexibility, balancing performance and development experience.
+
+### Q4: When should you choose React over Vue?
+
+The answer to this question isn't about "project size" but about **scenario requirements and ecosystem**.
+
+React's advantages:
+
+- Need for **larger ecosystem support**: More React peripheral libraries, more mature solutions, like state management (Redux/Zustand/Jotai), data fetching (TanStack Query), UI component libraries, etc.
+- Need for **server-side streaming SSR**: Next.js's App Router supports server-side streaming rendering, can progressively output HTML, improving first-screen load experience
+- Need for **Server Components**: React's server components allow executing code on the server, reducing client-side JavaScript bundle size
+- Need for **more flexible customization**: React only provides core functionality, more often requiring your own technical choices, suitable for teams that like controlling everything
+
+Vue's advantages:
+
+- Rapid development iterations, teams wanting less boilerplate code
+- High performance requirements, wanting to reduce unnecessary renders
+- Prefer template syntax over JSX
+- Want more "batteries included" solutions from the framework (Vue Router, Pinia are officially recommended)
+
+**Important clarification**: This doesn't mean Vue can't do complex projects, but that React's ecosystem is larger and has more options in certain specific scenarios (like super-large legacy system migrations, projects requiring integration with many third-party libraries).
+
+### Q5: Will Vue 4 introduce something like Fiber?
+
+No official news currently. Vue 4's roadmap mainly includes:
+
+- Better TypeScript support
+- Continue optimizing reactivity system
+- Vapor mode (a new compilation strategy)
+
+Vapor mode deserves special attention: it borrows Solid's thinking, allowing Vue to generate more efficient code at compile time. If successful, Vue's performance will reach another level.
+
+## Chapter 9: Summary and Reflections
+
+### 9.1 Core Points Review
+
+1. **Fiber solves "rendering tasks too heavy causing main thread blocking."** React solves this by splitting tasks into small pieces, adding to priority queues, allowing interruption and resumption.
+
+2. **Vue doesn't need Fiber because Vue doesn't need to solve "rendering tasks too heavy" at all.** Reactive tracking and precise updates make Vue's updates inherently fast, naturally not needing interruption.
+
+3. **The two approaches represent different optimization directions**: React optimizes in the "rendering" phase, Vue optimizes in the "data change" phase.
+
+4. **No absolute pros and cons**: React's approach is more universal, Vue's approach is more efficient. Choice depends on specific scenarios and team preferences.
+
+### 9.2 Insights from Architecture Choice
+
+Technology selection isn't about who is more "advanced," but who better fits your scenario.
+
+Fiber architecture allows React to support advanced features like Suspense and concurrent mode, which are indeed valuable in certain scenarios. If you need to build a complex, interaction-intensive application, these React capabilities might be exactly what you need.
+
+Both approaches have trade-offs, there's no absolute superiority or inferiority.
+
+React needs extra memory to store Fiber nodes and scheduling information, but换来的是可中断渲染和并发模式的能力。Vue's reactivity tracking also needs memory to store dependency relationships, but Vue 3 uses Proxy for extensive optimizations, actual memory usage is comparable to or even smaller than React's. For the vast majority of applications, this memory difference is negligible.
+
+Truly memory-constrained scenarios (like super-large single-page applications) require careful optimization regardless of framework choice, not simply blaming the framework itself.
+
+### 9.3 Advice for Developers
+
+As frontend developers, understanding the differences between these two architectures isn't about "taking sides," but for:
+
+1. **Better understanding the framework you're using.** Knowing why the framework is designed this way helps locate problems faster when issues arise.
+
+2. **Making wiser decisions in technology selection.** Choose suitable tools based on project requirements.
+
+3. **Broadening technical perspective.** Even if you use React, understanding Vue's approach is valuable; and vice versa.
+
+Finally, don't be led by frameworks. Frameworks are just tools; what truly matters is your problem-solving ability.

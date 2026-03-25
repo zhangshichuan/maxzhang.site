@@ -1,0 +1,1402 @@
+---
+title: '为什么 Vue 不需要 React 的 Fiber 架构？'
+summary: '深入解析 Vue 的响应式系统为何不需要 Fiber 架构，涵盖 Push 与 Pull 模式、虚拟 DOM 差异、React 与 Vue 的核心架构区别。'
+category: 'Frontend'
+tags: ['Vue', 'React', 'Fiber', '响应式', '虚拟 DOM']
+author: 'Max Zhang'
+date: '2026-03-25'
+---
+
+## 前言
+
+有个朋友最近去面试，面试官问他："Vue 3 已经出来这么久了，你觉得它和 React 相比，有什么核心优势？"
+
+他想都没想就说："Vue 不需要像 React 那样搞 Fiber 架构，所以实现更简单，性能也不差。"
+
+面试官又问："那你知道 React 为什么需要 Fiber 吗？Vue 为什么又不需要？"
+
+他当场就卡住了。
+
+你是不是也遇到过类似的问题？网上搜了一圈，要么说得太浅，要么全是源码级别的实现细节。今天这篇文章，就是要把这个问题讲透——不仅让你知道"是什么"，更要让你理解"为什么"。
+
+## 第一章：从一个问题开始
+
+### 1.1 想象你在厨房做菜
+
+假设你是一个厨师，正在同时做三道菜：炒青菜、炖汤、煎牛排。
+
+**第一种方式（React 的老路子）**：你把青菜下锅，开始炒，中途不能停，必须等青菜完全出锅，才能去处理汤和牛排。如果青菜需要 5 分钟，你就得在这 5 分钟里一直守着锅，什么都不能干。
+
+**第二种方式（Vue 的方式）**：你把青菜下锅，炒 30 秒，翻面，再炒 30 秒，然后去看一眼汤要不要加水，顺手把牛排翻个面。几秒钟的切换，让你同时照顾三道菜。
+
+第一种方式的问题是：如果某道菜特别复杂，需要 10 分钟，你就只能干等着。第二种方式虽然每次切换有一点点开销，但整体效率反而更高。
+
+React 的 Fiber 架构，就是为了解决"长时间任务阻塞"这个问题。而 Vue 用的是完全不同的思路，所以压根不需要这个解决方案。
+
+### 1.2 什么是"主线程阻塞"？
+
+在说 Fiber 之前，必须先理解一个前端开发的基本概念：主线程。
+
+浏览器里有个东西叫"主线程"（Main Thread），你可以把它想象成一个大堂经理。大堂经理很忙，要处理各种事情：用户点击按钮、输入文字、滚动页面、渲染动画……所有这些"请求"都排着队，等着大堂经理一个一个处理。
+
+正常情况下，每个请求的处理时间很短，你感觉不到排队。比如点击一个按钮，响应可能只需要几毫秒。但当页面变得复杂，比如有一个巨大的列表要渲染，大堂经理就可能忙不过来，其他请求就得等着。
+
+等着等着，你就会感觉页面"卡了"——点击没反应、滚动不流畅、输入延迟。这种现象，就叫"主线程阻塞"。
+
+React 早期版本就面临这个问题：当页面状态变化需要重新渲染时，React 会一次性把所有工作做完，中途不休息。如果页面很复杂，这个"不休息"可能持续几百毫秒，用户就能明显感觉到卡顿。
+
+Fiber 架构的出现，就是为了解决这个问题。
+
+## 第二章：React Fiber 是什么？
+
+### 2.1 Fiber 的诞生背景
+
+2017 年，React 团队发布了一个重要提案，名叫"Reconciliation"（中文翻译叫"协调"）。这个提案的核心内容，就是后来被称为 Fiber 的新架构。
+
+为什么叫"Fiber"？Fiber 的意思是"纤维"，一种很细、可以无限细分的东西。React 团队用这个词，是想表达：把渲染工作拆分成很小的任务单元，每个单元都可以被中断和恢复。
+
+### 2.2 Fiber 的核心思想
+
+Fiber 架构的核心是三个概念：**时间切片**、**优先级队列**、**可中断渲染**。
+
+**时间切片**是什么意思？就好比你把一个小时的电视剧，切成无数个 30 秒的小片段。每个片段播完，你可以选择继续看下一个，也可以切到新闻频道看看有什么大事。
+
+React 把渲染工作切成很多小片段，每个片段只花几毫秒。每完成一个片段，React 就问问浏览器："有没有更紧急的事情要处理？比如用户点击了按钮？"
+
+如果有更紧急的事，React 就先把渲染放一，去处理紧急请求。等处理完了，再回来继续渲染。这就是"可中断渲染"。
+
+**优先级队列**是什么意思？就好比医院的急诊系统。普通病人挂号排队，但如果有急诊病人来了，护士会优先安排。React 也是这样：用户点击、输入这类"紧急请求"优先级高，可以打断正在进行的渲染工作。
+
+### 2.3 一个具体的例子
+
+想象一个电商网站，用户在浏览商品列表时，后端返回了几千条数据，前端需要渲染这个列表。
+
+在没有 Fiber 的年代，React 会这样做：
+
+```javascript
+// 伪代码，描述逻辑而非实际实现
+function renderProductList(products) {
+	// 把整个列表全部渲染完，中途不休息
+	return products.map((product) => <ProductCard key={product.id} data={product} />)
+	// 假设这个过程需要 500ms
+	// 在这 500ms 里，用户点击按钮会没反应
+}
+```
+
+有了 Fiber 之后，React 这样做：
+
+```javascript
+// Fiber 架构下的渲染方式
+function renderProductList(products) {
+	// 把渲染工作拆成很多小任务
+	const tasks = products.map((product, index) => createRenderTask(product, index))
+
+	// 每个任务只花 1-2ms
+	// 每完成一个任务，检查是否有紧急请求
+	// 如果用户点击了按钮，立即处理点击事件
+	// 处理完再回来继续渲染
+
+	scheduleWork(tasks, { priority: 'low' })
+}
+```
+
+这样，即使用户在列表渲染过程中点击了什么，也能得到即时响应。
+
+### 2.4 Suspense 和并发模式
+
+Fiber 架构还带来了两个重要的能力：**Suspense** 和**并发模式**（Concurrent Mode）。
+
+**Suspense** 解决的是"异步数据加载"的问题。传统写法里，你要写一堆 useEffect、loading 状态、错误处理。Suspense 允许你这样写：
+
+```jsx
+function ProductPage({ productId }) {
+	return (
+		<Suspense fallback={<LoadingSpinner />}>
+			{/* 这里可以"暂停"等待数据 */}
+			<ProductDetails id={productId} />
+			<RelatedProducts id={productId} />
+		</Suspense>
+	)
+}
+```
+
+这段代码的意思是："先显示 LoadingSpinner，等数据来了再显示具体内容。"更重要的是，如果用户中途离开了这个页面，React 可以"取消"还在等待的请求，节省资源。
+
+**并发模式**允许 React 同时准备多个版本的 UI。比如用户在搜索框输入文字，传统模式下每次输入都会触发一次渲染。并发模式下，React 可以"同时"准备多个搜索结果的版本，等确定最终要显示哪个的时候，直接切换过去，用户感觉不到任何延迟。
+
+### 2.5 并发模式详解：代码示例
+
+**并发模式解决什么问题？**
+
+想象一个场景：用户搜索一个关键词，后端要返回大量数据。没有并发模式时，用户在等待搜索结果的过程中，无法继续输入——因为 React 正在忙着用大量数据渲染 DOM。
+
+有了并发模式，React 可以"暂停"正在进行的渲染，去响应用户的输入。
+
+**startTransition：标记非紧急更新**
+
+```jsx
+import { useState, startTransition } from 'react'
+
+function SearchResults({ query }) {
+	const [results, setResults] = useState([])
+	const [isPending, setIsPending] = useState(false)
+
+	const handleSearch = (newQuery) => {
+		setIsPending(true)
+
+		// startTransition 标记这个更新是"非紧急的"
+		// 如果用户继续输入，React 可以中断这个更新
+		startTransition(() => {
+			fetchResults(newQuery).then((data) => {
+				setResults(data)
+				setIsPending(false)
+			})
+		})
+	}
+
+	return (
+		<div>
+			<input onChange={(e) => handleSearch(e.target.value)} />
+			{isPending ? <Spinner /> : null}
+			{results.map((r) => (
+				<ResultItem key={r.id} data={r} />
+			))}
+		</div>
+	)
+}
+```
+
+**useDeferredValue：延迟非关键值**
+
+```jsx
+import { useState, useDeferredValue } from 'react'
+
+function SearchPage() {
+	const [query, setQuery] = useState('')
+
+	// useDeferredValue 创建一个"延迟版本"的值
+	// query 是即时更新的（用户输入）
+	// deferredQuery 是延迟更新的（渲染用）
+	const deferredQuery = useDeferredValue(query)
+
+	return (
+		<div>
+			<input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索..." />
+			{/* 列表使用延迟值，即使渲染慢也不会阻塞输入 */}
+			<SlowList text={deferredQuery} />
+		</div>
+	)
+}
+```
+
+**并发模式的核心价值**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     并发模式的价值                                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  场景：用户搜索 "react tutorial"                                   │
+│                                                                  │
+│  没有并发模式：                                                   │
+│  1. 用户输入 "r" → React 开始渲染 "r" 的结果（1000条）          │
+│  2. 用户继续输入 "re" → 输入框卡住！正在渲染                      │
+│  3. 用户继续输入 "rea" → 还在卡住！                               │
+│  4. "r" 渲染完成                                                  │
+│  5. 用户输入 "rea" → 开始渲染 "rea" 的结果                        │
+│  6. ... 重复这个过程                                              │
+│                                                                  │
+│  有并发模式：                                                     │
+│  1. 用户输入 "r" → React 标记这个渲染为"可中断"                  │
+│  2. 用户继续输入 "re" → React 暂停 "r" 的渲染，响应输入          │
+│  3. 用户继续输入 "rea" → 继续响应，不卡顿                         │
+│  4. 用户停止输入                                                  │
+│  5. React 完成 "rea" 的最终渲染                                  │
+│                                                                  │
+│  结果：输入始终流畅，用户体验更好                                  │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 2.6 React 19：编译器自动优化
+
+到了 React 19，一个重大更新是**编译器自动优化**（React Compiler）。之前你要手动写 useMemo、useCallback 来避免不必要的渲染，React 19 的编译器会**自动帮你做这些优化**。
+
+**以前的写法（React 17/18）：**
+
+```jsx
+import { useMemo, useCallback } from 'react'
+
+function ProductList({ products, onSelect }) {
+	// 手动缓存计算结果
+	const sortedProducts = useMemo(() => {
+		return [...products].sort((a, b) => b.price - a.price)
+	}, [products])
+
+	// 手动缓存回调函数
+	const handleSelect = useCallback(
+		(product) => {
+			onSelect(product)
+		},
+		[onSelect],
+	)
+
+	return (
+		<div>
+			{sortedProducts.map((product) => (
+				<ProductItem key={product.id} product={product} onSelect={handleSelect} />
+			))}
+		</div>
+	)
+}
+```
+
+**React 19 的写法（自动优化）：**
+
+```jsx
+function ProductList({ products, onSelect }) {
+	// 不需要 useMemo！编译器会自动分析并缓存
+	const sortedProducts = [...products].sort((a, b) => b.price - a.price)
+
+	// 不需要 useCallback！编译器会自动分析并缓存
+	const handleSelect = (product) => {
+		onSelect(product)
+	}
+
+	return (
+		<div>
+			{sortedProducts.map((product) => (
+				<ProductItem key={product.id} product={product} onSelect={handleSelect} />
+			))}
+		</div>
+	)
+}
+```
+
+**编译器是怎么工作的？**
+
+React Compiler 会分析你的代码，找出哪些值"应该"被缓存。它遵循几个简单规则：
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                  React Compiler 自动优化规则                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  规则一：如果一个变量的值来自 props 或 state，                      │
+│         且没有在当前组件中被修改，编译器会缓存它                     │
+│                                                                  │
+│  规则二：如果一个函数的返回值只依赖于 props 或 state，              │
+│         且没有副作用，编译器会缓存这个函数                         │
+│                                                                  │
+│  规则三：遵守 React 的规则（不修改 state、不使用裸 DOM 操作）       │
+│                                                                  │
+│  只要你遵守这些规则，编译器就能安全地自动优化                       │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**这对 Vue 意味着什么？**
+
+Vue 从一开始就有编译时优化（模板编译），但 Vue 的优化是"静态分析"——编译器在构建时分析模板，找出静态部分和动态部分。
+
+React Compiler 的思路不同：它是"运行时行为分析"——编译器分析的是 JavaScript 代码的逻辑，找出可以安全缓存的值。
+
+两种思路各有优势：
+
+- Vue 的编译时优化：更快，产物更小，因为优化结果在构建时就确定了
+- React Compiler：更灵活，能优化更复杂的逻辑，比如条件渲染中的计算
+
+不过 Vue 也在进化——Vue 3.4+ 引入了更激进的编译优化（Ref 响应性转换等），两者差距在缩小。
+
+## 第三章：Vue 的响应式系统
+
+### 3.1 换个思路解决问题
+
+说完 React，再来看 Vue。你可能会问：Vue 是怎么解决主线程阻塞问题的？
+
+答案是：Vue 压根不把这当成问题。
+
+这不是说 Vue 不关心性能。恰恰相反，Vue 的性能优化策略和 React 完全不同。Vue 选择了一条更难走、但效果更好的路：**从源头减少不必要的渲染工作**。
+
+React 的思路是："渲染工作可能会阻塞主线程，所以我们让它可以中断。"Vue 的思路是："让渲染工作足够快，快到不需要中断。"
+
+### 3.2 Vue 的响应式原理
+
+要理解 Vue 为什么不需要 Fiber，首先要理解 Vue 的响应式系统。
+
+Vue 2 时代，Vue 使用了 ES5 的 Object.defineProperty 来实现响应式。你可以把它理解成一种"监控器"——当某个变量的值发生变化时，监控器会立即通知所有"关心"这个变量的地方。
+
+```javascript
+// Vue 2 的响应式原理（简化版）
+function reactive(obj) {
+	// 对每个属性设置监控
+	Object.keys(obj).forEach((key) => {
+		let value = obj[key]
+
+		Object.defineProperty(obj, key, {
+			get() {
+				// 有人读取这个属性了，记录下来
+				track(key)
+				return value
+			},
+			set(newValue) {
+				value = newValue
+				// 属性值变了，通知所有依赖这个属性的地方
+				trigger(key)
+			},
+		})
+	})
+
+	return obj
+}
+
+// 使用示例
+const state = reactive({
+	count: 0,
+	message: 'hello',
+})
+
+// 当 count 变化时，只有依赖 count 的地方会更新
+state.count = 1 // 触发更新
+```
+
+Vue 3 升级到了 Proxy，这是 JavaScript 的原生特性，功能更强大：
+
+```javascript
+// Vue 3 的响应式原理（简化版）
+function reactive(obj) {
+	return new Proxy(obj, {
+		get(target, key) {
+			// 收集依赖
+			track(target, key)
+			return Reflect.get(target, key)
+		},
+		set(target, key, value) {
+			const result = Reflect.set(target, key, value)
+			// 触发更新
+			trigger(target, key)
+			return result
+		},
+	})
+}
+
+// Vue 3 还支持 ref，处理基本类型
+function ref(value) {
+	return {
+		get value() {
+			track(this, 'value')
+			return value
+		},
+		set value(newValue) {
+			value = newValue
+			trigger(this, 'value')
+		},
+	}
+}
+```
+
+### 3.3 依赖追踪和精准更新
+
+这是理解 Vue 不需要 Fiber 的关键。
+
+Vue 的响应式系统会精确记录"哪个组件依赖哪个数据"。当某个数据变化时，Vue 只更新依赖这个数据的组件，而不是"整个页面"。
+
+```vue
+<template>
+	<!-- 只有 message 变化时，这个 div 才会更新 -->
+	<div>{{ message }}</div>
+
+	<!-- 只有 count 变化时，这个按钮的显示才会更新 -->
+	<button>{{ count }}</button>
+</template>
+
+<script setup>
+import { reactive } from 'vue'
+
+const state = reactive({
+	message: 'hello',
+	count: 0,
+})
+
+// 修改 message
+state.message = 'world'
+// Vue 知道只有显示 message 的地方需要更新
+// 显示 count 的地方完全不受影响
+
+// 修改 count
+state.count = 1
+// Vue 知道只有显示 count 的地方需要更新
+// 显示 message 的地方完全不受影响
+</script>
+```
+
+这种"精准打击"的能力，让 Vue 的更新成本天然就很低。即使一个页面有 100 个组件，但如果只有 2 个组件依赖某个变化的数据，Vue 也只会更新这 2 个组件，而不是全部 100 个。
+
+### 3.4 编译时优化
+
+Vue 的另一个秘密武器是**模板编译优化**。
+
+Vue 的模板不是运行时解析的，而是提前编译好的。编译器会分析模板，找出静态内容（不会变化的部分）和动态内容（可能会变化的部分）。
+
+```vue
+<template>
+	<!-- 静态内容：编译时就知道这段 HTML 结构不会变 -->
+	<div class="container">
+		<h1>商品列表</h1>
+
+		<!-- 动态内容：Vue 会精确追踪这个 for 循环 -->
+		<div v-for="product in products" :key="product.id">{{ product.name }} - {{ product.price }}</div>
+	</div>
+</template>
+```
+
+编译后，Vue 会生成类似这样的代码：
+
+```javascript
+// 编译后的 render 函数（简化版）
+function render(ctx) {
+	// 静态部分直接返回，不需要重新创建
+	return h('div', { class: 'container' }, [
+		h('h1', '商品列表'),
+		// 动态部分才会被追踪
+		ctx.products.map((product) => h('div', { key: product.id }, [product.name, ' - ', product.price])),
+	])
+}
+```
+
+静态内容只创建一次，之后每次更新都跳过这部分的处理。这就是为什么 Vue 在很多场景下比 React 快的原因之一。
+
+## 第四章：两种架构的本质区别
+
+### 4.1 虚拟 DOM 的不同使用方式
+
+React 和 Vue 都用虚拟 DOM，但用法有本质区别。
+
+**React 的虚拟 DOM 是"暴力对比"**。当状态变化时，React 会创建一个新的虚拟 DOM 树，和旧的树进行完整的对比（Diff）。这种对比的时间复杂度是 O(n³)，但 React 通过一些假设（"两个不同类型的元素会产生不同的树"）把复杂度降到了 O(n)。
+
+```javascript
+// React 的更新流程
+function updateState(newState) {
+	// 1. 创建新的虚拟 DOM
+	const newVirtualDOM = createVirtualDOM(newState)
+
+	// 2. 和旧的虚拟 DOM 对比（Diff）
+	const patches = diff(oldVirtualDOM, newVirtualDOM)
+
+	// 3. 把差异应用到真实 DOM
+	applyPatches(patches)
+}
+```
+
+**Vue 的虚拟 DOM 是"精准打击"**。由于 Vue 知道哪个数据变了、哪个组件依赖这个数据，所以可以直接定位到需要更新的地方，不需要完整的 Diff。
+
+```javascript
+// Vue 的更新流程（简化版）
+function updateState(key, newValue) {
+	// 1. 通知依赖这个数据的组件
+	const subscribers = getSubscribers(key)
+
+	// 2. 只更新依赖这个数据的组件
+	subscribers.forEach((component) => {
+		// 对于每个组件，找出需要更新的部分
+		const patches = getComponentPatches(component, key, newValue)
+		applyPatches(patches)
+	})
+
+	// 3. 全局 Diff（只在必要时）
+	// 只有当 Vue 无法精确追踪时，才进行完整 Diff
+}
+```
+
+### 4.2 更新粒度的差异
+
+React 的最小更新单位是**组件**。当一个组件的状态变化时，整个组件都会重新渲染。React 靠虚拟 DOM 的 Diff 来找出需要变更的具体 DOM 节点。
+
+Vue 的最小更新单位是**组件内部的精确位置**。当组件的某个响应式数据变化时，Vue 直接知道哪个模板位置需要更新，不需要额外的 Diff。
+
+```jsx
+// React：组件级别更新
+function Counter() {
+	const [count, setCount] = useState(0)
+
+	return (
+		<div>
+			<span>{count}</span>
+			{/* 即使只有 count 变了，整个 Counter 组件也会重新渲染 */}
+			<ExpensiveComponent /> {/* 这里可能会不必要地重新渲染 */}
+		</div>
+	)
+}
+```
+
+```vue
+<!-- Vue：精准更新 -->
+<template>
+	<div>
+		<span>{{ count }}</span>
+		<!-- 只有 {{ count }} 这里会更新 -->
+		<ExpensiveComponent />
+		<!-- 这个组件完全不会重新渲染 -->
+	</div>
+</template>
+
+<script setup>
+import { reactive } from 'vue'
+const count = reactive(0)
+</script>
+```
+
+当然，React 后来也加入了 useMemo、useCallback、React.memo 这些工具来减少不必要的渲染。
+
+到了 React 19，更是推出了编译器自动优化（React Compiler），可以自动分析代码并插入这些优化，开发者不需要手动编写 useMemo/useCallback 了。这缩小了 React 和 Vue 在这方面的心智负担差距。
+
+### 4.3 响应式 vs 虚拟 DOM
+
+这是理解两者区别的核心：
+
+| 特性         | React                                      | Vue                                |
+| ------------ | ------------------------------------------ | ---------------------------------- |
+| 数据变化感知 | 依赖 setState 调用，React 需要自己找出变化 | 依赖 Proxy/defineProperty 自动追踪 |
+| 更新范围     | 整组件重新渲染，靠 Diff 找差异             | 精确追踪依赖，按需更新             |
+| 优化方式     | 虚拟 DOM Diff + 编译器自动优化（React 19） | 响应式追踪 + 编译时优化            |
+
+React 的问题是：即使有 Diff 算法，对比两个复杂组件树仍然有成本。而且 Diff 是在 JavaScript 执行阶段进行的，会占用主线程时间。
+
+Vue 的思路是：与其在渲染阶段努力优化，不如在数据变化阶段就精确控制。响应式系统已经知道哪里需要更新，干嘛还要 Diff？
+
+### 4.4 Pull 模式 vs Push 模式
+
+这是理解两者响应式系统本质区别的关键。
+
+**Pull 模式（React）：组件主动"拉取"自己需要的数据**
+
+React 用的是"拉取"模式。想象公司里的一个场景：
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Pull 模式（React）                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  场景：公司公告栏（React 的状态）更新了                             │
+│                                                                  │
+│  小明（组件A）：去公告栏看了一眼，发现有更新                        │
+│  小红（组件B）：去公告栏看了一眼，发现有更新                       │
+│  小李（组件C）：去公告栏看了一眼，发现没更新（白跑了）             │
+│                                                                  │
+│  特点：组件必须自己去"查看"才知道数据变没变                        │
+│  问题：不管变没变，每个组件都得跑一趟                               │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+当 state 变化时，React "不知道"哪些组件需要更新。所以它会通知所有组件："你们重新渲染一下，自己检查需不需要更新 DOM"。每个组件都得跑一趟 Diff，自己判断是否需要更新。
+
+**Push 模式（Vue）：系统主动"推送"给需要的组件**
+
+Vue 用的是"推送"模式。同样的场景：
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Push 模式（Vue）                              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  场景：公司公告栏（响应式数据）更新了                              │
+│                                                                  │
+│  行政（Vue）："公告栏更新了！"                                    │
+│  行政 → 小明（组件A）："公告栏更新了，你看看"（小明需要看公告栏）   │
+│  行政 → 小红（组件B）："公告栏更新了，你看看"（小红需要看公告栏）   │
+│  小李（组件C）：没收到通知（因为他不需要看公告栏）                  │
+│                                                                  │
+│  特点：只有真正需要知道的组件才会收到通知                           │
+│  好处：不需要的人完全不知道变化，节省开销                          │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+当响应式数据变化时，Vue 精确知道哪些组件依赖这个数据，直接"推送"更新给需要的组件。其他组件完全不知道数据变了。
+
+**对比总结**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      Pull vs Push 对比                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   Pull 模式（React）           Push 模式（Vue）                   │
+│   ─────────────────           ──────────────────                │
+│                                                                  │
+│   数据变化                        数据变化                         │
+│      │                              │                            │
+│      ▼                              ▼                            │
+│   "有人变了！"                  精确找到依赖者                    │
+│      │                              │                            │
+│      ▼                              ▼                            │
+│   所有组件重新渲染              只通知需要的组件                   │
+│      │                              │                            │
+│      │ 靠 diff/memo              │ 精准打击                      │
+│      ▼ 决定谁更新                ▼ 直接更新                      │
+│                                                                  │
+│   优点：实现简单                   优点：效率高                    │
+│   缺点：可能多做无用功             缺点：追踪系统复杂               │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 4.5 React 为什么需要不可变性？
+
+你可能会问：为什么 React 强制要求不可变性？这和函数式编程有关系吗？
+
+**原因一：React 通过引用比较检测变化**
+
+```javascript
+// React 内部大概是这样的
+if (Object.is(newState, oldState)) {
+	// 数据没变，不更新
+} else {
+	// 数据变了，触发 rerender
+}
+```
+
+所以如果你直接修改对象：
+
+```javascript
+// ❌ 违反不可变性（直接修改）
+const user = { name: '张三', age: 25 }
+user.age = 26 // 对象引用没变！
+
+// React 比较引用：Object.is(user, user) → true
+// React 以为数据没变，不会触发更新！
+
+// ✅ 遵循不可变性（返回新对象）
+const user = { name: '张三', age: 25 }
+const newUser = { ...user, age: 26 } // 新引用！
+
+// React 比较引用：Object.is(newUser, user) → false
+// React 发现数据变了，触发更新
+```
+
+**原因二：函数式编程的纯函数思想**
+
+```javascript
+// 纯函数：输入相同，输出一定相同，不产生副作用
+// React 的 setState 期望你返回一个新状态，而不是修改旧状态
+
+// ❌ 不纯（修改了外部状态）
+function updateUserAge(user, newAge) {
+	user.age = newAge // 修改了传入的参数！
+	return user
+}
+
+// ✅ 纯（不修改输入，返回新值）
+function updateUserAge(user, newAge) {
+	return { ...user, age: newAge } // 返回新对象
+}
+```
+
+**原因三：支持撤销/重做和时间旅行**
+
+```javascript
+// 不可变性天然支持"历史记录"
+const history = []
+
+let state = { count: 0 }
+
+// 每次都是新对象，旧对象保留
+history.push(state)
+state = { ...state, count: 1 } // 新对象
+history.push(state)
+state = { ...state, count: 2 } // 新对象
+history.push(state)
+
+// 可以随时回到某个历史状态
+console.log(history)
+// [{ count: 0 }, { count: 1 }, { count: 2 }]
+//          ↑            ↑            ↑
+//        index 0      index 1      index 2
+
+// 如果是可变对象，你只能得到最终状态
+```
+
+**生活中的类比**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     不可变性的类比                                │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  可变对象就像写在纸上的笔记：                                      │
+│  - 你可以直接涂改                                                 │
+│  - 但你不知道原来的内容是什么                                      │
+│  - 无法撤销                                                       │
+│                                                                  │
+│  不可变对象就像微信消息：                                         │
+│  - 每条消息是独立的                                               │
+│  - 新消息是新的，旧消息还在                                        │
+│  - 你可以随时回看历史                                             │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 4.6 React 的状态管理陷阱
+
+#### 问题背景
+
+很多人在学习 React 状态管理时，会产生这样一个困惑：
+
+> "我用 Zustand/Redux 存了一个大 state，在根组件声明。子组件层层往下传props。如果我在第 5 层的子组件更新了这个大 state 里的一个小属性，会不会导致从根组件开始，整棵树都重新渲染？"
+
+更进一步，有人会想：
+
+> "既然 state 变化会触发 rerender，那我把所有 state 都放在根组件，往下传 props，岂不是改一个小数据就要重新渲染整个页面？太可怕了！"
+
+带着这个困惑，很多人会：
+
+- 把 state 分散到各个子组件里（导致状态分散，难以管理）
+- 过度使用 React.memo 来"优化"（反而增加复杂度）
+- 对 React 的性能产生误解
+
+#### 核心答案
+
+**实际上，React 并不会"重新渲染整棵树"。**
+
+即使你用 Zustand 存储大 state，在第 5 层子组件更新了一个深层状态，React 的 rerender 是**组件级别**的，不是"整棵树"：
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│        React 更新流程（关键点：组件级别 diff）                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  场景：你在 Comments 组件里更新了一条评论                         │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │                    App (store 根节点)                     │  │
+│  │                        │                                  │  │
+│  │   ┌────────────────────┼────────────────────┐            │  │
+│  │   │                    │                    │             │  │
+│  │   ▼                    ▼                    ▼             │  │
+│  │ Header              Content             Footer            │  │
+│  │                      │                                   │  │
+│  │                      ▼                                   │  │
+│  │              ┌───────┴───────┐                         │  │
+│  │              │               │                          │  │
+│  │              ▼               ▼                          │  │
+│  │           Sidebar      PostList                        │  │
+│  │                          │                              │  │
+│  │                          ▼                              │  │
+│  │                     Comments ◄── 这里更新了              │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  更新流程：                                                      │
+│  1. Comments 里调用了 setComment()，comments 数据变了           │
+│         │                                                       │
+│         ▼                                                       │
+│  2. Comments 组件 rerender（因为它用了 useStore）               │
+│         │                                                       │
+│         │ 这个组件 rerender 会做什么？                           │
+│         ▼                                                       │
+│  3. Comments 的 render 函数执行，返回新的虚拟 DOM                │
+│         │                                                       │
+│         │ 对比新旧虚拟 DOM（diff）                              │
+│         ▼                                                       │
+│  4. 只有变化的 DOM 节点被更新                                   │
+│                                                                  │
+│  ★ Header 没有 rerender，因为它用的 store 内容没变化             │
+│  ★ Content 没有 rerender，因为它没有直接依赖 comments           │
+│  ★ React diff 发生在每个组件内部，不是"整棵树"                  │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### 什么时候会"渲染太多"？
+
+虽然 React 不会渲染整棵树，但确实可能渲染"太多"组件。问题出在 **selector 的写法**：
+
+```javascript
+// ❌ 不好：选了太多东西
+function PostItem() {
+	// 这个写法会订阅整个 store！
+	const { posts, comments, user, settings, notifications } = useStore()
+
+	// 任何一项变化，这个组件都会 rerender：
+	// posts 变化 → rerender
+	// comments 变化 → rerender
+	// user 变化 → rerender
+	// settings 变化 → rerender
+	// notifications 变化 → rerender
+	// 即使这个组件根本不用这些数据！
+}
+
+// ✅ 好：精确选择需要的
+function PostItem({ postId }) {
+	// 只订阅需要的 post
+	const post = useStore((state) => state.posts.find((p) => p.id === postId))
+	const author = useStore((state) => state.users[post?.authorId])
+
+	// 只有这个 post 变化时，才 rerender
+	// 其他数据变化不会触发这个组件 rerender
+}
+
+// ✅ 更好：用 shallow 比较
+import { shallow } from 'zustand/shallow'
+function PostItem({ postId }) {
+	const [post, author] = useStore(
+		(state) => [state.posts.find((p) => p.id === postId), state.users[post?.authorId]],
+		shallow, // 只有返回的数组引用都变了才 rerender
+	)
+}
+```
+
+#### 总结
+
+- ❌ "从根组件就会重新渲染整个树"——不完全对，是组件级别 rerender
+- ❌ "state 放根组件往下传很危险"——不对，React diff 会处理
+- ✅ "selector 要精确"——完全对，只选需要的数据订阅
+- ✅ "按功能拆分 store"——推荐，但不是必须
+
+## 第五章：Vue 不需要 Fiber 的真正原因
+
+### 5.1 Vue 的更新已经足够快
+
+说到底，Fiber 解决的是"渲染任务太重导致主线程阻塞"的问题。但 Vue 通过响应式追踪和精准更新，把"渲染任务"本身变得很轻，轻到根本不需要中断。
+
+用一个生活场景来类比：
+
+React Fiber 就像医院的"急诊优先"制度——因为病人太多，普通挂号要等很久，所以让急诊病人可以插队。这是解决"等待时间太长"的问题。
+
+Vue 就像优化了整个医院的流程——让挂号本身就很快，每个病人等待时间都很短，根本不需要急诊优先制度。
+
+### 5.2 Vue 的异步批量更新
+
+Vue 也支持异步更新，但实现方式和 Fiber 不同。
+
+```javascript
+// Vue 的异步批量更新
+const state = reactive({ count: 0 })
+
+// 连续修改，只触发一次更新
+state.count++ // 触发更新
+state.count++ // 不触发（已经在队列中）
+state.count++ // 不触发（已经在队列中）
+
+// Vue 会在下一个"tick"统一更新 DOM
+// 用户看到的是 count 直接变成 3，而不是 0->1->2->3
+```
+
+这种批量更新机制让 Vue 可以把多次数据变化合并成一次 DOM 操作。更重要的是，这个过程是自动的，不需要开发者手动调用什么 API。
+
+### 5.3 Vue 3 的改进
+
+Vue 3 在响应式系统上做了很多改进，进一步缩小了 Fiber 的需求空间。
+
+**更好的 Proxy 实现**：Vue 3 使用 Proxy 替代了 Object.defineProperty，这带来了几个优势：
+
+```javascript
+// Object.defineProperty 的局限性
+const obj1 = {}
+Object.defineProperty(obj1, 'a', { value: 1 }) // 有效
+// 但如果 obj1 原本没有属性 'b'，后面新增的属性不会是响应式的
+
+// Proxy 的优势
+const obj2 = reactive({})
+obj2.newProperty = 'hello' // 自动变成响应式的
+```
+
+**更细粒度的响应式追踪**：Vue 3 可以追踪到对象属性的访问路径，而不是简单的"整个对象"：
+
+```javascript
+const state = reactive({
+	user: {
+		name: '张三',
+		address: {
+			city: '北京',
+		},
+	},
+})
+
+// Vue 3 可以精确追踪：
+// - 只有 name 变化时，依赖 name 的地方更新
+// - 只有 city 变化时，依赖 city 的地方更新
+// - 变化完全隔离，互不影响
+```
+
+### 5.4 什么时候 Vue 也可能需要类似 Fiber 的机制？
+
+公平地说，Vue 在某些极端场景下也可能会遇到性能问题，但解决方案不是 Fiber，而是其他手段：
+
+```javascript
+// 场景：超大数据列表的渲染
+// 解决方案：虚拟列表（virtual scroll）
+import { useVirtualList } from 'vue-use'
+
+const { list, containerProps, wrapperProps } = useVirtualList(
+	items, // 可能有 100 万条数据
+	{
+		itemHeight: 50,
+		overscan: 10, // 预渲染多出来的条目数
+	},
+)
+```
+
+虚拟列表只渲染用户能看到的部分（比如屏幕能容纳的 20 条），而不是一次性渲染 100 万条。这从根本上解决了大数据量渲染的问题。
+
+另一个解决方案是使用 `v-memo` 指令缓存模板的某个部分：
+
+```vue
+<template>
+	<div v-for="item in list" :key="item.id">
+		<!-- 只有 item.name 或 item.count 变化时，这个 div 才重新渲染 -->
+		<span v-memo="[item.name, item.count]"> {{ item.name }}: {{ item.count }} </span>
+	</div>
+</template>
+```
+
+## 第六章：架构对比图解
+
+### 6.1 React Fiber 的工作流程
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     React Fiber 工作流程                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  用户操作 (点击、输入、滚动)                                        │
+│         │                                                        │
+│         ▼                                                        │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                   调度器 (Scheduler)                      │   │
+│  │                                                          │   │
+│  │   把渲染任务切分成小片段，放进优先级队列                   │   │
+│  │                                                          │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│         │                                                        │
+│         ▼                                                        │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                   Fiber 树构建                            │   │
+│  │                                                          │   │
+│  │   每个组件创建对应的 Fiber 节点                           │   │
+│  │   节点记录了组件状态和子节点信息                          │   │
+│  │                                                          │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│         │                                                        │
+│         │ 如果有更高优先级的任务                               │
+│         │ (比如用户点击)                                       │
+│         ▼                                                        │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                   可中断渲染                              │   │
+│  │                                                          │   │
+│  │   暂停当前渲染，去处理紧急任务                             │   │
+│  │   处理完后回来，从断点继续                                 │   │
+│  │                                                          │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│         │                                                        │
+│         ▼                                                        │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                   Commit 阶段                             │   │
+│  │                                                          │   │
+│  │   把变更提交到真实 DOM                                    │   │
+│  │   这个阶段不能中断                                        │   │
+│  │                                                          │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 6.2 Vue 响应式更新流程
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Vue 响应式更新流程                             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  定义响应式数据                                                   │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ const state = reactive({ count: 0, name: '张三' })      │   │
+│  │                                                          │   │
+│  │ Vue 自动建立 "数据 → 组件" 的依赖映射                     │   │
+│  │ count 依赖 → [组件A的count显示, 组件B的计数器]            │   │
+│  │ name 依赖 → [组件C的名字显示]                             │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│         │                                                        │
+│         ▼                                                        │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                   数据变化触发                            │   │
+│  │                                                          │   │
+│  │ state.count = 1                                         │   │
+│  │   │                                                     │   │
+│  │   ▼                                                     │   │
+│  │ Proxy set trap 被调用                                    │   │
+│  │   │                                                     │   │
+│  │   ▼                                                     │   │
+│  │ trigger() 通知所有依赖这个数据的组件                      │   │
+│  │                                                          │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│         │                                                        │
+│         ▼                                                        │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                   组件更新（精准）                        │   │
+│  │                                                          │   │
+│  │   组件A: count 显示需要更新 ──────────► 更新 DOM         │   │
+│  │   组件B: 计数器需要更新 ────────────► 更新 DOM           │   │
+│  │   组件C: 不受影响（依赖 name，不依赖 count）              │   │
+│  │                                                          │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│         │                                                        │
+│         ▼                                                        │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                   批量更新 DOM                           │   │
+│  │                                                          │   │
+│  │   Vue 会把同一个 tick 内的多次更新合并成一次 DOM 操作    │   │
+│  │   用户看到的是最终状态，而不是中间状态                    │   │
+│  │                                                          │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 6.3 两种方案的核心区别
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     两种架构的核心区别                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   ┌─────────────────────┐       ┌─────────────────────┐        │
+│   │      React          │       │        Vue           │        │
+│   ├─────────────────────┤       ├─────────────────────┤        │
+│   │                     │       │                     │        │
+│   │  "暴力渲染 + 事后优化" │       │  "精准追踪 + 源头控制" │        │
+│   │                     │       │                     │        │
+│   │  状态变化            │       │  数据变化            │        │
+│   │     │                │       │     │              │        │
+│   │     ▼                │       │     ▼              │        │
+│   │  整组件重新渲染       │       │  精确找到依赖的组件  │        │
+│   │     │                │       │     │              │        │
+│   │     ▼                │       │     ▼              │        │
+│   │  虚拟 DOM Diff       │       │  直接更新需要的部分  │        │
+│   │     │                │       │     │              │        │
+│   │     ▼                │       │     ▼              │        │
+│   │  应用到真实 DOM       │       │  应用到真实 DOM     │        │
+│   │                     │       │                     │        │
+│   │  Fiber 解决的是：    │       │  压根不需要解决：    │        │
+│   │  "Diff 太慢怎么办"   │       │  "Diff 几乎不需要"   │        │
+│   │                     │       │                     │        │
+│   └─────────────────────┘       └─────────────────────┘        │
+│                                                                  │
+│   比喻：
+│   React 像大扫除：把所有家具都搬出来，
+│           擦干净再放回去，即使只有桌子脏了。
+│           Fiber 就是让你能中途休息喝口水。
+│
+│   Vue 像定点清洁：哪里脏了擦哪里，
+│           脏的地方本来就不多，所以不需要休息。
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 第七章：实际场景对比
+
+### 7.1 场景一：表单输入
+
+**React 实现**：
+
+```jsx
+function SearchForm() {
+	const [query, setQuery] = useState('')
+	const [results, setResults] = useState([])
+
+	const handleChange = (e) => {
+		const value = e.target.value
+		setQuery(value)
+
+		// 如果要做实时搜索，这里会每次输入都触发搜索
+		// 有了 Fiber，可以在渲染搜索结果时被打断
+		search(value).then(setResults)
+	}
+
+	return (
+		<div>
+			<input value={query} onChange={handleChange} />
+			{/* 用户继续输入时，搜索结果的渲染可以被中断 */}
+			<SearchResults results={results} />
+		</div>
+	)
+}
+```
+
+**Vue 实现**：
+
+```vue
+<script setup>
+import { ref, watch } from 'vue'
+
+const query = ref('')
+const results = ref([])
+
+// Vue 的 watch 可以精确控制何时触发搜索
+// debounce 等优化也是顺手的
+watch(
+	query,
+	async (newQuery) => {
+		if (newQuery.length > 0) {
+			results.value = await search(newQuery)
+		}
+	},
+	{ debounce: 300 },
+) // 300ms 防抖
+</script>
+
+<template>
+	<div>
+		<input v-model="query" />
+		<!-- 只有 results 变化时才会更新 -->
+		<SearchResults :results="results" />
+	</div>
+</template>
+```
+
+### 7.2 场景二：大数据列表
+
+**React 实现**（需要配合虚拟列表）：
+
+```jsx
+import { FixedSizeList } from 'react-window'
+
+function BigList({ items }) {
+	return (
+		<FixedSizeList height={400} itemCount={items.length} itemSize={50} width="100%">
+			{({ index, style }) => <div style={style}>{items[index].name}</div>}
+		</FixedSizeList>
+	)
+}
+```
+
+**Vue 实现**（同样需要虚拟列表，但语法更简洁）：
+
+```vue
+<script setup>
+import { ref } from 'vue'
+import { useVirtualList } from '@vueuse/core'
+
+const items = ref(
+	Array.from({ length: 10000 }, (_, i) => ({
+		name: `Item ${i}`,
+	})),
+)
+
+const { list, containerProps, wrapperProps } = useVirtualList(items, {
+	itemHeight: 50,
+})
+</script>
+
+<template>
+	<div v-bind="containerProps" style="height: 400px; overflow: auto;">
+		<div v-bind="wrapperProps">
+			<div v-for="{ data, index } in list" :key="index">
+				{{ data.name }}
+			</div>
+		</div>
+	</div>
+</template>
+```
+
+### 7.3 场景三：复杂状态管理
+
+**React 实现**（React 18 写法，需要手动优化）：
+
+```jsx
+function Dashboard() {
+	const [user, setUser] = useState(null)
+	const [posts, setPosts] = useState([])
+	const [notifications, setNotifications] = useState([])
+
+	useEffect(() => {
+		fetchUser().then(setUser)
+		fetchPosts().then(setPosts)
+		fetchNotifications().then(setNotifications)
+	}, [])
+
+	// 每个 setter 都可能触发整组件重新渲染
+	// React 18 需要手动优化：
+	const updateUser = useCallback((newUser) => {
+		setUser(newUser)
+	}, [])
+
+	return (
+		<div>
+			<UserInfo user={user} onUpdate={updateUser} />
+			{/* 这里的 posts 变化不会导致 UserInfo 重新渲染 */}
+			{/* 前提是你用了 React.memo */}
+			<PostList posts={posts} />
+			<Notifications notifications={notifications} />
+		</div>
+	)
+}
+
+// React 18 需要手动包装子组件
+const UserInfo = React.memo(({ user, onUpdate }) => {
+	// ...
+})
+```
+
+**React 19 写法**（编译器自动优化，不需要手动写）：
+
+```jsx
+function Dashboard() {
+	const [user, setUser] = useState(null)
+	const [posts, setPosts] = useState([])
+	const [notifications, setNotifications] = useState([])
+
+	useEffect(() => {
+		fetchUser().then(setUser)
+		fetchPosts().then(setPosts)
+		fetchNotifications().then(setNotifications)
+	}, [])
+
+	// 不需要 useCallback！编译器自动优化
+	const updateUser = (newUser) => {
+		setUser(newUser)
+	}
+
+	return (
+		<div>
+			{/* 不需要 React.memo！编译器自动处理 */}
+			<UserInfo user={user} onUpdate={updateUser} />
+			<PostList posts={posts} />
+			<Notifications notifications={notifications} />
+		</div>
+	)
+}
+
+// 不需要手动包装
+const UserInfo = ({ user, onUpdate }) => {
+	// ...
+}
+```
+
+**Vue 实现**（自动优化）：
+
+```vue
+<script setup>
+import { reactive, toRefs } from 'vue'
+
+const state = reactive({
+	user: null,
+	posts: [],
+	notifications: [],
+})
+
+// toRefs 把响应式对象的每个属性转成独立的 ref
+// 这样解构后每个 ref 还是响应式的
+const { user, posts, notifications } = toRefs(state)
+
+onMounted(async () => {
+	state.user = await fetchUser()
+	state.posts = await fetchPosts()
+	state.notifications = await fetchNotifications()
+})
+
+// 子组件会自动精确依赖需要的数据
+// 不需要手动 memo（Vue 从一开始就有这个能力）
+</script>
+
+<template>
+	<div>
+		<!-- 只有 user 变化时，UserInfo 才更新 -->
+		<UserInfo :user="user" @update="updateUser" />
+
+		<!-- 只有 posts 变化时，PostList 才更新 -->
+		<PostList :posts="posts" />
+
+		<!-- 只有 notifications 变化时，Notifications 才更新 -->
+		<Notifications :notifications="notifications" />
+	</div>
+</template>
+```
+
+## 第八章：常见问题解答
+
+### Q1：Vue 3 的 Composition API 和 Fiber 有什么关系？
+
+没有任何关系。Composition API 是 Vue 3 推出的代码组织方式，让你更好地复用逻辑。Fiber 是 React 处理渲染任务的架构。两者解决的问题完全不同。
+
+Composition API 解决的问题是"逻辑复用"，比如多个组件都需要"获取用户数据并缓存"的功能，用 Composition API 可以抽成一个 `useUser` 函数。
+
+### Q2：Vue 将来会不会也引入 Fiber？
+
+Vue 核心团队多次表示"目前没有计划"。原因是 Vue 的响应式系统已经足够高效，不需要为了解决不存在的问题引入额外复杂性。
+
+但 Vue 确实有类似的探索：Vue 3.2 引入了 `v-memo`，允许你标记"这个模板片段只有在某些值变化时才更新"。这本质上是给开发者更多控制权，和 Fiber 的思路有一点点相似。
+
+### Q3：Svelte 和 Solid 是不是更高效？
+
+Svelte 和 Solid 代表了另一种思路：**编译时优化**。
+
+Svelte 在编译时就确定了每个数据变化会导致哪些 DOM 操作，运行时代码几乎不做 Diff。Solid 更是激进，几乎所有计算都在编译时完成。
+
+但这种极致优化也有代价：Svelte 的编译产物比较大，复杂场景下的调试也更困难。Vue 选择在运行时保留一定灵活性，平衡了性能和开发体验。
+
+### Q4：什么时候应该选择 React 而不是 Vue？
+
+这个问题的答案不在于"项目大小"，而在于**场景需求和生态**。
+
+React 的优势场景：
+
+- 需要**更大的生态系统支持**：React 周边库更多，解决方案更成熟，比如状态管理（Redux/Zustand/Jotai）、数据获取（TanStack Query）、UI 组件库等
+- 需要**服务端流渲染（Streaming SSR）**：Next.js 的 App Router 支持服务端流式渲染，可以逐步输出 HTML，提升首屏加载体验
+- 需要**Server Components**：React 的服务端组件允许在服务端执行代码，减少客户端 JavaScript 体积
+- 需要**更灵活的定制能力**：React 只提供核心功能，更多时候需要你自己做技术选型，适合喜欢掌控全局的团队
+
+Vue 的优势场景：
+
+- 快速开发迭代，团队希望减少样板代码
+- 对性能要求高，希望减少不必要的渲染
+- 更喜欢模板语法而不是 JSX
+- 希望框架提供更多"开箱即用"的方案（比如 Vue Router、Pinia 是官方推荐的）
+
+**重要澄清**：不是说 Vue 不能做复杂项目，而是说 React 的生态更庞大，某些特定场景（如超大型遗留系统迁移、需要大量第三方库集成）的选择会更多。
+
+### Q5：Vue 4 会不会引入类似 Fiber 的东西？
+
+目前没有任何官方消息。Vue 4 的路线图主要是：
+
+- 更好的 TypeScript 支持
+- 继续优化响应式系统
+- Vapor 模式（一种新的编译策略）
+
+Vapor 模式值得特别关注：它借鉴了 Solid 的思路，允许 Vue 在编译时生成更高效的代码。如果成功，Vue 的性能会更上一层楼。
+
+## 第九章：总结与思考
+
+### 9.1 核心要点回顾
+
+1. **Fiber 解决的是"渲染任务太重导致主线程阻塞"的问题**。React 通过把任务切分成小片段、加入优先级队列、允许中断和恢复来缓解这个问题。
+
+2. **Vue 不需要 Fiber，是因为 Vue 压根不需要解决"渲染任务太重"的问题**。响应式追踪和精准更新让 Vue 的更新本身就很快，天然不需要中断。
+
+3. **两种方案代表了不同的优化方向**：React 是在"渲染"阶段优化，Vue 是在"数据变化"阶段优化。
+
+4. **没有绝对的优劣**：React 的方案更通用，Vue 的方案更高效。选择哪个取决于你的具体场景和团队偏好。
+
+### 9.2 架构选择的启示
+
+技术选型不是比谁更"先进"，而是看谁更适合自己的场景。
+
+Fiber 架构让 React 可以支持 Suspense、并发模式这些高级特性，这些特性在某些场景下确实很有价值。如果你需要构建一个复杂的、交互密集的应用，React 的这些能力可能正是你需要的。
+
+两种方案各有取舍，不存在绝对的优劣。
+
+React 需要额外的内存来存储 Fiber 节点和调度信息，但换来的是可中断渲染和并发模式的能力。Vue 的响应式追踪虽然也需要内存存储依赖关系，但 Vue 3 使用 Proxy 做了大量优化，实际内存占用和 React 相当甚至更小。对于绝大多数应用来说，这点内存差异可以忽略不计。
+
+真正需要考虑内存的场景（比如超大型单页应用），无论用哪个框架都需要精心优化，而不是简单归咎于框架本身。
+
+### 9.3 给开发者的建议
+
+作为前端开发者，理解这两种架构的区别不是为了"站队"，而是为了：
+
+1. **更好地理解你正在使用的框架**。知道为什么框架这样设计，遇到问题时能更快定位。
+
+2. **在技术选型时做出更明智的决定**。根据项目需求选择合适的工具。
+
+3. **拓宽技术视野**。即使你用 React，也可以了解 Vue 的思路；反之亦然。
+
+最后，不要被框架牵着鼻子走。框架只是工具，真正重要的是你解决问题的能力。
