@@ -9,6 +9,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -89,6 +92,7 @@ jobs:
               --name maxzhang-site-container \
               --restart always \
               -p 3000:3000 \
+              -e DATABASE_URL=${{ secrets.DATABASE_URL }} \
               -v maxzhang-site-data:/app/data \
               maxzhang-site
 

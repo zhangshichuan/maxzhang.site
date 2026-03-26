@@ -6,9 +6,6 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# 文件数据库直接约定就行，不用通过环境变量传递路径了，毕竟这个路径是固定的，且不需要暴露给用户配置
-ENV DATABASE_URL="file:/app/data/default.db"
-
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
