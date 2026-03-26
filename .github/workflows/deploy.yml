@@ -36,6 +36,10 @@ jobs:
           # 复制 standalone 输出 (包含 server.js 和 必要的 node_modules)
           cp -r .next/standalone/. deployment/standalone/
 
+          # 复制 Prisma 相关文件以便在服务器运行迁移
+          cp -r prisma/. deployment/standalone/prisma/
+          cp prisma.config.ts deployment/standalone/
+
           # 复制静态资源 (standalone 模式不包含这两部分，需要手动复制)
           cp -r .next/static/. deployment/static/
           cp -r public/. deployment/public/
@@ -73,18 +77,19 @@ jobs:
             tar -xzf release.tar.gz
             rm release.tar.gz
 
-            # 构建 Docker 镜像 (因为是纯 COPY 操作，速度极快且不耗资源)
+            # 构建 Docker 镜像
             docker build -t maxzhang-site .
 
             # 停止并删除旧容器
             docker stop maxzhang-site-container || true
             docker rm maxzhang-site-container || true
 
-            # 运行新容器
+            # 运行新容器，注入 DATABASE_URL 并挂载数据卷
             docker run -d \
               --name maxzhang-site-container \
               --restart always \
               -p 3000:3000 \
+              -v maxzhang-site-data:/app/data \
               maxzhang-site
 
             # 清理
