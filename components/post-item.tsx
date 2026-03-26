@@ -5,11 +5,14 @@ import { ArrowRight, Calendar, Clock, Folder } from 'lucide-react'
 import { Link } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
 
+import { ViewDisplay } from '@/components/view-display'
+
 interface PostItemProps {
 	post: PostSummary
+	locale: string
 }
 
-export function PostItem({ post }: PostItemProps) {
+export function PostItem({ post, locale }: PostItemProps) {
 	const t = useTranslations('Common')
 	const tagColors = [
 		'bg-secondary text-secondary-foreground border-border',
@@ -49,6 +52,7 @@ export function PostItem({ post }: PostItemProps) {
 							<Clock className="size-4" />
 							{t('readingTime', { minutes: readingTime })}
 						</span>
+						<ViewDisplay slug={post.slug} locale={locale} />
 						{post.category && (
 							<span className="
          flex items-center gap-1.5 rounded-md border border-primary/10

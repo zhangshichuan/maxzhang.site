@@ -7,10 +7,20 @@
 		"dev": "next dev",
 		"build": "next build",
 		"start": "next start",
-		"lint": "eslint"
+		"db:pull": "prisma db pull",
+		"db:migrate": "prisma migrate dev",
+		"db:deploy": "prisma migrate deploy",
+		"db:seed": "prisma db seed",
+		"db:studio": "prisma studio",
+		"lint": "eslint",
+		"preinstall": "npx -y only-allow pnpm",
+		"postinstall": "prisma generate"
 	},
 	"dependencies": {
+		"@prisma/adapter-better-sqlite3": "^7.5.0",
+		"@prisma/client": "^7.5.0",
 		"@tailwindcss/typography": "^0.5.19",
+		"@thumbmarkjs/thumbmarkjs": "^1.7.6",
 		"clsx": "^2.1.1",
 		"framer-motion": "^12.33.0",
 		"fuse.js": "^7.1.0",
@@ -37,6 +47,7 @@
 		"eslint-config-next": "16.1.6",
 		"eslint-plugin-better-tailwindcss": "^4.3.2",
 		"prettier": "^3.8.1",
+		"prisma": "^7.5.0",
 		"tailwindcss": "^4",
 		"typescript": "^5"
 	}

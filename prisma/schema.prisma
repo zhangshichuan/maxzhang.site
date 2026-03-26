@@ -1,0 +1,27 @@
+datasource db {
+  provider = "sqlite"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "./generated"
+}
+
+model PostView {
+  slug      String
+  locale    String
+  views     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@id([slug, locale])
+}
+
+model ViewLog {
+  id          Int      @id @default(autoincrement())
+  fingerprint String
+  slug        String
+  locale      String
+  createdAt   DateTime @default(now())
+
+  @@index([fingerprint, slug, locale])
+}

@@ -80,6 +80,7 @@ const components = {
 	},
 }
 
+import { ViewCounter } from '@/components/view-counter'
 import { redirect } from 'next/navigation'
 
 export default async function PostPage({ params }: Props) {
@@ -154,6 +155,7 @@ export default async function PostPage({ params }: Props) {
 						<Clock className="size-5 text-accent" />
 						{t('readingTime', { minutes: readingTime })}
 					</span>
+					<ViewCounter slug={slug} locale={locale} />
 					<span className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
 						<User className="size-5 text-secondary-foreground" />
 						{post.author}

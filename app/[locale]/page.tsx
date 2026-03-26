@@ -13,7 +13,7 @@ export default async function Home({
 	return (
 		<div className="container mx-auto max-w-screen-2xl space-y-20 px-4 py-10">
 			<HomeHero />
-			<FeaturedPosts posts={posts} />
+			<FeaturedPosts posts={posts} locale={locale} />
 		</div>
 	)
 }

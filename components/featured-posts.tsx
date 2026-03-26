@@ -8,11 +8,14 @@ import { cn } from '@/lib/utils'
 import { PostSummary } from '@/lib/posts'
 import { useTranslations } from 'next-intl'
 
+import { ViewDisplay } from '@/components/view-display'
+
 interface FeaturedPostsProps {
 	posts: PostSummary[]
+	locale: string
 }
 
-export function FeaturedPosts({ posts }: FeaturedPostsProps) {
+export function FeaturedPosts({ posts, locale }: FeaturedPostsProps) {
 	const t = useTranslations('HomePage.featuredPosts')
 	const tagColors = [
 		'bg-secondary text-secondary-foreground border-border',
@@ -69,6 +72,7 @@ export function FeaturedPosts({ posts }: FeaturedPostsProps) {
 											<Clock className="size-3.5" />
 											{post.readTime.text}
 										</span>
+										<ViewDisplay slug={post.slug} locale={locale} />
 									</div>
 									<h3 className="
            line-clamp-2 text-2xl/tight font-black transition-colors

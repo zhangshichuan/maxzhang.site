@@ -12,9 +12,10 @@ interface PostsClientProps {
 	posts: PostSummary[]
 	allTags: string[]
 	allCategories: string[]
+	locale: string
 }
 
-export function PostsClient({ posts, allTags, allCategories }: PostsClientProps) {
+export function PostsClient({ posts, allTags, allCategories, locale }: PostsClientProps) {
 	const t = useTranslations('PostsPage')
 
 	return (
@@ -48,7 +49,7 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
 				<StaggerContainer className="space-y-10" delay={0.2}>
 					{posts.map((post) => (
 						<StaggerItem key={post.slug}>
-							<PostItem post={post} />
+							<PostItem post={post} locale={locale} />
 						</StaggerItem>
 					))}
 					{posts.length === 0 && (

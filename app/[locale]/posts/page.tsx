@@ -37,6 +37,7 @@ export default async function PostsPage({
 			posts={posts} 
 			allTags={allTags} 
 			allCategories={allCategories} 
+			locale={locale}
 		/>
 	)
 }

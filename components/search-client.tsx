@@ -10,9 +10,10 @@ import { useTranslations } from 'next-intl'
 
 interface SearchClientProps {
 	posts: PostSummary[]
+	locale: string
 }
 
-export function SearchClient({ posts }: SearchClientProps) {
+export function SearchClient({ posts, locale }: SearchClientProps) {
 	const searchParams = useSearchParams()
 	const t = useTranslations('SearchPage')
 
@@ -265,7 +266,7 @@ export function SearchClient({ posts }: SearchClientProps) {
 			{/* 文章列表 */}
 			<div className="space-y-8">
 				{filteredPosts.map((post) => (
-					<PostItem key={post.slug} post={post} />
+					<PostItem key={post.slug} post={post} locale={locale} />
 				))}
 
 				{/* 状态：有筛选条件但无结果 */}
