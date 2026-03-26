@@ -24,4 +24,4 @@ USER nextjs
 EXPOSE 3000
 
 # 启动前执行最新的数据库迁移，确保数据库结构是最新的
-CMD npm run db:deploy && node server.js
+CMD npx prisma migrate deploy && node server.js
