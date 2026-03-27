@@ -41,7 +41,7 @@ export async function generateStaticParams() {
  */
 export async function generateMetadata({ params }: Props) {
 	const { slug, locale } = await params
-	const post = getPostBySlug(slug, locale)
+	const post = getPostBySlug(slug, locale, false)
 
 	if (!post) {
 		return {

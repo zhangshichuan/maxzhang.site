@@ -29,7 +29,7 @@ export type PostSummary = Omit<Post, 'content'>
  * 用于列表页一次性获取文章和阅读数，避免 N+1 查询
  */
 export interface PostSummaryWithViews extends PostSummary {
-  views: number
+	views: number
 }
 
 /**
@@ -128,7 +128,8 @@ export async function getAllPostsWithViews(locale: string = 'zh'): Promise<PostS
 		.sort((post1, post2) => (post1.date > post2.date ? -1 : 1))
 
 	// 批量查询所有文章的阅读数
-	const viewCounts = await getViewCounts(slugs, locale)
+	const slugsForQuery = slugs.map((s) => s.replace(/\.mdx?$/, ''))
+	const viewCounts = await getViewCounts(slugsForQuery, locale)
 
 	return posts.map((post) => ({
 		...post,
