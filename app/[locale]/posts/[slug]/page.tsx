@@ -80,6 +80,7 @@ const components = {
 	},
 }
 
+import { BackToTop } from '@/components/back-to-top'
 import { ViewCounter } from '@/components/view-counter'
 import { redirect } from 'next/navigation'
 
@@ -102,7 +103,8 @@ export default async function PostPage({ params }: Props) {
 	const readingTime = Math.ceil(post.readTime.minutes)
 
 	return (
-		<article className="container mx-auto max-w-4xl px-4 py-12 md:px-6">
+		<>
+			<article className="container mx-auto max-w-4xl px-4 py-12 md:px-6">
 			{/* 返回链接 */}
 			<Link
 				href="/posts"
@@ -157,7 +159,7 @@ export default async function PostPage({ params }: Props) {
 					</span>
 					<ViewCounter slug={slug} locale={locale} />
 					<span className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
-						<User className="size-5 text-secondary-foreground" />
+						<User className="size-5 text-primary" />
 						{post.author}
 					</span>
 					<span
@@ -210,5 +212,7 @@ export default async function PostPage({ params }: Props) {
 				/>
 			</div>
 		</article>
+			<BackToTop />
+		</>
 	)
 }
