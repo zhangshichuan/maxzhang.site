@@ -9,6 +9,8 @@ ENV HOSTNAME="0.0.0.0"
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+RUN npm install -g prisma dotenv
+
 # 复制 standalone 构建产物（包含必要的 node_modules 和 server.js）
 COPY --chown=nextjs:nodejs standalone/ ./
 
@@ -24,4 +26,4 @@ USER nextjs
 EXPOSE 3000
 
 # 启动前执行最新的数据库迁移，确保数据库结构是最新的
-CMD npx prisma migrate deploy && node server.js
+CMD ["sh", "-c", "prisma migrate deploy && exec node server.js"]
