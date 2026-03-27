@@ -32,19 +32,23 @@ jobs:
 
       - name: Prepare deployment artifacts
         run: |
-          # 复制 standalone 输出 (包含 server.js 和 必要的 node_modules)
-          cp -r .next/standalone/. deployment
+          mkdir -p deployment
 
-          # 复制 Prisma 相关文件以便在服务器运行迁移
-          cp prisma.config.ts deployment
-          cp -r prisma/. deployment/prisma
+          # 复制 standalone 输出 (包含 server.js 和 必要的 node_modules)
+          cp -r .next/standalone/. deployment/standalone
 
           # 复制静态资源 (standalone 模式不包含这两部分，需要手动复制)
           cp -r .next/static/. deployment/static
           cp -r public/. deployment/public
 
-          # 复制 Dockerfile
+          # 复制 prisma 配置和 schema
+          cp -r prisma/. deployment/prisma
+          cp prisma.config.ts deployment
+
+          # 复制 Dockerfile、docker-compose.yml 和 Prisma 需要的 package.json
           cp Dockerfile deployment/
+          cp Dockerfile.prisma deployment/
+          cp docker-compose.yml deployment/
 
       - name: Archive production artifacts
         run: |
@@ -70,27 +74,23 @@ jobs:
             cd ${{secrets.DEPLOY_PATH}}
 
             # 清理旧的构建文件
-            rm -rf standalone static public Dockerfile
+            rm -rf standalone static public prisma prisma.config.ts Dockerfile Dockerfile.prisma docker-compose.yml
 
             # 解压新文件
             tar -xzf release.tar.gz
             rm release.tar.gz
 
+            # 创建 .env 文件，docker-compose 会自动读取并传给容器
+            echo "DATABASE_URL=$DATABASE_URL" > .env
+
             # 构建 Docker 镜像
-            docker build -t maxzhang-site .
+            docker-compose build
 
-            # 停止并删除旧容器
-            docker stop maxzhang-site-container || true
-            docker rm maxzhang-site-container || true
+            # 运行迁移（容器执行完迁移命令后自动退出）
+            docker-compose run --rm migrate
 
-            # 运行新容器，注入 DATABASE_URL 并挂载数据卷
-            docker run -d \
-              --name maxzhang-site-container \
-              --restart always \
-              -p 3000:3000 \
-              -e DATABASE_URL=${{ secrets.DATABASE_URL }} \
-              -v maxzhang-site-data:/app/data \
-              maxzhang-site
+            # 启动应用（环境变量从 shell 继承）
+            docker-compose up -d
 
-            # 清理
+            # 清理无用的镜像
             docker image prune -f

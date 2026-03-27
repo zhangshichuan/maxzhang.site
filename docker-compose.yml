@@ -1,0 +1,21 @@
+services:
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.prisma
+    volumes:
+      - sqlite_data:/app/data
+    profiles:
+      - migrate
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - sqlite_data:/app/data
+    ports:
+      - "3000:3000"
+
+volumes:
+  sqlite_data:
