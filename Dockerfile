@@ -9,7 +9,7 @@ ENV HOSTNAME="0.0.0.0"
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-RUN npm install -g prisma dotenv
+RUN npm install prisma dotenv
 
 # 复制 standalone 构建产物（包含必要的 node_modules 和 server.js）
 COPY --chown=nextjs:nodejs standalone/ ./
