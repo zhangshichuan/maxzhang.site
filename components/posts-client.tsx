@@ -74,6 +74,7 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
 								{allCategories.map((category) => (
 									<Link
 										key={category}
+										prefetch={false}
 										href={`/search?category=${encodeURIComponent(category)}`}
 										className="
             flex items-center justify-between rounded-xl border-2
@@ -111,6 +112,7 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
 							<div className="flex flex-wrap gap-3">
 								{allTags.map((tag) => (
 									<Link
+										prefetch={false}
 										key={tag}
 										href={`/search?tag=${encodeURIComponent(tag)}`}
 										className="
