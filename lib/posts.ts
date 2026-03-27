@@ -3,6 +3,8 @@ import matter from 'gray-matter'
 import path from 'path'
 import readingTime from 'reading-time'
 
+import { getViewCounts } from '@/lib/actions/views'
+
 // 定义文章存放目录：项目根目录下的 articles 文件夹
 const postsDirectory = path.join(process.cwd(), 'articles')
 
@@ -21,6 +23,14 @@ export interface Post {
 }
 
 export type PostSummary = Omit<Post, 'content'>
+
+/**
+ * 带有阅读数的文章摘要类型
+ * 用于列表页一次性获取文章和阅读数，避免 N+1 查询
+ */
+export interface PostSummaryWithViews extends PostSummary {
+  views: number
+}
 
 /**
  * 获取特定语言的所有文章文件名（slugs）
@@ -95,13 +105,16 @@ export function getPostBySlug(slug: string, locale: string = 'zh', includeConten
 }
 
 /**
- * 获取特定语言的所有文章摘要，并按日期降序排序
- * 不包含正文内容，节省内存
+ * 获取所有文章摘要及其阅读数
+ * 一次性查询文章列表和阅读数，避免在列表页中为每篇文章单独查询阅读数
+ *
  * @param locale - 语言环境
- * @returns PostSummary[] - 排序后的文章摘要列表
+ * @returns 包含阅读数的文章摘要列表，按日期降序排序
  */
-export function getAllPosts(locale: string = 'zh'): PostSummary[] {
+export async function getAllPostsWithViews(locale: string = 'zh'): Promise<PostSummaryWithViews[]> {
 	const slugs = getPostSlugs(locale)
+
+	// 获取所有文章摘要，按日期降序排序
 	const posts = slugs
 		.map((slug) => {
 			try {
@@ -113,5 +126,12 @@ export function getAllPosts(locale: string = 'zh'): PostSummary[] {
 		})
 		.filter((post): post is PostSummary => post !== null)
 		.sort((post1, post2) => (post1.date > post2.date ? -1 : 1))
-	return posts
+
+	// 批量查询所有文章的阅读数
+	const viewCounts = await getViewCounts(slugs, locale)
+
+	return posts.map((post) => ({
+		...post,
+		views: viewCounts[post.slug] || 0,
+	}))
 }

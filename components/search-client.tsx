@@ -1,7 +1,7 @@
 'use client'
 
 import { PostItem } from '@/components/post-item'
-import { PostSummary } from '@/lib/posts'
+import { PostSummaryWithViews } from '@/lib/posts'
 import Fuse from 'fuse.js'
 import { Folder, Search, X } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
@@ -9,11 +9,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 interface SearchClientProps {
-	posts: PostSummary[]
-	locale: string
+	posts: PostSummaryWithViews[]
 }
 
-export function SearchClient({ posts, locale }: SearchClientProps) {
+export function SearchClient({ posts }: SearchClientProps) {
 	const searchParams = useSearchParams()
 	const t = useTranslations('SearchPage')
 
@@ -266,7 +265,7 @@ export function SearchClient({ posts, locale }: SearchClientProps) {
 			{/* 文章列表 */}
 			<div className="space-y-8">
 				{filteredPosts.map((post) => (
-					<PostItem key={post.slug} post={post} locale={locale} />
+					<PostItem key={post.slug} post={post} />
 				))}
 
 				{/* 状态：有筛选条件但无结果 */}

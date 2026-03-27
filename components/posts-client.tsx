@@ -4,18 +4,17 @@ import { GlassCard } from '@/components/glass-card'
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion-wrapper'
 import { PostItem } from '@/components/post-item'
 import { Link } from '@/i18n/routing'
-import { PostSummary } from '@/lib/posts'
+import { PostSummaryWithViews } from '@/lib/posts'
 import { ArrowRight, Folder } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 interface PostsClientProps {
-	posts: PostSummary[]
+	posts: PostSummaryWithViews[]
 	allTags: string[]
 	allCategories: string[]
-	locale: string
 }
 
-export function PostsClient({ posts, allTags, allCategories, locale }: PostsClientProps) {
+export function PostsClient({ posts, allTags, allCategories }: PostsClientProps) {
 	const t = useTranslations('PostsPage')
 
 	return (
@@ -49,7 +48,7 @@ export function PostsClient({ posts, allTags, allCategories, locale }: PostsClie
 				<StaggerContainer className="space-y-10" delay={0.2}>
 					{posts.map((post) => (
 						<StaggerItem key={post.slug}>
-							<PostItem post={post} locale={locale} />
+							<PostItem post={post} />
 						</StaggerItem>
 					))}
 					{posts.length === 0 && (

@@ -5,17 +5,16 @@ import { ArrowRight, Calendar, Clock } from 'lucide-react'
 import { Link } from '@/i18n/routing'
 import { GlassCard } from '@/components/glass-card'
 import { cn } from '@/lib/utils'
-import { PostSummary } from '@/lib/posts'
+import { PostSummaryWithViews } from '@/lib/posts'
 import { useTranslations } from 'next-intl'
 
 import { ViewDisplay } from '@/components/view-display'
 
 interface FeaturedPostsProps {
-	posts: PostSummary[]
-	locale: string
+	posts: PostSummaryWithViews[]
 }
 
-export function FeaturedPosts({ posts, locale }: FeaturedPostsProps) {
+export function FeaturedPosts({ posts }: FeaturedPostsProps) {
 	const t = useTranslations('HomePage.featuredPosts')
 	const tagColors = [
 		'bg-secondary text-secondary-foreground border-border',
@@ -72,7 +71,7 @@ export function FeaturedPosts({ posts, locale }: FeaturedPostsProps) {
 											<Clock className="size-3.5" />
 											{post.readTime.text}
 										</span>
-										<ViewDisplay slug={post.slug} locale={locale} />
+										<ViewDisplay views={post.views} />
 									</div>
 									<h3 className="
            line-clamp-2 text-2xl/tight font-black transition-colors

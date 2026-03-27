@@ -1,4 +1,4 @@
-import { getAllPosts } from '@/lib/posts'
+import { getAllPostsWithViews } from '@/lib/posts'
 import { PostsClient } from '@/components/posts-client'
 import { getTranslations } from 'next-intl/server'
 import { Metadata } from 'next'
@@ -24,7 +24,7 @@ export default async function PostsPage({
 }) {
 	const { locale } = await params
 	// 获取所有文章数据（仅摘要）
-	const posts = getAllPosts(locale)
+	const posts = await getAllPostsWithViews(locale)
 
 	// 动态计算所有文章中出现过的唯一标签
 	const allTags = Array.from(new Set(posts.flatMap((post) => post.tags)))
@@ -33,11 +33,10 @@ export default async function PostsPage({
 	const allCategories = Array.from(new Set(posts.map((post) => post.category).filter(Boolean)))
 
 	return (
-		<PostsClient 
-			posts={posts} 
-			allTags={allTags} 
-			allCategories={allCategories} 
-			locale={locale}
+		<PostsClient
+			posts={posts}
+			allTags={allTags}
+			allCategories={allCategories}
 		/>
 	)
 }

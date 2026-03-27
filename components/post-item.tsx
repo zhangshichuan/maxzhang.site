@@ -1,5 +1,5 @@
 import { GlassCard } from '@/components/glass-card'
-import { PostSummary } from '@/lib/posts'
+import { PostSummaryWithViews } from '@/lib/posts'
 import { cn } from '@/lib/utils'
 import { ArrowRight, Calendar, Clock, Folder } from 'lucide-react'
 import { Link } from '@/i18n/routing'
@@ -8,11 +8,10 @@ import { useTranslations } from 'next-intl'
 import { ViewDisplay } from '@/components/view-display'
 
 interface PostItemProps {
-	post: PostSummary
-	locale: string
+	post: PostSummaryWithViews
 }
 
-export function PostItem({ post, locale }: PostItemProps) {
+export function PostItem({ post }: PostItemProps) {
 	const t = useTranslations('Common')
 	const tagColors = [
 		'bg-secondary text-secondary-foreground border-border',
@@ -52,7 +51,7 @@ export function PostItem({ post, locale }: PostItemProps) {
 							<Clock className="size-4" />
 							{t('readingTime', { minutes: readingTime })}
 						</span>
-						<ViewDisplay slug={post.slug} locale={locale} />
+						<ViewDisplay views={post.views} />
 						{post.category && (
 							<span className="
          flex items-center gap-1.5 rounded-md border border-primary/10
