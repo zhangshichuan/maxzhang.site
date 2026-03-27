@@ -1,4 +1,4 @@
-FROM node:lts-alpine
+FROM node:lts-slim
 
 ENV NODE_ENV=production
 ENV DATABASE_URL=""
@@ -14,7 +14,7 @@ COPY --chown=nextjs:nodejs prisma.config.ts ./
 
 # 创建数据目录
 RUN npm init -y && npm install prisma dotenv && \
-    mkdir -p /app/data && chown -R nextjs:nodejs /app
+    mkdir -p /app/data && chown -R nextjs:nodejs /app/data
 
 USER nextjs
 
