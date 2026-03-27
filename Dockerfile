@@ -1,10 +1,5 @@
 FROM node:lts-alpine
 
-WORKDIR /ops
-
-# 安装 dotenv（prisma.config.ts 需要，standalone 输出不包含）
-RUN npm init -y && npm install prisma dotenv
-
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -20,6 +15,15 @@ COPY --chown=nextjs:nodejs standalone/ ./
 # 复制静态资源（Next.js 要求这两部分必须手动复制到正确位置）
 COPY --chown=nextjs:nodejs static/ ./.next/static
 COPY --chown=nextjs:nodejs public/ ./public
+
+RUN mkdir /tmp/extra_pkgs \
+    && cd /tmp/extra_pkgs \
+    && npm init -y \
+    && npm install prisma dotenv \
+    && cp -a node_modules/. /app/node_modules/ \
+    && chown -R nextjs:nodejs /app/node_modules/ \
+    && rm -rf /tmp/extra_pkgs
+
 
 # 创建数据目录用于 SQLite 持久化
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
