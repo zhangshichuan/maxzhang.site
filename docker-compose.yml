@@ -5,6 +5,8 @@ services:
       dockerfile: Dockerfile.prisma
     volumes:
       - sqlite_data:/app/data
+    environment:
+      - DATABASE_URL
     profiles:
       - migrate
 
@@ -14,8 +16,10 @@ services:
       dockerfile: Dockerfile
     volumes:
       - sqlite_data:/app/data
+    environment:
+      - DATABASE_URL
     ports:
-      - "3000:3000"
+      - '3000:3000'
 
 volumes:
   sqlite_data:

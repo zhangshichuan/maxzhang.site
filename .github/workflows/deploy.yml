@@ -80,9 +80,6 @@ jobs:
             tar -xzf release.tar.gz
             rm release.tar.gz
 
-            # 创建 .env 文件，docker-compose 会自动读取并传给容器
-            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
-
             # 停止并移除旧容器
             docker compose down
 
@@ -90,10 +87,10 @@ jobs:
             docker compose build
 
             # 运行迁移（migrate 服务有 profiles: [migrate]，up -d 不会自动启动它）
-            docker compose run --rm migrate
+            DATABASE_URL=${{ secrets.DATABASE_URL }} docker compose run --rm migrate
 
             # 启动应用
-            docker compose up -d
+            DATABASE_URL=${{ secrets.DATABASE_URL }} docker compose up -d
 
             # 清理无用的镜像
             docker image prune -f
