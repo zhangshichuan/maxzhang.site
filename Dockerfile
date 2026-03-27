@@ -1,7 +1,5 @@
 FROM node:lts-alpine
 
-WORKDIR /app
-
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
@@ -9,28 +7,32 @@ ENV HOSTNAME="0.0.0.0"
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# 复制 standalone 构建产物（包含必要的 node_modules 和 server.js）
-COPY --chown=nextjs:nodejs standalone/ ./
+# ==========================================
+# 工作区 1: Prisma 运维专属环境
+# ==========================================
+WORKDIR /prisma-ops
+# 复制 Prisma 配置文件到这个独立目录
+COPY --chown=nextjs:nodejs prisma/ ./prisma/
+COPY --chown=nextjs:nodejs prisma.config.ts ./
+RUN npm init -y && npm install prisma dotenv
 
-# 复制静态资源（Next.js 要求这两部分必须手动复制到正确位置）
+# ==========================================
+# 工作区 2: Next.js 运行专属环境
+# ==========================================
+WORKDIR /app
+# 完美复制 standalone 产物，它自己带了完整的运行时依赖
+COPY --chown=nextjs:nodejs standalone/ ./
 COPY --chown=nextjs:nodejs static/ ./.next/static
 COPY --chown=nextjs:nodejs public/ ./public
 
-RUN mkdir /tmp/extra_pkgs \
-    && cd /tmp/extra_pkgs \
-    && npm init -y \
-    && npm install prisma dotenv \
-    && cp -a node_modules/. /app/node_modules/ \
-    && chown -R nextjs:nodejs /app/node_modules/ \
-    && rm -rf /tmp/extra_pkgs
-
-
-# 创建数据目录用于 SQLite 持久化
-RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
+# 创建 SQLite 持久化数据目录，并统一赋予 nextjs 用户权限
+RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data /prisma-ops
 
 USER nextjs
 
 EXPOSE 3000
 
-# 启动前执行最新的数据库迁移，确保数据库结构是最新的
-CMD ["sh", "-c", "/ops/node_modules/.bin/prisma migrate deploy && exec node server.js"]
+# ==========================================
+# 串联启动逻辑：先去运维区干活，再回业务区启动
+# ==========================================
+CMD ["sh", "-c", "cd /prisma-ops && ./node_modules/.bin/prisma migrate deploy && cd /app && exec node server.js"]
