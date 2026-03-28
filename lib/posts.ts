@@ -4,6 +4,7 @@ import path from 'path'
 import readingTime from 'reading-time'
 
 import { getViewCounts } from '@/lib/actions/views'
+import { getCommentCounts } from '@/lib/actions/comments'
 
 // 定义文章存放目录：项目根目录下的 articles 文件夹
 const postsDirectory = path.join(process.cwd(), 'articles')
@@ -30,6 +31,7 @@ export type PostSummary = Omit<Post, 'content'>
  */
 export interface PostSummaryWithViews extends PostSummary {
 	views: number
+	comments: number
 }
 
 /**
@@ -127,12 +129,16 @@ export async function getAllPostsWithViews(locale: string = 'zh'): Promise<PostS
 		.filter((post): post is PostSummary => post !== null)
 		.sort((post1, post2) => (post1.date > post2.date ? -1 : 1))
 
-	// 批量查询所有文章的阅读数
+	// 批量查询所有文章的阅读数和评论数
 	const slugsForQuery = slugs.map((s) => s.replace(/\.mdx?$/, ''))
-	const viewCounts = await getViewCounts(slugsForQuery, locale)
+	const [viewCounts, commentCounts] = await Promise.all([
+		getViewCounts(slugsForQuery, locale),
+		getCommentCounts(slugsForQuery),
+	])
 
 	return posts.map((post) => ({
 		...post,
 		views: viewCounts[post.slug] || 0,
+		comments: commentCounts[post.slug] || 0,
 	}))
 }

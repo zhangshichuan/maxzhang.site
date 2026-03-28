@@ -12,6 +12,17 @@
 			"builtBy": "Built by <name>Max Zhang</name>. © {year} All rights reserved."
 		}
 	},
+	"Comment": {
+		"title": "Comments",
+		"placeholder": "Share your thoughts...",
+		"submit": "Post Comment",
+		"submitting": "Sending...",
+		"error": "Failed to submit comment. Please try again.",
+		"success": "Comment added successfully!",
+		"empty": "No comments yet. Be the first to share your thoughts!",
+		"remaining": "{count} comment(s) remaining today",
+		"noRemaining": "No comments remaining today"
+	},
 	"HomePage": {
 		"hero": {
 			"readArticles": "Read Articles",

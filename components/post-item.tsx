@@ -6,6 +6,7 @@ import { Link } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
 
 import { ViewDisplay } from '@/components/view-display'
+import { CommentDisplay } from '@/components/comment-display'
 
 interface PostItemProps {
 	post: PostSummaryWithViews
@@ -52,6 +53,7 @@ export function PostItem({ post }: PostItemProps) {
 							{t('readingTime', { minutes: readingTime })}
 						</span>
 						<ViewDisplay views={post.views} />
+						<CommentDisplay comments={post.comments} />
 						{post.category && (
 							<span className="
          flex items-center gap-1.5 rounded-md border border-primary/10

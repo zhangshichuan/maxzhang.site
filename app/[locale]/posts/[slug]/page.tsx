@@ -81,7 +81,10 @@ const components = {
 }
 
 import { BackToTop } from '@/components/back-to-top'
+import { Comment } from '@/components/comment'
 import { ViewCounter } from '@/components/view-counter'
+import { getCommentCount } from '@/lib/actions/comments'
+import { MessageCircle } from 'lucide-react'
 import { redirect } from 'next/navigation'
 
 export default async function PostPage({ params }: Props) {
@@ -101,96 +104,104 @@ export default async function PostPage({ params }: Props) {
 
 	// Format reading time
 	const readingTime = Math.ceil(post.readTime.minutes)
+	const commentCount = await getCommentCount(slug)
 
 	return (
 		<>
 			<article className="container mx-auto max-w-4xl px-4 py-12 md:px-6">
-			{/* 返回链接 */}
-			<Link
-				href="/posts"
-				className="
+				{/* 返回链接 */}
+				<Link
+					href="/posts"
+					className="
       group mb-10 inline-flex items-center rounded-xl border-2
       border-transparent bg-secondary/10 px-4 py-2 text-sm font-black
       tracking-widest text-muted-foreground uppercase transition-all
       hover:border-border hover:text-primary
     "
-			>
-				<ArrowLeft
-					className="
+				>
+					<ArrowLeft
+						className="
       mr-2 size-5 transition-transform
       group-hover:-translate-x-1
     "
-				/>
-				{tPosts('back')}
-			</Link>
+					/>
+					{tPosts('back')}
+				</Link>
 
-			<header className="mb-16 space-y-8">
-				{/* 文章标题 */}
-				<h1
-					className="
+				<header className="mb-16 space-y-8">
+					{/* 文章标题 */}
+					<h1
+						className="
       text-4xl leading-[1.1] font-black tracking-tight text-foreground underline
       decoration-primary/20 decoration-8 underline-offset-8
       sm:text-5xl
       lg:text-7xl
     "
-				>
-					{post.title}
-				</h1>
+					>
+						{post.title}
+					</h1>
 
-				{/* 文章元信息 */}
-				<div
-					className="
+					{/* 文章元信息 */}
+					<div
+						className="
       flex flex-wrap items-center gap-6 text-sm font-bold tracking-wider
       text-muted-foreground uppercase
     "
-				>
-					<time
-						dateTime={post.date}
-						className="
+					>
+						<time
+							dateTime={post.date}
+							className="
        flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5
      "
-					>
-						<Calendar className="size-5 text-primary" />
-						{post.date}
-					</time>
-					<span className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
-						<Clock className="size-5 text-accent" />
-						{t('readingTime', { minutes: readingTime })}
-					</span>
-					<ViewCounter slug={slug} locale={locale} />
-					<span className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
-						<User className="size-5 text-primary" />
-						{post.author}
-					</span>
-					<span
-						className="
+						>
+							<Calendar className="size-5 text-primary" />
+							{post.date}
+						</time>
+						<span className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
+							<Clock className="size-5 text-accent" />
+							{t('readingTime', { minutes: readingTime })}
+						</span>
+						<ViewCounter slug={slug} locale={locale} />
+						<a
+							href="#comments"
+							className="flex cursor-pointer items-center gap-2 rounded-lg bg-muted px-3 py-1.5 transition-colors hover:bg-muted/80"
+						>
+							<MessageCircle className="size-5 text-primary" />
+							<span>{commentCount}</span>
+						</a>
+						<span className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
+							<User className="size-5 text-primary" />
+							{post.author}
+						</span>
+						<span
+							className="
        flex items-center gap-2 rounded-lg border-2 border-primary/10
        bg-primary/10 px-3 py-1.5 text-primary
      "
-					>
-						<Folder className="size-5" />
-						{post.category}
-					</span>
+						>
+							<Folder className="size-5" />
+							{post.category}
+						</span>
 
-					<div className="ml-auto flex flex-wrap gap-2">
-						{post.tags.map((tag) => (
-							<span
-								key={tag}
-								className="
+						<div className="ml-auto flex flex-wrap gap-2">
+							{post.tags.map((tag) => (
+								<span
+									key={tag}
+									className="
           bg-card inline-flex items-center rounded-lg border-2 border-border
           px-3 py-1 text-[10px] font-black shadow-[3px_3px_0px_var(--border)]
         "
-							>
-								{tag}
-							</span>
-						))}
+								>
+									{tag}
+								</span>
+							))}
+						</div>
 					</div>
-				</div>
-			</header>
+				</header>
 
-			{/* MDX 内容渲染区域 */}
-			<div
-				className="
+				{/* MDX 内容渲染区域 */}
+				<div
+					className="
      prose max-w-none prose-zinc
      dark:prose-invert
      prose-h2:text-4xl prose-h2:font-black
@@ -200,18 +211,23 @@ export default async function PostPage({ params }: Props) {
      hover:prose-a:underline
      prose-strong:text-primary
    "
-			>
-				<MDXRemote
-					source={post.content}
-					components={components}
-					options={{
-						mdxOptions: {
-							remarkPlugins: [remarkGfm],
-						},
-					}}
-				/>
-			</div>
-		</article>
+				>
+					<MDXRemote
+						source={post.content}
+						components={components}
+						options={{
+							mdxOptions: {
+								remarkPlugins: [remarkGfm],
+							},
+						}}
+					/>
+				</div>
+
+				{/* 评论区域 */}
+				<div id="comments">
+					<Comment slug={slug} locale={locale} />
+				</div>
+			</article>
 			<BackToTop />
 		</>
 	)

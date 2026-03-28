@@ -153,9 +153,9 @@ export default function AboutPage() {
                shadow-[2px_2px_0px_rgba(0,0,0,0.1)]
                ${
 									index === 0
-										? `border-primary/20 bg-primary/10 text-primary`
+										? `border-primary/20 bg-primary/10`
 										: `
-                 border-secondary/20 bg-secondary/10 text-secondary-foreground
+                 border-secondary/20 bg-secondary/10
                `
 								}
              `}

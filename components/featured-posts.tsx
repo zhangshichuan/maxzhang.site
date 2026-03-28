@@ -9,6 +9,7 @@ import { PostSummaryWithViews } from '@/lib/posts'
 import { useTranslations } from 'next-intl'
 
 import { ViewDisplay } from '@/components/view-display'
+import { CommentDisplay } from '@/components/comment-display'
 
 interface FeaturedPostsProps {
 	posts: PostSummaryWithViews[]
@@ -72,6 +73,7 @@ export function FeaturedPosts({ posts }: FeaturedPostsProps) {
 											{post.readTime.text}
 										</span>
 										<ViewDisplay views={post.views} />
+										<CommentDisplay comments={post.comments} />
 									</div>
 									<h3 className="
            line-clamp-2 text-2xl/tight font-black transition-colors

@@ -12,6 +12,17 @@
 			"builtBy": "由 <name>Max Zhang</name> 构建。© {year} 保留所有权利。"
 		}
 	},
+	"Comment": {
+		"title": "评论",
+		"placeholder": "分享你的想法...",
+		"submit": "发表评论",
+		"submitting": "发送中...",
+		"error": "评论发送失败，请重试",
+		"success": "评论发表成功！",
+		"empty": "暂无评论，快来抢沙发！",
+		"remaining": "今日还可评论 {count} 条",
+		"noRemaining": "今日评论次数已用完"
+	},
 	"HomePage": {
 		"hero": {
 			"readArticles": "阅读文章",

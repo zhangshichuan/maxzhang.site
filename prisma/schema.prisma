@@ -25,3 +25,22 @@ model ViewLog {
 
   @@index([fingerprint, slug, locale])
 }
+
+model Comment {
+  id          Int      @id @default(autoincrement())
+  slug        String
+  fingerprint String
+  content     String   @default("")
+  createdAt   DateTime @default(now())
+
+  @@index([slug])
+}
+
+model CommentLog {
+  id          Int      @id @default(autoincrement())
+  fingerprint String
+  slug        String
+  createdAt   DateTime @default(now())
+
+  @@index([fingerprint, slug])
+}
