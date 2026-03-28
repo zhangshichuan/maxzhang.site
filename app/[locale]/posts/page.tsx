@@ -12,7 +12,7 @@ export async function generateMetadata({
 	const t = await getTranslations({ locale, namespace: 'PostsPage' })
 
 	return {
-		title: `${t('title')} - Max Zhang`,
+		title: `${t('title')} - Max Zhang`, // PostsPage/title 文章库
 		description: 'Read my thoughts on software development, design, and more.',
 	}
 }

@@ -102,7 +102,7 @@ export default async function PostPage({ params }: Props) {
 		redirect(`/${locale}/posts`)
 	}
 
-	// Format reading time
+	// 格式化阅读时间
 	const readingTime = Math.ceil(post.readTime.minutes)
 	const commentCount = await getCommentCount(slug)
 

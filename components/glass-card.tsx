@@ -9,7 +9,7 @@ interface GlassCardProps {
 }
 
 /**
- * Dopamine Card (formerly GlassCard)
+ * 多巴胺卡片 (Dopamine Card)
  * 使用硬边框、实体阴影和动力学反馈。
  */
 export function GlassCard({ children, className, hoverEffect = true }: GlassCardProps) {

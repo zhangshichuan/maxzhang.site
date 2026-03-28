@@ -60,14 +60,14 @@ export default function AboutPage() {
 					<div>
 						<h1 className="mb-2 text-5xl font-black tracking-tight text-foreground">Max Zhang</h1>
 						<p className="flex items-center gap-2 text-xl font-bold text-primary">
-							<Briefcase className="size-5" /> {t('role')}
+							<Briefcase className="size-5" /> {t('role')} {/* AboutPage/role 软件工程师 */}
 						</p>
 						<p
 							className="
         mt-1 flex items-center gap-2 font-medium text-muted-foreground
       "
 						>
-							<MapPin className="size-4" /> {t('location')}
+							<MapPin className="size-4" /> {t('location')} {/* AboutPage/location 中国 成都 */}
 						</p>
 					</div>
 
@@ -119,7 +119,7 @@ export default function AboutPage() {
 					{/* Experience */}
 					<StaggerItem>
 						<h2 className="mb-8 flex items-center gap-3 text-3xl font-black">
-							<Briefcase className="h-8 w-8 text-primary" /> {t('workExperience')}
+							<Briefcase className="h-8 w-8 text-primary" /> {t('workExperience')} {/* AboutPage/workExperience 工作经历 */}
 						</h2>
 						<GlassCard className="space-y-8 p-8" hoverEffect={false}>
 							<div className="relative space-y-12 border-l-4 border-border/30 pl-8">
@@ -183,7 +183,7 @@ export default function AboutPage() {
 					{/* Education */}
 					<StaggerItem>
 						<h2 className="mb-8 flex items-center gap-3 text-3xl font-black">
-							<GraduationCap className="h-8 w-8 text-accent" /> {t('education')}
+							<GraduationCap className="h-8 w-8 text-accent" /> {t('education')} {/* AboutPage/education 教育经历 */}
 						</h2>
 						<GlassCard className="p-8" hoverEffect={false}>
 							<div className="relative space-y-8 border-l-4 border-border/30 pl-8">
@@ -214,7 +214,7 @@ export default function AboutPage() {
 				<StaggerContainer className="space-y-8" delay={0.4}>
 					<StaggerItem>
 						<GlassCard className="p-6">
-							<h3 className="mb-6 flex items-center gap-2 text-xl font-black">{t('techStack')}</h3>
+							<h3 className="mb-6 flex items-center gap-2 text-xl font-black">{t('techStack')} {/* AboutPage/techStack 技术栈 */}</h3>
 							<div className="flex flex-wrap gap-2">
 								{[
 									'TypeScript',
@@ -259,7 +259,7 @@ export default function AboutPage() {
 
 					<StaggerItem>
 						<GlassCard className="p-6">
-							<h3 className="mb-6 flex items-center gap-2 text-xl font-black">{t('interests')}</h3>
+							<h3 className="mb-6 flex items-center gap-2 text-xl font-black">{t('interests')} {/* AboutPage/interests 兴趣点 */}</h3>
 							<ul className="space-y-3 text-base font-bold text-muted-foreground">
 								{t.raw('interestList').map((interest: string, index: number) => (
 									<li key={index} className="flex items-center gap-2">

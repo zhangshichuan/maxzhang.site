@@ -11,6 +11,9 @@ const postsDirectory = path.join(process.cwd(), 'articles')
 
 export type ReadingTime = ReturnType<typeof readingTime>
 
+/**
+ * 文章完整数据类型
+ */
 export interface Post {
 	slug: string
 	title: string
@@ -23,6 +26,9 @@ export interface Post {
 	category: string
 }
 
+/**
+ * 文章摘要类型（不含正文内容）
+ */
 export type PostSummary = Omit<Post, 'content'>
 
 /**

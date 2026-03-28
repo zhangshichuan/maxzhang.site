@@ -87,28 +87,34 @@ export function SearchClient({ posts }: SearchClientProps) {
 	}, [query, selectedTag, selectedCategory])
 
 	// 事件处理：直接更新 Local State
+	// 处理搜索输入
 	const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setQuery(e.target.value)
 	}
 
+	// 切换标签筛选
 	const handleTagClick = (tag: string) => {
 		setSelectedTag((prev) => (prev === tag ? '' : tag))
 	}
 
+	// 切换分类筛选
 	const handleCategoryClick = (category: string) => {
 		setSelectedCategory((prev) => (prev === category ? '' : category))
 	}
 
+	// 清除所有筛选条件
 	const clearFilters = () => {
 		setQuery('')
 		setSelectedTag('')
 		setSelectedCategory('')
 	}
 
+	// 清除标签筛选
 	const clearTag = () => {
 		setSelectedTag('')
 	}
 
+	// 清除分类筛选
 	const clearCategory = () => {
 		setSelectedCategory('')
 	}
@@ -126,7 +132,7 @@ export function SearchClient({ posts }: SearchClientProps) {
 					type="text"
 					value={query}
 					onChange={handleSearch}
-					placeholder={t('placeholder')}
+					placeholder={t('placeholder')} /* SearchPage/placeholder 搜索文章标题、内容、标签... */
 					className="
        w-full rounded-lg border bg-background py-3 pr-4 pl-10 transition-all
        focus:border-transparent focus:ring-2 focus:ring-primary
@@ -156,7 +162,7 @@ export function SearchClient({ posts }: SearchClientProps) {
 					<h3 className="
        flex items-center gap-2 text-sm font-medium text-muted-foreground
      ">
-						<Folder className="h-4 w-4" /> {t('category')}
+						<Folder className="h-4 w-4" /> {t('category')} {/* SearchPage/category 分类 */}
 					</h3>
 					<div className="flex flex-wrap gap-2">
 						{allCategories.map((category) => (
@@ -188,7 +194,7 @@ export function SearchClient({ posts }: SearchClientProps) {
 
 				{/* 标签列表 */}
 				<div className="space-y-3">
-					<h3 className="text-sm font-medium text-muted-foreground">{t('tag')}</h3>
+					<h3 className="text-sm font-medium text-muted-foreground">{t('tag')} {/* SearchPage/tag 标签 */}</h3>
 					<div className="flex flex-wrap gap-2">
 						{allTags.map((tag) => (
 							<button
@@ -221,13 +227,13 @@ export function SearchClient({ posts }: SearchClientProps) {
 			{/* 当前筛选条件展示 */}
 			{hasFilters && (
 				<div className="flex flex-wrap items-center gap-2 border-t pt-4">
-					<span className="text-sm text-muted-foreground">{t('currentFilter')}:</span>
+					<span className="text-sm text-muted-foreground">{t('currentFilter')}: {/* SearchPage/currentFilter 当前筛选 */}</span>
 					{selectedCategory && (
 						<span className="
         inline-flex items-center gap-1 rounded-md border border-primary/20
         bg-primary/10 px-2 py-1 text-xs font-medium text-primary
       ">
-							{t('category')}: {selectedCategory}
+							{t('category')}: {selectedCategory} {/* SearchPage/category 分类 */}
 							<button onClick={clearCategory} className="
          ml-1
          hover:text-primary/70
@@ -241,7 +247,7 @@ export function SearchClient({ posts }: SearchClientProps) {
         inline-flex items-center gap-1 rounded-md border border-primary/20
         bg-primary/10 px-2 py-1 text-xs font-medium text-primary
       ">
-							{t('tag')}: {selectedTag}
+							{t('tag')}: {selectedTag} {/* SearchPage/tag 标签 */}
 							<button onClick={clearTag} className="
          ml-1
          hover:text-primary/70
@@ -254,7 +260,7 @@ export function SearchClient({ posts }: SearchClientProps) {
        text-xs text-muted-foreground underline
        hover:text-primary
      ">
-						{t('clearAll')}
+						{t('clearAll')} {/* SearchPage/clearAll 清除所有 */}
 					</button>
 				</div>
 			)}
@@ -272,12 +278,12 @@ export function SearchClient({ posts }: SearchClientProps) {
 				{hasFilters && filteredPosts.length === 0 && (
 					<div className="py-20 text-center text-muted-foreground">
 						<Search className="mx-auto mb-4 h-10 w-10 opacity-20" />
-						<p className="text-lg">{t('noResults')}</p>
+						<p className="text-lg">{t('noResults')} {/* SearchPage/noResults 没有找到匹配的文章 */}</p>
 						<button onClick={clearFilters} className="
         mt-4 text-primary
         hover:underline
       ">
-							{t('clearFilters')}
+							{t('clearFilters')} {/* SearchPage/clearFilters 清除筛选条件 */}
 						</button>
 					</div>
 				)}
@@ -286,7 +292,7 @@ export function SearchClient({ posts }: SearchClientProps) {
 				{!hasFilters && (
 					<div className="py-20 text-center text-muted-foreground">
 						<Search className="mx-auto mb-4 h-10 w-10 opacity-10" />
-						<p className="text-lg">{t('startSearch')}</p>
+						<p className="text-lg">{t('startSearch')} {/* SearchPage/startSearch 输入关键词或选择标签开始搜索 */}</p>
 					</div>
 				)}
 			</div>

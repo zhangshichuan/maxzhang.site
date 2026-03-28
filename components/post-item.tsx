@@ -1,12 +1,12 @@
 import { GlassCard } from '@/components/glass-card'
+import { Link } from '@/i18n/routing'
 import { PostSummaryWithViews } from '@/lib/posts'
 import { cn } from '@/lib/utils'
 import { ArrowRight, Calendar, Clock, Folder } from 'lucide-react'
-import { Link } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
 
-import { ViewDisplay } from '@/components/view-display'
 import { CommentDisplay } from '@/components/comment-display'
+import { ViewDisplay } from '@/components/view-display'
 
 interface PostItemProps {
 	post: PostSummaryWithViews
@@ -20,21 +20,25 @@ export function PostItem({ post }: PostItemProps) {
 		'bg-accent text-accent-foreground border-border',
 	]
 
-	// Format reading time
+	// 格式化阅读时间
 	const readingTime = Math.ceil(post.readTime.minutes)
 
 	return (
 		<Link href={`/posts/${post.slug}`} className="group block">
-			<GlassCard className="
+			<GlassCard
+				className="
      border-2 border-border/10 p-8 transition-all duration-300
      group-hover:bg-secondary/5
      hover:border-primary
-   ">
+   "
+			>
 				<article className="flex flex-col space-y-4">
-					<div className="
+					<div
+						className="
        flex flex-wrap items-center gap-4 text-xs font-black tracking-widest
        text-muted-foreground uppercase
-     ">
+     "
+					>
 						<time
 							dateTime={post.date}
 							className="
@@ -45,20 +49,24 @@ export function PostItem({ post }: PostItemProps) {
 							<Calendar className="size-4" />
 							{post.date}
 						</time>
-						<span className="
+						<span
+							className="
         flex items-center gap-1.5 rounded-md border border-border/5 bg-muted
         px-2 py-1
-      ">
+      "
+						>
 							<Clock className="size-4" />
 							{t('readingTime', { minutes: readingTime })}
 						</span>
 						<ViewDisplay views={post.views} />
 						<CommentDisplay comments={post.comments} />
 						{post.category && (
-							<span className="
+							<span
+								className="
          flex items-center gap-1.5 rounded-md border border-primary/10
          bg-primary/10 px-2 py-1 text-primary
-       ">
+       "
+							>
 								<Folder className="size-4" />
 								{post.category}
 							</span>
@@ -66,21 +74,27 @@ export function PostItem({ post }: PostItemProps) {
 					</div>
 
 					<div className="space-y-2">
-						<h2 className="
+						<h2
+							className="
         flex items-center justify-between text-3xl font-black tracking-tight
         transition-colors
         group-hover:text-primary
-      ">
+      "
+						>
 							{post.title}
-							<ArrowRight className="
+							<ArrowRight
+								className="
          h-6 w-6 -translate-x-4 text-primary opacity-0 transition-all
          group-hover:translate-x-0 group-hover:opacity-100
-       " />
+       "
+							/>
 						</h2>
-						<p className="
+						<p
+							className="
         line-clamp-2 border-l-4 border-muted pl-4 text-lg/relaxed font-medium
         text-muted-foreground italic
-      ">
+      "
+						>
 							{post.summary}
 						</p>
 					</div>

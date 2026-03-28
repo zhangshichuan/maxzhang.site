@@ -11,6 +11,12 @@ interface CommentProps {
 	locale: string
 }
 
+/**
+ * 格式化评论日期显示
+ * @param date - 日期对象
+ * @param locale - 语言环境
+ * @returns 格式化后的日期字符串
+ */
 function formatDate(date: Date, locale: string): string {
 	const d = new Date(date)
 	return d.toLocaleDateString(locale === 'zh' ? 'zh-CN' : 'en-US', {
@@ -74,10 +80,10 @@ export function Comment({ slug, locale }: CommentProps) {
 					setRemaining(result.remaining ?? 0)
 					setTimeout(() => setSuccess(false), 3000)
 				} else {
-					setError(result.error || t('error'))
+					setError(result.error || t('error')) // Comment/error 评论发送失败，请重试
 				}
 			} catch {
-				setError(t('error'))
+				setError(t('error')) // Comment/error 评论发送失败，请重试
 			} finally {
 				setIsSubmitting(false)
 			}
@@ -90,7 +96,7 @@ export function Comment({ slug, locale }: CommentProps) {
 			<div className="mb-6 flex items-center gap-2">
 				<MessageCircle className="size-6 text-primary" />
 				<h2 className="text-2xl font-bold">
-					{t('title')}
+					{t('title')} {/* Comment/title 评论 */}
 					{count !== null && <span className="ml-2 text-lg font-normal text-muted-foreground">({count})</span>}
 				</h2>
 			</div>
@@ -98,6 +104,7 @@ export function Comment({ slug, locale }: CommentProps) {
 			{/* Comment Form */}
 			<form onSubmit={handleSubmit} className="mb-8">
 				<div className="relative">
+					{/* Comment/placeholder 分享你的想法... */}
 					<textarea
 						value={content}
 						onChange={(e) => setContent(e.target.value)}
@@ -111,7 +118,7 @@ export function Comment({ slug, locale }: CommentProps) {
 						{remaining !== null && remaining < 5 && (
 							<span className="flex items-center gap-1">
 								<Clock className="size-3" />
-								{remaining === 0 ? t('noRemaining') : t('remaining', { count: remaining })}
+								{remaining === 0 ? t('noRemaining') : t('remaining', { count: remaining })} {/* Comment/remaining 今日还可评论 {count} 条 / Comment/noRemaining 今日评论次数已用完 */}
 							</span>
 						)}
 					</div>
@@ -126,7 +133,7 @@ export function Comment({ slug, locale }: CommentProps) {
 
 				{success && (
 					<div className="mt-3 flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-sm text-green-600 dark:text-green-400">
-						{t('success')}
+						{t('success')} {/* Comment/success 评论发表成功！ */}
 					</div>
 				)}
 
@@ -137,7 +144,7 @@ export function Comment({ slug, locale }: CommentProps) {
 						className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						<Send className="size-4" />
-						{isSubmitting ? t('submitting') : t('submit')}
+						{isSubmitting ? t('submitting') : t('submit')} {/* Comment/submitting 发送中... / Comment/submit 发表评论 */}
 					</button>
 				</div>
 			</form>
@@ -156,7 +163,7 @@ export function Comment({ slug, locale }: CommentProps) {
 					))}
 				</div>
 			) : (
-				<p className="text-sm text-muted-foreground">{t('empty')}</p>
+				<p className="text-sm text-muted-foreground">{t('empty')} {/* Comment/empty 暂无评论，快来抢沙发！ */}</p>
 			)}
 		</div>
 	)

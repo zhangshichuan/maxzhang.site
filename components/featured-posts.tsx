@@ -31,15 +31,15 @@ export function FeaturedPosts({ posts }: FeaturedPostsProps) {
      flex items-end justify-between border-b-4 border-border pb-4
    " delay={0.4}>
 				<div className="space-y-1">
-					<h2 className="text-3xl font-black tracking-tight">{t('title')}</h2>
-					<p className="font-medium text-muted-foreground">{t('description')}</p>
+					<h2 className="text-3xl font-black tracking-tight">{t('title')} {/* HomePage/featuredPosts/title 最新文章 */}</h2>
+					<p className="font-medium text-muted-foreground">{t('description')} {/* HomePage/featuredPosts/description 探索技术与创意的边界 */}</p>
 				</div>
 				<Link href="/posts" className="
       group flex items-center gap-2 text-sm font-black tracking-widest
       text-primary uppercase transition-colors
       hover:text-accent
     ">
-					{t('viewAll')} <ArrowRight className="
+					{t('viewAll')} {/* HomePage/featuredPosts/viewAll 查看全部 */} <ArrowRight className="
        size-4 transition-transform
        group-hover:translate-x-1
      " />

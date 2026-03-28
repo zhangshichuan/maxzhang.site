@@ -1,17 +1,23 @@
 import { createNavigation } from 'next-intl/navigation'
 import { defineRouting } from 'next-intl/routing'
 
+/**
+ * 国际化路由配置
+ * 定义支持的语种和路由行为
+ */
 export const routing = defineRouting({
-	// A list of all locales that are supported
+	// 支持的语言列表
 	locales: ['en', 'zh'],
 
-	// Used when no locale matches
+	// 默认语言，当没有匹配的语言时使用
 	defaultLocale: 'zh',
 
-	// Don't use a prefix for the default locale
+	// 默认语言不使用前缀
 	localePrefix: 'as-needed',
 })
 
-// Lightweight wrappers around Next.js' navigation APIs
-// that will consider the routing configuration
+/**
+ * 基于 Next.js 导航 API 的轻量封装
+ * 自动考虑路由配置，支持国际化导航
+ */
 export const { Link, redirect, usePathname, useRouter, getPathname } = createNavigation(routing)

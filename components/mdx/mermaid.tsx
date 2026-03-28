@@ -60,6 +60,7 @@ export default function Mermaid({ chart }: MermaidProps) {
 		renderChart()
 	}, [chart, resolvedTheme])
 
+	// 切换全屏灯箱显示
 	const toggleLightbox = () => {
 		if (!isLightboxOpen) {
 			setIsLightboxOpen(true)
@@ -71,16 +72,19 @@ export default function Mermaid({ chart }: MermaidProps) {
 		}
 	}
 
+	// 放大图表
 	const handleZoomIn = (e: React.MouseEvent) => {
 		e.stopPropagation()
 		setZoom((prev) => Math.min(prev + 0.2, 4))
 	}
 
+	// 缩小图表
 	const handleZoomOut = (e: React.MouseEvent) => {
 		e.stopPropagation()
 		setZoom((prev) => Math.max(prev - 0.2, 0.3))
 	}
 
+	// 重置缩放比例
 	const handleReset = (e: React.MouseEvent) => {
 		e.stopPropagation()
 		setZoom(1)
@@ -145,7 +149,7 @@ export default function Mermaid({ chart }: MermaidProps) {
        text-[10px] font-black tracking-tight text-foreground uppercase
      "
 					>
-						{t('clickToZoom')}
+						{t('clickToZoom')} {/* Mermaid/clickToZoom 点击查看高清大图 */}
 					</span>
 				</div>
 			</div>
@@ -250,7 +254,7 @@ export default function Mermaid({ chart }: MermaidProps) {
         text-[11px] font-black tracking-widest text-primary uppercase shadow-lg
       "
 						>
-							{t('zoomInstruction')}
+							{t('zoomInstruction')} {/* Mermaid/zoomInstruction 使用上方工具栏缩放 • 移动端可双指操作 */}
 						</div>
 					</motion.div>
 				)}

@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 	const t = await getTranslations({ locale, namespace: 'Common' })
 
 	return {
-		title: t('title'),
+		title: t('title'), // Common/title Max Zhang
 		description: 'Personal website of Max Zhang',
 	}
 }

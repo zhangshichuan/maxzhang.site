@@ -10,7 +10,7 @@ export function ThemeToggle({ className }: { className?: string }) {
 	const { resolvedTheme, setTheme } = useTheme()
 	const [mounted, setMounted] = React.useState(false)
 
-	// Avoid hydration mismatch
+	// 避免水合不匹配
 	React.useEffect(() => {
 		setMounted(true)
 	}, [])
@@ -60,7 +60,7 @@ export function ThemeToggle({ className }: { className?: string }) {
 					</motion.div>
 				)}
 			</AnimatePresence>
-			<span className="sr-only">Toggle theme</span>
+			<span className="sr-only">切换主题</span>
 		</motion.button>
 	)
 }

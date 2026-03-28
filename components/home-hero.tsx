@@ -61,7 +61,7 @@ export function HomeHero() {
 			<FadeIn className="flex flex-wrap gap-6" delay={0.2}>
 				<Link href="/posts">
 					<Button size="xl" className="cursor-pointer bg-primary text-lg font-black">
-						{t('readArticles')} <ArrowRight className="ml-2 h-5 w-5" />
+						{t('readArticles')} {/* HomePage/hero/readArticles 阅读文章 */} <ArrowRight className="ml-2 h-5 w-5" />
 					</Button>
 				</Link>
 				<Link href="/about">
@@ -73,7 +73,7 @@ export function HomeHero() {
         shadow-[6px_6px_0px_var(--muted)]
       "
 					>
-						{t('aboutMe')}
+						{t('aboutMe')} {/* HomePage/hero/aboutMe 关于我 */}
 					</Button>
 				</Link>
 			</FadeIn>

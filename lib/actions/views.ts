@@ -2,12 +2,20 @@
 
 import { prisma } from '@/lib/prisma'
 
+/**
+ * 增加文章阅读数
+ * 如果该指纹在 24 小时内未浏览过该文章，则增加阅读数并记录日志
+ * @param slug - 文章 slug
+ * @param locale - 语言环境
+ * @param fingerprint - 浏览器指纹
+ * @returns 更新后的阅读数
+ */
 export async function incrementView(slug: string, locale: string, fingerprint: string) {
   if (!fingerprint) return null
 
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
 
-  // Check if this fingerprint has viewed this article in the last 24 hours
+  // 检查该指纹是否在最近 24 小时内浏览过这篇文章
   const existingLog = await prisma.viewLog.findFirst({
     where: {
       fingerprint,
@@ -20,7 +28,7 @@ export async function incrementView(slug: string, locale: string, fingerprint: s
   })
 
   if (!existingLog) {
-    // Increment the view count and log the view in a transaction
+    // 在事务中增加阅读数并记录浏览日志
     await prisma.$transaction([
       prisma.postView.upsert({
         where: {

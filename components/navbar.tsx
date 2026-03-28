@@ -16,11 +16,15 @@ export function Navbar() {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
 
 	const navItems = [
+		// Common/nav/home 首页
 		{ name: t('home'), path: '/' },
+		// Common/nav/posts 文章
 		{ name: t('posts'), path: '/posts' },
+		// Common/nav/about 关于
 		{ name: t('about'), path: '/about' },
 	]
 
+	// 切换语言
 	const toggleLanguage = () => {
 		const nextLocale = locale === 'zh' ? 'en' : 'zh'
 		router.replace(pathname, { locale: nextLocale })
@@ -38,7 +42,7 @@ export function Navbar() {
      container mx-auto flex h-16 max-w-screen-2xl items-center px-4 md:px-6
    "
 			>
-				{/* Logo */}
+				{/* Logo 网站 Logo */}
 				<div className="flex gap-6">
 					<Link href="/" className="flex shrink-0 items-center space-x-2">
 						<motion.span
@@ -83,7 +87,7 @@ export function Navbar() {
 					</nav>
 				</div>
 
-				{/* Right Actions */}
+				{/* Right Actions 右侧操作按钮 */}
 				<div className="flex flex-1 items-center justify-end space-x-1 md:space-x-2">
 					<Link href="/search">
 						<motion.div
@@ -95,7 +99,7 @@ export function Navbar() {
        "
 						>
 							<Search className="size-5" />
-							<span className="sr-only">Search</span>
+							<span className="sr-only">搜索</span>
 						</motion.div>
 					</Link>
 
@@ -110,10 +114,10 @@ export function Navbar() {
          border-border/10 transition-colors
          hover:border-primary/50 hover:bg-secondary/20
        "
-							title={t('switchLanguage')}
+							title={t('switchLanguage')} // Common/nav/switchLanguage 切换至英文
 						>
 							<Languages className="size-5" />
-							<span className="sr-only">Language</span>
+							<span className="sr-only">语言</span>
 						</motion.button>
 
 						<ThemeToggle
@@ -124,7 +128,7 @@ export function Navbar() {
       "
 						/>
 
-						{/* Mobile Menu Toggle */}
+						{/* Mobile Menu Toggle 移动端菜单开关 */}
 						<motion.button
 							whileTap={{ scale: 0.9 }}
 							className="
@@ -141,7 +145,7 @@ export function Navbar() {
 				</div>
 			</div>
 
-			{/* Mobile Menu - 抽屉动画提升能量感 */}
+			{/* Mobile Menu 移动端抽屉菜单 */}
 			{isMobileMenuOpen && (
 				<motion.div
 					initial={{ opacity: 0, y: -10 }}
