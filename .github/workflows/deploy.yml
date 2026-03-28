@@ -83,11 +83,8 @@ jobs:
             # 停止并移除旧容器
             docker compose down
 
-            # 清理所有构建缓存
-            docker builder prune -f
-
             # 构建镜像
-            docker compose build
+            docker compose build --no-cache
 
             # 运行迁移（migrate 服务有 profiles: [migrate]，up -d 不会自动启动它）
             DATABASE_URL=${{ secrets.DATABASE_URL }} docker compose run --rm migrate
