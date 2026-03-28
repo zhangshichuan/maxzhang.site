@@ -1,6 +1,7 @@
 {
 	"name": "maxzhang.site",
 	"version": "0.1.0",
+	"type": "module",
 	"packageManager": "pnpm@10.33.0",
 	"private": true,
 	"scripts": {
@@ -16,7 +17,8 @@
 		"lint:tsc": "tsc --noEmit",
 		"lint:eslint": "eslint --fix",
 		"lint:prettier": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md,mdx}\"",
-		"postinstall": "prisma generate"
+		"postinstall": "prisma generate",
+		"prepare": "husky"
 	},
 	"dependencies": {
 		"@prisma/adapter-better-sqlite3": "^7.5.0",
@@ -43,6 +45,8 @@
 		"tailwind-merge": "^3.4.0"
 	},
 	"devDependencies": {
+		"@commitlint/cli": "^20.5.0",
+		"@commitlint/config-conventional": "^20.5.0",
 		"@tailwindcss/postcss": "^4",
 		"@types/escape-html": "^1.0.4",
 		"@types/node": "^20",
@@ -51,6 +55,7 @@
 		"eslint": "^9",
 		"eslint-config-next": "16.1.6",
 		"eslint-plugin-better-tailwindcss": "^4.3.2",
+		"husky": "^9.1.7",
 		"prettier": "^3.8.1",
 		"prisma": "^7.5.0",
 		"tailwindcss": "^4",
