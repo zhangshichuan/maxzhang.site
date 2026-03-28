@@ -2,67 +2,76 @@
 
 [中文版本](./README.zh.md)
 
-A modern personal blog website built with **Next.js 16 (App Router)** and **Tailwind CSS 4**, designed to share thoughts on software development, design, and AI. The project leverages **MDX** for content management and features a high-performance client-side search and responsive design with a Neo-brutalism aesthetic.
+A modern personal blog built with **Next.js 16 (App Router)** and **Tailwind CSS 4**, sharing insights on software development, architecture, and AI. Features **MDX** content management, high-performance client-side search, and a Neo-brutalism-inspired responsive design.
 
 ## ✨ Key Features
 
-- **Modern Architecture**: Built on Next.js 16 App Router and React 19, utilizing Server Components (RSC) for optimal SEO and performance.
-- **Neo-brutalism Design**: A bold, energetic UI with high-contrast borders and "pop" shadows, optimized for a Web App feel.
-- **MDX Content-Driven**: Write articles in Markdown/MDX with the ability to embed React components and **Mermaid** diagrams directly.
-- **Multi-language Support**: Fully internationalized using `next-intl`, with **English as the default** and Chinese as a secondary locale.
-- **Fuzzy Search**: Integrated **Fuse.js** for blazing-fast client-side fuzzy searching across titles, content, tags, and categories.
-- **High Performance**: Optimized layout with minimal CLS (Cumulative Layout Shift) and stable scroll restoration.
+- **Modern Architecture**: Next.js 16 App Router + React 19, leveraging Server Components (RSC) for optimal SEO and performance.
+- **Neo-brutalism Design**: Bold, energetic UI with high-contrast borders and "pop" shadows, optimized for Web App aesthetics.
+- **MDX Content-Driven**: Write in Markdown/MDX with embedded React components and **Mermaid** diagrams.
+- **Multi-language Support**: Fully internationalized via `next-intl`, **English default** with Chinese locale.
+- **Fuzzy Search**: **Fuse.js** for lightning-fast client-side search across titles, content, tags, and categories.
+- **Comment System**: Fingerprint-based anti-spam with daily limits, protecting against malicious submissions.
+- **View Tracking**: Per-article view counts with 24-hour deduplication per visitor.
+- **High Performance**: Minimal CLS (Cumulative Layout Shift) and stable scroll restoration.
 - **Dark Mode**: Seamless theme switching with system preference detection via `next-themes`.
 
 ## 🛠️ Tech Stack
 
-- **Framework**: [Next.js 16](https://nextjs.org/) (React 19)
-- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
-- **Animation**: [Framer Motion](https://www.framer.com/motion/)
-- **I18n**: [next-intl](https://next-intl-docs.vercel.app/)
-- **Content**: [MDX](https://mdxjs.com/), [gray-matter](https://github.com/jonschlinkert/gray-matter)
-- **Diagrams**: [Mermaid.js](https://mermaid.js.org/)
-- **Search**: [Fuse.js](https://www.fusejs.io/)
-- **Icons**: [Lucide React](https://lucide.dev/)
+| Category | Technology |
+|----------|-----------|
+| Framework | [Next.js 16](https://nextjs.org/) (React 19) |
+| Styling | [Tailwind CSS 4](https://tailwindcss.com/) |
+| Animation | [Framer Motion](https://www.framer.com/motion/) |
+| I18n | [next-intl](https://next-intl-docs.vercel.app/) |
+| Content | [MDX](https://mdxjs.com/), [gray-matter](https://github.com/jonschlinkert/gray-matter) |
+| Diagrams | [Mermaid.js](https://mermaid.js.org/) |
+| Search | [Fuse.js](https://www.fusejs.io/) |
+| Icons | [Lucide React](https://lucide.dev/) |
+| Database | [Prisma](https://www.prisma.io/) + SQLite |
+| Theme | [next-themes](https://github.com/pacocoursey/next-themes) |
 
 ## 📂 Project Structure
 
 ```bash
-├── app/[locale]          # Next.js App Router with i18n support
-│   ├── posts/            # Article list and detail ([slug])
-│   ├── search/           # Unified search page
-│   ├── about/            # About me page
-│   └── layout.tsx        # Global layout & Providers
-├── articles/             # MDX article source files
-│   ├── en/               # English articles
-│   └── zh/               # Chinese articles
-├── components/           # Reusable React components
-│   ├── mdx/              # MDX-specific components (e.g., Mermaid)
-│   ├── ui/               # Base UI components (Neo-brutalism style)
-│   └── ...
-├── i18n/                 # Internationalization config (routing & requests)
-├── messages/             # Translation JSON files (en.json, zh.json)
-├── lib/                  # Utilities and data fetching logic
-├── public/               # Static assets
-└── proxy.ts              # Next.js proxy (replaces middleware in v16)
+├── app/                    # Next.js App Router
+│   └── [locale]/           # Internationalized routes
+│       ├── posts/          # Article list & detail ([slug])
+│       ├── search/         # Unified search page
+│       └── about/          # About page
+├── articles/               # MDX source files
+│   ├── en/                 # English articles
+│   └── zh/                 # Chinese articles
+├── components/             # Reusable React components
+│   ├── mdx/                # MDX components (e.g., Mermaid)
+│   └── ui/                 # Base UI (Neo-brutalism style)
+├── lib/                    # Utilities
+│   ├── actions/            # Server actions (comments, views)
+│   └── posts.ts           # MDX data fetching
+├── i18n/                   # i18n config (routing & requests)
+├── messages/               # Translation files (en.json, zh.json)
+├── prisma/                 # Prisma ORM database schema
+├── public/                 # Static assets
+├── .github/                # GitHub Actions workflows
+└── proxy.ts                # Next.js proxy (v16 pattern)
 ```
 
 ## 🚀 Getting Started
 
-1.  **Clone the repository**
-2.  **Install dependencies**
-    ```bash
-    pnpm install
-    ```
-3.  **Start development server**
-    ```bash
-    pnpm dev
-    ```
-    Open [http://localhost:3000](http://localhost:3000) to view the site.
+1. **Clone the repository**
+2. **Install dependencies**
+   ```bash
+   pnpm install
+   ```
+3. **Start development server**
+   ```bash
+   pnpm dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000)
 
-## ✍️ Content Creation
+## ✍️ Writing Articles
 
-All articles are located in `articles/{locale}/`. Simply create a new `.mdx` file.
+All articles live in `articles/{locale}/`. Create a new `.mdx` file to publish.
 
 **Frontmatter Example:**
 
@@ -72,15 +81,42 @@ title: 'Article Title'
 date: '2026-03-21'
 summary: 'A brief summary of the post.'
 tags: ['Next.js', 'TypeScript']
-category: 'Tech'
+category: 'Frontend'  # Frontend | Backend | DevOps
 author: 'Max Zhang'
 ---
 Your content here...
 ```
 
+## 🔧 Code Quality
+
+The project enforces code quality via **husky** git hooks:
+
+```bash
+# Run all checks (tsc + eslint + prettier)
+pnpm lint
+
+# Individual checks
+pnpm lint:tsc       # TypeScript type checking
+pnpm lint:eslint     # ESLint auto-fix
+pnpm lint:prettier   # Prettier formatting
+```
+
+**Commit Convention** (enforced by commitlint):
+
+```
+feat: add new feature
+fix: bug fix
+docs: update documentation
+style: code formatting
+refactor: code refactoring
+perf: performance optimization
+test: add tests
+chore: build/tooling changes
+```
+
 ## 🏗️ Build & Deployment
 
-The project is configured for **Docker** deployment using a standalone output mode.
+Configured for **Docker** deployment with standalone output mode.
 
 **Local Build:**
 
@@ -90,7 +126,8 @@ pnpm start
 ```
 
 **Automated Deployment:**
-Integrated GitHub Actions (`.github/workflows/deploy.yml`) for automated builds and deployment to production servers via SSH/Docker.
+
+GitHub Actions (`.github/workflows/deploy.yml`) for automatic builds via SSH/Docker on push.
 
 ## 📄 License
 
