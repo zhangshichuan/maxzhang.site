@@ -2,11 +2,7 @@ import { getAllPostsWithViews } from '@/lib/posts'
 import { HomeHero } from '@/components/home-hero'
 import { FeaturedPosts } from '@/components/featured-posts'
 
-export default async function Home({
-	params,
-}: {
-	params: Promise<{ locale: string }>
-}) {
+export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
 	const { locale } = await params
 	const posts = await getAllPostsWithViews(locale).then((p) => p.slice(0, 3))
 

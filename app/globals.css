@@ -32,13 +32,13 @@
 }
 
 :root {
-	--background: #fdfcf0; 
+	--background: #fdfcf0;
 	--foreground: #1a1a1a;
 	--card: #ffffff;
 	--card-foreground: #1a1a1a;
 	--popover: #ffffff;
 	--popover-foreground: #1a1a1a;
-	--primary: #4755f4; 
+	--primary: #4755f4;
 	--primary-foreground: #ffffff;
 	--secondary: #fbe332;
 	--secondary-foreground: #1a1a1a;
@@ -88,7 +88,9 @@ body {
 body {
 	background-color: var(--background);
 	color: var(--foreground);
-	transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+	transition:
+		background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+		color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 	background-image: radial-gradient(var(--muted) 1px, transparent 1px);
 	background-size: 24px 24px;
 }

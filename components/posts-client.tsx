@@ -33,7 +33,9 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
 				>
 					{t('title')} {/* PostsPage/title 文章库 */}
 				</h1>
-				<p className="text-xl font-medium text-muted-foreground">{t('description')} {/* PostsPage/description 探索技术、设计与生活的交汇点。 */}</p>
+				<p className="text-xl font-medium text-muted-foreground">
+					{t('description')} {/* PostsPage/description 探索技术、设计与生活的交汇点。 */}
+				</p>
 			</FadeIn>
 
 			{/* 主内容区域 */}
@@ -53,7 +55,9 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
 					))}
 					{posts.length === 0 && (
 						<GlassCard className="p-12 text-center">
-							<p className="text-xl font-bold text-muted-foreground">{t('noPosts')} {/* PostsPage/noPosts 暂无文章，敬请期待。 */}</p>
+							<p className="text-xl font-bold text-muted-foreground">
+								{t('noPosts')} {/* PostsPage/noPosts 暂无文章，敬请期待。 */}
+							</p>
 						</GlassCard>
 					)}
 				</StaggerContainer>
@@ -69,7 +73,9 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
 					>
 						{/* 热门分类模块 */}
 						<GlassCard className="p-8">
-							<h3 className="mb-6 flex items-center gap-2 text-xl font-black">{t('categories')} {/* PostsPage/categories 热门分类 */}</h3>
+							<h3 className="mb-6 flex items-center gap-2 text-xl font-black">
+								{t('categories')} {/* PostsPage/categories 热门分类 */}
+							</h3>
 							<div className="flex flex-col gap-3">
 								{allCategories.map((category) => (
 									<Link
@@ -108,7 +114,9 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
 
 						{/* 热门标签模块 */}
 						<GlassCard className="p-8">
-							<h3 className="mb-6 flex items-center gap-2 text-xl font-black">{t('tags')} {/* PostsPage/tags 热门标签 */}</h3>
+							<h3 className="mb-6 flex items-center gap-2 text-xl font-black">
+								{t('tags')} {/* PostsPage/tags 热门标签 */}
+							</h3>
 							<div className="flex flex-wrap gap-3">
 								{allTags.map((tag) => (
 									<Link
@@ -119,7 +127,7 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
             bg-card inline-flex items-center rounded-xl border-2 border-border
             px-4 py-1.5 text-xs font-black text-foreground
             shadow-[3px_3px_0px_var(--border)] transition-all
-            hover:translate-x-px hover:translate-y-px hover:shadow-none
+            hover:translate-px hover:shadow-none
           "
 									>
 										{tag}

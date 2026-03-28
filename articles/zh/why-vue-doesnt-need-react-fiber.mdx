@@ -76,12 +76,12 @@ React 把渲染工作切成很多小片段，每个片段只花几毫秒。每�
 ```javascript
 // 简化的 Fiber 节点结构
 const fiber = {
-  type: 'div',              // 组件类型
-  props: { className: 'container' },
-  child: childFiber,         // 第一个子节点
-  sibling: nextFiber,       // 下一个兄弟节点
-  parent: parentFiber,      // 父节点
-  // ... 执行上下文
+	type: 'div', // 组件类型
+	props: { className: 'container' },
+	child: childFiber, // 第一个子节点
+	sibling: nextFiber, // 下一个兄弟节点
+	parent: parentFiber, // 父节点
+	// ... 执行上下文
 }
 ```
 
@@ -514,21 +514,25 @@ React 通过**两个关键假设**把复杂度降到 O(n)：
 
 ```jsx
 // 没有 key，React 只能靠位置猜
-[ <li>张三</li>, <li>李四</li> ]
-// 变成
-[ <li>李四</li>, <li>张三</li> ]
-// React 以为：第一个变了（张三→李四），第二个也变了（李四→张三）
-// 结果：两个节点都销毁重建
+;[<li>张三</li>, <li>李四</li>][
+	// 变成
+	((<li>李四</li>), (<li>张三</li>))
+][
+	// React 以为：第一个变了（张三→李四），第二个也变了（李四→张三）
+	// 结果：两个节点都销毁重建
 
-// 有 key，React 精准识别
-[ <li key="1">张三</li>, <li key="2">李四</li> ]
-// 变成
-[ <li key="2">李四</li>, <li key="1">张三</li> ]
+	// 有 key，React 精准识别
+	((<li key="1">张三</li>), (<li key="2">李四</li>))
+][
+	// 变成
+	((<li key="2">李四</li>), (<li key="1">张三</li>))
+]
 // React 发现：key=1 的节点只是位置变了，key=2 的也是
 // 结果：只做位置移动，性能开销小很多
 ```
 
 有了这两个假设，Diff 算法只需**按层级一次遍历**：
+
 - 同位置不同类型 → 直接替换整个子树
 - 同类型同 key → 只更新属性
 - 有 key 的列表 → 精准匹配和移动

@@ -11,10 +11,14 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 	({ className, variant = 'default', size = 'default', ...props }, ref) => {
 		// 多巴胺变体映射
 		const variants = {
-			default: 'bg-primary text-primary-foreground border-2 border-border shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none',
-			destructive: 'bg-destructive text-destructive-foreground border-2 border-border shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-destructive/90 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none',
-			outline: 'border-2 border-border bg-background hover:bg-secondary/20 shadow-[4px_4px_0px_var(--muted)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none',
-			secondary: 'bg-secondary text-secondary-foreground border-2 border-border shadow-[4px_4px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none',
+			default:
+				'bg-primary text-primary-foreground border-2 border-border shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none',
+			destructive:
+				'bg-destructive text-destructive-foreground border-2 border-border shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-destructive/90 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none',
+			outline:
+				'border-2 border-border bg-background hover:bg-secondary/20 shadow-[4px_4px_0px_var(--muted)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none',
+			secondary:
+				'bg-secondary text-secondary-foreground border-2 border-border shadow-[4px_4px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none',
 			ghost: 'hover:bg-secondary/20 hover:text-accent-foreground',
 			link: 'text-primary underline-offset-4 hover:underline font-black',
 		}

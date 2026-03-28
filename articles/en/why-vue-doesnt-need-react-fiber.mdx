@@ -76,12 +76,12 @@ If there's something more urgent, React pauses the rendering, handles the urgent
 ```javascript
 // Simplified Fiber node structure
 const fiber = {
-  type: 'div',           // Component type
-  props: { className: 'container' },
-  child: childFiber,     // First child
-  sibling: nextFiber,    // Next sibling
-  parent: parentFiber,   // Parent node
-  // ... execution context
+	type: 'div', // Component type
+	props: { className: 'container' },
+	child: childFiber, // First child
+	sibling: nextFiber, // Next sibling
+	parent: parentFiber, // Parent node
+	// ... execution context
 }
 ```
 
@@ -516,21 +516,25 @@ When React sees `<div>` became `<ul>`, it immediately gives up comparing childre
 
 ```jsx
 // Without key, React can only guess by position
-[ <li>Alice</li>, <li>Bob</li> ]
-// Becomes
-[ <li>Bob</li>, <li>Alice</li> ]
-// React thinks: first item changed (Alice→Bob), second changed too (Bob→Alice)
-// Result: both nodes destroyed and recreated
+;[<li>Alice</li>, <li>Bob</li>][
+	// Becomes
+	((<li>Bob</li>), (<li>Alice</li>))
+][
+	// React thinks: first item changed (Alice→Bob), second changed too (Bob→Alice)
+	// Result: both nodes destroyed and recreated
 
-// With key, React identifies precisely
-[ <li key="1">Alice</li>, <li key="2">Bob</li> ]
-// Becomes
-[ <li key="2">Bob</li>, <li key="1">Alice</li> ]
+	// With key, React identifies precisely
+	((<li key="1">Alice</li>), (<li key="2">Bob</li>))
+][
+	// Becomes
+	((<li key="2">Bob</li>), (<li key="1">Alice</li>))
+]
 // React sees: key=1 just moved position, key=2 just moved too
 // Result: only repositioning, much less overhead
 ```
 
 With these assumptions, the Diff algorithm only needs **a single traversal by level**:
+
 - Same position, different types → replace the entire subtree
 - Same type, same key → update only attributes
 - List with keys → precise matching and repositioning

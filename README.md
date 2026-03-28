@@ -6,24 +6,24 @@ A modern personal blog website built with **Next.js 16 (App Router)** and **Tail
 
 ## ✨ Key Features
 
--   **Modern Architecture**: Built on Next.js 16 App Router and React 19, utilizing Server Components (RSC) for optimal SEO and performance.
--   **Neo-brutalism Design**: A bold, energetic UI with high-contrast borders and "pop" shadows, optimized for a Web App feel.
--   **MDX Content-Driven**: Write articles in Markdown/MDX with the ability to embed React components and **Mermaid** diagrams directly.
--   **Multi-language Support**: Fully internationalized using `next-intl`, with **English as the default** and Chinese as a secondary locale.
--   **Fuzzy Search**: Integrated **Fuse.js** for blazing-fast client-side fuzzy searching across titles, content, tags, and categories.
--   **High Performance**: Optimized layout with minimal CLS (Cumulative Layout Shift) and stable scroll restoration.
--   **Dark Mode**: Seamless theme switching with system preference detection via `next-themes`.
+- **Modern Architecture**: Built on Next.js 16 App Router and React 19, utilizing Server Components (RSC) for optimal SEO and performance.
+- **Neo-brutalism Design**: A bold, energetic UI with high-contrast borders and "pop" shadows, optimized for a Web App feel.
+- **MDX Content-Driven**: Write articles in Markdown/MDX with the ability to embed React components and **Mermaid** diagrams directly.
+- **Multi-language Support**: Fully internationalized using `next-intl`, with **English as the default** and Chinese as a secondary locale.
+- **Fuzzy Search**: Integrated **Fuse.js** for blazing-fast client-side fuzzy searching across titles, content, tags, and categories.
+- **High Performance**: Optimized layout with minimal CLS (Cumulative Layout Shift) and stable scroll restoration.
+- **Dark Mode**: Seamless theme switching with system preference detection via `next-themes`.
 
 ## 🛠️ Tech Stack
 
--   **Framework**: [Next.js 16](https://nextjs.org/) (React 19)
--   **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
--   **Animation**: [Framer Motion](https://www.framer.com/motion/)
--   **I18n**: [next-intl](https://next-intl-docs.vercel.app/)
--   **Content**: [MDX](https://mdxjs.com/), [gray-matter](https://github.com/jonschlinkert/gray-matter)
--   **Diagrams**: [Mermaid.js](https://mermaid.js.org/)
--   **Search**: [Fuse.js](https://www.fusejs.io/)
--   **Icons**: [Lucide React](https://lucide.dev/)
+- **Framework**: [Next.js 16](https://nextjs.org/) (React 19)
+- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
+- **Animation**: [Framer Motion](https://www.framer.com/motion/)
+- **I18n**: [next-intl](https://next-intl-docs.vercel.app/)
+- **Content**: [MDX](https://mdxjs.com/), [gray-matter](https://github.com/jonschlinkert/gray-matter)
+- **Diagrams**: [Mermaid.js](https://mermaid.js.org/)
+- **Search**: [Fuse.js](https://www.fusejs.io/)
+- **Icons**: [Lucide React](https://lucide.dev/)
 
 ## 📂 Project Structure
 
@@ -83,6 +83,7 @@ Your content here...
 The project is configured for **Docker** deployment using a standalone output mode.
 
 **Local Build:**
+
 ```bash
 pnpm build
 pnpm start

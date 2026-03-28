@@ -118,7 +118,8 @@ export function Comment({ slug, locale }: CommentProps) {
 						{remaining !== null && remaining < 5 && (
 							<span className="flex items-center gap-1">
 								<Clock className="size-3" />
-								{remaining === 0 ? t('noRemaining') : t('remaining', { count: remaining })} {/* Comment/remaining 今日还可评论 {count} 条 / Comment/noRemaining 今日评论次数已用完 */}
+								{remaining === 0 ? t('noRemaining') : t('remaining', { count: remaining })}{' '}
+								{/* Comment/remaining 今日还可评论 {count} 条 / Comment/noRemaining 今日评论次数已用完 */}
 							</span>
 						)}
 					</div>
@@ -144,7 +145,8 @@ export function Comment({ slug, locale }: CommentProps) {
 						className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						<Send className="size-4" />
-						{isSubmitting ? t('submitting') : t('submit')} {/* Comment/submitting 发送中... / Comment/submit 发表评论 */}
+						{isSubmitting ? t('submitting') : t('submit')}{' '}
+						{/* Comment/submitting 发送中... / Comment/submit 发表评论 */}
 					</button>
 				</div>
 			</form>
@@ -163,7 +165,9 @@ export function Comment({ slug, locale }: CommentProps) {
 					))}
 				</div>
 			) : (
-				<p className="text-sm text-muted-foreground">{t('empty')} {/* Comment/empty 暂无评论，快来抢沙发！ */}</p>
+				<p className="text-sm text-muted-foreground">
+					{t('empty')} {/* Comment/empty 暂无评论，快来抢沙发！ */}
+				</p>
 			)}
 		</div>
 	)

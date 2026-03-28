@@ -77,7 +77,7 @@ export function SearchClient({ posts }: SearchClientProps) {
 			// 构建新的 URL query string
 			const queryString = params.toString()
 			const newUrl = queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname
-			
+
 			// 使用 history.replaceState 修改 URL 而不触发页面刷新或 Next.js 路由跳转
 			// 这样就避免了触发服务端的 RSC 请求
 			window.history.replaceState(null, '', newUrl)
@@ -125,9 +125,11 @@ export function SearchClient({ posts }: SearchClientProps) {
 		<div className="space-y-8">
 			{/* 搜索输入框区域 */}
 			<div className="relative">
-				<Search className="
+				<Search
+					className="
       absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-muted-foreground
-    " />
+    "
+				/>
 				<input
 					type="text"
 					value={query}
@@ -153,15 +155,19 @@ export function SearchClient({ posts }: SearchClientProps) {
 			</div>
 
 			{/* 分类和标签选择区域 */}
-			<div className="
+			<div
+				className="
      grid gap-6
      md:grid-cols-2
-   ">
+   "
+			>
 				{/* 分类列表 */}
 				<div className="space-y-3">
-					<h3 className="
+					<h3
+						className="
        flex items-center gap-2 text-sm font-medium text-muted-foreground
-     ">
+     "
+					>
 						<Folder className="h-4 w-4" /> {t('category')} {/* SearchPage/category 分类 */}
 					</h3>
 					<div className="flex flex-wrap gap-2">
@@ -174,16 +180,16 @@ export function SearchClient({ posts }: SearchClientProps) {
           font-medium transition-colors
           focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none
           ${
-									selectedCategory === category
-										? `
+						selectedCategory === category
+							? `
             border-transparent bg-primary text-primary-foreground
             hover:bg-primary/80
           `
-										: `
+							: `
             border-transparent bg-secondary text-secondary-foreground
             hover:bg-secondary/80
           `
-								}
+					}
         `}
 							>
 								{category}
@@ -194,7 +200,9 @@ export function SearchClient({ posts }: SearchClientProps) {
 
 				{/* 标签列表 */}
 				<div className="space-y-3">
-					<h3 className="text-sm font-medium text-muted-foreground">{t('tag')} {/* SearchPage/tag 标签 */}</h3>
+					<h3 className="text-sm font-medium text-muted-foreground">
+						{t('tag')} {/* SearchPage/tag 标签 */}
+					</h3>
 					<div className="flex flex-wrap gap-2">
 						{allTags.map((tag) => (
 							<button
@@ -205,16 +213,16 @@ export function SearchClient({ posts }: SearchClientProps) {
           font-medium transition-colors
           focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none
           ${
-									selectedTag === tag
-										? `
+						selectedTag === tag
+							? `
             border-transparent bg-primary text-primary-foreground
             hover:bg-primary/80
           `
-										: `
+							: `
             border-transparent bg-secondary text-secondary-foreground
             hover:bg-secondary/80
           `
-								}
+					}
         `}
 							>
 								{tag}
@@ -227,39 +235,54 @@ export function SearchClient({ posts }: SearchClientProps) {
 			{/* 当前筛选条件展示 */}
 			{hasFilters && (
 				<div className="flex flex-wrap items-center gap-2 border-t pt-4">
-					<span className="text-sm text-muted-foreground">{t('currentFilter')}: {/* SearchPage/currentFilter 当前筛选 */}</span>
+					<span className="text-sm text-muted-foreground">
+						{t('currentFilter')}: {/* SearchPage/currentFilter 当前筛选 */}
+					</span>
 					{selectedCategory && (
-						<span className="
+						<span
+							className="
         inline-flex items-center gap-1 rounded-md border border-primary/20
         bg-primary/10 px-2 py-1 text-xs font-medium text-primary
-      ">
+      "
+						>
 							{t('category')}: {selectedCategory} {/* SearchPage/category 分类 */}
-							<button onClick={clearCategory} className="
+							<button
+								onClick={clearCategory}
+								className="
          ml-1
          hover:text-primary/70
-       ">
+       "
+							>
 								<X className="size-3" />
 							</button>
 						</span>
 					)}
 					{selectedTag && (
-						<span className="
+						<span
+							className="
         inline-flex items-center gap-1 rounded-md border border-primary/20
         bg-primary/10 px-2 py-1 text-xs font-medium text-primary
-      ">
+      "
+						>
 							{t('tag')}: {selectedTag} {/* SearchPage/tag 标签 */}
-							<button onClick={clearTag} className="
+							<button
+								onClick={clearTag}
+								className="
          ml-1
          hover:text-primary/70
-       ">
+       "
+							>
 								<X className="size-3" />
 							</button>
 						</span>
 					)}
-					<button onClick={clearFilters} className="
+					<button
+						onClick={clearFilters}
+						className="
        text-xs text-muted-foreground underline
        hover:text-primary
-     ">
+     "
+					>
 						{t('clearAll')} {/* SearchPage/clearAll 清除所有 */}
 					</button>
 				</div>
@@ -278,11 +301,16 @@ export function SearchClient({ posts }: SearchClientProps) {
 				{hasFilters && filteredPosts.length === 0 && (
 					<div className="py-20 text-center text-muted-foreground">
 						<Search className="mx-auto mb-4 h-10 w-10 opacity-20" />
-						<p className="text-lg">{t('noResults')} {/* SearchPage/noResults 没有找到匹配的文章 */}</p>
-						<button onClick={clearFilters} className="
+						<p className="text-lg">
+							{t('noResults')} {/* SearchPage/noResults 没有找到匹配的文章 */}
+						</p>
+						<button
+							onClick={clearFilters}
+							className="
         mt-4 text-primary
         hover:underline
-      ">
+      "
+						>
 							{t('clearFilters')} {/* SearchPage/clearFilters 清除筛选条件 */}
 						</button>
 					</div>
@@ -292,7 +320,9 @@ export function SearchClient({ posts }: SearchClientProps) {
 				{!hasFilters && (
 					<div className="py-20 text-center text-muted-foreground">
 						<Search className="mx-auto mb-4 h-10 w-10 opacity-10" />
-						<p className="text-lg">{t('startSearch')} {/* SearchPage/startSearch 输入关键词或选择标签开始搜索 */}</p>
+						<p className="text-lg">
+							{t('startSearch')} {/* SearchPage/startSearch 输入关键词或选择标签开始搜索 */}
+						</p>
 					</div>
 				)}
 			</div>

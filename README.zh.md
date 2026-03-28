@@ -6,24 +6,24 @@
 
 ## ✨ 核心特性
 
--   **现代架构**: 基于 Next.js 16 App Router 和 React 19 构建，利用服务端组件 (RSC) 实现极致的 SEO 和性能。
--   **新丑风设计 (Neo-brutalism)**: 大胆且富有能量感的 UI，采用高对比度边框和“弹出式”阴影，针对 Web App 质感进行了深度优化。
--   **MDX 内容驱动**: 使用 Markdown/MDX 编写文章，支持在文章中直接嵌入 React 组件和 **Mermaid** 流程图。
--   **多语言支持**: 基于 `next-intl` 实现全站国际化，**默认为英文**，支持中文。
--   **模糊搜索**: 集成 **Fuse.js** 实现闪电般的客户端模糊搜索，支持按标题、内容、标签和分类过滤。
--   **高性能优化**: 优化的布局减少了累积布局偏移 (CLS)，并实现了稳定的滚动恢复机制。
--   **深色模式**: 支持深色/浅色模式切换，并能自动识别系统主题偏好。
+- **现代架构**: 基于 Next.js 16 App Router 和 React 19 构建，利用服务端组件 (RSC) 实现极致的 SEO 和性能。
+- **新丑风设计 (Neo-brutalism)**: 大胆且富有能量感的 UI，采用高对比度边框和“弹出式”阴影，针对 Web App 质感进行了深度优化。
+- **MDX 内容驱动**: 使用 Markdown/MDX 编写文章，支持在文章中直接嵌入 React 组件和 **Mermaid** 流程图。
+- **多语言支持**: 基于 `next-intl` 实现全站国际化，**默认为英文**，支持中文。
+- **模糊搜索**: 集成 **Fuse.js** 实现闪电般的客户端模糊搜索，支持按标题、内容、标签和分类过滤。
+- **高性能优化**: 优化的布局减少了累积布局偏移 (CLS)，并实现了稳定的滚动恢复机制。
+- **深色模式**: 支持深色/浅色模式切换，并能自动识别系统主题偏好。
 
 ## 🛠️ 技术栈
 
--   **框架**: [Next.js 16](https://nextjs.org/) (React 19)
--   **样式**: [Tailwind CSS 4](https://tailwindcss.com/)
--   **动画**: [Framer Motion](https://www.framer.com/motion/)
--   **国际化**: [next-intl](https://next-intl-docs.vercel.app/)
--   **内容处理**: [MDX](https://mdxjs.com/), [gray-matter](https://github.com/jonschlinkert/gray-matter)
--   **图表**: [Mermaid.js](https://mermaid.js.org/)
--   **搜索**: [Fuse.js](https://www.fusejs.io/)
--   **图标**: [Lucide React](https://lucide.dev/)
+- **框架**: [Next.js 16](https://nextjs.org/) (React 19)
+- **样式**: [Tailwind CSS 4](https://tailwindcss.com/)
+- **动画**: [Framer Motion](https://www.framer.com/motion/)
+- **国际化**: [next-intl](https://next-intl-docs.vercel.app/)
+- **内容处理**: [MDX](https://mdxjs.com/), [gray-matter](https://github.com/jonschlinkert/gray-matter)
+- **图表**: [Mermaid.js](https://mermaid.js.org/)
+- **搜索**: [Fuse.js](https://www.fusejs.io/)
+- **图标**: [Lucide React](https://lucide.dev/)
 
 ## 📂 项目结构
 
@@ -83,6 +83,7 @@ author: 'Max Zhang'
 项目已配置为 **Docker** 部署，采用 standalone 模式。
 
 **本地构建：**
+
 ```bash
 pnpm build
 pnpm start

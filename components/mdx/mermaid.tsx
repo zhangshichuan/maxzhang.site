@@ -196,7 +196,7 @@ export default function Mermaid({ chart }: MermaidProps) {
          hover:bg-muted
        "
 							>
-								<ZoomIn className="h-5 w-5" />
+								<ZoomIn className="size-5" />
 							</button>
 							<button
 								onClick={handleZoomOut}
@@ -205,7 +205,7 @@ export default function Mermaid({ chart }: MermaidProps) {
          hover:bg-muted
        "
 							>
-								<ZoomOut className="h-5 w-5" />
+								<ZoomOut className="size-5" />
 							</button>
 							<button
 								onClick={handleReset}
@@ -214,7 +214,7 @@ export default function Mermaid({ chart }: MermaidProps) {
          hover:bg-muted
        "
 							>
-								<RotateCcw className="h-5 w-5" />
+								<RotateCcw className="size-5" />
 							</button>
 						</div>
 

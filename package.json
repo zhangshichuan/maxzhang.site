@@ -12,7 +12,10 @@
 		"db:deploy": "prisma migrate deploy",
 		"db:seed": "prisma db seed",
 		"db:studio": "prisma studio",
-		"lint": "eslint",
+		"lint": "tsc --noEmit && eslint --fix && prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md,mdx}\"",
+		"lint:tsc": "tsc --noEmit",
+		"lint:eslint": "eslint --fix",
+		"lint:prettier": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md,mdx}\"",
 		"postinstall": "prisma generate"
 	},
 	"dependencies": {

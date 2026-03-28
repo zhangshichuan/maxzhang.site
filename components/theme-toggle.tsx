@@ -32,7 +32,7 @@ export function ThemeToggle({ className }: { className?: string }) {
 				`
       bg-background shadow-[2px_2px_0px_var(--border)]
       hover:bg-secondary/20
-      active:translate-x-px active:translate-y-px active:shadow-none
+      active:translate-px active:shadow-none
     `,
 				className,
 			)}
