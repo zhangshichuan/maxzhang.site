@@ -83,6 +83,9 @@ jobs:
             # 停止并移除旧容器
             docker compose down
 
+            # 清理所有构建缓存
+            docker builder prune -f
+
             # 构建镜像
             docker compose build
 

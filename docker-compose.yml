@@ -21,5 +21,6 @@ services:
     ports:
       - '3000:3000'
 
+# 查看真实路径：docker volume inspect maxzhangsite_sqlite_data
 volumes:
   sqlite_data:
