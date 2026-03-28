@@ -84,7 +84,8 @@ jobs:
             docker compose down
 
             # 构建镜像
-            docker compose build --no-cache
+            docker compose build --no-cache migrate
+            docker compose build app
 
             # 运行迁移（migrate 服务有 profiles: [migrate]，up -d 不会自动启动它）
             DATABASE_URL=${{ secrets.DATABASE_URL }} docker compose run --rm migrate
