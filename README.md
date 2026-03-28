@@ -18,18 +18,18 @@ A modern personal blog built with **Next.js 16 (App Router)** and **Tailwind CSS
 
 ## 🛠️ Tech Stack
 
-| Category | Technology |
-|----------|-----------|
-| Framework | [Next.js 16](https://nextjs.org/) (React 19) |
-| Styling | [Tailwind CSS 4](https://tailwindcss.com/) |
-| Animation | [Framer Motion](https://www.framer.com/motion/) |
-| I18n | [next-intl](https://next-intl-docs.vercel.app/) |
-| Content | [MDX](https://mdxjs.com/), [gray-matter](https://github.com/jonschlinkert/gray-matter) |
-| Diagrams | [Mermaid.js](https://mermaid.js.org/) |
-| Search | [Fuse.js](https://www.fusejs.io/) |
-| Icons | [Lucide React](https://lucide.dev/) |
-| Database | [Prisma](https://www.prisma.io/) + SQLite |
-| Theme | [next-themes](https://github.com/pacocoursey/next-themes) |
+| Category  | Technology                                                                             |
+| --------- | -------------------------------------------------------------------------------------- |
+| Framework | [Next.js 16](https://nextjs.org/) (React 19)                                           |
+| Styling   | [Tailwind CSS 4](https://tailwindcss.com/)                                             |
+| Animation | [Framer Motion](https://www.framer.com/motion/)                                        |
+| I18n      | [next-intl](https://next-intl-docs.vercel.app/)                                        |
+| Content   | [MDX](https://mdxjs.com/), [gray-matter](https://github.com/jonschlinkert/gray-matter) |
+| Diagrams  | [Mermaid.js](https://mermaid.js.org/)                                                  |
+| Search    | [Fuse.js](https://www.fusejs.io/)                                                      |
+| Icons     | [Lucide React](https://lucide.dev/)                                                    |
+| Database  | [Prisma](https://www.prisma.io/) + SQLite                                              |
+| Theme     | [next-themes](https://github.com/pacocoursey/next-themes)                              |
 
 ## 📂 Project Structure
 
@@ -81,7 +81,7 @@ title: 'Article Title'
 date: '2026-03-21'
 summary: 'A brief summary of the post.'
 tags: ['Next.js', 'TypeScript']
-category: 'Frontend'  # Frontend | Backend | DevOps
+category: 'Frontend' # Frontend | Backend | DevOps
 author: 'Max Zhang'
 ---
 Your content here...

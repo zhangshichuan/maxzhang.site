@@ -18,18 +18,18 @@
 
 ## 🛠️ 技术栈
 
-| 类别 | 技术 |
-|------|------|
-| 框架 | [Next.js 16](https://nextjs.org/) (React 19) |
-| 样式 | [Tailwind CSS 4](https://tailwindcss.com/) |
-| 动画 | [Framer Motion](https://www.framer.com/motion/) |
-| 国际化 | [next-intl](https://next-intl-docs.vercel.app/) |
-| 内容 | [MDX](https://mdxjs.com/)、[gray-matter](https://github.com/jonschlinkert/gray-matter) |
-| 图表 | [Mermaid.js](https://mermaid.js.org/) |
-| 搜索 | [Fuse.js](https://www.fusejs.io/) |
-| 图标 | [Lucide React](https://lucide.dev/) |
-| 数据库 | [Prisma](https://www.prisma.io/) + SQLite |
-| 主题 | [next-themes](https://github.com/pacocoursey/next-themes) |
+| 类别   | 技术                                                                                   |
+| ------ | -------------------------------------------------------------------------------------- |
+| 框架   | [Next.js 16](https://nextjs.org/) (React 19)                                           |
+| 样式   | [Tailwind CSS 4](https://tailwindcss.com/)                                             |
+| 动画   | [Framer Motion](https://www.framer.com/motion/)                                        |
+| 国际化 | [next-intl](https://next-intl-docs.vercel.app/)                                        |
+| 内容   | [MDX](https://mdxjs.com/)、[gray-matter](https://github.com/jonschlinkert/gray-matter) |
+| 图表   | [Mermaid.js](https://mermaid.js.org/)                                                  |
+| 搜索   | [Fuse.js](https://www.fusejs.io/)                                                      |
+| 图标   | [Lucide React](https://lucide.dev/)                                                    |
+| 数据库 | [Prisma](https://www.prisma.io/) + SQLite                                              |
+| 主题   | [next-themes](https://github.com/pacocoursey/next-themes)                              |
 
 ## 📂 项目结构
 
@@ -81,7 +81,7 @@ title: '文章标题'
 date: '2026-03-21'
 summary: '文章的简短摘要。'
 tags: ['Next.js', 'TypeScript']
-category: 'Frontend'  # Frontend | Backend | DevOps
+category: 'Frontend' # Frontend | Backend | DevOps
 author: 'Max Zhang'
 ---
 正文内容...
