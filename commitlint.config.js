@@ -77,7 +77,7 @@ const config = {
 			],
 		],
 
-		// type 大小写不敏感
+		// type 必须为小写
 		'type-case': [2, 'always', 'lower-case'],
 
 		// type 不能为空
@@ -85,6 +85,9 @@ const config = {
 
 		// 提交信息主体不能为空
 		'subject-empty': [2, 'never'],
+
+		// subject 大小写不敏感
+		'subject-case': [0],
 	},
 }
 

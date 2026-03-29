@@ -1,0 +1,672 @@
+---
+title: '前端数据结构与算法入门'
+summary: '一篇面向前端开发者的数据结构与算法入门指南，涵盖数组、栈、队列、链表、树、堆等核心数据结构，以及排序、查找、动态规划等常用算法，配有 JavaScript 实战代码和复杂度分析。'
+category: 'Frontend'
+tags: ['数据结构', '算法', 'JavaScript', '复杂度']
+author: 'Max Zhang'
+date: '2026-03-29'
+---
+
+写前端代码的时候，你每天都在和数据打交道。数据怎么组织、怎么查找、怎么排序，这些就是数据结构与算法要研究的内容。
+
+别被这两个词吓到，其实没那么复杂。这篇文章会用大白话解释清楚。
+
+---
+
+## 第一章：数据结构
+
+数据结构就是数据在代码里怎么存放的问题。
+
+### 1. 数组
+
+数组应该你最熟悉的了，就是把一堆数据挨个放在一起。
+
+```javascript
+const arr = [1, 2, 3, 4, 5]
+// 第0个是1，第1个是2，第2个是3...
+console.log(arr[2]) // 输出 3
+```
+
+数组的特点：
+
+- 每个数据都有固定的位置（第几个），叫**索引**或**下标**
+- 想知道第5个数据是什么，直接用 arr[4] 就能拿到
+- 但是在中间插入一个数据，后面的都要往后挪一位
+
+### 2. 栈
+
+栈这个数据结构，就像一摞盘子。你只能从最上面放盘子，也只能从最上面拿盘子。
+
+专业点说就是：**后进先出**（Last In First Out），最后放进去的最先出来。
+
+```javascript
+const stack = []
+stack.push(1) // 放进去
+stack.push(2)
+stack.push(3)
+
+console.log(stack.pop()) // 输出 3，最后进去的先出来
+console.log(stack.pop()) // 输出 2
+console.log(stack.pop()) // 输出 1
+```
+
+栈用在哪里？比如浏览器的前进后退功能、函数调用（递归其实就是栈）、括号匹配检查。
+
+### 3. 队列
+
+队列就像排队买东西，先来的先服务。专业点说就是：**先进先出**（First In First Out）。
+
+```javascript
+const queue = []
+queue.push('小明') // 入队
+queue.push('小红')
+queue.push('小张')
+
+console.log(queue.shift()) // 输出"小明"，最先排队的先出来
+console.log(queue.shift()) // 输出"小红"
+```
+
+队列用在哪里？JavaScript 的事件循环、异步任务队列、打印任务队列。
+
+### 4. 链表
+
+链表和数组不一样的地方在于，数组里的每个数据是挨着放的，但链表不是。
+
+链表里每个数据叫一个"节点"，每个节点存两样东西：**自己的值**和**下一个节点的地址**。
+
+```javascript
+class ListNode {
+	constructor(val) {
+		this.val = val
+		this.next = null
+	}
+}
+
+// 创建链表：1 -> 2 -> 3 -> 4
+const head = new ListNode(1)
+head.next = new ListNode(2)
+head.next.next = new ListNode(3)
+head.next.next.next = new ListNode(4)
+```
+
+链表和数组的区别：
+
+| 操作       | 数组              | 链表               |
+| ---------- | ----------------- | ------------------ |
+| 查第5个    | 直接 arr[4]，很快 | 要从头一个个数，慢 |
+| 在中间插入 | 后面全要挪动，慢  | 只改两个指针，快   |
+
+### 5. 树
+
+树这种数据结构，就像一棵倒过来的树。有根节点，根节点下面有子节点，子节点下面还有子节点……
+
+每个节点只有一个"父节点"（上面的），但可以有多个"子节点"（下面的）。
+
+#### 二叉树：每个节点最多两个叉
+
+二叉树是最常见的树结构，每个节点最多只有两个子节点，叫"左孩子"和"右孩子"。
+
+```javascript
+class TreeNode {
+	constructor(val) {
+		this.val = val
+		this.left = null
+		this.right = null
+	}
+}
+```
+
+#### 为什么是二叉树？
+
+你可能想问，为什么不是三叉树、四叉树？
+
+主要是因为二叉树最简单、最好处理。只有左边和右边两个方向，判断起来很直接。计算机底层就是二进制，0和1，处理"有"和"没有"这种判断最拿手。
+
+而且很多算法用二叉树就够了，三叉四叉反而复杂。实际上，三叉四叉的问题，都可以用二叉树通过多层来模拟。
+
+#### 二叉搜索树（BST）
+
+二叉搜索树是一种特殊的二叉树，规则很简单：左边的节点都比根节点小，右边的节点都比根节点大。
+
+这个规则对每个节点都适用。所以找东西特别快，比根大的往右边走，比根小的往左边走。
+
+### 6. 堆
+
+堆是一种特殊的完全二叉树。完全二叉树的意思是，除了最后一层，其他层的节点都是满的，而且最后一层的节点都靠左。
+
+堆有两种：最大堆和最小堆。
+
+- **最大堆**：父节点比子节点都大，根节点是最大的
+- **最小堆**：父节点比子节点都小，根节点是最小的
+
+堆有什么用？最常见的就是 Top K 问题。比如要在一万个数字里找出最大的100个，用堆就特别快。
+
+---
+
+## 第二章：复杂度
+
+复杂度就是衡量代码快不快的方法。
+
+### 什么是时间复杂度？
+
+代码跑得快不快，不是看"几秒"（那和电脑配置有关），而是看**数据量变大的时候，代码会变慢多少**。
+
+我们用"O(...)"来表示复杂度，这个括号里的东西叫"数量级"。
+
+### O(1) - 一次就够
+
+不管数据有多少，执行时间都是固定的。就像你知道某个东西在哪，直接伸手就拿到了。
+
+```javascript
+// O(1)：不管数组多长，直接拿第一个
+function getFirst(arr) {
+	return arr[0]
+}
+```
+
+### O(n) - 和数据量一样
+
+数据是几个，就要操作几次。就像数人数，30个人数30下，100个人数100下。
+
+```javascript
+// O(n)：要全部看一遍
+function findMax(arr) {
+	let max = arr[0]
+	for (let i = 1; i < arr.length; i++) {
+		if (arr[i] > max) max = arr[i]
+	}
+	return max
+}
+```
+
+### O(n²) - 数据量的平方
+
+这种情况一般出现在嵌套循环里，就是两个循环套在一起。比如数组有100个元素，嵌套循环可能要做100×100=10000次。
+
+冒泡排序就是典型的 O(n²)。
+
+```javascript
+// O(n²)：两个循环嵌套
+for (let i = 0; i < n; i++) {
+	// n次
+	for (let j = 0; j < n; j++) {
+		// n次
+		// 这里是 n×n 次操作
+	}
+}
+```
+
+### O(log n) - 数据量的对数
+
+log 就是对数。简单理解就是：每次操作能排除一半的数据。
+
+最典型的例子就是二分查找。100个数字，最多找7次；1000个数字，最多找10次；10000个数字，最多找14次。
+
+为什么这么快？因为每次猜中间，都能排除一半。
+
+### O(n log n)
+
+这个是 O(n) 和 O(log n) 的乘积。很多高效的排序算法，比如快速排序、归并排序，时间复杂度就是 O(n log n)。
+
+比 O(n²) 快，但比 O(n) 慢。
+
+### 复杂度对比
+
+| 复杂度     | 数量级   | 速度 |
+| ---------- | -------- | ---- |
+| O(1)       | 常数     | 最快 |
+| O(log n)   | 对数     | 快   |
+| O(n)       | 线性     | 正常 |
+| O(n log n) | 线性对数 | 较快 |
+| O(n²)      | 平方     | 慢   |
+
+### 空间复杂度
+
+除了时间复杂度，还有一个叫空间复杂度，就是代码运行需要占用多少内存。
+
+- 只用了几个变量 → O(1)
+- 创建了一个和原数组一样大的新数组 → O(n)
+
+---
+
+## 第三章：从数据结构到具体算法
+
+每种数据结构都有它擅长的问题类型。
+
+### 数组相关的算法
+
+#### 数组旋转 k 步
+
+把数组 [1,2,3,4,5] 向右旋转2步，变成 [4,5,1,2,3]。
+
+**不好的做法**：pop + unshift 的方式，每次 pop 很快，但 unshift 要把整个数组往后挪，很慢。
+
+```javascript
+// 总体 O(n*k)，k是旋转步数
+for (let i = 0; i < k; i++) {
+	const last = arr.pop()
+	arr.unshift(last) // O(n)！
+}
+```
+
+**好的做法**：翻转三次的方式，只需要翻转三遍，每遍 O(n)，总共 O(n)。
+
+```javascript
+function rotate(arr, k) {
+	k = k % arr.length
+	reverse(arr, 0, arr.length - 1)
+	reverse(arr, 0, k - 1)
+	reverse(arr, k, arr.length - 1)
+	return arr
+}
+// 整体 O(n)
+```
+
+#### 移动0到数组末尾
+
+把数组中的0全部移到末尾，同时保持其他数字的顺序。
+
+**不好的做法**：用 splice 删除0然后 push 0，splice 在中间删除元素要移动后面的所有元素，很慢。
+
+```javascript
+// splice 是 O(n) 操作，要避免
+for (let i = arr.length - 1; i >= 0; i--) {
+	if (arr[i] === 0) {
+		arr.splice(i, 1)
+		arr.push(0)
+	}
+}
+```
+
+**好的做法**：双指针的思路：快指针找非0的元素，慢指针负责把这些非0元素放到前面。
+
+```javascript
+function moveZeroes(nums) {
+	let slow = 0
+	for (let fast = 0; fast < nums.length; fast++) {
+		if (nums[fast] !== 0) {
+			;[nums[slow], nums[fast]] = [nums[fast], nums[slow]]
+			slow++
+		}
+	}
+}
+// 整体 O(n)，只需要遍历一遍
+```
+
+#### 两数之和（双指针）
+
+在有序数组中找两个数，加起来等于目标值。
+
+双指针的思路：左右各一个指针，向中间靠拢。
+
+```javascript
+function twoSum(nums, target) {
+	let left = 0
+	let right = nums.length - 1
+
+	while (left < right) {
+		const sum = nums[left] + nums[right]
+		if (sum === target) {
+			return [left, right]
+		} else if (sum < target) {
+			left++
+		} else {
+			right--
+		}
+	}
+	return []
+}
+// O(n)，比双重循环的 O(n²) 快多了
+```
+
+#### 找连续最多的字符
+
+找出字符串中连续出现最多的字符和次数。
+
+```javascript
+function maxChar(s) {
+	let maxChar = ''
+	let maxCount = 0
+	let currentChar = ''
+	let currentCount = 0
+
+	for (const char of s) {
+		if (char === currentChar) {
+			currentCount++
+		} else {
+			if (currentCount > maxCount) {
+				maxCount = currentCount
+				maxChar = currentChar
+			}
+			currentChar = char
+			currentCount = 1
+		}
+	}
+
+	if (currentCount > maxCount) {
+		maxCount = currentCount
+		maxChar = currentChar
+	}
+
+	return { char: maxChar, count: maxCount }
+}
+```
+
+#### 回文数
+
+判断一个数是不是回文数（正着读和反着读一样）。
+
+```javascript
+function isPalindrome(num) {
+	if (num < 0) return false
+	if (num < 10) return true
+
+	let original = num
+	let reversed = 0
+
+	while (num > 0) {
+		reversed = reversed * 10 + (num % 10)
+		num = Math.floor(num / 10)
+	}
+
+	return original === reversed
+}
+```
+
+### 栈相关的算法
+
+#### 括号匹配
+
+检查一个字符串里的括号是否配对正确，像 \{ \[ ( ) ] \} 这样就是对的，但 \{ ( ] \} 这样就是错的。
+
+思路：用栈，左括号入栈，右括号时检查栈顶是否匹配。
+
+```javascript
+function isValid(str) {
+	const stack = []
+	const map = {
+		')': '(',
+		']': '[',
+		'}': '{',
+	}
+
+	for (const char of str) {
+		if (char === '(' || char === '[' || char === '{') {
+			stack.push(char)
+		} else {
+			if (stack.pop() !== map[char]) return false
+		}
+	}
+
+	return stack.length === 0
+}
+```
+
+### 队列相关的算法
+
+#### 两个栈实现队列
+
+用两个栈可以实现一个队列。思路是：入队直接压入一个栈，出队时如果另一个栈不为空就弹出，否则把第一个栈的内容全部倒入第二个栈。
+
+```javascript
+class Queue {
+	constructor() {
+		this.stackIn = []
+		this.stackOut = []
+	}
+
+	enqueue(item) {
+		this.stackIn.push(item)
+	}
+
+	dequeue() {
+		if (this.stackOut.length === 0) {
+			while (this.stackIn.length) {
+				this.stackOut.push(this.stackIn.pop())
+			}
+		}
+		return this.stackOut.pop()
+	}
+}
+```
+
+#### 链表和数组哪个实现队列更快？
+
+如果用数组配合 head 和 tail 指针，入队和出队都可以是 O(1)。
+
+如果用普通数组，push 是 O(1)，但 shift 是 O(n)（要移动所有元素）。
+
+链表的话，入队和出队都是 O(1)。
+
+所以其实都可以，关键是看你怎么用。
+
+### 链表相关的算法
+
+#### 反转链表
+
+把链表 1->2->3->4 变成 4->3->2->1。
+
+```javascript
+function reverseList(head) {
+	let prev = null
+	let curr = head
+
+	while (curr) {
+		const next = curr.next
+		curr.next = prev
+		prev = curr
+		curr = next
+	}
+
+	return prev
+}
+```
+
+### 树相关的算法
+
+#### 二叉树的遍历
+
+三种遍历方式：
+
+- **前序**：根-左-右
+- **中序**：左-根-右
+- **后序**：左-右-根
+
+```javascript
+function inOrder(root) {
+	// 中序遍历
+	if (!root) return
+	inOrder(root.left)
+	console.log(root.val)
+	inOrder(root.right)
+}
+```
+
+#### 二叉搜索树第k小值
+
+找 BST 中第 k 小的值。由于 BST 中序遍历是升序的，只要用中序遍历，第 k 个就是答案。
+
+```javascript
+function kthSmallest(root, k) {
+	let count = 0
+	let result = null
+
+	function inOrder(node) {
+		if (!node || result) return
+		inOrder(node.left)
+		count++
+		if (count === k) {
+			result = node.val
+			return
+		}
+		inOrder(node.right)
+	}
+
+	inOrder(root)
+	return result
+}
+```
+
+### 排序算法
+
+#### 快速排序
+
+快速排序是一种分治算法。选择一个基准值，把小于基准的放左边，大于基准的放右边，然后递归处理左右两边。
+
+```javascript
+function quickSort(arr, left = 0, right = arr.length - 1) {
+	if (left < right) {
+		const pivotIndex = partition(arr, left, right)
+		quickSort(arr, left, pivotIndex - 1)
+		quickSort(arr, pivotIndex + 1, right)
+	}
+	return arr
+}
+
+function partition(arr, left, right) {
+	const pivot = arr[right]
+	let i = left - 1
+
+	for (let j = left; j < right; j++) {
+		if (arr[j] <= pivot) {
+			i++
+			;[arr[i], arr[j]] = [arr[j], arr[i]]
+		}
+	}
+
+	;[arr[i + 1], arr[right]] = [arr[right], arr[i + 1]]
+	return i + 1
+}
+```
+
+---
+
+## 第四章：常见算法思想
+
+### 贪心
+
+贪心的意思是，每一步都选择当前最好的，不考虑以后会怎样。很多情况下这样能得到正确答案，但有时候不行。
+
+典型例子：找零钱的时候，每次都选最大的硬币。
+
+### 二分查找
+
+二分查找的前提是数据必须**有序**。每次看中间，根据大小关系排除一半，直到找到目标。
+
+```javascript
+function binarySearch(arr, target) {
+	let left = 0
+	let right = arr.length - 1
+
+	while (left <= right) {
+		const mid = Math.floor((left + right) / 2)
+		if (arr[mid] === target) return mid
+		else if (arr[mid] < target) left = mid + 1
+		else right = mid - 1
+	}
+
+	return -1
+}
+```
+
+### 动态规划
+
+动态规划的核心是：把大问题拆成小问题，但小问题可能被用到很多次，所以要把结果记下来，下次直接用。
+
+典型例子：斐波那契数列。
+
+**不好的做法**：普通递归，每次都从头算，重复计算太多。
+
+```javascript
+// 这样算 fib(5) 会重复算很多次，O(2^n)
+function fib(n) {
+	if (n <= 1) return n
+	return fib(n - 1) + fib(n - 2)
+}
+```
+
+**好的做法**：循环，从最小的开始算，逐步往上加，结果记下来不重复算。
+
+```javascript
+// O(n)，每次只算一次
+function fib(n) {
+	if (n <= 1) return n
+	let prev = 0,
+		curr = 1
+	for (let i = 2; i <= n; i++) {
+		;[prev, curr] = [curr, prev + curr]
+	}
+	return curr
+}
+```
+
+青蛙跳台阶也是动态规划：跳到第n级，可以从第n-1级跳一步，也可以从第n-2级跳两步，所以 f(n) = f(n-1) + f(n-2)。
+
+### 双指针
+
+双指针就是用两个指针在数据结构上移动，可以把 O(n²) 的问题优化到 O(n)。
+
+常见模式：左右指针向中间靠拢（适合有序数组）、快慢指针（适合检测环、找中点）。
+
+### 前缀匹配：Trie 树
+
+怎么实现搜索框的"前缀联想"功能？比如输入"app"，显示"apple"、"application"。
+
+用 Trie 树（前缀树）最合适。从根开始，按照字符往下走，走到哪里就知道有哪些词。
+
+```javascript
+class TrieNode {
+	constructor() {
+		this.children = {}
+		this.isEnd = false
+	}
+}
+
+class Trie {
+	constructor() {
+		this.root = new TrieNode()
+	}
+
+	insert(word) {
+		let node = this.root
+		for (const char of word) {
+			if (!node.children[char]) {
+				node.children[char] = new TrieNode()
+			}
+			node = node.children[char]
+		}
+		node.isEnd = true
+	}
+
+	search(prefix) {
+		let node = this.root
+		for (const char of prefix) {
+			if (!node.children[char]) return []
+			node = node.children[char]
+		}
+		// 从这个节点收集所有词...
+	}
+}
+```
+
+---
+
+## 总结
+
+**数据结构**解决的是数据怎么存的问题：
+
+- 数组：查快，改中间慢
+- 链表：改快，查慢
+- 栈：后进先出
+- 队列：先进先出
+- 树：层级关系
+- 堆：快速找最大/最小
+
+**算法思想**解决的是怎么用数据结构高效地处理问题：
+
+- 二分：有序数据，每次排除一半
+- 双指针：把嵌套循环变成一层循环
+- 动态规划：记住算过的结果
+- 贪心：每步选最优
+
+**最重要的**是理解复杂度，知道什么样的代码是快的，什么样的代码是慢的。在写代码之前先想想数据量会有多大，选择合适的算法和数据结构。

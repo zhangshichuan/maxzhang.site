@@ -1,0 +1,672 @@
+---
+title: "Frontend Data Structures and Algorithms: A Beginner's Guide"
+summary: 'A beginner-friendly guide to essential data structures (arrays, stacks, queues, linked lists, trees, heaps) and algorithms (sorting, searching, dynamic programming) in frontend development, with practical JavaScript examples and clear explanations of time/space complexity.'
+category: 'Frontend'
+tags: ['Data Structures', 'Algorithms', 'JavaScript', 'Complexity']
+author: 'Max Zhang'
+date: '2026-03-29'
+---
+
+When writing frontend code, you deal with data every day. How data is organized, searched, and sorted — these are what data structures and algorithms are all about.
+
+Don't let these terms scare you. It's not that complicated. This article will explain everything in plain language.
+
+---
+
+## Chapter 1: Data Structures
+
+Data structure is about how data is stored in code.
+
+### 1. Array
+
+Arrays are probably the most familiar to you — it's just putting a bunch of data next to each other.
+
+```javascript
+const arr = [1, 2, 3, 4, 5]
+// Index 0 is 1, index 1 is 2, index 2 is 3...
+console.log(arr[2]) // Outputs 3
+```
+
+Array characteristics:
+
+- Each piece of data has a fixed position (the Nth one), called **index**
+- Want to know the 5th piece of data? Just use arr[4] and you get it directly
+- But inserting a piece of data in the middle requires moving everything after it
+
+### 2. Stack
+
+A stack is like a stack of plates. You can only add plates on top, and you can only take plates from the top.
+
+More formally: **Last In First Out** (LIFO) — the last one you put in comes out first.
+
+```javascript
+const stack = []
+stack.push(1) // Add
+stack.push(2)
+stack.push(3)
+
+console.log(stack.pop()) // Outputs 3, last in comes out first
+console.log(stack.pop()) // Outputs 2
+console.log(stack.pop()) // Outputs 1
+```
+
+Where are stacks used? Browser forward/back buttons, function calls (recursion is essentially a stack), bracket matching validation.
+
+### 3. Queue
+
+A queue is like waiting in line to buy something — first come, first served. More formally: **First In First Out** (FIFO).
+
+```javascript
+const queue = []
+queue.push('Alice') // Enqueue
+queue.push('Bob')
+queue.push('Charlie')
+
+console.log(queue.shift()) // Outputs "Alice", first in comes out first
+console.log(queue.shift()) // Outputs "Bob"
+```
+
+Where are queues used? JavaScript's event loop, async task queue, print job queue.
+
+### 4. Linked List
+
+The difference between linked lists and arrays is that array elements are stored next to each other, but linked lists are not.
+
+In a linked list, each piece of data is called a "node", and each node stores two things: **its own value** and **the address of the next node**.
+
+```javascript
+class ListNode {
+	constructor(val) {
+		this.val = val
+		this.next = null
+	}
+}
+
+// Create linked list: 1 -> 2 -> 3 -> 4
+const head = new ListNode(1)
+head.next = new ListNode(2)
+head.next.next = new ListNode(3)
+head.next.next.next = new ListNode(4)
+```
+
+Array vs Linked List comparison:
+
+| Operation        | Array                            | Linked List                         |
+| ---------------- | -------------------------------- | ----------------------------------- |
+| Get 5th item     | Direct arr[4], fast              | Must count from the beginning, slow |
+| Insert in middle | Everything after must move, slow | Just change two pointers, fast      |
+
+### 5. Tree
+
+A tree data structure is like an upside-down tree. There's a root node, child nodes below the root, grandchild nodes below those...
+
+Each node has only one "parent" (above it), but can have multiple "children" (below it).
+
+#### Binary Tree: Each node has at most two children
+
+The binary tree is the most common tree structure — each node has at most two children, called "left child" and "right child".
+
+```javascript
+class TreeNode {
+	constructor(val) {
+		this.val = val
+		this.left = null
+		this.right = null
+	}
+}
+```
+
+#### Why Binary Tree?
+
+You might wonder, why not ternary trees or quaternary trees?
+
+Mainly because binary trees are the simplest and easiest to work with. There are only two directions — left and right — making decisions very straightforward. Computers are binary at the底层 (foundation), 0 and 1, handling "yes" and "no" decisions is what they do best.
+
+Moreover, many algorithms work fine with binary trees; ternary and quaternary trees actually make things more complicated. In reality, problems that seem to need ternary/quaternary trees can be simulated using multiple levels of binary trees.
+
+#### Binary Search Tree (BST)
+
+A BST is a special type of binary tree with a simple rule: nodes on the left are smaller than the root, nodes on the right are larger than the root.
+
+This rule applies to every node. So searching is very fast — if something is larger than the root, go right; if smaller, go left.
+
+### 6. Heap
+
+A heap is a special type of complete binary tree. A complete binary tree means all levels except possibly the last are completely filled, and the last level's nodes are as far left as possible.
+
+There are two types of heaps:
+
+- **Max Heap**: Parent nodes are larger than children, root is the largest
+- **Min Heap**: Parent nodes are smaller than children, root is the smallest
+
+What are heaps used for? The most common use is the Top K problem. For example, finding the top 100 numbers out of 10,000 is extremely fast with a heap.
+
+---
+
+## Chapter 2: Complexity
+
+Complexity is how we measure how fast (or slow) code is.
+
+### What is Time Complexity?
+
+How fast code runs isn't measured in "seconds" (that depends on computer specs), but rather **how much slower the code gets when the data size grows**.
+
+We use "O(...)" to represent complexity, and what's in the parentheses is called the "order of magnitude".
+
+### O(1) - Constant Time
+
+No matter how much data there is, execution time is fixed. Like knowing exactly where something is and just reaching for it directly.
+
+```javascript
+// O(1): Gets the first element regardless of array length
+function getFirst(arr) {
+	return arr[0]
+}
+```
+
+### O(n) - Linear Time
+
+The number of operations is proportional to the amount of data. Like counting people — 30 people takes 30 counts, 100 people takes 100 counts.
+
+```javascript
+// O(n): Need to look at everything
+function findMax(arr) {
+	let max = arr[0]
+	for (let i = 1; i < arr.length; i++) {
+		if (arr[i] > max) max = arr[i]
+	}
+	return max
+}
+```
+
+### O(n²) - Quadratic Time
+
+This usually happens with nested loops — two loops inside each other. For example, with 100 elements, nested loops might perform 100×100=10,000 operations.
+
+Bubble sort is a classic O(n²) example.
+
+```javascript
+// O(n²): Two nested loops
+for (let i = 0; i < n; i++) {
+	// n times
+	for (let j = 0; j < n; j++) {
+		// n times
+		// n×n operations here
+	}
+}
+```
+
+### O(log n) - Logarithmic Time
+
+Log is logarithm. Simply put, each operation eliminates half the data.
+
+The most classic example is binary search. With 100 numbers, you need at most 7 guesses; with 1000 numbers, at most 10 guesses; with 10,000 numbers, at most 14 guesses.
+
+Why so fast? Because each guess in the middle eliminates half the possibilities.
+
+### O(n log n)
+
+This is the product of O(n) and O(log n). Many efficient sorting algorithms, like quicksort and merge sort, have O(n log n) time complexity.
+
+Faster than O(n²), but slower than O(n).
+
+### Complexity Comparison
+
+| Complexity | Order        | Speed       |
+| ---------- | ------------ | ----------- |
+| O(1)       | Constant     | Fastest     |
+| O(log n)   | Logarithmic  | Fast        |
+| O(n)       | Linear       | Normal      |
+| O(n log n) | Linearithmic | Pretty fast |
+| O(n²)      | Quadratic    | Slow        |
+
+### Space Complexity
+
+In addition to time complexity, there's also space complexity — how much memory the code needs to run.
+
+- Using just a few variables → O(1)
+- Creating a new array the same size as the original → O(n)
+
+---
+
+## Chapter 3: From Data Structures to Algorithms
+
+Each data structure has types of problems it's good at solving.
+
+### Array-Related Algorithms
+
+#### Rotate Array by k Steps
+
+Transform [1,2,3,4,5] by rotating 2 steps to the right, becoming [4,5,1,2,3].
+
+**Bad approach**: pop + unshift method. pop is fast, but unshift moves the entire array, which is slow.
+
+```javascript
+// Overall O(n*k), where k is the rotation steps
+for (let i = 0; i < k; i++) {
+	const last = arr.pop()
+	arr.unshift(last) // O(n)!
+}
+```
+
+**Good approach**: Triple reverse method. Just reverse three times, each O(n), total O(n).
+
+```javascript
+function rotate(arr, k) {
+	k = k % arr.length
+	reverse(arr, 0, arr.length - 1)
+	reverse(arr, 0, k - 1)
+	reverse(arr, k, arr.length - 1)
+	return arr
+}
+// Overall O(n)
+```
+
+#### Move Zeros to End
+
+Move all zeros in an array to the end, while keeping the order of other numbers.
+
+**Bad approach**: Using splice to delete zeros then push zeros. Splice in the middle requires moving all subsequent elements, which is slow.
+
+```javascript
+// splice is O(n), avoid it
+for (let i = arr.length - 1; i >= 0; i--) {
+	if (arr[i] === 0) {
+		arr.splice(i, 1)
+		arr.push(0)
+	}
+}
+```
+
+**Good approach**: Two-pointer technique. Fast pointer finds non-zero elements, slow pointer places them in front.
+
+```javascript
+function moveZeroes(nums) {
+	let slow = 0
+	for (let fast = 0; fast < nums.length; fast++) {
+		if (nums[fast] !== 0) {
+			;[nums[slow], nums[fast]] = [nums[fast], nums[slow]]
+			slow++
+		}
+	}
+}
+// Overall O(n), only needs one pass
+```
+
+#### Two Sum (Two Pointers)
+
+Find two numbers in a sorted array that add up to the target value.
+
+Two-pointer approach: Left and right pointers, moving toward each other.
+
+```javascript
+function twoSum(nums, target) {
+	let left = 0
+	let right = nums.length - 1
+
+	while (left < right) {
+		const sum = nums[left] + nums[right]
+		if (sum === target) {
+			return [left, right]
+		} else if (sum < target) {
+			left++
+		} else {
+			right--
+		}
+	}
+	return []
+}
+// O(n), much faster than double loop O(n²)
+```
+
+#### Find Longest Consecutive Characters
+
+Find the character that appears consecutively most times and how many times.
+
+```javascript
+function maxChar(s) {
+	let maxChar = ''
+	let maxCount = 0
+	let currentChar = ''
+	let currentCount = 0
+
+	for (const char of s) {
+		if (char === currentChar) {
+			currentCount++
+		} else {
+			if (currentCount > maxCount) {
+				maxCount = currentCount
+				maxChar = currentChar
+			}
+			currentChar = char
+			currentCount = 1
+		}
+	}
+
+	if (currentCount > maxCount) {
+		maxCount = currentCount
+		maxChar = currentChar
+	}
+
+	return { char: maxChar, count: maxCount }
+}
+```
+
+#### Palindrome Numbers
+
+Determine if a number is a palindrome (reads the same forwards and backwards).
+
+```javascript
+function isPalindrome(num) {
+	if (num < 0) return false
+	if (num < 10) return true
+
+	let original = num
+	let reversed = 0
+
+	while (num > 0) {
+		reversed = reversed * 10 + (num % 10)
+		num = Math.floor(num / 10)
+	}
+
+	return original === reversed
+}
+```
+
+### Stack-Related Algorithms
+
+#### Bracket Matching
+
+Check if brackets in a string are properly paired. \{ \[ ( ) ] \} is correct, but \{ ( ] \} is not.
+
+Approach: Use a stack. Push opening brackets onto the stack. When encountering a closing bracket, check if it matches the top of the stack.
+
+```javascript
+function isValid(str) {
+	const stack = []
+	const map = {
+		')': '(',
+		']': '[',
+		'}': '{',
+	}
+
+	for (const char of str) {
+		if (char === '(' || char === '[' || char === '{') {
+			stack.push(char)
+		} else {
+			if (stack.pop() !== map[char]) return false
+		}
+	}
+
+	return stack.length === 0
+}
+```
+
+### Queue-Related Algorithms
+
+#### Implement Queue with Two Stacks
+
+You can implement a queue with two stacks. The idea: push enqueued items onto one stack. When dequeuing, if the other stack is empty, transfer all items from the first stack to the second (this reverses the order).
+
+```javascript
+class Queue {
+	constructor() {
+		this.stackIn = []
+		this.stackOut = []
+	}
+
+	enqueue(item) {
+		this.stackIn.push(item)
+	}
+
+	dequeue() {
+		if (this.stackOut.length === 0) {
+			while (this.stackIn.length) {
+				this.stackOut.push(this.stackIn.pop())
+			}
+		}
+		return this.stackOut.pop()
+	}
+}
+```
+
+#### Linked List or Array: Which is Faster for Implementing Queue?
+
+If using an array with head and tail pointers, both enqueue and dequeue can be O(1).
+
+If using a regular array, push is O(1), but shift is O(n) (requires moving all elements).
+
+With a linked list, both enqueue and dequeue are O(1).
+
+So either works — it's about how you use it.
+
+### Linked List-Related Algorithms
+
+#### Reverse Linked List
+
+Transform 1->2->3->4 into 4->3->2->1.
+
+```javascript
+function reverseList(head) {
+	let prev = null
+	let curr = head
+
+	while (curr) {
+		const next = curr.next
+		curr.next = prev
+		prev = curr
+		curr = next
+	}
+
+	return prev
+}
+```
+
+### Tree-Related Algorithms
+
+#### Binary Tree Traversal
+
+Three traversal methods:
+
+- **Preorder**: Root - Left - Right
+- **Inorder**: Left - Root - Right
+- **Postorder**: Left - Right - Root
+
+```javascript
+function inOrder(root) {
+	// Inorder traversal
+	if (!root) return
+	inOrder(root.left)
+	console.log(root.val)
+	inOrder(root.right)
+}
+```
+
+#### Kth Smallest in BST
+
+Find the kth smallest value in a BST. Since inorder traversal of a BST is in ascending order, just use inorder traversal, and the kth element is the answer.
+
+```javascript
+function kthSmallest(root, k) {
+	let count = 0
+	let result = null
+
+	function inOrder(node) {
+		if (!node || result) return
+		inOrder(node.left)
+		count++
+		if (count === k) {
+			result = node.val
+			return
+		}
+		inOrder(node.right)
+	}
+
+	inOrder(root)
+	return result
+}
+```
+
+### Sorting Algorithms
+
+#### Quick Sort
+
+Quicksort is a divide-and-conquer algorithm. Choose a pivot value, put elements smaller than the pivot on the left, larger on the right, then recursively process both sides.
+
+```javascript
+function quickSort(arr, left = 0, right = arr.length - 1) {
+	if (left < right) {
+		const pivotIndex = partition(arr, left, right)
+		quickSort(arr, left, pivotIndex - 1)
+		quickSort(arr, pivotIndex + 1, right)
+	}
+	return arr
+}
+
+function partition(arr, left, right) {
+	const pivot = arr[right]
+	let i = left - 1
+
+	for (let j = left; j < right; j++) {
+		if (arr[j] <= pivot) {
+			i++
+			;[arr[i], arr[j]] = [arr[j], arr[i]]
+		}
+	}
+
+	;[arr[i + 1], arr[right]] = [arr[right], arr[i + 1]]
+	return i + 1
+}
+```
+
+---
+
+## Chapter 4: Common Algorithm Approaches
+
+### Greedy
+
+Greedy means choosing the best option at each step without considering future consequences. This often works, but sometimes doesn't.
+
+Classic example: When making change, always pick the largest coin first.
+
+### Binary Search
+
+The prerequisite for binary search is that the data must be **sorted**. Each time you look at the middle, based on whether it's larger or smaller, you eliminate half until you find the target.
+
+```javascript
+function binarySearch(arr, target) {
+	let left = 0
+	let right = arr.length - 1
+
+	while (left <= right) {
+		const mid = Math.floor((left + right) / 2)
+		if (arr[mid] === target) return mid
+		else if (arr[mid] < target) left = mid + 1
+		else right = mid - 1
+	}
+
+	return -1
+}
+```
+
+### Dynamic Programming
+
+The core of dynamic programming is: break a big problem into small problems, but small problems might be used multiple times, so remember the results and reuse them next time.
+
+Classic example: Fibonacci sequence.
+
+**Bad approach**: Plain recursion. Recalculates everything from scratch each time, with too much repetition.
+
+```javascript
+// Calculating fib(5) like this repeats calculations many times, O(2^n)
+function fib(n) {
+	if (n <= 1) return n
+	return fib(n - 1) + fib(n - 2)
+}
+```
+
+**Good approach**: Loop. Start from the smallest and build up, remembering results to avoid recalculation.
+
+```javascript
+// O(n), only calculates each value once
+function fib(n) {
+	if (n <= 1) return n
+	let prev = 0,
+		curr = 1
+	for (let i = 2; i <= n; i++) {
+		;[prev, curr] = [curr, prev + curr]
+	}
+	return curr
+}
+```
+
+Frog jump steps is also dynamic programming: To reach step n, you can either jump 1 step from n-1, or jump 2 steps from n-2, so f(n) = f(n-1) + f(n-2).
+
+### Two Pointers
+
+Two pointers means using two pointers moving through a data structure, which can optimize O(n²) problems to O(n).
+
+Common patterns: Left and right pointers moving toward each other (for sorted arrays), fast and slow pointers (for detecting cycles, finding middle).
+
+### Prefix Matching: Trie Tree
+
+How to implement "prefix suggestions" in a search box? For example, typing "app" shows "apple", "application".
+
+Trie tree (prefix tree) is most suitable for this. Starting from the root, follow characters down the tree. Wherever you end up, you know what words exist.
+
+```javascript
+class TrieNode {
+	constructor() {
+		this.children = {}
+		this.isEnd = false
+	}
+}
+
+class Trie {
+	constructor() {
+		this.root = new TrieNode()
+	}
+
+	insert(word) {
+		let node = this.root
+		for (const char of word) {
+			if (!node.children[char]) {
+				node.children[char] = new TrieNode()
+			}
+			node = node.children[char]
+		}
+		node.isEnd = true
+	}
+
+	search(prefix) {
+		let node = this.root
+		for (const char of prefix) {
+			if (!node.children[char]) return []
+			node = node.children[char]
+		}
+		// Collect all words from this node...
+	}
+}
+```
+
+---
+
+## Summary
+
+**Data structures** solve the problem of how to store data:
+
+- Array: Fast to read, slow to modify middle
+- Linked List: Fast to modify, slow to read
+- Stack: Last in, first out
+- Queue: First in, first out
+- Tree: Hierarchical relationships
+- Heap: Fast to find max/min
+
+**Algorithm approaches** solve how to efficiently process problems using data structures:
+
+- Binary search: For sorted data, eliminates half each time
+- Two pointers: Converts nested loops to single loop
+- Dynamic programming: Remember computed results
+- Greedy: Best option at each step
+
+**Most importantly**, understand complexity — know which code is fast and which is slow. Before writing code, think about how large the data might be, and choose the appropriate algorithm and data structure.
