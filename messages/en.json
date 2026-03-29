@@ -36,9 +36,9 @@
 	},
 	"AboutPage": {
 		"title": "About Me - Max Zhang",
-		"role": "Software Engineer",
+		"role": "AI Platform Engineer",
 		"location": "Chengdu, China",
-		"description": "Hi! I'm a Full-stack Developer who approaches high-performance system building with a learner's mindset. I'm passionate about developing robust applications using <primary>Node.js</primary> & <primary>TypeScript</primary>, and am dedicated to the engineering of <secondary>Visual Building</secondary> and <secondary>Graphics Editing Engines</secondary>. On the infrastructure side, I continuously optimize <accent>DevOps</accent> workflows through <accent>Docker</accent> & <accent>K3s</accent> containerization. ",
+		"description": "<primary>AI Platform Engineer</primary>，focused on <accent>LLMOps</accent> & AI application engineering—building on <accent>LangChain</accent> & <accent>Dify</accent> frameworks & platforms, delivering <secondary>RAG</secondary>, <secondary>Agent</secondary>, <secondary>Prompt Engineering</secondary> at production scale. Backend: <accent>Python + Rust</accent> for core services; Frontend: <accent>TypeScript</accent> + <accent>tRPC</accent> + <accent>Zod</accent> for end-to-end type safety; Cross-platform client: <accent>Taro</accent>, <accent>Flutter</accent>, <accent>React Native</accent>, <accent>Electron</accent>, <accent>Tauri</accent> for mini-programs, apps & desktop; Data layer: <accent>PostgreSQL</accent> vector search with <accent>Redis</accent> + <accent>MQ</accent> async pipelines; Observability & delivery: <accent>APM</accent> + <accent>DevOps</accent> for model-to-product end-to-end.",
 		"workExperience": "Work Experience",
 		"education": "Education",
 		"techStack": "Tech Stack",

@@ -36,9 +36,9 @@
 	},
 	"AboutPage": {
 		"title": "关于我 - Max Zhang",
-		"role": "软件工程师",
+		"role": "AI 平台工程师",
 		"location": "中国 成都",
-		"description": "你好！我是一名全栈开发者，始终以学习者的姿态探索高性能系统的构建之道。我热衷于使用 <primary>Node.js</primary> 和 <primary>TypeScript</primary> 开发稳健的应用，并投入于 <secondary>可视化搭建</secondary> 与 <secondary>图形编辑引擎</secondary> 的工程实践。在基础设施层面，我通过 <accent>Docker</accent> 与 <accent>K3s</accent> 的容器化实践不断优化 <accent>DevOps</accent> 工作流。",
+		"description": "<primary>AI Platform Engineer</primary>，专注于 <accent>LLMOps</accent> 与 AI 应用的工程化落地——基于 <accent>LangChain</accent>、<accent>Dify</accent> 等框架与平台，围绕 <secondary>RAG</secondary>、<secondary>Agent</secondary>、<secondary>Prompt Engineering</secondary> 构建可生产交付的 AI 能力。后端以 <accent>Python + Rust</accent> 构建核心服务，前端以 <accent>TypeScript</accent> + <accent>tRPC</accent> + <accent>Zod</accent> 实现端到端类型安全，跨平台客户端（<accent>Taro</accent>、<accent>Flutter</accent>、<accent>React Native</accent>、<accent>Electron</accent>、<accent>Tauri</accent>），数据层通过 <accent>PostgreSQL</accent> 向量检索与 <accent>Redis</accent> + <accent>MQ</accent> 异步流水线支撑海量调用，结合 <accent>APM</accent> 全链路可观测性与 <accent>DevOps</accent> 自动化，实现从模型到产品的端到端交付。",
 		"workExperience": "工作经历",
 		"education": "教育经历",
 		"techStack": "技术栈",
