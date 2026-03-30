@@ -5,7 +5,10 @@ import { routing } from './i18n/routing'
  * Next-intl 中间件
  * 用于处理国际化的请求路由
  */
-export default createMiddleware(routing)
+export default createMiddleware({
+	...routing,
+	localeDetection: false,
+})
 
 /**
  * 路由匹配配置

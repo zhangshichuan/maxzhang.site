@@ -5,6 +5,7 @@ import readingTime from 'reading-time'
 
 import { getViewCounts } from '@/lib/actions/views'
 import { getCommentCounts } from '@/lib/actions/comments'
+import { routing } from '@/i18n/routing'
 
 // 定义文章存放目录：项目根目录下的 articles 文件夹
 const postsDirectory = path.join(process.cwd(), 'articles')
@@ -45,7 +46,7 @@ export interface PostSummaryWithViews extends PostSummary {
  * @param locale - 语言环境 ('en' | 'zh')
  * @returns string[] - 包含 .md 或 .mdx 后缀的文件名列表
  */
-export function getPostSlugs(locale: string = 'zh') {
+export function getPostSlugs(locale: string = routing.defaultLocale) {
 	const localeDir = path.join(postsDirectory, locale)
 
 	if (!fs.existsSync(localeDir)) {
@@ -65,7 +66,7 @@ export function getPostSlugs(locale: string = 'zh') {
  */
 export function getPostBySlug(slug: string, locale: string, includeContent: false): PostSummary
 export function getPostBySlug(slug: string, locale?: string, includeContent?: true): Post
-export function getPostBySlug(slug: string, locale: string = 'zh', includeContent: boolean = true): Post | PostSummary {
+export function getPostBySlug(slug: string, locale: string = routing.defaultLocale, includeContent: boolean = true): Post | PostSummary {
 	// 解码 URL 编码的 slug
 	const realSlug = decodeURIComponent(slug).replace(/\.mdx?$/, '')
 
@@ -119,7 +120,7 @@ export function getPostBySlug(slug: string, locale: string = 'zh', includeConten
  * @param locale - 语言环境
  * @returns 包含阅读数的文章摘要列表，按日期降序排序
  */
-export async function getAllPostsWithViews(locale: string = 'zh'): Promise<PostSummaryWithViews[]> {
+export async function getAllPostsWithViews(locale: string = routing.defaultLocale): Promise<PostSummaryWithViews[]> {
 	const slugs = getPostSlugs(locale)
 
 	// 获取所有文章摘要，按日期降序排序
