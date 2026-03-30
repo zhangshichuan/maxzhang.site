@@ -140,16 +140,16 @@ LLMOps (Large Language Model Operations) is a **lifecycle management platform fo
 
 Its core value is **letting the platform handle the complex stuff, so users get the simple stuff**:
 
-| Step | Without LLMOps | With LLMOps | Time Saved |
-| :--- | :--- | :--- | :--- |
-| **Frontend App Development** | Integrate and wrap LLM capabilities, significant dev time | Use LLMOps backend directly, API/WebApp-based dev | -80% |
-| **Prompt Engineering** | Debug via API or Playground only | Visual prompt editor, WYSIWYG | -25% |
-| **Data Prep & Embedding** | Write code for long text processing, Embedding | Upload text/files on platform | -80% |
-| **App Logs & Analytics** | Write code to view logs, access database | Platform provides real-time logs & analytics | -70% |
-| **AI Plugin Development** | Write code to create/integrate AI plugins | Platform provides visual tools for quick integration | -50% |
-| **AI Workflow Development** | Write code for each workflow step | Visual workflow orchestration | -80% |
-| **Model Switching** | Change code, refactor API calls | One-click model switch on platform | -90% |
-| **Performance Monitoring** | Roll your own monitoring, not professional | Platform自带各项指标监控 | -60% |
+| Step                         | Without LLMOps                                            | With LLMOps                                          | Time Saved |
+| :--------------------------- | :-------------------------------------------------------- | :--------------------------------------------------- | :--------- |
+| **Frontend App Development** | Integrate and wrap LLM capabilities, significant dev time | Use LLMOps backend directly, API/WebApp-based dev    | -80%       |
+| **Prompt Engineering**       | Debug via API or Playground only                          | Visual prompt editor, WYSIWYG                        | -25%       |
+| **Data Prep & Embedding**    | Write code for long text processing, Embedding            | Upload text/files on platform                        | -80%       |
+| **App Logs & Analytics**     | Write code to view logs, access database                  | Platform provides real-time logs & analytics         | -70%       |
+| **AI Plugin Development**    | Write code to create/integrate AI plugins                 | Platform provides visual tools for quick integration | -50%       |
+| **AI Workflow Development**  | Write code for each workflow step                         | Visual workflow orchestration                        | -80%       |
+| **Model Switching**          | Change code, refactor API calls                           | One-click model switch on platform                   | -90%       |
+| **Performance Monitoring**   | Roll your own monitoring, not professional                | Platform自带各项指标监控                             | -60%       |
 
 In other words, LLMOps encapsulates all the **engineering grunt work** so developers can focus on business logic.
 
@@ -328,14 +328,14 @@ Ways to train models:
 
 When to use fine-tuning instead of RAG?
 
-| Scenario | Recommended Approach |
-| :--- | :--- |
-| Need model to learn a speaking style | Fine-tuning |
-| Need model to "remember" large amounts of knowledge | RAG |
-| Need model to perform specific task formats | Fine-tuning |
-| Knowledge updates frequently | RAG |
-| Training data is easy to obtain | Fine-tuning |
-| Need real-time knowledge | RAG |
+| Scenario                                            | Recommended Approach |
+| :-------------------------------------------------- | :------------------- |
+| Need model to learn a speaking style                | Fine-tuning          |
+| Need model to "remember" large amounts of knowledge | RAG                  |
+| Need model to perform specific task formats         | Fine-tuning          |
+| Knowledge updates frequently                        | RAG                  |
+| Training data is easy to obtain                     | Fine-tuning          |
+| Need real-time knowledge                            | RAG                  |
 
 The core idea of LoRA (Low-Rank Adaptation) is: don't modify the model's main backbone parameters, but additionally train a small set of "adapter" parameters. This greatly reduces the cost and time of fine-tuning.
 
@@ -834,22 +834,22 @@ If you haven't started experimenting with AI applications yet, my advice is:
 
 ## Appendix: Quick Reference Glossary
 
-| Term | Full Name | One-Line Explanation |
-| :--- | :--- | :--- |
-| LLM | Large Language Model | Can understand and generate natural language |
-| Token | Token | Basic unit of text processed by models; English≈word, Chinese≈character |
-| Embedding | Embedding | Converting text to vectors; semantically similar words have similar vectors |
-| Prompt | Prompt | Input instructions to the model; core human-LLM interaction method |
-| RAG | Retrieval-Augmented Generation | Combines knowledge base with model for domain-specific understanding |
-| Agent | Agent | Intelligent system that autonomously plans, calls tools, executes complex tasks |
-| Fine-tuning | Fine-tuning | Training model with specific data to adapt to new tasks |
-| LoRA | Low-Rank Adaptation | Low-rank adaptation; efficient model fine-tuning method |
-| AIaaS | AI as a Service | AI capabilities as public services |
-| LLMOps | LLMOps | Large language model operations; AI application engineering platforms and practices |
-| Vector DB | Vector Database | Database storing embeddings for retrieval |
-| Re-ranking | Re-ranking | Using more precise methods to filter retrieval results |
-| Temperature | Temperature | Parameter controlling model output randomness; lower = more deterministic |
-| Few-shot | Few-shot | Show examples to model to teach style/format |
-| CoT | Chain of Thought | Having model think step by step before answering |
-| Hallucination | Hallucination | Model confidently stating false information |
-| Context Window | Context Window | Maximum tokens a model can process in one go |
+| Term           | Full Name                      | One-Line Explanation                                                                |
+| :------------- | :----------------------------- | :---------------------------------------------------------------------------------- |
+| LLM            | Large Language Model           | Can understand and generate natural language                                        |
+| Token          | Token                          | Basic unit of text processed by models; English≈word, Chinese≈character             |
+| Embedding      | Embedding                      | Converting text to vectors; semantically similar words have similar vectors         |
+| Prompt         | Prompt                         | Input instructions to the model; core human-LLM interaction method                  |
+| RAG            | Retrieval-Augmented Generation | Combines knowledge base with model for domain-specific understanding                |
+| Agent          | Agent                          | Intelligent system that autonomously plans, calls tools, executes complex tasks     |
+| Fine-tuning    | Fine-tuning                    | Training model with specific data to adapt to new tasks                             |
+| LoRA           | Low-Rank Adaptation            | Low-rank adaptation; efficient model fine-tuning method                             |
+| AIaaS          | AI as a Service                | AI capabilities as public services                                                  |
+| LLMOps         | LLMOps                         | Large language model operations; AI application engineering platforms and practices |
+| Vector DB      | Vector Database                | Database storing embeddings for retrieval                                           |
+| Re-ranking     | Re-ranking                     | Using more precise methods to filter retrieval results                              |
+| Temperature    | Temperature                    | Parameter controlling model output randomness; lower = more deterministic           |
+| Few-shot       | Few-shot                       | Show examples to model to teach style/format                                        |
+| CoT            | Chain of Thought               | Having model think step by step before answering                                    |
+| Hallucination  | Hallucination                  | Model confidently stating false information                                         |
+| Context Window | Context Window                 | Maximum tokens a model can process in one go                                        |

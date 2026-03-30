@@ -66,7 +66,11 @@ export function getPostSlugs(locale: string = routing.defaultLocale) {
  */
 export function getPostBySlug(slug: string, locale: string, includeContent: false): PostSummary
 export function getPostBySlug(slug: string, locale?: string, includeContent?: true): Post
-export function getPostBySlug(slug: string, locale: string = routing.defaultLocale, includeContent: boolean = true): Post | PostSummary {
+export function getPostBySlug(
+	slug: string,
+	locale: string = routing.defaultLocale,
+	includeContent: boolean = true,
+): Post | PostSummary {
 	// 解码 URL 编码的 slug
 	const realSlug = decodeURIComponent(slug).replace(/\.mdx?$/, '')
 
