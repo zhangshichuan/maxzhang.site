@@ -137,7 +137,7 @@ flowchart TD
  * @returns {number} 两数之和
  */
 export function add(a, b) {
-	return a + b
+  return a + b
 }
 
 /**
@@ -147,7 +147,7 @@ export function add(a, b) {
  * @returns {number} 差
  */
 export function subtract(a, b) {
-	return a - b
+  return a - b
 }
 
 /**
@@ -157,7 +157,7 @@ export function subtract(a, b) {
  * @returns {number} 积
  */
 export function multiply(a, b) {
-	return a * b
+  return a * b
 }
 
 /**
@@ -168,10 +168,10 @@ export function multiply(a, b) {
  * @throws {Error} 除数不能为0
  */
 export function divide(a, b) {
-	if (b === 0) {
-		throw new Error('除数不能为零')
-	}
-	return a / b
+  if (b === 0) {
+    throw new Error('除数不能为零')
+  }
+  return a / b
 }
 ```
 
@@ -183,63 +183,63 @@ import assert from 'node:assert'
 import { add, subtract, multiply, divide } from '../math.js'
 
 describe('计算器模块测试', () => {
-	// ===== 加法测试 =====
-	describe('add 函数', () => {
-		it('应返回两个正数的和', () => {
-			// Arrange
-			const a = 2
-			const b = 3
-			const expected = 5
+  // ===== 加法测试 =====
+  describe('add 函数', () => {
+    it('应返回两个正数的和', () => {
+      // Arrange
+      const a = 2
+      const b = 3
+      const expected = 5
 
-			// Act
-			const result = add(a, b)
+      // Act
+      const result = add(a, b)
 
-			// Assert
-			assert.strictEqual(result, expected)
-		})
+      // Assert
+      assert.strictEqual(result, expected)
+    })
 
-		it('应正确处理负数', () => {
-			assert.strictEqual(add(-1, 1), 0)
-			assert.strictEqual(add(-5, -3), -8)
-		})
+    it('应正确处理负数', () => {
+      assert.strictEqual(add(-1, 1), 0)
+      assert.strictEqual(add(-5, -3), -8)
+    })
 
-		it('应正确处理零', () => {
-			assert.strictEqual(add(0, 0), 0)
-			assert.strictEqual(add(5, 0), 5)
-		})
+    it('应正确处理零', () => {
+      assert.strictEqual(add(0, 0), 0)
+      assert.strictEqual(add(5, 0), 5)
+    })
 
-		it('应正确处理小数', () => {
-			assert.strictEqual(add(0.1, 0.2), 0.3)
-		})
-	})
+    it('应正确处理小数', () => {
+      assert.strictEqual(add(0.1, 0.2), 0.3)
+    })
+  })
 
-	// ===== 减法测试 =====
-	describe('subtract 函数', () => {
-		it('应返回两个数的差', () => {
-			assert.strictEqual(subtract(5, 3), 2)
-			assert.strictEqual(subtract(3, 5), -2)
-		})
-	})
+  // ===== 减法测试 =====
+  describe('subtract 函数', () => {
+    it('应返回两个数的差', () => {
+      assert.strictEqual(subtract(5, 3), 2)
+      assert.strictEqual(subtract(3, 5), -2)
+    })
+  })
 
-	// ===== 乘法测试 =====
-	describe('multiply 函数', () => {
-		it('应返回两个数的积', () => {
-			assert.strictEqual(multiply(3, 4), 12)
-			assert.strictEqual(multiply(-2, 3), -6)
-		})
-	})
+  // ===== 乘法测试 =====
+  describe('multiply 函数', () => {
+    it('应返回两个数的积', () => {
+      assert.strictEqual(multiply(3, 4), 12)
+      assert.strictEqual(multiply(-2, 3), -6)
+    })
+  })
 
-	// ===== 除法测试 =====
-	describe('divide 函数', () => {
-		it('应返回两个数的商', () => {
-			assert.strictEqual(divide(10, 2), 5)
-		})
+  // ===== 除法测试 =====
+  describe('divide 函数', () => {
+    it('应返回两个数的商', () => {
+      assert.strictEqual(divide(10, 2), 5)
+    })
 
-		// 边界测试：除数不能为零
-		it('除数为零时应抛出错误', () => {
-			assert.throws(() => divide(10, 0), /除数不能为零/)
-		})
-	})
+    // 边界测试：除数不能为零
+    it('除数为零时应抛出错误', () => {
+      assert.throws(() => divide(10, 0), /除数不能为零/)
+    })
+  })
 })
 ```
 
@@ -363,8 +363,8 @@ Mocha 本身只是个测试运行器，断言、Mock 都需要自己配。适合
 import axios from 'axios'
 
 export async function fetchUser(userId) {
-	const response = await axios.get(`/api/users/${userId}`)
-	return response.data
+  const response = await axios.get(`/api/users/${userId}`)
+  return response.data
 }
 ```
 
@@ -377,41 +377,41 @@ import { fetchUser } from './api.js'
 
 // Mock axios
 describe('fetchUser', () => {
-	let stub
+  let stub
 
-	beforeEach(() => {
-		// 每个测试前创建新的 stub
-		stub = sinon.stub(axios, 'get')
-	})
+  beforeEach(() => {
+    // 每个测试前创建新的 stub
+    stub = sinon.stub(axios, 'get')
+  })
 
-	afterEach(() => {
-		// 每个测试后恢复 stub
-		stub.restore()
-	})
+  afterEach(() => {
+    // 每个测试后恢复 stub
+    stub.restore()
+  })
 
-	it('应成功获取用户数据', async () => {
-		// Arrange：设置 mock 返回值
-		const mockUser = { id: 1, name: '张三' }
-		stub.resolves({ data: mockUser })
+  it('应成功获取用户数据', async () => {
+    // Arrange：设置 mock 返回值
+    const mockUser = { id: 1, name: '张三' }
+    stub.resolves({ data: mockUser })
 
-		// Act
-		const result = await fetchUser(1)
+    // Act
+    const result = await fetchUser(1)
 
-		// Assert
-		expect(result).to.deep.equal(mockUser)
-		expect(stub.calledOnce).to.be.true
-		expect(stub.calledWith('/api/users/1')).to.be.true
-	})
+    // Assert
+    expect(result).to.deep.equal(mockUser)
+    expect(stub.calledOnce).to.be.true
+    expect(stub.calledWith('/api/users/1')).to.be.true
+  })
 
-	it('用户不存在时应返回 null', async () => {
-		// Arrange：模拟 404 响应
-		const error = new Error('Request failed with status 404')
-		error.response = { status: 404 }
-		stub.rejects(error)
+  it('用户不存在时应返回 null', async () => {
+    // Arrange：模拟 404 响应
+    const error = new Error('Request failed with status 404')
+    error.response = { status: 404 }
+    stub.rejects(error)
 
-		// Act & Assert
-		await expect(fetchUser(999)).to.eventually.be.rejected
-	})
+    // Act & Assert
+    await expect(fetchUser(999)).to.eventually.be.rejected
+  })
 })
 ```
 
@@ -426,15 +426,15 @@ Jest 最大的优点是**开箱即用**——断言、Mock、覆盖率、watch �
 ```javascript
 // user.js
 export function createUser(name, email) {
-	if (!name || !email) {
-		throw new Error('姓名和邮箱不能为空')
-	}
-	return {
-		id: Date.now(),
-		name,
-		email,
-		createdAt: new Date().toISOString(),
-	}
+  if (!name || !email) {
+    throw new Error('姓名和邮箱不能为空')
+  }
+  return {
+    id: Date.now(),
+    name,
+    email,
+    createdAt: new Date().toISOString(),
+  }
 }
 ```
 
@@ -443,23 +443,23 @@ export function createUser(name, email) {
 import { createUser } from './user.js'
 
 describe('createUser', () => {
-	test('应返回包含 id、name、email 的对象', () => {
-		const user = createUser('张三', 'zhangsan@example.com')
+  test('应返回包含 id、name、email 的对象', () => {
+    const user = createUser('张三', 'zhangsan@example.com')
 
-		// Jest 内置的 matchers
-		expect(user).toHaveProperty('id')
-		expect(user).toHaveProperty('name', '张三')
-		expect(user).toHaveProperty('email', 'zhangsan@example.com')
-		expect(user).toHaveProperty('createdAt')
-	})
+    // Jest 内置的 matchers
+    expect(user).toHaveProperty('id')
+    expect(user).toHaveProperty('name', '张三')
+    expect(user).toHaveProperty('email', 'zhangsan@example.com')
+    expect(user).toHaveProperty('createdAt')
+  })
 
-	test('空姓名应抛出错误', () => {
-		expect(() => createUser('', 'test@example.com')).toThrow('姓名和邮箱不能为空')
-	})
+  test('空姓名应抛出错误', () => {
+    expect(() => createUser('', 'test@example.com')).toThrow('姓名和邮箱不能为空')
+  })
 
-	test('空邮箱应抛出错误', () => {
-		expect(() => createUser('张三', '')).toThrow('姓名和邮箱不能为空')
-	})
+  test('空邮箱应抛出错误', () => {
+    expect(() => createUser('张三', '')).toThrow('姓名和邮箱不能为空')
+  })
 })
 ```
 
@@ -474,18 +474,18 @@ Vitest 号称"基于 Vite 的下一代测试框架"，兼容 Jest API，但启�
 ```javascript
 // arrayUtils.js
 export function filterByStatus(items, status) {
-	return items.filter((item) => item.status === status)
+  return items.filter((item) => item.status === status)
 }
 
 export function groupByCategory(items) {
-	return items.reduce((acc, item) => {
-		const key = item.category
-		if (!acc[key]) {
-			acc[key] = []
-		}
-		acc[key].push(item)
-		return acc
-	}, {})
+  return items.reduce((acc, item) => {
+    const key = item.category
+    if (!acc[key]) {
+      acc[key] = []
+    }
+    acc[key].push(item)
+    return acc
+  }, {})
 }
 ```
 
@@ -495,34 +495,34 @@ import { describe, it, expect } from 'vitest'
 import { filterByStatus, groupByCategory } from './arrayUtils.js'
 
 describe('数组工具函数', () => {
-	const mockItems = [
-		{ id: 1, status: 'active', category: 'A' },
-		{ id: 2, status: 'inactive', category: 'A' },
-		{ id: 3, status: 'active', category: 'B' },
-	]
+  const mockItems = [
+    { id: 1, status: 'active', category: 'A' },
+    { id: 2, status: 'inactive', category: 'A' },
+    { id: 3, status: 'active', category: 'B' },
+  ]
 
-	describe('filterByStatus', () => {
-		it('应筛选出指定状态的项', () => {
-			const result = filterByStatus(mockItems, 'active')
-			expect(result).toHaveLength(2)
-			expect(result.every((item) => item.status === 'active')).toBe(true)
-		})
+  describe('filterByStatus', () => {
+    it('应筛选出指定状态的项', () => {
+      const result = filterByStatus(mockItems, 'active')
+      expect(result).toHaveLength(2)
+      expect(result.every((item) => item.status === 'active')).toBe(true)
+    })
 
-		it('无匹配时应返回空数组', () => {
-			const result = filterByStatus(mockItems, 'deleted')
-			expect(result).toHaveLength(0)
-		})
-	})
+    it('无匹配时应返回空数组', () => {
+      const result = filterByStatus(mockItems, 'deleted')
+      expect(result).toHaveLength(0)
+    })
+  })
 
-	describe('groupByCategory', () => {
-		it('应按分类分组', () => {
-			const result = groupByCategory(mockItems)
-			expect(result).toHaveProperty('A')
-			expect(result).toHaveProperty('B')
-			expect(result['A']).toHaveLength(2)
-			expect(result['B']).toHaveLength(1)
-		})
-	})
+  describe('groupByCategory', () => {
+    it('应按分类分组', () => {
+      const result = groupByCategory(mockItems)
+      expect(result).toHaveProperty('A')
+      expect(result).toHaveProperty('B')
+      expect(result['A']).toHaveLength(2)
+      expect(result['B']).toHaveLength(1)
+    })
+  })
 })
 ```
 
@@ -536,9 +536,9 @@ describe('数组工具函数', () => {
 
 ```javascript
 it('应异步获取用户列表', async () => {
-	const users = await getUsers()
-	expect(users).to.be.an('array')
-	expect(users.length).to.be.greaterThan(0)
+  const users = await getUsers()
+  expect(users).to.be.an('array')
+  expect(users.length).to.be.greaterThan(0)
 })
 ```
 
@@ -546,35 +546,35 @@ it('应异步获取用户列表', async () => {
 
 ```javascript
 describe('数据库相关测试', () => {
-	// 所有测试开始前执行一次
-	before(async () => {
-		console.log('连接数据库...')
-		await db.connect()
-	})
+  // 所有测试开始前执行一次
+  before(async () => {
+    console.log('连接数据库...')
+    await db.connect()
+  })
 
-	// 所有测试结束后执行一次
-	after(async () => {
-		console.log('关闭数据库连接...')
-		await db.close()
-	})
+  // 所有测试结束后执行一次
+  after(async () => {
+    console.log('关闭数据库连接...')
+    await db.close()
+  })
 
-	// 每个测试开始前执行
-	beforeEach(() => {
-		console.log('清空测试数据...')
-		db.clear()
-	})
+  // 每个测试开始前执行
+  beforeEach(() => {
+    console.log('清空测试数据...')
+    db.clear()
+  })
 
-	// 每个测试结束后执行
-	afterEach(() => {
-		console.log('清理测试产生的临时文件...')
-		cleanupTempFiles()
-	})
+  // 每个测试结束后执行
+  afterEach(() => {
+    console.log('清理测试产生的临时文件...')
+    cleanupTempFiles()
+  })
 
-	// 真正的测试用例
-	it('应正确创建用户', async () => {
-		const user = await db.users.create({ name: '测试用户' })
-		expect(user.id).to.exist
-	})
+  // 真正的测试用例
+  it('应正确创建用户', async () => {
+    const user = await db.users.create({ name: '测试用户' })
+    expect(user.id).to.exist
+  })
 })
 ```
 
@@ -623,9 +623,9 @@ flowchart TD
 ```javascript
 // userService.js
 export async function getUserWithPosts(userId) {
-	const user = await fetchUser(userId)
-	const posts = await fetchPosts(userId)
-	return { user, posts }
+  const user = await fetchUser(userId)
+  const posts = await fetchPosts(userId)
+  return { user, posts }
 }
 ```
 
@@ -638,40 +638,40 @@ import { fetchUser, fetchPosts } from './api.js'
 jest.mock('./api.js')
 
 describe('getUserWithPosts', () => {
-	beforeEach(() => {
-		jest.clearAllMocks() // 每次测试前清空 mock 记录
-	})
+  beforeEach(() => {
+    jest.clearAllMocks() // 每次测试前清空 mock 记录
+  })
 
-	it('应返回用户及其文章', async () => {
-		// Stub：预设返回值
-		fetchUser.mockResolvedValue({ id: 1, name: '张三' })
-		fetchPosts.mockResolvedValue([{ id: 1, title: '第一篇' }])
+  it('应返回用户及其文章', async () => {
+    // Stub：预设返回值
+    fetchUser.mockResolvedValue({ id: 1, name: '张三' })
+    fetchPosts.mockResolvedValue([{ id: 1, title: '第一篇' }])
 
-		const result = await getUserWithPosts(1)
+    const result = await getUserWithPosts(1)
 
-		expect(result.user.name).toBe('张三')
-		expect(result.posts).toHaveLength(1)
+    expect(result.user.name).toBe('张三')
+    expect(result.posts).toHaveLength(1)
 
-		// 验证函数被调用
-		expect(fetchUser).toHaveBeenCalledWith(1)
-		expect(fetchPosts).toHaveBeenCalledWith(1)
-	})
+    // 验证函数被调用
+    expect(fetchUser).toHaveBeenCalledWith(1)
+    expect(fetchPosts).toHaveBeenCalledWith(1)
+  })
 
-	it('用户不存在时应返回 null', async () => {
-		fetchUser.mockResolvedValue(null)
-		fetchPosts.mockResolvedValue([])
+  it('用户不存在时应返回 null', async () => {
+    fetchUser.mockResolvedValue(null)
+    fetchPosts.mockResolvedValue([])
 
-		const result = await getUserWithPosts(999)
+    const result = await getUserWithPosts(999)
 
-		expect(result.user).toBeNull()
-		expect(result.posts).toHaveLength(0)
-	})
+    expect(result.user).toBeNull()
+    expect(result.posts).toHaveLength(0)
+  })
 
-	it('API 错误时应抛出异常', async () => {
-		fetchUser.mockRejectedValue(new Error('网络错误'))
+  it('API 错误时应抛出异常', async () => {
+    fetchUser.mockRejectedValue(new Error('网络错误'))
 
-		await expect(getUserWithPosts(1)).rejects.toThrow('网络错误')
-	})
+    await expect(getUserWithPosts(1)).rejects.toThrow('网络错误')
+  })
 })
 ```
 
@@ -1099,22 +1099,22 @@ scenarios:
 const fs = require('fs')
 
 module.exports = {
-	// 自定义处理器：在请求前执行
-	onRequest: (request, userContext, events, done) => {
-		// 添加随机延迟模拟真实用户
-		const delay = Math.random() * 1000
-		setTimeout(() => done(), delay)
-	},
+  // 自定义处理器：在请求前执行
+  onRequest: (request, userContext, events, done) => {
+    // 添加随机延迟模拟真实用户
+    const delay = Math.random() * 1000
+    setTimeout(() => done(), delay)
+  },
 
-	// 自定义处理器：响应后执行
-	afterResponse: (request, response, userContext, events, done) => {
-		// 记录响应时间
-		events.log({
-			type: 'custom',
-			message: `Response time: ${response.elapsedTime}ms`,
-		})
-		done()
-	},
+  // 自定义处理器：响应后执行
+  afterResponse: (request, response, userContext, events, done) => {
+    // 记录响应时间
+    events.log({
+      type: 'custom',
+      message: `Response time: ${response.elapsedTime}ms`,
+    })
+    done()
+  },
 }
 ```
 
@@ -1150,34 +1150,34 @@ import { check, sleep } from 'k6'
 
 // 测试配置
 export const options = {
-	stages: [
-		// 1 分钟内逐渐增加到 10 用户
-		{ duration: '1m', target: 10 },
-		// 维持 3 分钟
-		{ duration: '3m', target: 10 },
-		// 1 分钟内降到 0
-		{ duration: '1m', target: 0 },
-	],
-	thresholds: {
-		// P95 响应时间要小于 500ms
-		http_req_duration: ['p(95)<500'],
-		// 失败率要小于 1%
-		http_req_failed: ['rate<0.01'],
-	},
+  stages: [
+    // 1 分钟内逐渐增加到 10 用户
+    { duration: '1m', target: 10 },
+    // 维持 3 分钟
+    { duration: '3m', target: 10 },
+    // 1 分钟内降到 0
+    { duration: '1m', target: 0 },
+  ],
+  thresholds: {
+    // P95 响应时间要小于 500ms
+    http_req_duration: ['p(95)<500'],
+    // 失败率要小于 1%
+    http_req_failed: ['rate<0.01'],
+  },
 }
 
 export default function () {
-	// 发送 GET 请求
-	const res = http.get('http://localhost:3000/api/users')
+  // 发送 GET 请求
+  const res = http.get('http://localhost:3000/api/users')
 
-	// 检查响应状态
-	check(res, {
-		'status is 200': (r) => r.status === 200,
-		'response has users': (r) => r.json('data').length > 0,
-	})
+  // 检查响应状态
+  check(res, {
+    'status is 200': (r) => r.status === 200,
+    'response has users': (r) => r.json('data').length > 0,
+  })
 
-	// 思考时间：等待 1 秒
-	sleep(1)
+  // 思考时间：等待 1 秒
+  sleep(1)
 }
 ```
 
@@ -1223,17 +1223,17 @@ const errorRate = new Rate('errors')
 
 // 测试配置
 export const options = {
-	stages: [
-		{ duration: '2m', target: 50 }, // 2 分钟加到 50 用户
-		{ duration: '5m', target: 50 }, // 维持 5 分钟
-		{ duration: '2m', target: 0 }, // 2 分钟降到 0
-	],
-	thresholds: {
-		http_req_duration: ['p(95)<200'], // P95 < 200ms
-		login_duration: ['p(95)<100'], // 登录 P95 < 100ms
-		order_duration: ['p(95)<500'], // 下单 P95 < 500ms
-		errors: ['rate<0.05'], // 错误率 < 5%
-	},
+  stages: [
+    { duration: '2m', target: 50 }, // 2 分钟加到 50 用户
+    { duration: '5m', target: 50 }, // 维持 5 分钟
+    { duration: '2m', target: 0 }, // 2 分钟降到 0
+  ],
+  thresholds: {
+    http_req_duration: ['p(95)<200'], // P95 < 200ms
+    login_duration: ['p(95)<100'], // 登录 P95 < 100ms
+    order_duration: ['p(95)<500'], // 下单 P95 < 500ms
+    errors: ['rate<0.05'], // 错误率 < 5%
+  },
 }
 
 // 从环境变量读取配置
@@ -1241,73 +1241,73 @@ const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000'
 
 // 测试场景
 export default function () {
-	// ===== 场景1：用户登录 =====
-	const loginRes = http.post(
-		`${BASE_URL}/api/auth/login`,
-		JSON.stringify({
-			username: `user${__VU}`, // __VU 是虚拟用户 ID
-			password: 'test123',
-		}),
-		{
-			headers: { 'Content-Type': 'application/json' },
-			tags: { name: 'login' },
-		},
-	)
+  // ===== 场景1：用户登录 =====
+  const loginRes = http.post(
+    `${BASE_URL}/api/auth/login`,
+    JSON.stringify({
+      username: `user${__VU}`, // __VU 是虚拟用户 ID
+      password: 'test123',
+    }),
+    {
+      headers: { 'Content-Type': 'application/json' },
+      tags: { name: 'login' },
+    },
+  )
 
-	loginDuration.add(loginRes.timings.duration)
+  loginDuration.add(loginRes.timings.duration)
 
-	check(loginRes, {
-		'login successful': (r) => r.status === 200,
-		'has token': (r) => r.json('token') !== undefined,
-	}) || errorRate.add(1)
+  check(loginRes, {
+    'login successful': (r) => r.status === 200,
+    'has token': (r) => r.json('token') !== undefined,
+  }) || errorRate.add(1)
 
-	const token = loginRes.json('token')
-	const headers = {
-		Authorization: `Bearer ${token}`,
-		'Content-Type': 'application/json',
-	}
+  const token = loginRes.json('token')
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  }
 
-	sleep(1)
+  sleep(1)
 
-	// ===== 场景2：获取商品列表 =====
-	const productsRes = http.get(`${BASE_URL}/api/products`, {
-		headers,
-		tags: { name: 'products' },
-	})
+  // ===== 场景2：获取商品列表 =====
+  const productsRes = http.get(`${BASE_URL}/api/products`, {
+    headers,
+    tags: { name: 'products' },
+  })
 
-	check(productsRes, {
-		'products loaded': (r) => r.status === 200,
-		'has products': (r) => r.json('data').length > 0,
-	}) || errorRate.add(1)
+  check(productsRes, {
+    'products loaded': (r) => r.status === 200,
+    'has products': (r) => r.json('data').length > 0,
+  }) || errorRate.add(1)
 
-	// 随机选择一个商品
-	const products = productsRes.json('data')
-	const randomProduct = products[Math.floor(Math.random() * products.length)]
+  // 随机选择一个商品
+  const products = productsRes.json('data')
+  const randomProduct = products[Math.floor(Math.random() * products.length)]
 
-	sleep(1)
+  sleep(1)
 
-	// ===== 场景3：创建订单 =====
-	const orderRes = http.post(
-		`${BASE_URL}/api/orders`,
-		JSON.stringify({
-			productId: randomProduct.id,
-			quantity: Math.floor(Math.random() * 3) + 1,
-		}),
-		{
-			headers,
-			tags: { name: 'order' },
-		},
-	)
+  // ===== 场景3：创建订单 =====
+  const orderRes = http.post(
+    `${BASE_URL}/api/orders`,
+    JSON.stringify({
+      productId: randomProduct.id,
+      quantity: Math.floor(Math.random() * 3) + 1,
+    }),
+    {
+      headers,
+      tags: { name: 'order' },
+    },
+  )
 
-	orderDuration.add(orderRes.timings.duration)
+  orderDuration.add(orderRes.timings.duration)
 
-	check(orderRes, {
-		'order created': (r) => r.status === 201,
-		'has orderId': (r) => r.json('orderId') !== undefined,
-	}) || errorRate.add(1)
+  check(orderRes, {
+    'order created': (r) => r.status === 201,
+    'has orderId': (r) => r.json('orderId') !== undefined,
+  }) || errorRate.add(1)
 
-	// 思考时间
-	sleep(2)
+  // 思考时间
+  sleep(2)
 }
 ```
 

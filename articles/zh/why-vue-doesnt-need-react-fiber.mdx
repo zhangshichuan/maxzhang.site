@@ -76,12 +76,12 @@ React 把渲染工作切成很多小片段，每个片段只花几毫秒。每�
 ```javascript
 // 简化的 Fiber 节点结构
 const fiber = {
-	type: 'div', // 组件类型
-	props: { className: 'container' },
-	child: childFiber, // 第一个子节点
-	sibling: nextFiber, // 下一个兄弟节点
-	parent: parentFiber, // 父节点
-	// ... 执行上下文
+  type: 'div', // 组件类型
+  props: { className: 'container' },
+  child: childFiber, // 第一个子节点
+  sibling: nextFiber, // 下一个兄弟节点
+  parent: parentFiber, // 父节点
+  // ... 执行上下文
 }
 ```
 
@@ -96,10 +96,10 @@ const fiber = {
 ```javascript
 // 伪代码，描述逻辑而非实际实现
 function renderProductList(products) {
-	// 把整个列表全部渲染完，中途不休息
-	return products.map((product) => <ProductCard key={product.id} data={product} />)
-	// 假设这个过程需要 500ms
-	// 在这 500ms 里，用户点击按钮会没反应
+  // 把整个列表全部渲染完，中途不休息
+  return products.map((product) => <ProductCard key={product.id} data={product} />)
+  // 假设这个过程需要 500ms
+  // 在这 500ms 里，用户点击按钮会没反应
 }
 ```
 
@@ -108,15 +108,15 @@ function renderProductList(products) {
 ```javascript
 // Fiber 架构下的渲染方式
 function renderProductList(products) {
-	// 把渲染工作拆成很多小任务
-	const tasks = products.map((product, index) => createRenderTask(product, index))
+  // 把渲染工作拆成很多小任务
+  const tasks = products.map((product, index) => createRenderTask(product, index))
 
-	// 每个任务只花 1-2ms
-	// 每完成一个任务，检查是否有紧急请求
-	// 如果用户点击了按钮，立即处理点击事件
-	// 处理完再回来继续渲染
+  // 每个任务只花 1-2ms
+  // 每完成一个任务，检查是否有紧急请求
+  // 如果用户点击了按钮，立即处理点击事件
+  // 处理完再回来继续渲染
 
-	scheduleWork(tasks, { priority: 'low' })
+  scheduleWork(tasks, { priority: 'low' })
 }
 ```
 
@@ -130,13 +130,13 @@ Fiber 架构还带来了两个重要的能力：**Suspense** 和**并发模式**
 
 ```jsx
 function ProductPage({ productId }) {
-	return (
-		<Suspense fallback={<LoadingSpinner />}>
-			{/* 这里可以"暂停"等待数据 */}
-			<ProductDetails id={productId} />
-			<RelatedProducts id={productId} />
-		</Suspense>
-	)
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      {/* 这里可以"暂停"等待数据 */}
+      <ProductDetails id={productId} />
+      <RelatedProducts id={productId} />
+    </Suspense>
+  )
 }
 ```
 
@@ -158,31 +158,31 @@ function ProductPage({ productId }) {
 import { useState, startTransition } from 'react'
 
 function SearchResults({ query }) {
-	const [results, setResults] = useState([])
-	const [isPending, setIsPending] = useState(false)
+  const [results, setResults] = useState([])
+  const [isPending, setIsPending] = useState(false)
 
-	const handleSearch = (newQuery) => {
-		setIsPending(true)
+  const handleSearch = (newQuery) => {
+    setIsPending(true)
 
-		// startTransition 标记这个更新是"非紧急的"
-		// 如果用户继续输入，React 可以中断这个更新
-		startTransition(() => {
-			fetchResults(newQuery).then((data) => {
-				setResults(data)
-				setIsPending(false)
-			})
-		})
-	}
+    // startTransition 标记这个更新是"非紧急的"
+    // 如果用户继续输入，React 可以中断这个更新
+    startTransition(() => {
+      fetchResults(newQuery).then((data) => {
+        setResults(data)
+        setIsPending(false)
+      })
+    })
+  }
 
-	return (
-		<div>
-			<input onChange={(e) => handleSearch(e.target.value)} />
-			{isPending ? <Spinner /> : null}
-			{results.map((r) => (
-				<ResultItem key={r.id} data={r} />
-			))}
-		</div>
-	)
+  return (
+    <div>
+      <input onChange={(e) => handleSearch(e.target.value)} />
+      {isPending ? <Spinner /> : null}
+      {results.map((r) => (
+        <ResultItem key={r.id} data={r} />
+      ))}
+    </div>
+  )
 }
 ```
 
@@ -192,20 +192,20 @@ function SearchResults({ query }) {
 import { useState, useDeferredValue } from 'react'
 
 function SearchPage() {
-	const [query, setQuery] = useState('')
+  const [query, setQuery] = useState('')
 
-	// useDeferredValue 创建一个"延迟版本"的值
-	// query 是即时更新的（用户输入）
-	// deferredQuery 是延迟更新的（渲染用）
-	const deferredQuery = useDeferredValue(query)
+  // useDeferredValue 创建一个"延迟版本"的值
+  // query 是即时更新的（用户输入）
+  // deferredQuery 是延迟更新的（渲染用）
+  const deferredQuery = useDeferredValue(query)
 
-	return (
-		<div>
-			<input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索..." />
-			{/* 列表使用延迟值，即使渲染慢也不会阻塞输入 */}
-			<SlowList text={deferredQuery} />
-		</div>
-	)
+  return (
+    <div>
+      <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索..." />
+      {/* 列表使用延迟值，即使渲染慢也不会阻塞输入 */}
+      <SlowList text={deferredQuery} />
+    </div>
+  )
 }
 ```
 
@@ -248,26 +248,26 @@ function SearchPage() {
 import { useMemo, useCallback } from 'react'
 
 function ProductList({ products, onSelect }) {
-	// 手动缓存计算结果
-	const sortedProducts = useMemo(() => {
-		return [...products].sort((a, b) => b.price - a.price)
-	}, [products])
+  // 手动缓存计算结果
+  const sortedProducts = useMemo(() => {
+    return [...products].sort((a, b) => b.price - a.price)
+  }, [products])
 
-	// 手动缓存回调函数
-	const handleSelect = useCallback(
-		(product) => {
-			onSelect(product)
-		},
-		[onSelect],
-	)
+  // 手动缓存回调函数
+  const handleSelect = useCallback(
+    (product) => {
+      onSelect(product)
+    },
+    [onSelect],
+  )
 
-	return (
-		<div>
-			{sortedProducts.map((product) => (
-				<ProductItem key={product.id} product={product} onSelect={handleSelect} />
-			))}
-		</div>
-	)
+  return (
+    <div>
+      {sortedProducts.map((product) => (
+        <ProductItem key={product.id} product={product} onSelect={handleSelect} />
+      ))}
+    </div>
+  )
 }
 ```
 
@@ -275,21 +275,21 @@ function ProductList({ products, onSelect }) {
 
 ```jsx
 function ProductList({ products, onSelect }) {
-	// 不需要 useMemo！编译器会自动分析并缓存
-	const sortedProducts = [...products].sort((a, b) => b.price - a.price)
+  // 不需要 useMemo！编译器会自动分析并缓存
+  const sortedProducts = [...products].sort((a, b) => b.price - a.price)
 
-	// 不需要 useCallback！编译器会自动分析并缓存
-	const handleSelect = (product) => {
-		onSelect(product)
-	}
+  // 不需要 useCallback！编译器会自动分析并缓存
+  const handleSelect = (product) => {
+    onSelect(product)
+  }
 
-	return (
-		<div>
-			{sortedProducts.map((product) => (
-				<ProductItem key={product.id} product={product} onSelect={handleSelect} />
-			))}
-		</div>
-	)
+  return (
+    <div>
+      {sortedProducts.map((product) => (
+        <ProductItem key={product.id} product={product} onSelect={handleSelect} />
+      ))}
+    </div>
+  )
 }
 ```
 
@@ -349,31 +349,31 @@ Vue 2 时代，Vue 使用了 ES5 的 Object.defineProperty 来实现响应式。
 ```javascript
 // Vue 2 的响应式原理（简化版）
 function reactive(obj) {
-	// 对每个属性设置监控
-	Object.keys(obj).forEach((key) => {
-		let value = obj[key]
+  // 对每个属性设置监控
+  Object.keys(obj).forEach((key) => {
+    let value = obj[key]
 
-		Object.defineProperty(obj, key, {
-			get() {
-				// 有人读取这个属性了，记录下来
-				track(key)
-				return value
-			},
-			set(newValue) {
-				value = newValue
-				// 属性值变了，通知所有依赖这个属性的地方
-				trigger(key)
-			},
-		})
-	})
+    Object.defineProperty(obj, key, {
+      get() {
+        // 有人读取这个属性了，记录下来
+        track(key)
+        return value
+      },
+      set(newValue) {
+        value = newValue
+        // 属性值变了，通知所有依赖这个属性的地方
+        trigger(key)
+      },
+    })
+  })
 
-	return obj
+  return obj
 }
 
 // 使用示例
 const state = reactive({
-	count: 0,
-	message: 'hello',
+  count: 0,
+  message: 'hello',
 })
 
 // 当 count 变化时，只有依赖 count 的地方会更新
@@ -385,33 +385,33 @@ Vue 3 升级到了 Proxy，这是 JavaScript 的原生特性，功能更强大�
 ```javascript
 // Vue 3 的响应式原理（简化版）
 function reactive(obj) {
-	return new Proxy(obj, {
-		get(target, key) {
-			// 收集依赖
-			track(target, key)
-			return Reflect.get(target, key)
-		},
-		set(target, key, value) {
-			const result = Reflect.set(target, key, value)
-			// 触发更新
-			trigger(target, key)
-			return result
-		},
-	})
+  return new Proxy(obj, {
+    get(target, key) {
+      // 收集依赖
+      track(target, key)
+      return Reflect.get(target, key)
+    },
+    set(target, key, value) {
+      const result = Reflect.set(target, key, value)
+      // 触发更新
+      trigger(target, key)
+      return result
+    },
+  })
 }
 
 // Vue 3 还支持 ref，处理基本类型
 function ref(value) {
-	return {
-		get value() {
-			track(this, 'value')
-			return value
-		},
-		set value(newValue) {
-			value = newValue
-			trigger(this, 'value')
-		},
-	}
+  return {
+    get value() {
+      track(this, 'value')
+      return value
+    },
+    set value(newValue) {
+      value = newValue
+      trigger(this, 'value')
+    },
+  }
 }
 ```
 
@@ -423,19 +423,19 @@ Vue 的响应式系统会精确记录"哪个组件依赖哪个数据"。当某�
 
 ```vue
 <template>
-	<!-- 只有 message 变化时，这个 div 才会更新 -->
-	<div>{{ message }}</div>
+  <!-- 只有 message 变化时，这个 div 才会更新 -->
+  <div>{{ message }}</div>
 
-	<!-- 只有 count 变化时，这个按钮的显示才会更新 -->
-	<button>{{ count }}</button>
+  <!-- 只有 count 变化时，这个按钮的显示才会更新 -->
+  <button>{{ count }}</button>
 </template>
 
 <script setup>
 import { reactive } from 'vue'
 
 const state = reactive({
-	message: 'hello',
-	count: 0,
+  message: 'hello',
+  count: 0,
 })
 
 // 修改 message
@@ -460,13 +460,13 @@ Vue 的模板不是运行时解析的，而是提前编译好的。编译器会�
 
 ```vue
 <template>
-	<!-- 静态内容：编译时就知道这段 HTML 结构不会变 -->
-	<div class="container">
-		<h1>商品列表</h1>
+  <!-- 静态内容：编译时就知道这段 HTML 结构不会变 -->
+  <div class="container">
+    <h1>商品列表</h1>
 
-		<!-- 动态内容：Vue 会精确追踪这个 for 循环 -->
-		<div v-for="product in products" :key="product.id">{{ product.name }} - {{ product.price }}</div>
-	</div>
+    <!-- 动态内容：Vue 会精确追踪这个 for 循环 -->
+    <div v-for="product in products" :key="product.id">{{ product.name }} - {{ product.price }}</div>
+  </div>
 </template>
 ```
 
@@ -475,12 +475,12 @@ Vue 的模板不是运行时解析的，而是提前编译好的。编译器会�
 ```javascript
 // 编译后的 render 函数（简化版）
 function render(ctx) {
-	// 静态部分直接返回，不需要重新创建
-	return h('div', { class: 'container' }, [
-		h('h1', '商品列表'),
-		// 动态部分才会被追踪
-		ctx.products.map((product) => h('div', { key: product.id }, [product.name, ' - ', product.price])),
-	])
+  // 静态部分直接返回，不需要重新创建
+  return h('div', { class: 'container' }, [
+    h('h1', '商品列表'),
+    // 动态部分才会被追踪
+    ctx.products.map((product) => h('div', { key: product.id }, [product.name, ' - ', product.price])),
+  ])
 }
 ```
 
@@ -515,17 +515,17 @@ React 通过**两个关键假设**把复杂度降到 O(n)：
 ```jsx
 // 没有 key，React 只能靠位置猜
 ;[<li>张三</li>, <li>李四</li>][
-	// 变成
-	((<li>李四</li>), (<li>张三</li>))
+  // 变成
+  ((<li>李四</li>), (<li>张三</li>))
 ][
-	// React 以为：第一个变了（张三→李四），第二个也变了（李四→张三）
-	// 结果：两个节点都销毁重建
+  // React 以为：第一个变了（张三→李四），第二个也变了（李四→张三）
+  // 结果：两个节点都销毁重建
 
-	// 有 key，React 精准识别
-	((<li key="1">张三</li>), (<li key="2">李四</li>))
+  // 有 key，React 精准识别
+  ((<li key="1">张三</li>), (<li key="2">李四</li>))
 ][
-	// 变成
-	((<li key="2">李四</li>), (<li key="1">张三</li>))
+  // 变成
+  ((<li key="2">李四</li>), (<li key="1">张三</li>))
 ]
 // React 发现：key=1 的节点只是位置变了，key=2 的也是
 // 结果：只做位置移动，性能开销小很多
@@ -542,14 +542,14 @@ React 通过**两个关键假设**把复杂度降到 O(n)：
 ```javascript
 // React 的更新流程
 function updateState(newState) {
-	// 1. 创建新的虚拟 DOM
-	const newVirtualDOM = createVirtualDOM(newState)
+  // 1. 创建新的虚拟 DOM
+  const newVirtualDOM = createVirtualDOM(newState)
 
-	// 2. 和旧的虚拟 DOM 对比（Diff）
-	const patches = diff(oldVirtualDOM, newVirtualDOM)
+  // 2. 和旧的虚拟 DOM 对比（Diff）
+  const patches = diff(oldVirtualDOM, newVirtualDOM)
 
-	// 3. 把差异应用到真实 DOM
-	applyPatches(patches)
+  // 3. 把差异应用到真实 DOM
+  applyPatches(patches)
 }
 ```
 
@@ -558,18 +558,18 @@ function updateState(newState) {
 ```javascript
 // Vue 的更新流程（简化版）
 function updateState(key, newValue) {
-	// 1. 通知依赖这个数据的组件
-	const subscribers = getSubscribers(key)
+  // 1. 通知依赖这个数据的组件
+  const subscribers = getSubscribers(key)
 
-	// 2. 只更新依赖这个数据的组件
-	subscribers.forEach((component) => {
-		// 对于每个组件，找出需要更新的部分
-		const patches = getComponentPatches(component, key, newValue)
-		applyPatches(patches)
-	})
+  // 2. 只更新依赖这个数据的组件
+  subscribers.forEach((component) => {
+    // 对于每个组件，找出需要更新的部分
+    const patches = getComponentPatches(component, key, newValue)
+    applyPatches(patches)
+  })
 
-	// 3. 全局 Diff（只在必要时）
-	// 只有当 Vue 无法精确追踪时，才进行完整 Diff
+  // 3. 全局 Diff（只在必要时）
+  // 只有当 Vue 无法精确追踪时，才进行完整 Diff
 }
 ```
 
@@ -582,27 +582,27 @@ Vue 的最小更新单位是**组件内部的精确位置**。当组件的某个
 ```jsx
 // React：组件级别更新
 function Counter() {
-	const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0)
 
-	return (
-		<div>
-			<span>{count}</span>
-			{/* 即使只有 count 变了，整个 Counter 组件也会重新渲染 */}
-			<ExpensiveComponent /> {/* 这里可能会不必要地重新渲染 */}
-		</div>
-	)
+  return (
+    <div>
+      <span>{count}</span>
+      {/* 即使只有 count 变了，整个 Counter 组件也会重新渲染 */}
+      <ExpensiveComponent /> {/* 这里可能会不必要地重新渲染 */}
+    </div>
+  )
 }
 ```
 
 ```vue
 <!-- Vue：精准更新 -->
 <template>
-	<div>
-		<span>{{ count }}</span>
-		<!-- 只有 {{ count }} 这里会更新 -->
-		<ExpensiveComponent />
-		<!-- 这个组件完全不会重新渲染 -->
-	</div>
+  <div>
+    <span>{{ count }}</span>
+    <!-- 只有 {{ count }} 这里会更新 -->
+    <ExpensiveComponent />
+    <!-- 这个组件完全不会重新渲染 -->
+  </div>
 </template>
 
 <script setup>
@@ -716,9 +716,9 @@ Vue 用的是"推送"模式。同样的场景：
 ```javascript
 // React 内部大概是这样的
 if (Object.is(newState, oldState)) {
-	// 数据没变，不更新
+  // 数据没变，不更新
 } else {
-	// 数据变了，触发 rerender
+  // 数据变了，触发 rerender
 }
 ```
 
@@ -748,13 +748,13 @@ const newUser = { ...user, age: 26 } // 新引用！
 
 // ❌ 不纯（修改了外部状态）
 function updateUserAge(user, newAge) {
-	user.age = newAge // 修改了传入的参数！
-	return user
+  user.age = newAge // 修改了传入的参数！
+  return user
 }
 
 // ✅ 纯（不修改输入，返回新值）
 function updateUserAge(user, newAge) {
-	return { ...user, age: newAge } // 返回新对象
+  return { ...user, age: newAge } // 返回新对象
 }
 ```
 
@@ -879,35 +879,35 @@ console.log(history)
 ```javascript
 // ❌ 不好：选了太多东西
 function PostItem() {
-	// 这个写法会订阅整个 store！
-	const { posts, comments, user, settings, notifications } = useStore()
+  // 这个写法会订阅整个 store！
+  const { posts, comments, user, settings, notifications } = useStore()
 
-	// 任何一项变化，这个组件都会 rerender：
-	// posts 变化 → rerender
-	// comments 变化 → rerender
-	// user 变化 → rerender
-	// settings 变化 → rerender
-	// notifications 变化 → rerender
-	// 即使这个组件根本不用这些数据！
+  // 任何一项变化，这个组件都会 rerender：
+  // posts 变化 → rerender
+  // comments 变化 → rerender
+  // user 变化 → rerender
+  // settings 变化 → rerender
+  // notifications 变化 → rerender
+  // 即使这个组件根本不用这些数据！
 }
 
 // ✅ 好：精确选择需要的
 function PostItem({ postId }) {
-	// 只订阅需要的 post
-	const post = useStore((state) => state.posts.find((p) => p.id === postId))
-	const author = useStore((state) => state.users[post?.authorId])
+  // 只订阅需要的 post
+  const post = useStore((state) => state.posts.find((p) => p.id === postId))
+  const author = useStore((state) => state.users[post?.authorId])
 
-	// 只有这个 post 变化时，才 rerender
-	// 其他数据变化不会触发这个组件 rerender
+  // 只有这个 post 变化时，才 rerender
+  // 其他数据变化不会触发这个组件 rerender
 }
 
 // ✅ 更好：用 shallow 比较
 import { shallow } from 'zustand/shallow'
 function PostItem({ postId }) {
-	const [post, author] = useStore(
-		(state) => [state.posts.find((p) => p.id === postId), state.users[post?.authorId]],
-		shallow, // 只有返回的数组引用都变了才 rerender
-	)
+  const [post, author] = useStore(
+    (state) => [state.posts.find((p) => p.id === postId), state.users[post?.authorId]],
+    shallow, // 只有返回的数组引用都变了才 rerender
+  )
 }
 ```
 
@@ -970,12 +970,12 @@ obj2.newProperty = 'hello' // 自动变成响应式的
 
 ```javascript
 const state = reactive({
-	user: {
-		name: '张三',
-		address: {
-			city: '北京',
-		},
-	},
+  user: {
+    name: '张三',
+    address: {
+      city: '北京',
+    },
+  },
 })
 
 // Vue 3 可以精确追踪：
@@ -994,11 +994,11 @@ const state = reactive({
 import { useVirtualList } from 'vue-use'
 
 const { list, containerProps, wrapperProps } = useVirtualList(
-	items, // 可能有 100 万条数据
-	{
-		itemHeight: 50,
-		overscan: 10, // 预渲染多出来的条目数
-	},
+  items, // 可能有 100 万条数据
+  {
+    itemHeight: 50,
+    overscan: 10, // 预渲染多出来的条目数
+  },
 )
 ```
 
@@ -1008,10 +1008,10 @@ const { list, containerProps, wrapperProps } = useVirtualList(
 
 ```vue
 <template>
-	<div v-for="item in list" :key="item.id">
-		<!-- 只有 item.name 或 item.count 变化时，这个 div 才重新渲染 -->
-		<span v-memo="[item.name, item.count]"> {{ item.name }}: {{ item.count }} </span>
-	</div>
+  <div v-for="item in list" :key="item.id">
+    <!-- 只有 item.name 或 item.count 变化时，这个 div 才重新渲染 -->
+    <span v-memo="[item.name, item.count]"> {{ item.name }}: {{ item.count }} </span>
+  </div>
 </template>
 ```
 
@@ -1166,25 +1166,25 @@ const { list, containerProps, wrapperProps } = useVirtualList(
 
 ```jsx
 function SearchForm() {
-	const [query, setQuery] = useState('')
-	const [results, setResults] = useState([])
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState([])
 
-	const handleChange = (e) => {
-		const value = e.target.value
-		setQuery(value)
+  const handleChange = (e) => {
+    const value = e.target.value
+    setQuery(value)
 
-		// 如果要做实时搜索，这里会每次输入都触发搜索
-		// 有了 Fiber，可以在渲染搜索结果时被打断
-		search(value).then(setResults)
-	}
+    // 如果要做实时搜索，这里会每次输入都触发搜索
+    // 有了 Fiber，可以在渲染搜索结果时被打断
+    search(value).then(setResults)
+  }
 
-	return (
-		<div>
-			<input value={query} onChange={handleChange} />
-			{/* 用户继续输入时，搜索结果的渲染可以被中断 */}
-			<SearchResults results={results} />
-		</div>
-	)
+  return (
+    <div>
+      <input value={query} onChange={handleChange} />
+      {/* 用户继续输入时，搜索结果的渲染可以被中断 */}
+      <SearchResults results={results} />
+    </div>
+  )
 }
 ```
 
@@ -1200,22 +1200,22 @@ const results = ref([])
 // Vue 的 watch 可以精确控制何时触发搜索
 // debounce 等优化也是顺手的
 watch(
-	query,
-	async (newQuery) => {
-		if (newQuery.length > 0) {
-			results.value = await search(newQuery)
-		}
-	},
-	{ debounce: 300 },
+  query,
+  async (newQuery) => {
+    if (newQuery.length > 0) {
+      results.value = await search(newQuery)
+    }
+  },
+  { debounce: 300 },
 ) // 300ms 防抖
 </script>
 
 <template>
-	<div>
-		<input v-model="query" />
-		<!-- 只有 results 变化时才会更新 -->
-		<SearchResults :results="results" />
-	</div>
+  <div>
+    <input v-model="query" />
+    <!-- 只有 results 变化时才会更新 -->
+    <SearchResults :results="results" />
+  </div>
 </template>
 ```
 
@@ -1227,11 +1227,11 @@ watch(
 import { FixedSizeList } from 'react-window'
 
 function BigList({ items }) {
-	return (
-		<FixedSizeList height={400} itemCount={items.length} itemSize={50} width="100%">
-			{({ index, style }) => <div style={style}>{items[index].name}</div>}
-		</FixedSizeList>
-	)
+  return (
+    <FixedSizeList height={400} itemCount={items.length} itemSize={50} width="100%">
+      {({ index, style }) => <div style={style}>{items[index].name}</div>}
+    </FixedSizeList>
+  )
 }
 ```
 
@@ -1243,24 +1243,24 @@ import { ref } from 'vue'
 import { useVirtualList } from '@vueuse/core'
 
 const items = ref(
-	Array.from({ length: 10000 }, (_, i) => ({
-		name: `Item ${i}`,
-	})),
+  Array.from({ length: 10000 }, (_, i) => ({
+    name: `Item ${i}`,
+  })),
 )
 
 const { list, containerProps, wrapperProps } = useVirtualList(items, {
-	itemHeight: 50,
+  itemHeight: 50,
 })
 </script>
 
 <template>
-	<div v-bind="containerProps" style="height: 400px; overflow: auto;">
-		<div v-bind="wrapperProps">
-			<div v-for="{ data, index } in list" :key="index">
-				{{ data.name }}
-			</div>
-		</div>
-	</div>
+  <div v-bind="containerProps" style="height: 400px; overflow: auto;">
+    <div v-bind="wrapperProps">
+      <div v-for="{ data, index } in list" :key="index">
+        {{ data.name }}
+      </div>
+    </div>
+  </div>
 </template>
 ```
 
@@ -1270,36 +1270,36 @@ const { list, containerProps, wrapperProps } = useVirtualList(items, {
 
 ```jsx
 function Dashboard() {
-	const [user, setUser] = useState(null)
-	const [posts, setPosts] = useState([])
-	const [notifications, setNotifications] = useState([])
+  const [user, setUser] = useState(null)
+  const [posts, setPosts] = useState([])
+  const [notifications, setNotifications] = useState([])
 
-	useEffect(() => {
-		fetchUser().then(setUser)
-		fetchPosts().then(setPosts)
-		fetchNotifications().then(setNotifications)
-	}, [])
+  useEffect(() => {
+    fetchUser().then(setUser)
+    fetchPosts().then(setPosts)
+    fetchNotifications().then(setNotifications)
+  }, [])
 
-	// 每个 setter 都可能触发整组件重新渲染
-	// React 18 需要手动优化：
-	const updateUser = useCallback((newUser) => {
-		setUser(newUser)
-	}, [])
+  // 每个 setter 都可能触发整组件重新渲染
+  // React 18 需要手动优化：
+  const updateUser = useCallback((newUser) => {
+    setUser(newUser)
+  }, [])
 
-	return (
-		<div>
-			<UserInfo user={user} onUpdate={updateUser} />
-			{/* 这里的 posts 变化不会导致 UserInfo 重新渲染 */}
-			{/* 前提是你用了 React.memo */}
-			<PostList posts={posts} />
-			<Notifications notifications={notifications} />
-		</div>
-	)
+  return (
+    <div>
+      <UserInfo user={user} onUpdate={updateUser} />
+      {/* 这里的 posts 变化不会导致 UserInfo 重新渲染 */}
+      {/* 前提是你用了 React.memo */}
+      <PostList posts={posts} />
+      <Notifications notifications={notifications} />
+    </div>
+  )
 }
 
 // React 18 需要手动包装子组件
 const UserInfo = React.memo(({ user, onUpdate }) => {
-	// ...
+  // ...
 })
 ```
 
@@ -1307,34 +1307,34 @@ const UserInfo = React.memo(({ user, onUpdate }) => {
 
 ```jsx
 function Dashboard() {
-	const [user, setUser] = useState(null)
-	const [posts, setPosts] = useState([])
-	const [notifications, setNotifications] = useState([])
+  const [user, setUser] = useState(null)
+  const [posts, setPosts] = useState([])
+  const [notifications, setNotifications] = useState([])
 
-	useEffect(() => {
-		fetchUser().then(setUser)
-		fetchPosts().then(setPosts)
-		fetchNotifications().then(setNotifications)
-	}, [])
+  useEffect(() => {
+    fetchUser().then(setUser)
+    fetchPosts().then(setPosts)
+    fetchNotifications().then(setNotifications)
+  }, [])
 
-	// 不需要 useCallback！编译器自动优化
-	const updateUser = (newUser) => {
-		setUser(newUser)
-	}
+  // 不需要 useCallback！编译器自动优化
+  const updateUser = (newUser) => {
+    setUser(newUser)
+  }
 
-	return (
-		<div>
-			{/* 不需要 React.memo！编译器自动处理 */}
-			<UserInfo user={user} onUpdate={updateUser} />
-			<PostList posts={posts} />
-			<Notifications notifications={notifications} />
-		</div>
-	)
+  return (
+    <div>
+      {/* 不需要 React.memo！编译器自动处理 */}
+      <UserInfo user={user} onUpdate={updateUser} />
+      <PostList posts={posts} />
+      <Notifications notifications={notifications} />
+    </div>
+  )
 }
 
 // 不需要手动包装
 const UserInfo = ({ user, onUpdate }) => {
-	// ...
+  // ...
 }
 ```
 
@@ -1345,9 +1345,9 @@ const UserInfo = ({ user, onUpdate }) => {
 import { reactive, toRefs } from 'vue'
 
 const state = reactive({
-	user: null,
-	posts: [],
-	notifications: [],
+  user: null,
+  posts: [],
+  notifications: [],
 })
 
 // toRefs 把响应式对象的每个属性转成独立的 ref
@@ -1355,9 +1355,9 @@ const state = reactive({
 const { user, posts, notifications } = toRefs(state)
 
 onMounted(async () => {
-	state.user = await fetchUser()
-	state.posts = await fetchPosts()
-	state.notifications = await fetchNotifications()
+  state.user = await fetchUser()
+  state.posts = await fetchPosts()
+  state.notifications = await fetchNotifications()
 })
 
 // 子组件会自动精确依赖需要的数据
@@ -1365,16 +1365,16 @@ onMounted(async () => {
 </script>
 
 <template>
-	<div>
-		<!-- 只有 user 变化时，UserInfo 才更新 -->
-		<UserInfo :user="user" @update="updateUser" />
+  <div>
+    <!-- 只有 user 变化时，UserInfo 才更新 -->
+    <UserInfo :user="user" @update="updateUser" />
 
-		<!-- 只有 posts 变化时，PostList 才更新 -->
-		<PostList :posts="posts" />
+    <!-- 只有 posts 变化时，PostList 才更新 -->
+    <PostList :posts="posts" />
 
-		<!-- 只有 notifications 变化时，Notifications 才更新 -->
-		<Notifications :notifications="notifications" />
-	</div>
+    <!-- 只有 notifications 变化时，Notifications 才更新 -->
+    <Notifications :notifications="notifications" />
+  </div>
 </template>
 ```
 

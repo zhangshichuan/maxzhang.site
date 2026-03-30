@@ -76,10 +76,10 @@ console.log(queue.shift()) // 输出"小红"
 
 ```javascript
 class ListNode {
-	constructor(val) {
-		this.val = val
-		this.next = null
-	}
+  constructor(val) {
+    this.val = val
+    this.next = null
+  }
 }
 
 // 创建链表：1 -> 2 -> 3 -> 4
@@ -108,11 +108,11 @@ head.next.next.next = new ListNode(4)
 
 ```javascript
 class TreeNode {
-	constructor(val) {
-		this.val = val
-		this.left = null
-		this.right = null
-	}
+  constructor(val) {
+    this.val = val
+    this.left = null
+    this.right = null
+  }
 }
 ```
 
@@ -160,7 +160,7 @@ class TreeNode {
 ```javascript
 // O(1)：不管数组多长，直接拿第一个
 function getFirst(arr) {
-	return arr[0]
+  return arr[0]
 }
 ```
 
@@ -171,11 +171,11 @@ function getFirst(arr) {
 ```javascript
 // O(n)：要全部看一遍
 function findMax(arr) {
-	let max = arr[0]
-	for (let i = 1; i < arr.length; i++) {
-		if (arr[i] > max) max = arr[i]
-	}
-	return max
+  let max = arr[0]
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] > max) max = arr[i]
+  }
+  return max
 }
 ```
 
@@ -188,11 +188,11 @@ function findMax(arr) {
 ```javascript
 // O(n²)：两个循环嵌套
 for (let i = 0; i < n; i++) {
-	// n次
-	for (let j = 0; j < n; j++) {
-		// n次
-		// 这里是 n×n 次操作
-	}
+  // n次
+  for (let j = 0; j < n; j++) {
+    // n次
+    // 这里是 n×n 次操作
+  }
 }
 ```
 
@@ -244,8 +244,8 @@ log 就是对数。简单理解就是：每次操作能排除一半的数据。
 ```javascript
 // 总体 O(n*k)，k是旋转步数
 for (let i = 0; i < k; i++) {
-	const last = arr.pop()
-	arr.unshift(last) // O(n)！
+  const last = arr.pop()
+  arr.unshift(last) // O(n)！
 }
 ```
 
@@ -253,11 +253,11 @@ for (let i = 0; i < k; i++) {
 
 ```javascript
 function rotate(arr, k) {
-	k = k % arr.length
-	reverse(arr, 0, arr.length - 1)
-	reverse(arr, 0, k - 1)
-	reverse(arr, k, arr.length - 1)
-	return arr
+  k = k % arr.length
+  reverse(arr, 0, arr.length - 1)
+  reverse(arr, 0, k - 1)
+  reverse(arr, k, arr.length - 1)
+  return arr
 }
 // 整体 O(n)
 ```
@@ -271,10 +271,10 @@ function rotate(arr, k) {
 ```javascript
 // splice 是 O(n) 操作，要避免
 for (let i = arr.length - 1; i >= 0; i--) {
-	if (arr[i] === 0) {
-		arr.splice(i, 1)
-		arr.push(0)
-	}
+  if (arr[i] === 0) {
+    arr.splice(i, 1)
+    arr.push(0)
+  }
 }
 ```
 
@@ -282,13 +282,13 @@ for (let i = arr.length - 1; i >= 0; i--) {
 
 ```javascript
 function moveZeroes(nums) {
-	let slow = 0
-	for (let fast = 0; fast < nums.length; fast++) {
-		if (nums[fast] !== 0) {
-			;[nums[slow], nums[fast]] = [nums[fast], nums[slow]]
-			slow++
-		}
-	}
+  let slow = 0
+  for (let fast = 0; fast < nums.length; fast++) {
+    if (nums[fast] !== 0) {
+      ;[nums[slow], nums[fast]] = [nums[fast], nums[slow]]
+      slow++
+    }
+  }
 }
 // 整体 O(n)，只需要遍历一遍
 ```
@@ -301,20 +301,20 @@ function moveZeroes(nums) {
 
 ```javascript
 function twoSum(nums, target) {
-	let left = 0
-	let right = nums.length - 1
+  let left = 0
+  let right = nums.length - 1
 
-	while (left < right) {
-		const sum = nums[left] + nums[right]
-		if (sum === target) {
-			return [left, right]
-		} else if (sum < target) {
-			left++
-		} else {
-			right--
-		}
-	}
-	return []
+  while (left < right) {
+    const sum = nums[left] + nums[right]
+    if (sum === target) {
+      return [left, right]
+    } else if (sum < target) {
+      left++
+    } else {
+      right--
+    }
+  }
+  return []
 }
 // O(n)，比双重循环的 O(n²) 快多了
 ```
@@ -325,30 +325,30 @@ function twoSum(nums, target) {
 
 ```javascript
 function maxChar(s) {
-	let maxChar = ''
-	let maxCount = 0
-	let currentChar = ''
-	let currentCount = 0
+  let maxChar = ''
+  let maxCount = 0
+  let currentChar = ''
+  let currentCount = 0
 
-	for (const char of s) {
-		if (char === currentChar) {
-			currentCount++
-		} else {
-			if (currentCount > maxCount) {
-				maxCount = currentCount
-				maxChar = currentChar
-			}
-			currentChar = char
-			currentCount = 1
-		}
-	}
+  for (const char of s) {
+    if (char === currentChar) {
+      currentCount++
+    } else {
+      if (currentCount > maxCount) {
+        maxCount = currentCount
+        maxChar = currentChar
+      }
+      currentChar = char
+      currentCount = 1
+    }
+  }
 
-	if (currentCount > maxCount) {
-		maxCount = currentCount
-		maxChar = currentChar
-	}
+  if (currentCount > maxCount) {
+    maxCount = currentCount
+    maxChar = currentChar
+  }
 
-	return { char: maxChar, count: maxCount }
+  return { char: maxChar, count: maxCount }
 }
 ```
 
@@ -358,18 +358,18 @@ function maxChar(s) {
 
 ```javascript
 function isPalindrome(num) {
-	if (num < 0) return false
-	if (num < 10) return true
+  if (num < 0) return false
+  if (num < 10) return true
 
-	let original = num
-	let reversed = 0
+  let original = num
+  let reversed = 0
 
-	while (num > 0) {
-		reversed = reversed * 10 + (num % 10)
-		num = Math.floor(num / 10)
-	}
+  while (num > 0) {
+    reversed = reversed * 10 + (num % 10)
+    num = Math.floor(num / 10)
+  }
 
-	return original === reversed
+  return original === reversed
 }
 ```
 
@@ -383,22 +383,22 @@ function isPalindrome(num) {
 
 ```javascript
 function isValid(str) {
-	const stack = []
-	const map = {
-		')': '(',
-		']': '[',
-		'}': '{',
-	}
+  const stack = []
+  const map = {
+    ')': '(',
+    ']': '[',
+    '}': '{',
+  }
 
-	for (const char of str) {
-		if (char === '(' || char === '[' || char === '{') {
-			stack.push(char)
-		} else {
-			if (stack.pop() !== map[char]) return false
-		}
-	}
+  for (const char of str) {
+    if (char === '(' || char === '[' || char === '{') {
+      stack.push(char)
+    } else {
+      if (stack.pop() !== map[char]) return false
+    }
+  }
 
-	return stack.length === 0
+  return stack.length === 0
 }
 ```
 
@@ -410,23 +410,23 @@ function isValid(str) {
 
 ```javascript
 class Queue {
-	constructor() {
-		this.stackIn = []
-		this.stackOut = []
-	}
+  constructor() {
+    this.stackIn = []
+    this.stackOut = []
+  }
 
-	enqueue(item) {
-		this.stackIn.push(item)
-	}
+  enqueue(item) {
+    this.stackIn.push(item)
+  }
 
-	dequeue() {
-		if (this.stackOut.length === 0) {
-			while (this.stackIn.length) {
-				this.stackOut.push(this.stackIn.pop())
-			}
-		}
-		return this.stackOut.pop()
-	}
+  dequeue() {
+    if (this.stackOut.length === 0) {
+      while (this.stackIn.length) {
+        this.stackOut.push(this.stackIn.pop())
+      }
+    }
+    return this.stackOut.pop()
+  }
 }
 ```
 
@@ -448,17 +448,17 @@ class Queue {
 
 ```javascript
 function reverseList(head) {
-	let prev = null
-	let curr = head
+  let prev = null
+  let curr = head
 
-	while (curr) {
-		const next = curr.next
-		curr.next = prev
-		prev = curr
-		curr = next
-	}
+  while (curr) {
+    const next = curr.next
+    curr.next = prev
+    prev = curr
+    curr = next
+  }
 
-	return prev
+  return prev
 }
 ```
 
@@ -474,11 +474,11 @@ function reverseList(head) {
 
 ```javascript
 function inOrder(root) {
-	// 中序遍历
-	if (!root) return
-	inOrder(root.left)
-	console.log(root.val)
-	inOrder(root.right)
+  // 中序遍历
+  if (!root) return
+  inOrder(root.left)
+  console.log(root.val)
+  inOrder(root.right)
 }
 ```
 
@@ -488,22 +488,22 @@ function inOrder(root) {
 
 ```javascript
 function kthSmallest(root, k) {
-	let count = 0
-	let result = null
+  let count = 0
+  let result = null
 
-	function inOrder(node) {
-		if (!node || result) return
-		inOrder(node.left)
-		count++
-		if (count === k) {
-			result = node.val
-			return
-		}
-		inOrder(node.right)
-	}
+  function inOrder(node) {
+    if (!node || result) return
+    inOrder(node.left)
+    count++
+    if (count === k) {
+      result = node.val
+      return
+    }
+    inOrder(node.right)
+  }
 
-	inOrder(root)
-	return result
+  inOrder(root)
+  return result
 }
 ```
 
@@ -515,27 +515,27 @@ function kthSmallest(root, k) {
 
 ```javascript
 function quickSort(arr, left = 0, right = arr.length - 1) {
-	if (left < right) {
-		const pivotIndex = partition(arr, left, right)
-		quickSort(arr, left, pivotIndex - 1)
-		quickSort(arr, pivotIndex + 1, right)
-	}
-	return arr
+  if (left < right) {
+    const pivotIndex = partition(arr, left, right)
+    quickSort(arr, left, pivotIndex - 1)
+    quickSort(arr, pivotIndex + 1, right)
+  }
+  return arr
 }
 
 function partition(arr, left, right) {
-	const pivot = arr[right]
-	let i = left - 1
+  const pivot = arr[right]
+  let i = left - 1
 
-	for (let j = left; j < right; j++) {
-		if (arr[j] <= pivot) {
-			i++
-			;[arr[i], arr[j]] = [arr[j], arr[i]]
-		}
-	}
+  for (let j = left; j < right; j++) {
+    if (arr[j] <= pivot) {
+      i++
+      ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    }
+  }
 
-	;[arr[i + 1], arr[right]] = [arr[right], arr[i + 1]]
-	return i + 1
+  ;[arr[i + 1], arr[right]] = [arr[right], arr[i + 1]]
+  return i + 1
 }
 ```
 
@@ -555,17 +555,17 @@ function partition(arr, left, right) {
 
 ```javascript
 function binarySearch(arr, target) {
-	let left = 0
-	let right = arr.length - 1
+  let left = 0
+  let right = arr.length - 1
 
-	while (left <= right) {
-		const mid = Math.floor((left + right) / 2)
-		if (arr[mid] === target) return mid
-		else if (arr[mid] < target) left = mid + 1
-		else right = mid - 1
-	}
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2)
+    if (arr[mid] === target) return mid
+    else if (arr[mid] < target) left = mid + 1
+    else right = mid - 1
+  }
 
-	return -1
+  return -1
 }
 ```
 
@@ -580,8 +580,8 @@ function binarySearch(arr, target) {
 ```javascript
 // 这样算 fib(5) 会重复算很多次，O(2^n)
 function fib(n) {
-	if (n <= 1) return n
-	return fib(n - 1) + fib(n - 2)
+  if (n <= 1) return n
+  return fib(n - 1) + fib(n - 2)
 }
 ```
 
@@ -590,13 +590,13 @@ function fib(n) {
 ```javascript
 // O(n)，每次只算一次
 function fib(n) {
-	if (n <= 1) return n
-	let prev = 0,
-		curr = 1
-	for (let i = 2; i <= n; i++) {
-		;[prev, curr] = [curr, prev + curr]
-	}
-	return curr
+  if (n <= 1) return n
+  let prev = 0,
+    curr = 1
+  for (let i = 2; i <= n; i++) {
+    ;[prev, curr] = [curr, prev + curr]
+  }
+  return curr
 }
 ```
 
@@ -616,36 +616,36 @@ function fib(n) {
 
 ```javascript
 class TrieNode {
-	constructor() {
-		this.children = {}
-		this.isEnd = false
-	}
+  constructor() {
+    this.children = {}
+    this.isEnd = false
+  }
 }
 
 class Trie {
-	constructor() {
-		this.root = new TrieNode()
-	}
+  constructor() {
+    this.root = new TrieNode()
+  }
 
-	insert(word) {
-		let node = this.root
-		for (const char of word) {
-			if (!node.children[char]) {
-				node.children[char] = new TrieNode()
-			}
-			node = node.children[char]
-		}
-		node.isEnd = true
-	}
+  insert(word) {
+    let node = this.root
+    for (const char of word) {
+      if (!node.children[char]) {
+        node.children[char] = new TrieNode()
+      }
+      node = node.children[char]
+    }
+    node.isEnd = true
+  }
 
-	search(prefix) {
-		let node = this.root
-		for (const char of prefix) {
-			if (!node.children[char]) return []
-			node = node.children[char]
-		}
-		// 从这个节点收集所有词...
-	}
+  search(prefix) {
+    let node = this.root
+    for (const char of prefix) {
+      if (!node.children[char]) return []
+      node = node.children[char]
+    }
+    // 从这个节点收集所有词...
+  }
 }
 ```
 

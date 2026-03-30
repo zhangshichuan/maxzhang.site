@@ -147,23 +147,23 @@ function UserProfile({ userId }) {
 ```typescript
 // 父类：鸟
 class Bird {
-	fly() {
-		return '鸟在天上飞'
-	}
+  fly() {
+    return '鸟在天上飞'
+  }
 }
 
 // ✅ 正确的子类：企鹅（虽然不会飞，但它有自己的方式）
 class Penguin extends Bird {
-	swim() {
-		return '企鹅在水里游'
-	}
+  swim() {
+    return '企鹅在水里游'
+  }
 }
 
 // ❌ 错误的子类：直接改变了父类的行为
 class DeadBird extends Bird {
-	fly() {
-		throw new Error('我死了，飞不了') // 这就违反了里氏替换原则
-	}
+  fly() {
+    throw new Error('我死了，飞不了') // 这就违反了里氏替换原则
+  }
 }
 ```
 
@@ -255,15 +255,15 @@ Angular 的服务注入就大量使用了这个原则。
 ```typescript
 // 管道式组合函数
 const pipe =
-	(...fns) =>
-	(x) =>
-		fns.reduce((v, f) => f(v), x)
+  (...fns) =>
+  (x) =>
+    fns.reduce((v, f) => f(v), x)
 
 const processUser = pipe(
-	validateInput, // 第一步：验证输入
-	normalizeData, // 第二步：标准化数据
-	saveToDatabase, // 第三步：保存
-	sendNotification, // 第四步：发送通知
+  validateInput, // 第一步：验证输入
+  normalizeData, // 第二步：标准化数据
+  saveToDatabase, // 第三步：保存
+  sendNotification, // 第四步：发送通知
 )
 
 processUser(rawData)
@@ -287,25 +287,25 @@ processUser(rawData)
 
 ```typescript
 class jQuery {
-	constructor(selector: string) {
-		// 复杂的 DOM 查询逻辑
-		const dom = Array.from(document.querySelectorAll(selector))
-		for (let i = 0; i < dom.length; i++) {
-			this[i] = dom[i]
-		}
-		this.length = dom.length
-	}
+  constructor(selector: string) {
+    // 复杂的 DOM 查询逻辑
+    const dom = Array.from(document.querySelectorAll(selector))
+    for (let i = 0; i < dom.length; i++) {
+      this[i] = dom[i]
+    }
+    this.length = dom.length
+  }
 
-	addClass(name: string) {
-		// 添加类的逻辑
-	}
+  addClass(name: string) {
+    // 添加类的逻辑
+  }
 
-	// ... 还有很多方法
+  // ... 还有很多方法
 }
 
 // 工厂函数：用户不需要知道 jQuery 类的存在
 window.$ = function (selector: string) {
-	return new jQuery(selector)
+  return new jQuery(selector)
 }
 
 // 使用时
@@ -321,13 +321,13 @@ React 为什么能用 JSX 写 UI？因为有 `createElement` 这个工厂函数�
 ```typescript
 // React 内部就是这样把 JSX 转成对象的
 function createElement(type, props, ...children) {
-	return {
-		type, // 标签名，如 'button'，或者组件
-		props: {
-			...props,
-			children: children.map((c) => (typeof c === 'object' ? c : { type: 'TEXT_ELEMENT', props: { nodeValue: c } })),
-		},
-	}
+  return {
+    type, // 标签名，如 'button'，或者组件
+    props: {
+      ...props,
+      children: children.map((c) => (typeof c === 'object' ? c : { type: 'TEXT_ELEMENT', props: { nodeValue: c } })),
+    },
+  }
 }
 
 // <button className="btn">点我</button>
@@ -351,33 +351,33 @@ createElement('button', { className: 'btn' }, '点我')
 
 ```typescript
 class Modal {
-	// 关键：静态属性，类级别只有一个
-	private static instance: Modal
-	private container: HTMLElement
+  // 关键：静态属性，类级别只有一个
+  private static instance: Modal
+  private container: HTMLElement
 
-	// 关键：构造函数私有化，不能用 new Modal()
-	private constructor() {
-		this.container = document.createElement('div')
-		this.container.id = 'global-modal'
-		document.body.appendChild(this.container)
-	}
+  // 关键：构造函数私有化，不能用 new Modal()
+  private constructor() {
+    this.container = document.createElement('div')
+    this.container.id = 'global-modal'
+    document.body.appendChild(this.container)
+  }
 
-	// 关键：通过 getInstance 获取唯一实例
-	public static getInstance(): Modal {
-		if (!Modal.instance) {
-			Modal.instance = new Modal()
-		}
-		return Modal.instance
-	}
+  // 关键：通过 getInstance 获取唯一实例
+  public static getInstance(): Modal {
+    if (!Modal.instance) {
+      Modal.instance = new Modal()
+    }
+    return Modal.instance
+  }
 
-	show(content: string) {
-		this.container.innerHTML = content
-		this.container.style.display = 'block'
-	}
+  show(content: string) {
+    this.container.innerHTML = content
+    this.container.style.display = 'block'
+  }
 
-	hide() {
-		this.container.style.display = 'none'
-	}
+  hide() {
+    this.container.style.display = 'none'
+  }
 }
 
 // 使用时，不管调用多少次，拿到的都是同一个实例
@@ -407,30 +407,30 @@ JavaScript 的原型链本身就是原型模式的应用：
 ```typescript
 // 定义基础模板
 const baseUser = {
-	getRole() {
-		return this.role
-	},
-	introduce() {
-		return `我是${this.name}`
-	},
+  getRole() {
+    return this.role
+  },
+  introduce() {
+    return `我是${this.name}`
+  },
 }
 
 // 以 baseUser 为原型创建新对象
 const admin = Object.create(baseUser, {
-	role: {
-		value: 'ADMIN',
-		writable: false, // 不可修改
-	},
-	permissions: {
-		value: ['READ', 'WRITE', 'DELETE'],
-		writable: false,
-	},
-	name: { value: '管理员' },
+  role: {
+    value: 'ADMIN',
+    writable: false, // 不可修改
+  },
+  permissions: {
+    value: ['READ', 'WRITE', 'DELETE'],
+    writable: false,
+  },
+  name: { value: '管理员' },
 })
 
 const normalUser = Object.create(baseUser, {
-	role: { value: 'USER' },
-	name: { value: '普通用户' },
+  role: { value: 'USER' },
+  name: { value: '普通用户' },
 })
 
 console.log(admin.getRole()) // ADMIN
@@ -458,27 +458,27 @@ Vue3 的响应式系统就是基于 Proxy 实现的：
 
 ```typescript
 function reactive<T extends object>(target: T): T {
-	return new Proxy(target, {
-		get(target, key, receiver) {
-			const res = Reflect.get(target, key, receiver)
+  return new Proxy(target, {
+    get(target, key, receiver) {
+      const res = Reflect.get(target, key, receiver)
 
-			// 访问属性时，自动打印日志
-			console.log(`读取 ${String(key)}`)
+      // 访问属性时，自动打印日志
+      console.log(`读取 ${String(key)}`)
 
-			// 如果是函数，绑定回原对象
-			if (typeof res === 'function') {
-				return res.bind(target)
-			}
+      // 如果是函数，绑定回原对象
+      if (typeof res === 'function') {
+        return res.bind(target)
+      }
 
-			// 如果是对象，继续递归代理（深度响应式）
-			return typeof res === 'object' && res !== null ? reactive(res) : res
-		},
+      // 如果是对象，继续递归代理（深度响应式）
+      return typeof res === 'object' && res !== null ? reactive(res) : res
+    },
 
-		set(target, key, value, receiver) {
-			console.log(`设置 ${String(key)} = ${value}`)
-			return Reflect.set(target, key, value, receiver)
-		},
-	})
+    set(target, key, value, receiver) {
+      console.log(`设置 ${String(key)} = ${value}`)
+      return Reflect.set(target, key, value, receiver)
+    },
+  })
 }
 
 // 使用
@@ -492,21 +492,21 @@ state.count++ // 自动打印日志："读取 count"，"设置 count = 1"
 
 ```typescript
 function lazyLoadImage(img: HTMLImageElement, realSrc: string) {
-	return new Proxy(img, {
-		get(target, prop) {
-			if (prop === 'src' && !target.dataset.loaded) {
-				// 用占位图
-				return target.dataset.placeholder || ''
-			}
-			return target[prop as keyof HTMLImageElement]
-		},
-		set(target, prop, value) {
-			if (prop === 'src' && value === realSrc) {
-				target.dataset.loaded = 'true'
-			}
-			target[prop as keyof HTMLImageElement] = value
-		},
-	})
+  return new Proxy(img, {
+    get(target, prop) {
+      if (prop === 'src' && !target.dataset.loaded) {
+        // 用占位图
+        return target.dataset.placeholder || ''
+      }
+      return target[prop as keyof HTMLImageElement]
+    },
+    set(target, prop, value) {
+      if (prop === 'src' && value === realSrc) {
+        target.dataset.loaded = 'true'
+      }
+      target[prop as keyof HTMLImageElement] = value
+    },
+  })
 }
 ```
 
@@ -521,30 +521,30 @@ function lazyLoadImage(img: HTMLImageElement, realSrc: string) {
 ```typescript
 // 计时器装饰器：自动记录函数执行时间
 function timeTrack(target: any, name: string, descriptor: PropertyDescriptor) {
-	const original = descriptor.value
+  const original = descriptor.value
 
-	descriptor.value = function (...args: any[]) {
-		const start = performance.now()
-		const result = original.apply(this, args)
-		const duration = performance.now() - start
-		console.log(`${name} 执行耗时: ${duration.toFixed(2)}ms`)
-		return result
-	}
+  descriptor.value = function (...args: any[]) {
+    const start = performance.now()
+    const result = original.apply(this, args)
+    const duration = performance.now() - start
+    console.log(`${name} 执行耗时: ${duration.toFixed(2)}ms`)
+    return result
+  }
 
-	return descriptor
+  return descriptor
 }
 
 class ApiService {
-	@timeTrack
-	fetchUserList() {
-		// 模拟 API 请求
-		return new Promise((resolve) => setTimeout(() => resolve([1, 2, 3]), 500))
-	}
+  @timeTrack
+  fetchUserList() {
+    // 模拟 API 请求
+    return new Promise((resolve) => setTimeout(() => resolve([1, 2, 3]), 500))
+  }
 
-	@timeTrack
-	fetchDetail(id: number) {
-		return new Promise((resolve) => setTimeout(() => resolve({ id }), 200))
-	}
+  @timeTrack
+  fetchDetail(id: number) {
+    return new Promise((resolve) => setTimeout(() => resolve({ id }), 200))
+  }
 }
 
 const api = new ApiService()
@@ -636,22 +636,22 @@ const fullName = computed(() => firstName.value + ' ' + lastName.value)
 ```typescript
 // 简单实现
 class Subject {
-	private observers: Function[] = []
+  private observers: Function[] = []
 
-	// 订阅
-	subscribe(observer: Function) {
-		this.observers.push(observer)
-	}
+  // 订阅
+  subscribe(observer: Function) {
+    this.observers.push(observer)
+  }
 
-	// 取消订阅
-	unsubscribe(observer: Function) {
-		this.observers = this.observers.filter((o) => o !== observer)
-	}
+  // 取消订阅
+  unsubscribe(observer: Function) {
+    this.observers = this.observers.filter((o) => o !== observer)
+  }
 
-	// 发布：状态变化时通知所有订阅者
-	notify(data: any) {
-		this.observers.forEach((observer) => observer(data))
-	}
+  // 发布：状态变化时通知所有订阅者
+  notify(data: any) {
+    this.observers.forEach((observer) => observer(data))
+  }
 }
 
 // 使用
@@ -684,30 +684,30 @@ graph LR
 type Handler = (data?: any) => void
 
 class EventEmitter {
-	private events: Map<string, Handler[]> = new Map()
+  private events: Map<string, Handler[]> = new Map()
 
-	// 订阅
-	on(name: string, fn: Handler) {
-		const handlers = this.events.get(name) || []
-		handlers.push(fn)
-		this.events.set(name, handlers)
-	}
+  // 订阅
+  on(name: string, fn: Handler) {
+    const handlers = this.events.get(name) || []
+    handlers.push(fn)
+    this.events.set(name, handlers)
+  }
 
-	// 发布
-	emit(name: string, data?: any) {
-		this.events.get(name)?.forEach((fn) => fn(data))
-	}
+  // 发布
+  emit(name: string, data?: any) {
+    this.events.get(name)?.forEach((fn) => fn(data))
+  }
 
-	// 取消订阅
-	off(name: string, fn: Handler) {
-		const handlers = this.events.get(name)
-		if (handlers) {
-			this.events.set(
-				name,
-				handlers.filter((h) => h !== fn),
-			)
-		}
-	}
+  // 取消订阅
+  off(name: string, fn: Handler) {
+    const handlers = this.events.get(name)
+    if (handlers) {
+      this.events.set(
+        name,
+        handlers.filter((h) => h !== fn),
+      )
+    }
+  }
 }
 
 // 使用
@@ -715,12 +715,12 @@ const bus = new EventEmitter()
 
 // A 组件订阅事件
 bus.on('user-login', (user) => {
-	console.log('收到了用户登录信息：', user)
+  console.log('收到了用户登录信息：', user)
 })
 
 // B 组件发布事件
 setTimeout(() => {
-	bus.emit('user-login', { name: '张三', time: Date.now() })
+  bus.emit('user-login', { name: '张三', time: Date.now() })
 }, 1000)
 ```
 
@@ -744,54 +744,54 @@ setTimeout(() => {
 ```typescript
 // 定义各种验证策略
 const validatorStrategies = {
-	// 不能为空
-	isNonEmpty: (val: string) => {
-		return val.trim().length > 0 || '请填写此项'
-	},
+  // 不能为空
+  isNonEmpty: (val: string) => {
+    return val.trim().length > 0 || '请填写此项'
+  },
 
-	// 最小长度
-	minLength: (val: string, len: number) => {
-		return val.length >= len || `至少需要 ${len} 个字符`
-	},
+  // 最小长度
+  minLength: (val: string, len: number) => {
+    return val.length >= len || `至少需要 ${len} 个字符`
+  },
 
-	// 最大长度
-	maxLength: (val: string, len: number) => {
-		return val.length <= len || `最多 ${len} 个字符`
-	},
+  // 最大长度
+  maxLength: (val: string, len: number) => {
+    return val.length <= len || `最多 ${len} 个字符`
+  },
 
-	// 邮箱格式
-	isEmail: (val: string) => {
-		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-		return emailRegex.test(val) || '请输入有效的邮箱地址'
-	},
+  // 邮箱格式
+  isEmail: (val: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(val) || '请输入有效的邮箱地址'
+  },
 
-	// 手机号
-	isPhone: (val: string) => {
-		const phoneRegex = /^1[3-9]\d{9}$/
-		return phoneRegex.test(val) || '请输入有效的手机号'
-	},
+  // 手机号
+  isPhone: (val: string) => {
+    const phoneRegex = /^1[3-9]\d{9}$/
+    return phoneRegex.test(val) || '请输入有效的手机号'
+  },
 }
 
 // 验证器类
 class FormValidator {
-	private checks: Array<() => string | true> = []
+  private checks: Array<() => string | true> = []
 
-	// 添加验证规则
-	add(value: string, rule: keyof typeof validatorStrategies, ...args: any[]) {
-		const strategy = validatorStrategies[rule]
-		this.checks.push(() => strategy(value, ...args))
-	}
+  // 添加验证规则
+  add(value: string, rule: keyof typeof validatorStrategies, ...args: any[]) {
+    const strategy = validatorStrategies[rule]
+    this.checks.push(() => strategy(value, ...args))
+  }
 
-	// 执行验证
-	validate() {
-		for (const check of this.checks) {
-			const result = check()
-			if (result !== true) {
-				return result // 返回第一条错误信息
-			}
-		}
-		return true // 全部通过
-	}
+  // 执行验证
+  validate() {
+    for (const check of this.checks) {
+      const result = check()
+      if (result !== true) {
+        return result // 返回第一条错误信息
+      }
+    }
+    return true // 全部通过
+  }
 }
 
 // 使用
@@ -825,15 +825,15 @@ console.log(validator2.validate()) // "请填写此项"
 ```typescript
 // 让自定义对象可以被 for...of 遍历
 const myIterable = {
-	[Symbol.iterator]: function* () {
-		yield 1
-		yield 2
-		yield 3
-	},
+  [Symbol.iterator]: function* () {
+    yield 1
+    yield 2
+    yield 3
+  },
 }
 
 for (const num of myIterable) {
-	console.log(num) // 1, 2, 3
+  console.log(num) // 1, 2, 3
 }
 
 // 数组展开也可以用
@@ -846,8 +846,8 @@ JavaScript 内置的数据结构（Array, Map, Set, NodeList 等）都已经实�
 // 统一的遍历方式
 const arr = [1, 2, 3]
 const map = new Map([
-	['a', 1],
-	['b', 2],
+  ['a', 1],
+  ['b', 2],
 ])
 const set = new Set([1, 2, 3])
 const nodeList = document.querySelectorAll('div')

@@ -9,180 +9,180 @@ import { useLocale, useTranslations } from 'next-intl'
 import * as React from 'react'
 
 export function Navbar() {
-	const t = useTranslations('Common.nav')
-	const locale = useLocale()
-	const pathname = usePathname()
-	const router = useRouter()
-	const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
+  const t = useTranslations('Common.nav')
+  const locale = useLocale()
+  const pathname = usePathname()
+  const router = useRouter()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
 
-	const navItems = [
-		// Common/nav/home 首页
-		{ name: t('home'), path: '/' },
-		// Common/nav/posts 文章
-		{ name: t('posts'), path: '/posts' },
-		// Common/nav/about 关于
-		{ name: t('about'), path: '/about' },
-	]
+  const navItems = [
+    // Common/nav/home 首页
+    { name: t('home'), path: '/' },
+    // Common/nav/posts 文章
+    { name: t('posts'), path: '/posts' },
+    // Common/nav/about 关于
+    { name: t('about'), path: '/about' },
+  ]
 
-	// 切换语言
-	const toggleLanguage = () => {
-		const nextLocale = locale === 'zh' ? 'en' : 'zh'
-		router.replace(pathname, { locale: nextLocale })
-	}
+  // 切换语言
+  const toggleLanguage = () => {
+    const nextLocale = locale === 'zh' ? 'en' : 'zh'
+    router.replace(pathname, { locale: nextLocale })
+  }
 
-	return (
-		<header
-			className="
+  return (
+    <header
+      className="
 	fixed top-0 z-50 w-full border-b-2 border-border/10 bg-background/95
 	backdrop-blur-md
 	"
-		>
-			<div
-				className="
+    >
+      <div
+        className="
      container mx-auto flex h-16 max-w-screen-2xl items-center px-4 md:px-6
    "
-			>
-				{/* Logo 网站 Logo */}
-				<div className="flex gap-6">
-					<Link href="/" className="flex shrink-0 items-center space-x-2">
-						<motion.span
-							whileHover={{ scale: 1.05, rotate: -2 }}
-							className="
+      >
+        {/* Logo 网站 Logo */}
+        <div className="flex gap-6">
+          <Link href="/" className="flex shrink-0 items-center space-x-2">
+            <motion.span
+              whileHover={{ scale: 1.05, rotate: -2 }}
+              className="
          inline-block bg-linear-to-r from-primary to-accent bg-clip-text pb-1
          text-2xl font-black tracking-tighter whitespace-nowrap text-transparent
        "
-						>
-							<span className="hidden md:inline">Max Zhang</span>
-							<span className="md:hidden">Max</span>
-						</motion.span>
-					</Link>
+            >
+              <span className="hidden md:inline">Max Zhang</span>
+              <span className="md:hidden">Max</span>
+            </motion.span>
+          </Link>
 
-					{/* Desktop Nav - 动感药丸风格 */}
-					<nav
-						className="
+          {/* Desktop Nav - 动感药丸风格 */}
+          <nav
+            className="
        hidden items-center gap-3 text-sm font-bold
        md:flex
      "
-					>
-						{navItems.map((item) => (
-							<Link
-								key={item.path}
-								href={item.path}
-								className={cn(
-									`
+          >
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                href={item.path}
+                className={cn(
+                  `
            relative overflow-hidden rounded-full px-4 py-2 transition-all
            duration-300
          `,
-									pathname === item.path
-										? 'bg-primary text-primary-foreground shadow-(--shadow-pop)'
-										: `
+                  pathname === item.path
+                    ? 'bg-primary text-primary-foreground shadow-(--shadow-pop)'
+                    : `
             text-muted-foreground
             hover:bg-secondary/20 hover:text-foreground
           `,
-								)}
-							>
-								{item.name}
-							</Link>
-						))}
-					</nav>
-				</div>
+                )}
+              >
+                {item.name}
+              </Link>
+            ))}
+          </nav>
+        </div>
 
-				{/* Right Actions 右侧操作按钮 */}
-				<div className="flex flex-1 items-center justify-end space-x-1 md:space-x-2">
-					<Link href="/search">
-						<motion.div
-							whileHover={{ scale: 1.1, rotate: 5 }}
-							className="
+        {/* Right Actions 右侧操作按钮 */}
+        <div className="flex flex-1 items-center justify-end space-x-1 md:space-x-2">
+          <Link href="/search">
+            <motion.div
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              className="
          inline-flex h-10 w-10 items-center justify-center rounded-full border-2
          border-border/10 transition-colors
          hover:border-primary/50 hover:bg-secondary/20
        "
-						>
-							<Search className="size-5" />
-							<span className="sr-only">搜索</span>
-						</motion.div>
-					</Link>
+            >
+              <Search className="size-5" />
+              <span className="sr-only">搜索</span>
+            </motion.div>
+          </Link>
 
-					<nav className="flex items-center space-x-1 md:space-x-2">
-						<motion.button
-							whileHover={{ scale: 1.1, rotate: 12 }}
-							whileTap={{ scale: 0.9 }}
-							onClick={toggleLanguage}
-							className="
+          <nav className="flex items-center space-x-1 md:space-x-2">
+            <motion.button
+              whileHover={{ scale: 1.1, rotate: 12 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={toggleLanguage}
+              className="
 							inline-flex
          h-10 w-10 cursor-pointer items-center justify-center rounded-full border-2
          border-border/10 transition-colors
          hover:border-primary/50 hover:bg-secondary/20
        "
-							title={t('switchLanguage')} // Common/nav/switchLanguage 切换至英文
-						>
-							<Languages className="size-5" />
-							<span className="sr-only">语言</span>
-						</motion.button>
+              title={t('switchLanguage')} // Common/nav/switchLanguage 切换至英文
+            >
+              <Languages className="size-5" />
+              <span className="sr-only">语言</span>
+            </motion.button>
 
-						<ThemeToggle
-							className="
+            <ThemeToggle
+              className="
         h-10 w-10 cursor-pointer border-2 border-border/10 bg-background
         shadow-none
         hover:border-primary/50
       "
-						/>
+            />
 
-						{/* Mobile Menu Toggle 移动端菜单开关 */}
-						<motion.button
-							whileTap={{ scale: 0.9 }}
-							className="
+            {/* Mobile Menu Toggle 移动端菜单开关 */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              className="
          inline-flex h-10 w-10 items-center justify-center rounded-full border-2
          border-border/10 transition-colors
          hover:bg-secondary
          md:hidden
        "
-							onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-						>
-							{isMobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-						</motion.button>
-					</nav>
-				</div>
-			</div>
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            </motion.button>
+          </nav>
+        </div>
+      </div>
 
-			{/* Mobile Menu 移动端抽屉菜单 */}
-			{isMobileMenuOpen && (
-				<motion.div
-					initial={{ opacity: 0, y: -10 }}
-					animate={{ opacity: 1, y: 0 }}
-					className="
+      {/* Mobile Menu 移动端抽屉菜单 */}
+      {isMobileMenuOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="
        border-b-4 border-border bg-background shadow-xl
        md:hidden
      "
-				>
-					<div className="container space-y-2 px-6 py-6">
-						{navItems.map((item) => (
-							<Link
-								key={item.path}
-								href={item.path}
-								className={cn(
-									`
+        >
+          <div className="container space-y-2 px-6 py-6">
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                href={item.path}
+                className={cn(
+                  `
            block rounded-2xl border-2 border-transparent px-6 py-4 text-base
            font-black transition-all
          `,
-									pathname === item.path
-										? `
+                  pathname === item.path
+                    ? `
             border-border bg-primary text-primary-foreground
             shadow-[4px_4px_0px_#1a1a1a]
           `
-										: `
+                    : `
             text-muted-foreground
             hover:border-border/10 hover:bg-secondary/30
           `,
-								)}
-								onClick={() => setIsMobileMenuOpen(false)}
-							>
-								{item.name}
-							</Link>
-						))}
-					</div>
-				</motion.div>
-			)}
-		</header>
-	)
+                )}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {item.name}
+              </Link>
+            ))}
+          </div>
+        </motion.div>
+      )}
+    </header>
+  )
 }

@@ -1,5 +1,7 @@
 datasource db {
   provider = "sqlite"
+  // 体量小，所以默认会有真实的外键约束，如果需要禁用外键约束，可以添加 relationMode="prisma"。
+  // relationMode="prisma"
 }
 
 generator client {
@@ -32,8 +34,13 @@ model Comment {
   fingerprint String
   content     String   @default("")
   createdAt   DateTime @default(now())
+  parentId    Int?
+
+  parent  Comment?  @relation("Replies", fields: [parentId], references: [id])
+  replies Comment[] @relation("Replies")
 
   @@index([slug])
+  @@index([parentId])
 }
 
 model CommentLog {

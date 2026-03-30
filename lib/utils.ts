@@ -9,7 +9,7 @@ import escapeHtml from 'escape-html'
  * @returns 合并后的类名字符串
  */
 export function cn(...inputs: ClassValue[]) {
-	return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs))
 }
 
 /**

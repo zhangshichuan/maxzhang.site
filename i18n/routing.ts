@@ -6,14 +6,14 @@ import { defineRouting } from 'next-intl/routing'
  * 定义支持的语种和路由行为
  */
 export const routing = defineRouting({
-	// 支持的语言列表
-	locales: ['en', 'zh'],
+  // 支持的语言列表
+  locales: ['en', 'zh'],
 
-	// 默认语言，当没有匹配的语言时使用
-	defaultLocale: 'en',
+  // 默认语言，当没有匹配的语言时使用
+  defaultLocale: 'en',
 
-	// 默认语言不使用前缀
-	localePrefix: 'as-needed',
+  // 默认语言不使用前缀
+  localePrefix: 'as-needed',
 })
 
 /**

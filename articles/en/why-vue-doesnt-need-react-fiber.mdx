@@ -76,12 +76,12 @@ If there's something more urgent, React pauses the rendering, handles the urgent
 ```javascript
 // Simplified Fiber node structure
 const fiber = {
-	type: 'div', // Component type
-	props: { className: 'container' },
-	child: childFiber, // First child
-	sibling: nextFiber, // Next sibling
-	parent: parentFiber, // Parent node
-	// ... execution context
+  type: 'div', // Component type
+  props: { className: 'container' },
+  child: childFiber, // First child
+  sibling: nextFiber, // Next sibling
+  parent: parentFiber, // Parent node
+  // ... execution context
 }
 ```
 
@@ -96,10 +96,10 @@ In pre-Fiber days, React would do this:
 ```javascript
 // Pseudocode describing logic, not actual implementation
 function renderProductList(products) {
-	// Render the entire list without stopping
-	return products.map((product) => <ProductCard key={product.id} data={product} />)
-	// Assume this process takes 500ms
-	// During these 500ms, user button clicks won't respond
+  // Render the entire list without stopping
+  return products.map((product) => <ProductCard key={product.id} data={product} />)
+  // Assume this process takes 500ms
+  // During these 500ms, user button clicks won't respond
 }
 ```
 
@@ -108,15 +108,15 @@ With Fiber, React does this:
 ```javascript
 // Rendering approach under Fiber architecture
 function renderProductList(products) {
-	// Break rendering into many small tasks
-	const tasks = products.map((product, index) => createRenderTask(product, index))
+  // Break rendering into many small tasks
+  const tasks = products.map((product, index) => createRenderTask(product, index))
 
-	// Each task takes only 1-2ms
-	// After completing each task, check for urgent requests
-	// If user clicks a button, immediately handle the click event
-	// After handling, return to continue rendering
+  // Each task takes only 1-2ms
+  // After completing each task, check for urgent requests
+  // If user clicks a button, immediately handle the click event
+  // After handling, return to continue rendering
 
-	scheduleWork(tasks, { priority: 'low' })
+  scheduleWork(tasks, { priority: 'low' })
 }
 ```
 
@@ -130,13 +130,13 @@ Fiber architecture brought two important capabilities: **Suspense** and **Concur
 
 ```jsx
 function ProductPage({ productId }) {
-	return (
-		<Suspense fallback={<LoadingSpinner />}>
-			{/* This can "pause" waiting for data */}
-			<ProductDetails id={productId} />
-			<RelatedProducts id={productId} />
-		</Suspense>
-	)
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      {/* This can "pause" waiting for data */}
+      <ProductDetails id={productId} />
+      <RelatedProducts id={productId} />
+    </Suspense>
+  )
 }
 ```
 
@@ -158,31 +158,31 @@ With concurrent mode, React can "pause" ongoing rendering to respond to user inp
 import { useState, startTransition } from 'react'
 
 function SearchResults({ query }) {
-	const [results, setResults] = useState([])
-	const [isPending, setIsPending] = useState(false)
+  const [results, setResults] = useState([])
+  const [isPending, setIsPending] = useState(false)
 
-	const handleSearch = (newQuery) => {
-		setIsPending(true)
+  const handleSearch = (newQuery) => {
+    setIsPending(true)
 
-		// startTransition marks this update as "non-urgent"
-		// If user continues typing, React can interrupt this update
-		startTransition(() => {
-			fetchResults(newQuery).then((data) => {
-				setResults(data)
-				setIsPending(false)
-			})
-		})
-	}
+    // startTransition marks this update as "non-urgent"
+    // If user continues typing, React can interrupt this update
+    startTransition(() => {
+      fetchResults(newQuery).then((data) => {
+        setResults(data)
+        setIsPending(false)
+      })
+    })
+  }
 
-	return (
-		<div>
-			<input onChange={(e) => handleSearch(e.target.value)} />
-			{isPending ? <Spinner /> : null}
-			{results.map((r) => (
-				<ResultItem key={r.id} data={r} />
-			))}
-		</div>
-	)
+  return (
+    <div>
+      <input onChange={(e) => handleSearch(e.target.value)} />
+      {isPending ? <Spinner /> : null}
+      {results.map((r) => (
+        <ResultItem key={r.id} data={r} />
+      ))}
+    </div>
+  )
 }
 ```
 
@@ -192,20 +192,20 @@ function SearchResults({ query }) {
 import { useState, useDeferredValue } from 'react'
 
 function SearchPage() {
-	const [query, setQuery] = useState('')
+  const [query, setQuery] = useState('')
 
-	// useDeferredValue creates a "deferred version" of the value
-	// query is updated immediately (for user input)
-	// deferredQuery is updated with a delay (for rendering)
-	const deferredQuery = useDeferredValue(query)
+  // useDeferredValue creates a "deferred version" of the value
+  // query is updated immediately (for user input)
+  // deferredQuery is updated with a delay (for rendering)
+  const deferredQuery = useDeferredValue(query)
 
-	return (
-		<div>
-			<input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search..." />
-			{/* List uses deferred value - even if rendering is slow, it won't block input */}
-			<SlowList text={deferredQuery} />
-		</div>
-	)
+  return (
+    <div>
+      <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search..." />
+      {/* List uses deferred value - even if rendering is slow, it won't block input */}
+      <SlowList text={deferredQuery} />
+    </div>
+  )
 }
 ```
 
@@ -248,26 +248,26 @@ With React 19, a major update is **compiler auto-optimization** (React Compiler)
 import { useMemo, useCallback } from 'react'
 
 function ProductList({ products, onSelect }) {
-	// Manually cache computed result
-	const sortedProducts = useMemo(() => {
-		return [...products].sort((a, b) => b.price - a.price)
-	}, [products])
+  // Manually cache computed result
+  const sortedProducts = useMemo(() => {
+    return [...products].sort((a, b) => b.price - a.price)
+  }, [products])
 
-	// Manually cache callback function
-	const handleSelect = useCallback(
-		(product) => {
-			onSelect(product)
-		},
-		[onSelect],
-	)
+  // Manually cache callback function
+  const handleSelect = useCallback(
+    (product) => {
+      onSelect(product)
+    },
+    [onSelect],
+  )
 
-	return (
-		<div>
-			{sortedProducts.map((product) => (
-				<ProductItem key={product.id} product={product} onSelect={handleSelect} />
-			))}
-		</div>
-	)
+  return (
+    <div>
+      {sortedProducts.map((product) => (
+        <ProductItem key={product.id} product={product} onSelect={handleSelect} />
+      ))}
+    </div>
+  )
 }
 ```
 
@@ -275,21 +275,21 @@ function ProductList({ products, onSelect }) {
 
 ```jsx
 function ProductList({ products, onSelect }) {
-	// No useMemo needed! Compiler automatically analyzes and caches
-	const sortedProducts = [...products].sort((a, b) => b.price - a.price)
+  // No useMemo needed! Compiler automatically analyzes and caches
+  const sortedProducts = [...products].sort((a, b) => b.price - a.price)
 
-	// No useCallback needed! Compiler automatically analyzes and caches
-	const handleSelect = (product) => {
-		onSelect(product)
-	}
+  // No useCallback needed! Compiler automatically analyzes and caches
+  const handleSelect = (product) => {
+    onSelect(product)
+  }
 
-	return (
-		<div>
-			{sortedProducts.map((product) => (
-				<ProductItem key={product.id} product={product} onSelect={handleSelect} />
-			))}
-		</div>
-	)
+  return (
+    <div>
+      {sortedProducts.map((product) => (
+        <ProductItem key={product.id} product={product} onSelect={handleSelect} />
+      ))}
+    </div>
+  )
 }
 ```
 
@@ -351,31 +351,31 @@ In the Vue 2 era, Vue used ES5's Object.defineProperty to implement reactivity. 
 ```javascript
 // Vue 2's reactivity principle (simplified)
 function reactive(obj) {
-	// Set up monitoring for each property
-	Object.keys(obj).forEach((key) => {
-		let value = obj[key]
+  // Set up monitoring for each property
+  Object.keys(obj).forEach((key) => {
+    let value = obj[key]
 
-		Object.defineProperty(obj, key, {
-			get() {
-				// Someone read this property, record it
-				track(key)
-				return value
-			},
-			set(newValue) {
-				value = newValue
-				// Property value changed, notify all dependents
-				trigger(key)
-			},
-		})
-	})
+    Object.defineProperty(obj, key, {
+      get() {
+        // Someone read this property, record it
+        track(key)
+        return value
+      },
+      set(newValue) {
+        value = newValue
+        // Property value changed, notify all dependents
+        trigger(key)
+      },
+    })
+  })
 
-	return obj
+  return obj
 }
 
 // Usage example
 const state = reactive({
-	count: 0,
-	message: 'hello',
+  count: 0,
+  message: 'hello',
 })
 
 // When count changes, only places that depend on count update
@@ -387,33 +387,33 @@ Vue 3 upgraded to Proxy, which is JavaScript's native feature with more powerful
 ```javascript
 // Vue 3's reactivity principle (simplified)
 function reactive(obj) {
-	return new Proxy(obj, {
-		get(target, key) {
-			// Collect dependency
-			track(target, key)
-			return Reflect.get(target, key)
-		},
-		set(target, key, value) {
-			const result = Reflect.set(target, key, value)
-			// Trigger update
-			trigger(target, key)
-			return result
-		},
-	})
+  return new Proxy(obj, {
+    get(target, key) {
+      // Collect dependency
+      track(target, key)
+      return Reflect.get(target, key)
+    },
+    set(target, key, value) {
+      const result = Reflect.set(target, key, value)
+      // Trigger update
+      trigger(target, key)
+      return result
+    },
+  })
 }
 
 // Vue 3 also supports ref for primitive types
 function ref(value) {
-	return {
-		get value() {
-			track(this, 'value')
-			return value
-		},
-		set value(newValue) {
-			value = newValue
-			trigger(this, 'value')
-		},
-	}
+  return {
+    get value() {
+      track(this, 'value')
+      return value
+    },
+    set value(newValue) {
+      value = newValue
+      trigger(this, 'value')
+    },
+  }
 }
 ```
 
@@ -425,19 +425,19 @@ Vue's reactivity system precisely records "which component depends on which data
 
 ```vue
 <template>
-	<!-- Only this div updates when message changes -->
-	<div>{{ message }}</div>
+  <!-- Only this div updates when message changes -->
+  <div>{{ message }}</div>
 
-	<!-- Only this button's display updates when count changes -->
-	<button>{{ count }}</button>
+  <!-- Only this button's display updates when count changes -->
+  <button>{{ count }}</button>
 </template>
 
 <script setup>
 import { reactive } from 'vue'
 
 const state = reactive({
-	message: 'hello',
-	count: 0,
+  message: 'hello',
+  count: 0,
 })
 
 // Modify message
@@ -462,13 +462,13 @@ Vue's templates are not parsed at runtime but pre-compiled. The compiler analyze
 
 ```vue
 <template>
-	<!-- Static content: structure known at compile time, won't change -->
-	<div class="container">
-		<h1>Product List</h1>
+  <!-- Static content: structure known at compile time, won't change -->
+  <div class="container">
+    <h1>Product List</h1>
 
-		<!-- Dynamic content: Vue precisely tracks this for loop -->
-		<div v-for="product in products" :key="product.id">{{ product.name }} - {{ product.price }}</div>
-	</div>
+    <!-- Dynamic content: Vue precisely tracks this for loop -->
+    <div v-for="product in products" :key="product.id">{{ product.name }} - {{ product.price }}</div>
+  </div>
 </template>
 ```
 
@@ -477,12 +477,12 @@ After compilation, Vue generates code like this:
 ```javascript
 // Compiled render function (simplified)
 function render(ctx) {
-	// Static parts return directly, no need to recreate
-	return h('div', { class: 'container' }, [
-		h('h1', 'Product List'),
-		// Dynamic parts are tracked
-		ctx.products.map((product) => h('div', { key: product.id }, [product.name, ' - ', product.price])),
-	])
+  // Static parts return directly, no need to recreate
+  return h('div', { class: 'container' }, [
+    h('h1', 'Product List'),
+    // Dynamic parts are tracked
+    ctx.products.map((product) => h('div', { key: product.id }, [product.name, ' - ', product.price])),
+  ])
 }
 ```
 
@@ -517,17 +517,17 @@ When React sees `<div>` became `<ul>`, it immediately gives up comparing childre
 ```jsx
 // Without key, React can only guess by position
 ;[<li>Alice</li>, <li>Bob</li>][
-	// Becomes
-	((<li>Bob</li>), (<li>Alice</li>))
+  // Becomes
+  ((<li>Bob</li>), (<li>Alice</li>))
 ][
-	// React thinks: first item changed (Alice→Bob), second changed too (Bob→Alice)
-	// Result: both nodes destroyed and recreated
+  // React thinks: first item changed (Alice→Bob), second changed too (Bob→Alice)
+  // Result: both nodes destroyed and recreated
 
-	// With key, React identifies precisely
-	((<li key="1">Alice</li>), (<li key="2">Bob</li>))
+  // With key, React identifies precisely
+  ((<li key="1">Alice</li>), (<li key="2">Bob</li>))
 ][
-	// Becomes
-	((<li key="2">Bob</li>), (<li key="1">Alice</li>))
+  // Becomes
+  ((<li key="2">Bob</li>), (<li key="1">Alice</li>))
 ]
 // React sees: key=1 just moved position, key=2 just moved too
 // Result: only repositioning, much less overhead
@@ -544,14 +544,14 @@ This is the secret behind O(n) complexity.
 ```javascript
 // React's update flow
 function updateState(newState) {
-	// 1. Create new virtual DOM
-	const newVirtualDOM = createVirtualDOM(newState)
+  // 1. Create new virtual DOM
+  const newVirtualDOM = createVirtualDOM(newState)
 
-	// 2. Compare with old virtual DOM (Diff)
-	const patches = diff(oldVirtualDOM, newVirtualDOM)
+  // 2. Compare with old virtual DOM (Diff)
+  const patches = diff(oldVirtualDOM, newVirtualDOM)
 
-	// 3. Apply differences to real DOM
-	applyPatches(patches)
+  // 3. Apply differences to real DOM
+  applyPatches(patches)
 }
 ```
 
@@ -560,18 +560,18 @@ function updateState(newState) {
 ```javascript
 // Vue's update flow (simplified)
 function updateState(key, newValue) {
-	// 1. Notify components depending on this data
-	const subscribers = getSubscribers(key)
+  // 1. Notify components depending on this data
+  const subscribers = getSubscribers(key)
 
-	// 2. Only update components depending on this data
-	subscribers.forEach((component) => {
-		// For each component, find parts that need updating
-		const patches = getComponentPatches(component, key, newValue)
-		applyPatches(patches)
-	})
+  // 2. Only update components depending on this data
+  subscribers.forEach((component) => {
+    // For each component, find parts that need updating
+    const patches = getComponentPatches(component, key, newValue)
+    applyPatches(patches)
+  })
 
-	// 3. Global Diff (only when necessary)
-	// Only when Vue can't precisely track
+  // 3. Global Diff (only when necessary)
+  // Only when Vue can't precisely track
 }
 ```
 
@@ -584,27 +584,27 @@ Vue's smallest update unit is the **precise position within a component**. When 
 ```jsx
 // React: Component-level updates
 function Counter() {
-	const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0)
 
-	return (
-		<div>
-			<span>{count}</span>
-			{/* Even if only count changed, the entire Counter component re-renders */}
-			<ExpensiveComponent /> {/* This might unnecessarily re-render */}
-		</div>
-	)
+  return (
+    <div>
+      <span>{count}</span>
+      {/* Even if only count changed, the entire Counter component re-renders */}
+      <ExpensiveComponent /> {/* This might unnecessarily re-render */}
+    </div>
+  )
 }
 ```
 
 ```vue
 <!-- Vue: Precise updates -->
 <template>
-	<div>
-		<span>{{ count }}</span>
-		<!-- Only {{ count }} here updates -->
-		<ExpensiveComponent />
-		<!-- This component won't re-render at all -->
-	</div>
+  <div>
+    <span>{{ count }}</span>
+    <!-- Only {{ count }} here updates -->
+    <ExpensiveComponent />
+    <!-- This component won't re-render at all -->
+  </div>
 </template>
 
 <script setup>
@@ -724,9 +724,9 @@ You might ask: Why does React enforce immutability? Does this relate to function
 ```javascript
 // What React does internally (roughly)
 if (Object.is(newState, oldState)) {
-	// Data didn't change, no update
+  // Data didn't change, no update
 } else {
-	// Data changed, trigger re-render
+  // Data changed, trigger re-render
 }
 ```
 
@@ -756,13 +756,13 @@ const newUser = { ...user, age: 26 } // New reference!
 
 // ❌ Impure (modifies external state)
 function updateUserAge(user, newAge) {
-	user.age = newAge // Modifies the passed parameter!
-	return user
+  user.age = newAge // Modifies the passed parameter!
+  return user
 }
 
 // ✅ Pure (doesn't modify input, returns new value)
 function updateUserAge(user, newAge) {
-	return { ...user, age: newAge } // Returns new object
+  return { ...user, age: newAge } // Returns new object
 }
 ```
 
@@ -888,35 +888,35 @@ Although React doesn't render the entire tree, it can indeed render "too many" c
 ```javascript
 // ❌ Bad: Selected too much
 function PostItem() {
-	// This subscription subscribes to the ENTIRE store!
-	const { posts, comments, user, settings, notifications } = useStore()
+  // This subscription subscribes to the ENTIRE store!
+  const { posts, comments, user, settings, notifications } = useStore()
 
-	// Any change triggers re-render:
-	// posts changes → re-render
-	// comments changes → re-render
-	// user changes → re-render
-	// settings changes → re-render
-	// notifications changes → re-render
-	// Even if this component doesn't use any of these!
+  // Any change triggers re-render:
+  // posts changes → re-render
+  // comments changes → re-render
+  // user changes → re-render
+  // settings changes → re-render
+  // notifications changes → re-render
+  // Even if this component doesn't use any of these!
 }
 
 // ✅ Good: Precisely select what's needed
 function PostItem({ postId }) {
-	// Only subscribe to the post you need
-	const post = useStore((state) => state.posts.find((p) => p.id === postId))
-	const author = useStore((state) => state.users[post?.authorId])
+  // Only subscribe to the post you need
+  const post = useStore((state) => state.posts.find((p) => p.id === postId))
+  const author = useStore((state) => state.users[post?.authorId])
 
-	// Only re-renders when this post changes
-	// Other data changes won't trigger this component's re-render
+  // Only re-renders when this post changes
+  // Other data changes won't trigger this component's re-render
 }
 
 // ✅ Better: Use shallow comparison
 import { shallow } from 'zustand/shallow'
 function PostItem({ postId }) {
-	const [post, author] = useStore(
-		(state) => [state.posts.find((p) => p.id === postId), state.users[post?.authorId]],
-		shallow, // Only re-renders when returned array references both change
-	)
+  const [post, author] = useStore(
+    (state) => [state.posts.find((p) => p.id === postId), state.users[post?.authorId]],
+    shallow, // Only re-renders when returned array references both change
+  )
 }
 ```
 
@@ -980,12 +980,12 @@ obj2.newProperty = 'hello' // Automatically becomes reactive
 
 ```javascript
 const state = reactive({
-	user: {
-		name: 'Zhang',
-		address: {
-			city: 'Beijing',
-		},
-	},
+  user: {
+    name: 'Zhang',
+    address: {
+      city: 'Beijing',
+    },
+  },
 })
 
 // Vue 3 can precisely track:
@@ -1004,11 +1004,11 @@ To be fair, Vue might also encounter performance issues in extreme scenarios, bu
 import { useVirtualList } from 'vue-use'
 
 const { list, containerProps, wrapperProps } = useVirtualList(
-	items, // Might have 1 million pieces of data
-	{
-		itemHeight: 50,
-		overscan: 10, // Number of extra items to pre-render
-	},
+  items, // Might have 1 million pieces of data
+  {
+    itemHeight: 50,
+    overscan: 10, // Number of extra items to pre-render
+  },
 )
 ```
 
@@ -1018,10 +1018,10 @@ Another solution is using the `v-memo` directive to cache certain parts of the t
 
 ```vue
 <template>
-	<div v-for="item in list" :key="item.id">
-		<!-- Only re-renders when item.name or item.count changes -->
-		<span v-memo="[item.name, item.count]"> {{ item.name }}: {{ item.count }} </span>
-	</div>
+  <div v-for="item in list" :key="item.id">
+    <!-- Only re-renders when item.name or item.count changes -->
+    <span v-memo="[item.name, item.count]"> {{ item.name }}: {{ item.count }} </span>
+  </div>
 </template>
 ```
 
@@ -1183,25 +1183,25 @@ Another solution is using the `v-memo` directive to cache certain parts of the t
 
 ```jsx
 function SearchForm() {
-	const [query, setQuery] = useState('')
-	const [results, setResults] = useState([])
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState([])
 
-	const handleChange = (e) => {
-		const value = e.target.value
-		setQuery(value)
+  const handleChange = (e) => {
+    const value = e.target.value
+    setQuery(value)
 
-		// If doing real-time search, this triggers on every input
-		// With Fiber, rendering search results can be interrupted
-		search(value).then(setResults)
-	}
+    // If doing real-time search, this triggers on every input
+    // With Fiber, rendering search results can be interrupted
+    search(value).then(setResults)
+  }
 
-	return (
-		<div>
-			<input value={query} onChange={handleChange} />
-			{/* User continues typing, rendering search results can be interrupted */}
-			<SearchResults results={results} />
-		</div>
-	)
+  return (
+    <div>
+      <input value={query} onChange={handleChange} />
+      {/* User continues typing, rendering search results can be interrupted */}
+      <SearchResults results={results} />
+    </div>
+  )
 }
 ```
 
@@ -1216,22 +1216,22 @@ const results = ref([])
 
 // Vue's watch can precisely control when to trigger search
 watch(
-	query,
-	async (newQuery) => {
-		if (newQuery.length > 0) {
-			results.value = await search(newQuery)
-		}
-	},
-	{ debounce: 300 },
+  query,
+  async (newQuery) => {
+    if (newQuery.length > 0) {
+      results.value = await search(newQuery)
+    }
+  },
+  { debounce: 300 },
 ) // 300ms debounce
 </script>
 
 <template>
-	<div>
-		<input v-model="query" />
-		<!-- Only updates when results change -->
-		<SearchResults :results="results" />
-	</div>
+  <div>
+    <input v-model="query" />
+    <!-- Only updates when results change -->
+    <SearchResults :results="results" />
+  </div>
 </template>
 ```
 
@@ -1243,11 +1243,11 @@ watch(
 import { FixedSizeList } from 'react-window'
 
 function BigList({ items }) {
-	return (
-		<FixedSizeList height={400} itemCount={items.length} itemSize={50} width="100%">
-			{({ index, style }) => <div style={style}>{items[index].name}</div>}
-		</FixedSizeList>
-	)
+  return (
+    <FixedSizeList height={400} itemCount={items.length} itemSize={50} width="100%">
+      {({ index, style }) => <div style={style}>{items[index].name}</div>}
+    </FixedSizeList>
+  )
 }
 ```
 
@@ -1259,24 +1259,24 @@ import { ref } from 'vue'
 import { useVirtualList } from '@vueuse/core'
 
 const items = ref(
-	Array.from({ length: 10000 }, (_, i) => ({
-		name: `Item ${i}`,
-	})),
+  Array.from({ length: 10000 }, (_, i) => ({
+    name: `Item ${i}`,
+  })),
 )
 
 const { list, containerProps, wrapperProps } = useVirtualList(items, {
-	itemHeight: 50,
+  itemHeight: 50,
 })
 </script>
 
 <template>
-	<div v-bind="containerProps" style="height: 400px; overflow: auto;">
-		<div v-bind="wrapperProps">
-			<div v-for="{ data, index } in list" :key="index">
-				{{ data.name }}
-			</div>
-		</div>
-	</div>
+  <div v-bind="containerProps" style="height: 400px; overflow: auto;">
+    <div v-bind="wrapperProps">
+      <div v-for="{ data, index } in list" :key="index">
+        {{ data.name }}
+      </div>
+    </div>
+  </div>
 </template>
 ```
 
@@ -1286,36 +1286,36 @@ const { list, containerProps, wrapperProps } = useVirtualList(items, {
 
 ```jsx
 function Dashboard() {
-	const [user, setUser] = useState(null)
-	const [posts, setPosts] = useState([])
-	const [notifications, setNotifications] = useState([])
+  const [user, setUser] = useState(null)
+  const [posts, setPosts] = useState([])
+  const [notifications, setNotifications] = useState([])
 
-	useEffect(() => {
-		fetchUser().then(setUser)
-		fetchPosts().then(setPosts)
-		fetchNotifications().then(setNotifications)
-	}, [])
+  useEffect(() => {
+    fetchUser().then(setUser)
+    fetchPosts().then(setPosts)
+    fetchNotifications().then(setNotifications)
+  }, [])
 
-	// Each setter might trigger entire component re-render
-	// React 18 needs manual optimization:
-	const updateUser = useCallback((newUser) => {
-		setUser(newUser)
-	}, [])
+  // Each setter might trigger entire component re-render
+  // React 18 needs manual optimization:
+  const updateUser = useCallback((newUser) => {
+    setUser(newUser)
+  }, [])
 
-	return (
-		<div>
-			<UserInfo user={user} onUpdate={updateUser} />
-			{/* posts changes won't cause UserInfo re-render */}
-			{/* Only if you use React.memo */}
-			<PostList posts={posts} />
-			<Notifications notifications={notifications} />
-		</div>
-	)
+  return (
+    <div>
+      <UserInfo user={user} onUpdate={updateUser} />
+      {/* posts changes won't cause UserInfo re-render */}
+      {/* Only if you use React.memo */}
+      <PostList posts={posts} />
+      <Notifications notifications={notifications} />
+    </div>
+  )
 }
 
 // React 18 needs manual wrapper for child components
 const UserInfo = React.memo(({ user, onUpdate }) => {
-	// ...
+  // ...
 })
 ```
 
@@ -1323,34 +1323,34 @@ const UserInfo = React.memo(({ user, onUpdate }) => {
 
 ```jsx
 function Dashboard() {
-	const [user, setUser] = useState(null)
-	const [posts, setPosts] = useState([])
-	const [notifications, setNotifications] = useState([])
+  const [user, setUser] = useState(null)
+  const [posts, setPosts] = useState([])
+  const [notifications, setNotifications] = useState([])
 
-	useEffect(() => {
-		fetchUser().then(setUser)
-		fetchPosts().then(setPosts)
-		fetchNotifications().then(setNotifications)
-	}, [])
+  useEffect(() => {
+    fetchUser().then(setUser)
+    fetchPosts().then(setPosts)
+    fetchNotifications().then(setNotifications)
+  }, [])
 
-	// No useCallback needed! Compiler auto-optimizes
-	const updateUser = (newUser) => {
-		setUser(newUser)
-	}
+  // No useCallback needed! Compiler auto-optimizes
+  const updateUser = (newUser) => {
+    setUser(newUser)
+  }
 
-	return (
-		<div>
-			{/* No React.memo needed! Compiler handles automatically */}
-			<UserInfo user={user} onUpdate={updateUser} />
-			<PostList posts={posts} />
-			<Notifications notifications={notifications} />
-		</div>
-	)
+  return (
+    <div>
+      {/* No React.memo needed! Compiler handles automatically */}
+      <UserInfo user={user} onUpdate={updateUser} />
+      <PostList posts={posts} />
+      <Notifications notifications={notifications} />
+    </div>
+  )
 }
 
 // No manual wrapper needed
 const UserInfo = ({ user, onUpdate }) => {
-	// ...
+  // ...
 }
 ```
 
@@ -1361,9 +1361,9 @@ const UserInfo = ({ user, onUpdate }) => {
 import { reactive, toRefs } from 'vue'
 
 const state = reactive({
-	user: null,
-	posts: [],
-	notifications: [],
+  user: null,
+  posts: [],
+  notifications: [],
 })
 
 // toRefs converts each property of reactive object to independent ref
@@ -1371,9 +1371,9 @@ const state = reactive({
 const { user, posts, notifications } = toRefs(state)
 
 onMounted(async () => {
-	state.user = await fetchUser()
-	state.posts = await fetchPosts()
-	state.notifications = await fetchNotifications()
+  state.user = await fetchUser()
+  state.posts = await fetchPosts()
+  state.notifications = await fetchNotifications()
 })
 
 // Child components automatically precisely depend on needed data
@@ -1381,16 +1381,16 @@ onMounted(async () => {
 </script>
 
 <template>
-	<div>
-		<!-- Only updates when user changes -->
-		<UserInfo :user="user" @update="updateUser" />
+  <div>
+    <!-- Only updates when user changes -->
+    <UserInfo :user="user" @update="updateUser" />
 
-		<!-- Only updates when posts change -->
-		<PostList :posts="posts" />
+    <!-- Only updates when posts change -->
+    <PostList :posts="posts" />
 
-		<!-- Only updates when notifications change -->
-		<Notifications :notifications="notifications" />
-	</div>
+    <!-- Only updates when notifications change -->
+    <Notifications :notifications="notifications" />
+  </div>
 </template>
 ```
 

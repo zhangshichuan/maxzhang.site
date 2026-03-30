@@ -89,10 +89,10 @@ This is a browser-provided protection mechanism. Simply add the `SameSite` attri
 ```javascript
 // Secure cookie configuration
 res.cookie('session', userSessionId, {
-	httpOnly: true, // Prevent JavaScript from reading, blocks XSS cookie theft
-	secure: true, // Only transmit over HTTPS, prevents man-in-the-middle
-	sameSite: 'strict', // Completely block cross-site携带, most strict
-	// Or use 'lax' to allow cross-site for GET requests (better UX but slightly less secure)
+  httpOnly: true, // Prevent JavaScript from reading, blocks XSS cookie theft
+  secure: true, // Only transmit over HTTPS, prevents man-in-the-middle
+  sameSite: 'strict', // Completely block cross-site携带, most strict
+  // Or use 'lax' to allow cross-site for GET requests (better UX but slightly less secure)
 })
 ```
 
@@ -109,39 +109,39 @@ Add a randomly generated token to the form. The backend verifies this token befo
 ```javascript
 // Server: Generate Token
 app.get('/transfer', (req, res) => {
-	// Generate a secure random token
-	const csrfToken = crypto.randomBytes(32).toString('hex')
+  // Generate a secure random token
+  const csrfToken = crypto.randomBytes(32).toString('hex')
 
-	// Store in session or Redis
-	req.session.csrfToken = csrfToken
+  // Store in session or Redis
+  req.session.csrfToken = csrfToken
 
-	// Render the form with the token in a hidden field
-	res.render('transfer', { csrfToken })
+  // Render the form with the token in a hidden field
+  res.render('transfer', { csrfToken })
 })
 ```
 
 ```html
 <!-- Frontend: Form includes the Token -->
 <form action="/transfer" method="POST">
-	<input type="hidden" name="csrfToken" value="{{csrfToken}}" />
-	<input type="text" name="amount" placeholder="Transfer amount" />
-	<button type="submit">Transfer</button>
+  <input type="hidden" name="csrfToken" value="{{csrfToken}}" />
+  <input type="text" name="amount" placeholder="Transfer amount" />
+  <button type="submit">Transfer</button>
 </form>
 ```
 
 ```javascript
 // Server: Verify Token
 app.post('/transfer', (req, res) => {
-	// Get token from form
-	const submittedToken = req.body.csrfToken
+  // Get token from form
+  const submittedToken = req.body.csrfToken
 
-	// Compare with token stored in session
-	if (submittedToken !== req.session.csrfToken) {
-		return res.status(403).json({ error: 'CSRF verification failed' })
-	}
+  // Compare with token stored in session
+  if (submittedToken !== req.session.csrfToken) {
+    return res.status(403).json({ error: 'CSRF verification failed' })
+  }
 
-	// Token verified, continue with business logic
-	// ...
+  // Token verified, continue with business logic
+  // ...
 })
 ```
 
@@ -152,23 +152,23 @@ Instead of storing tokens server-side, have frontend JavaScript read the cookie 
 ```javascript
 // Middleware: Verify double submit
 const csrfProtection = (req, res, next) => {
-	const cookieToken = req.cookies['csrf-token']
-	const headerToken = req.headers['x-csrf-token']
+  const cookieToken = req.cookies['csrf-token']
+  const headerToken = req.headers['x-csrf-token']
 
-	if (!cookieToken || !headerToken || cookieToken !== headerToken) {
-		return res.status(403).json({ error: 'CSRF verification failed' })
-	}
-	next()
+  if (!cookieToken || !headerToken || cookieToken !== headerToken) {
+    return res.status(403).json({ error: 'CSRF verification failed' })
+  }
+  next()
 }
 
 // Frontend: Set Header when sending requests
 fetch('/api/transfer', {
-	method: 'POST',
-	headers: {
-		'Content-Type': 'application/json',
-		'x-csrf-token': document.cookie.match(/csrf-token=([^;]+)/)?.[1],
-	},
-	body: JSON.stringify({ amount: 100 }),
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'x-csrf-token': document.cookie.match(/csrf-token=([^;]+)/)?.[1],
+  },
+  body: JSON.stringify({ amount: 100 }),
 })
 ```
 
@@ -292,9 +292,9 @@ element.textContent = userInput // Safe
 
 // If you must use innerHTML, escape first
 function escapeHtml(text) {
-	const div = document.createElement('div')
-	div.textContent = text
-	return div.innerHTML
+  const div = document.createElement('div')
+  div.textContent = text
+  return div.innerHTML
 }
 element.innerHTML = escapeHtml(userInput)
 ```
@@ -306,12 +306,12 @@ import xss from 'xss'
 
 // Whitelist filtering: Only allow some tags
 const clean = xss(userInput, {
-	whiteList: {
-		p: ['class'],
-		strong: [],
-		em: [],
-		a: ['href', 'title'],
-	},
+  whiteList: {
+    p: ['class'],
+    strong: [],
+    em: [],
+    a: ['href', 'title'],
+  },
 })
 ```
 
@@ -321,19 +321,19 @@ const clean = xss(userInput, {
 import helmet from 'helmet'
 
 app.use(
-	helmet.contentSecurityPolicy({
-		directives: {
-			defaultSrc: ["'self'"],
-			scriptSrc: ["'self'", "'nonce-{generated-csp-nonce}'"],
-			styleSrc: ["'self'", "'unsafe-inline'"], // Note: Try to avoid unsafe-inline
-			imgSrc: ["'self'", 'https:'], // Only allow same-origin and HTTPS images
-			connectSrc: ["'self'"],
-			fontSrc: ["'self'"],
-			objectSrc: ["'none'"],
-			mediaSrc: ["'self'"],
-			frameSrc: ["'none'"],
-		},
-	}),
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'nonce-{generated-csp-nonce}'"],
+      styleSrc: ["'self'", "'unsafe-inline'"], // Note: Try to avoid unsafe-inline
+      imgSrc: ["'self'", 'https:'], // Only allow same-origin and HTTPS images
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  }),
 )
 ```
 
@@ -354,23 +354,23 @@ app.use(helmet())
 
 // 2. Global XSS filtering middleware
 app.use((req, res, next) => {
-	// Sanitize all request parameters
-	const sanitize = (obj) => {
-		if (typeof obj === 'string') {
-			return xss(obj)
-		}
-		if (typeof obj === 'object' && obj !== null) {
-			for (const key in obj) {
-				obj[key] = sanitize(obj[key])
-			}
-		}
-		return obj
-	}
+  // Sanitize all request parameters
+  const sanitize = (obj) => {
+    if (typeof obj === 'string') {
+      return xss(obj)
+    }
+    if (typeof obj === 'object' && obj !== null) {
+      for (const key in obj) {
+        obj[key] = sanitize(obj[key])
+      }
+    }
+    return obj
+  }
 
-	req.body = sanitize(req.body)
-	req.query = sanitize(req.query)
-	req.params = sanitize(req.params)
-	next()
+  req.body = sanitize(req.body)
+  req.query = sanitize(req.query)
+  req.params = sanitize(req.params)
+  next()
 })
 
 // 3. Secure template rendering
@@ -379,13 +379,13 @@ app.locals.xss = xss // Can be called in templates
 
 // Example route
 app.post('/comment', async (req, res) => {
-	const { content } = req.body
+  const { content } = req.body
 
-	// Escape again before storing in database
-	const safeContent = xss(content)
-	await db.comments.insert({ content: safeContent })
+  // Escape again before storing in database
+  const safeContent = xss(content)
+  await db.comments.insert({ content: safeContent })
 
-	res.json({ success: true })
+  res.json({ success: true })
 })
 ```
 
@@ -429,9 +429,9 @@ flowchart TD
 ```javascript
 // Common problematic code
 app.get('/user/profile/:userId', async (req, res) => {
-	const userId = req.params.userId
-	const profile = await db.user.findById(userId)
-	res.json(profile)
+  const userId = req.params.userId
+  const profile = await db.user.findById(userId)
+  res.json(profile)
 })
 ```
 
@@ -442,9 +442,9 @@ Attackers just need to iterate through userId parameters to see any user's infor
 ```javascript
 // Common problematic code
 app.post('/admin/deleteUser', async (req, res) => {
-	const { userId } = req.body
-	await db.user.delete(userId)
-	res.json({ success: true })
+  const { userId } = req.body
+  await db.user.delete(userId)
+  res.json({ success: true })
 })
 ```
 
@@ -455,8 +455,8 @@ Regular users can POST to this address and delete any user.
 ```javascript
 // Thinking renaming makes it secure? Too naive.
 app.post('/manage/delete-account', async (req, res) => {
-	// No permission check whatsoever
-	await db.user.delete(req.body.id)
+  // No permission check whatsoever
+  await db.user.delete(req.body.id)
 })
 ```
 
@@ -467,22 +467,22 @@ app.post('/manage/delete-account', async (req, res) => {
 ```javascript
 // ✅ Correct approach: Get current user from session
 app.get('/order/:orderId', async (req, res) => {
-	const orderId = req.params.orderId
+  const orderId = req.params.orderId
 
-	// 1. Get currently logged-in user first
-	const currentUser = req.session.userId
+  // 1. Get currently logged-in user first
+  const currentUser = req.session.userId
 
-	// 2. Query the order
-	const order = await db.order.findById(orderId)
+  // 2. Query the order
+  const order = await db.order.findById(orderId)
 
-	// 3. Verify the order owner is the current user
-	if (order.userId !== currentUser) {
-		return res.status(403).json({
-			error: 'You are not authorized to view this order',
-		})
-	}
+  // 3. Verify the order owner is the current user
+  if (order.userId !== currentUser) {
+    return res.status(403).json({
+      error: 'You are not authorized to view this order',
+    })
+  }
 
-	res.json(order)
+  res.json(order)
 })
 ```
 
@@ -501,15 +501,15 @@ app.get('/order/:orderId', async (req, res) => {
 import { v4 as uuidv4 } from 'uuid'
 
 app.post('/order', async (req, res) => {
-	const order = {
-		id: uuidv4(), // Random UUID
-		userId: req.session.userId,
-		items: req.body.items,
-		createdAt: new Date(),
-	}
+  const order = {
+    id: uuidv4(), // Random UUID
+    userId: req.session.userId,
+    items: req.body.items,
+    createdAt: new Date(),
+  }
 
-	await db.order.insert(order)
-	res.json({ orderId: order.id })
+  await db.order.insert(order)
+  res.json({ orderId: order.id })
 })
 ```
 
@@ -518,46 +518,46 @@ app.post('/order', async (req, res) => {
 ```javascript
 // Define permission check function
 function requireAuth(allowedRoles = []) {
-	return async (req, res, next) => {
-		// Check if logged in
-		if (!req.session.userId) {
-			return res.status(401).json({ error: 'Please log in first' })
-		}
+  return async (req, res, next) => {
+    // Check if logged in
+    if (!req.session.userId) {
+      return res.status(401).json({ error: 'Please log in first' })
+    }
 
-		// Get user info
-		const user = await db.user.findById(req.session.userId)
+    // Get user info
+    const user = await db.user.findById(req.session.userId)
 
-		// Check role permissions
-		if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-			return res.status(403).json({ error: 'You do not have permission to access this feature' })
-		}
+    // Check role permissions
+    if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+      return res.status(403).json({ error: 'You do not have permission to access this feature' })
+    }
 
-		// Attach user info to req, subsequent handlers can use directly
-		req.user = user
-		next()
-	}
+    // Attach user info to req, subsequent handlers can use directly
+    req.user = user
+    next()
+  }
 }
 
 // Usage
 app.get(
-	'/admin/dashboard',
-	requireAuth(['admin']), // Only admins can access
-	(req, res) => {
-		res.json({ message: 'Welcome to admin dashboard' })
-	},
+  '/admin/dashboard',
+  requireAuth(['admin']), // Only admins can access
+  (req, res) => {
+    res.json({ message: 'Welcome to admin dashboard' })
+  },
 )
 
 app.get(
-	'/order/:id',
-	requireAuth(), // Any logged-in user can access (but can only access their own)
-	async (req, res) => {
-		// Additional ownership check needed here
-		const order = await db.order.findById(req.params.id)
-		if (order.userId !== req.user.id) {
-			return res.status(403).json({ error: 'Unauthorized access' })
-		}
-		res.json(order)
-	},
+  '/order/:id',
+  requireAuth(), // Any logged-in user can access (but can only access their own)
+  async (req, res) => {
+    // Additional ownership check needed here
+    const order = await db.order.findById(req.params.id)
+    if (order.userId !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized access' })
+    }
+    res.json(order)
+  },
 )
 ```
 
@@ -642,35 +642,35 @@ import dns from 'node:dns/promises'
 import { isInternal } from 'is-internal-ip'
 
 app.post('/fetch', async (req, res) => {
-	const { url } = req.body
+  const { url } = req.body
 
-	try {
-		// Resolve domain name to get IP
-		const urlObj = new URL(url)
-		const hostname = urlObj.hostname
+  try {
+    // Resolve domain name to get IP
+    const urlObj = new URL(url)
+    const hostname = urlObj.hostname
 
-		// Check if it's an internal domain (like localhost, *.local)
-		if (hostname === 'localhost' || hostname.endsWith('.local')) {
-			return res.status(400).json({ error: 'Local resource access forbidden' })
-		}
+    // Check if it's an internal domain (like localhost, *.local)
+    if (hostname === 'localhost' || hostname.endsWith('.local')) {
+      return res.status(400).json({ error: 'Local resource access forbidden' })
+    }
 
-		// Get all IPs for the domain
-		const records = await dns.lookup(hostname, { all: true })
+    // Get all IPs for the domain
+    const records = await dns.lookup(hostname, { all: true })
 
-		// Check for internal IPs
-		for (const record of records) {
-			if (await isInternal(record.address)) {
-				return res.status(400).json({ error: 'Internal resource access forbidden' })
-			}
-		}
+    // Check for internal IPs
+    for (const record of records) {
+      if (await isInternal(record.address)) {
+        return res.status(400).json({ error: 'Internal resource access forbidden' })
+      }
+    }
 
-		// Verification passed, continue processing
-		const response = await fetch(url)
-		const buffer = await response.arrayBuffer()
-		res.send(Buffer.from(buffer))
-	} catch (error) {
-		res.status(400).json({ error: 'URL format error or cannot be accessed' })
-	}
+    // Verification passed, continue processing
+    const response = await fetch(url)
+    const buffer = await response.arrayBuffer()
+    res.send(Buffer.from(buffer))
+  } catch (error) {
+    res.status(400).json({ error: 'URL format error or cannot be accessed' })
+  }
 })
 ```
 
@@ -680,14 +680,14 @@ app.post('/fetch', async (req, res) => {
 const ALLOWED_DOMAINS = ['cdn.example.com', 'images.example.com', 'img.example.org']
 
 app.post('/fetch', async (req, res) => {
-	const { url } = req.body
-	const urlObj = new URL(url)
+  const { url } = req.body
+  const urlObj = new URL(url)
 
-	if (!ALLOWED_DOMAINS.includes(urlObj.hostname)) {
-		return res.status(400).json({ error: 'Only specified domains allowed' })
-	}
+  if (!ALLOWED_DOMAINS.includes(urlObj.hostname)) {
+    return res.status(400).json({ error: 'Only specified domains allowed' })
+  }
 
-	// ...
+  // ...
 })
 ```
 
@@ -695,21 +695,21 @@ app.post('/fetch', async (req, res) => {
 
 ```javascript
 app.post('/fetch', async (req, res) => {
-	const { url } = req.body
+  const { url } = req.body
 
-	// Only allow http and https
-	if (!url.startsWith('http://') && !url.startsWith('https://')) {
-		return res.status(400).json({ error: 'Only http and https protocols supported' })
-	}
+  // Only allow http and https
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    return res.status(400).json({ error: 'Only http and https protocols supported' })
+  }
 
-	// Block common internal ports
-	const suspiciousPorts = [22, 23, 25, 3306, 5432, 6379, 27017]
-	const urlObj = new URL(url)
-	if (suspiciousPorts.includes(urlObj.port)) {
-		return res.status(400).json({ error: 'Access to this port forbidden' })
-	}
+  // Block common internal ports
+  const suspiciousPorts = [22, 23, 25, 3306, 5432, 6379, 27017]
+  const urlObj = new URL(url)
+  if (suspiciousPorts.includes(urlObj.port)) {
+    return res.status(400).json({ error: 'Access to this port forbidden' })
+  }
 
-	// ...
+  // ...
 })
 ```
 
@@ -743,10 +743,10 @@ Attackers can exploit these parsing differences to bypass security filters. For 
 import hpp from 'hpp'
 
 app.use(
-	hpp({
-		// Specify which parameters allow duplicates
-		allow: ['tags', 'category'],
-	}),
+  hpp({
+    // Specify which parameters allow duplicates
+    allow: ['tags', 'category'],
+  }),
 )
 
 // Now /search?q=apple&q=banana gets processed by hpp
@@ -791,32 +791,32 @@ sequenceDiagram
 const ALLOWED_HOSTS = ['example.com', 'shop.example.com']
 
 app.get('/login', (req, res) => {
-	const redirectUrl = req.query.redirect
+  const redirectUrl = req.query.redirect
 
-	if (!redirectUrl) {
-		return res.redirect('/dashboard')
-	}
+  if (!redirectUrl) {
+    return res.redirect('/dashboard')
+  }
 
-	// Parse URL
-	let hostname
-	try {
-		const url = new URL(redirectUrl, 'http://localhost')
-		hostname = url.hostname
-	} catch {
-		return res.redirect('/dashboard')
-	}
+  // Parse URL
+  let hostname
+  try {
+    const url = new URL(redirectUrl, 'http://localhost')
+    hostname = url.hostname
+  } catch {
+    return res.redirect('/dashboard')
+  }
 
-	// Check if on whitelist
-	if (!ALLOWED_HOSTS.includes(hostname)) {
-		return res.redirect('/dashboard')
-	}
+  // Check if on whitelist
+  if (!ALLOWED_HOSTS.includes(hostname)) {
+    return res.redirect('/dashboard')
+  }
 
-	// Check if relative path (recommended approach)
-	if (redirectUrl.startsWith('/') && !redirectUrl.startsWith('//')) {
-		return res.redirect(redirectUrl)
-	}
+  // Check if relative path (recommended approach)
+  if (redirectUrl.startsWith('/') && !redirectUrl.startsWith('//')) {
+    return res.redirect(redirectUrl)
+  }
 
-	res.redirect('/dashboard')
+  res.redirect('/dashboard')
 })
 ```
 
@@ -881,9 +881,9 @@ jobs:
 
 ```json
 {
-	"dependencies": {
-		"lodash": "4.17.21"
-	}
+  "dependencies": {
+    "lodash": "4.17.21"
+  }
 }
 ```
 
@@ -903,9 +903,9 @@ This vulnerability stems from the server not checking whether the user-provided 
 ```javascript
 // Problematic code
 app.get('/download', (req, res) => {
-	const file = req.query.file
-	// Direct path concatenation, no checks
-	res.sendFile(__dirname + '/files/' + file)
+  const file = req.query.file
+  // Direct path concatenation, no checks
+  res.sendFile(__dirname + '/files/' + file)
 })
 ```
 
@@ -934,25 +934,25 @@ import path from 'node:path'
 import fs from 'node:fs'
 
 app.get('/download', (req, res) => {
-	const requestedFile = req.query.file
+  const requestedFile = req.query.file
 
-	// Safe directory
-	const baseDir = path.join(__dirname, 'files')
+  // Safe directory
+  const baseDir = path.join(__dirname, 'files')
 
-	// Normalize path
-	const filePath = path.normalize(path.join(baseDir, requestedFile))
+  // Normalize path
+  const filePath = path.normalize(path.join(baseDir, requestedFile))
 
-	// Ensure final path is within safe directory
-	if (!filePath.startsWith(baseDir)) {
-		return res.status(403).json({ error: 'Invalid path' })
-	}
+  // Ensure final path is within safe directory
+  if (!filePath.startsWith(baseDir)) {
+    return res.status(403).json({ error: 'Invalid path' })
+  }
 
-	// Check if file exists and is actually a file
-	if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
-		return res.status(404).json({ error: 'File not found' })
-	}
+  // Check if file exists and is actually a file
+  if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+    return res.status(404).json({ error: 'File not found' })
+  }
 
-	res.sendFile(filePath)
+  res.sendFile(filePath)
 })
 ```
 
@@ -982,7 +982,7 @@ db.query(sql, [username])
 
 // Or use ORM
 const user = await db.user.findFirst({
-	where: { name: username },
+  where: { name: username },
 })
 ```
 
@@ -1024,15 +1024,15 @@ flowchart TD
 import rateLimit from 'express-rate-limit'
 
 const limiter = rateLimit({
-	windowMs: 60 * 1000, // Time window: 1 minute
-	max: 100, // Maximum 100 requests
-	message: 'Too many requests, please try again later',
-	standardHeaders: true, // Return RateLimit-* headers
-	legacyHeaders: false,
-	keyGenerator: (req) => {
-		// Rate limit by IP (can also change to user ID)
-		return req.ip
-	},
+  windowMs: 60 * 1000, // Time window: 1 minute
+  max: 100, // Maximum 100 requests
+  message: 'Too many requests, please try again later',
+  standardHeaders: true, // Return RateLimit-* headers
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Rate limit by IP (can also change to user ID)
+    return req.ip
+  },
 })
 
 app.use('/api', limiter)
@@ -1061,51 +1061,51 @@ flowchart TD
 
 ```javascript
 class SlidingWindowRateLimiter {
-	constructor(windowMs, maxRequests) {
-		this.windowMs = windowMs
-		this.maxRequests = maxRequests
-		this.requests = new Map() // { ip: [timestamp1, timestamp2, ...] }
-	}
+  constructor(windowMs, maxRequests) {
+    this.windowMs = windowMs
+    this.maxRequests = maxRequests
+    this.requests = new Map() // { ip: [timestamp1, timestamp2, ...] }
+  }
 
-	isAllowed(ip) {
-		const now = Date.now()
-		const windowStart = now - this.windowMs
+  isAllowed(ip) {
+    const now = Date.now()
+    const windowStart = now - this.windowMs
 
-		// Get this IP's historical request records
-		if (!this.requests.has(ip)) {
-			this.requests.set(ip, [])
-		}
+    // Get this IP's historical request records
+    if (!this.requests.has(ip)) {
+      this.requests.set(ip, [])
+    }
 
-		const timestamps = this.requests.get(ip)
+    const timestamps = this.requests.get(ip)
 
-		// Only keep requests within the window
-		const validTimestamps = timestamps.filter((t) => t > windowStart)
-		this.requests.set(ip, validTimestamps)
+    // Only keep requests within the window
+    const validTimestamps = timestamps.filter((t) => t > windowStart)
+    this.requests.set(ip, validTimestamps)
 
-		// Check if over limit
-		if (validTimestamps.length >= this.maxRequests) {
-			return { allowed: false, remaining: 0 }
-		}
+    // Check if over limit
+    if (validTimestamps.length >= this.maxRequests) {
+      return { allowed: false, remaining: 0 }
+    }
 
-		// Record this request
-		validTimestamps.push(now)
-		return { allowed: true, remaining: this.maxRequests - validTimestamps.length }
-	}
+    // Record this request
+    validTimestamps.push(now)
+    return { allowed: true, remaining: this.maxRequests - validTimestamps.length }
+  }
 }
 
 const limiter = new SlidingWindowRateLimiter(60 * 1000, 100)
 
 app.use('/api', (req, res, next) => {
-	const ip = req.ip
-	const { allowed, remaining } = limiter.isAllowed(ip)
+  const ip = req.ip
+  const { allowed, remaining } = limiter.isAllowed(ip)
 
-	res.setHeader('X-RateLimit-Remaining', remaining)
+  res.setHeader('X-RateLimit-Remaining', remaining)
 
-	if (!allowed) {
-		return res.status(429).json({ error: 'Too many requests' })
-	}
+  if (!allowed) {
+    return res.status(429).json({ error: 'Too many requests' })
+  }
 
-	next()
+  next()
 })
 ```
 
@@ -1134,41 +1134,41 @@ flowchart TD
 
 ```javascript
 class LeakyBucket {
-	constructor(capacity, leakRatePerSecond) {
-		this.capacity = capacity // Bucket capacity
-		this.water = 0 // Current water level
-		this.leakRate = leakRatePerSecond // Leaks per second
-		this.lastLeakTime = Date.now()
-	}
+  constructor(capacity, leakRatePerSecond) {
+    this.capacity = capacity // Bucket capacity
+    this.water = 0 // Current water level
+    this.leakRate = leakRatePerSecond // Leaks per second
+    this.lastLeakTime = Date.now()
+  }
 
-	drop() {
-		this.leak()
+  drop() {
+    this.leak()
 
-		if (this.water < this.capacity) {
-			this.water++
-			return true // Can be processed
-		}
-		return false // Bucket full, reject
-	}
+    if (this.water < this.capacity) {
+      this.water++
+      return true // Can be processed
+    }
+    return false // Bucket full, reject
+  }
 
-	leak() {
-		const now = Date.now()
-		const elapsed = (now - this.lastLeakTime) / 1000 // Seconds
-		const leaked = elapsed * this.leakRate
+  leak() {
+    const now = Date.now()
+    const elapsed = (now - this.lastLeakTime) / 1000 // Seconds
+    const leaked = elapsed * this.leakRate
 
-		this.water = Math.max(0, this.water - leaked)
-		this.lastLeakTime = now
-	}
+    this.water = Math.max(0, this.water - leaked)
+    this.lastLeakTime = now
+  }
 }
 
 const bucket = new LeakyBucket(100, 10) // Capacity 100, processes 10 per second
 
 app.use('/api', (req, res, next) => {
-	if (bucket.drop()) {
-		next()
-	} else {
-		res.status(429).json({ error: 'Server busy, please try again later' })
-	}
+  if (bucket.drop()) {
+    next()
+  } else {
+    res.status(429).json({ error: 'Server busy, please try again later' })
+  }
 })
 ```
 
@@ -1204,44 +1204,44 @@ flowchart TD
 
 ```javascript
 class TokenBucket {
-	constructor(capacity, refillRatePerSecond) {
-		this.capacity = capacity // Bucket capacity
-		this.tokens = capacity // Current token count
-		this.refillRate = refillRatePerSecond // Tokens replenished per second
-		this.lastRefillTime = Date.now()
-	}
+  constructor(capacity, refillRatePerSecond) {
+    this.capacity = capacity // Bucket capacity
+    this.tokens = capacity // Current token count
+    this.refillRate = refillRatePerSecond // Tokens replenished per second
+    this.lastRefillTime = Date.now()
+  }
 
-	take() {
-		this.refill()
+  take() {
+    this.refill()
 
-		if (this.tokens >= 1) {
-			this.tokens -= 1
-			return true
-		}
-		return false
-	}
+    if (this.tokens >= 1) {
+      this.tokens -= 1
+      return true
+    }
+    return false
+  }
 
-	refill() {
-		const now = Date.now()
-		const elapsed = (now - this.lastRefillTime) / 1000
-		const tokensToAdd = elapsed * this.refillRate
+  refill() {
+    const now = Date.now()
+    const elapsed = (now - this.lastRefillTime) / 1000
+    const tokensToAdd = elapsed * this.refillRate
 
-		this.tokens = Math.min(this.capacity, this.tokens + tokensToAdd)
-		this.lastRefillTime = now
-	}
+    this.tokens = Math.min(this.capacity, this.tokens + tokensToAdd)
+    this.lastRefillTime = now
+  }
 }
 
 const bucket = new TokenBucket(100, 10) // Max 100 tokens, replenish 10 per second
 
 app.use('/api', (req, res, next) => {
-	if (bucket.take()) {
-		next()
-	} else {
-		res.status(429).json({
-			error: 'Too many requests',
-			retryAfter: 1, // Suggest retry after 1 second
-		})
-	}
+  if (bucket.take()) {
+    next()
+  } else {
+    res.status(429).json({
+      error: 'Too many requests',
+      retryAfter: 1, // Suggest retry after 1 second
+    })
+  }
 })
 ```
 
@@ -1266,47 +1266,47 @@ import Redis from 'ioredis'
 const redis = new Redis(process.env.REDIS_URL)
 
 async function slidingWindowRateLimit(key, windowMs, maxRequests) {
-	const now = Date.now()
-	const windowStart = now - windowMs
+  const now = Date.now()
+  const windowStart = now - windowMs
 
-	const multi = redis.multi()
+  const multi = redis.multi()
 
-	// Remove records outside window
-	multi.zremrangebyscore(key, 0, windowStart)
+  // Remove records outside window
+  multi.zremrangebyscore(key, 0, windowStart)
 
-	// Add current request
-	multi.zadd(key, now, `${now}-${Math.random()}`)
+  // Add current request
+  multi.zadd(key, now, `${now}-${Math.random()}`)
 
-	// Get request count within window
-	multi.zcard(key)
+  // Get request count within window
+  multi.zcard(key)
 
-	// Set expiration
-	multi.expire(key, Math.ceil(windowMs / 1000))
+  // Set expiration
+  multi.expire(key, Math.ceil(windowMs / 1000))
 
-	const results = await multi.exec()
-	const requestCount = results[2][1]
+  const results = await multi.exec()
+  const requestCount = results[2][1]
 
-	return {
-		allowed: requestCount <= maxRequests,
-		remaining: Math.max(0, maxRequests - requestCount),
-	}
+  return {
+    allowed: requestCount <= maxRequests,
+    remaining: Math.max(0, maxRequests - requestCount),
+  }
 }
 
 app.use('/api', async (req, res, next) => {
-	const key = `ratelimit:${req.ip}`
-	const { allowed, remaining } = await slidingWindowRateLimit(
-		key,
-		60 * 1000, // 1 minute
-		100, // 100 requests
-	)
+  const key = `ratelimit:${req.ip}`
+  const { allowed, remaining } = await slidingWindowRateLimit(
+    key,
+    60 * 1000, // 1 minute
+    100, // 100 requests
+  )
 
-	res.setHeader('X-RateLimit-Remaining', remaining)
+  res.setHeader('X-RateLimit-Remaining', remaining)
 
-	if (!allowed) {
-		return res.status(429).json({ error: 'Too many requests' })
-	}
+  if (!allowed) {
+    return res.status(429).json({ error: 'Too many requests' })
+  }
 
-	next()
+  next()
 })
 ```
 

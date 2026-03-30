@@ -146,23 +146,23 @@ Here's a frontend-friendly example:
 ```typescript
 // Parent class: Bird
 class Bird {
-	fly() {
-		return 'Bird flying in the sky'
-	}
+  fly() {
+    return 'Bird flying in the sky'
+  }
 }
 
 // Correct subclass: Penguin (can't fly, but has its own way)
 class Penguin extends Bird {
-	swim() {
-		return 'Penguin swimming in water'
-	}
+  swim() {
+    return 'Penguin swimming in water'
+  }
 }
 
 // Wrong subclass: Changes the parent's behavior
 class DeadBird extends Bird {
-	fly() {
-		throw new Error("I'm dead, can't fly") // This violates LSP
-	}
+  fly() {
+    throw new Error("I'm dead, can't fly") // This violates LSP
+  }
 }
 ```
 
@@ -254,15 +254,15 @@ You can borrow some ideas from Unix when writing frontend code:
 ```typescript
 // Function composition via piping
 const pipe =
-	(...fns) =>
-	(x) =>
-		fns.reduce((v, f) => f(v), x)
+  (...fns) =>
+  (x) =>
+    fns.reduce((v, f) => f(v), x)
 
 const processUser = pipe(
-	validateInput, // Step 1: Validate input
-	normalizeData, // Step 2: Normalize data
-	saveToDatabase, // Step 3: Save
-	sendNotification, // Step 4: Notify
+  validateInput, // Step 1: Validate input
+  normalizeData, // Step 2: Normalize data
+  saveToDatabase, // Step 3: Save
+  sendNotification, // Step 4: Notify
 )
 
 processUser(rawData)
@@ -286,25 +286,25 @@ Remember jQuery? The `$('div')` syntax is powered by the factory pattern:
 
 ```typescript
 class jQuery {
-	constructor(selector: string) {
-		// Complex DOM query logic
-		const dom = Array.from(document.querySelectorAll(selector))
-		for (let i = 0; i < dom.length; i++) {
-			this[i] = dom[i]
-		}
-		this.length = dom.length
-	}
+  constructor(selector: string) {
+    // Complex DOM query logic
+    const dom = Array.from(document.querySelectorAll(selector))
+    for (let i = 0; i < dom.length; i++) {
+      this[i] = dom[i]
+    }
+    this.length = dom.length
+  }
 
-	addClass(name: string) {
-		// Logic for adding classes
-	}
+  addClass(name: string) {
+    // Logic for adding classes
+  }
 
-	// ... many more methods
+  // ... many more methods
 }
 
 // Factory function: Users don't need to know about jQuery class
 window.$ = function (selector: string) {
-	return new jQuery(selector)
+  return new jQuery(selector)
 }
 
 // Usage
@@ -320,13 +320,13 @@ Why can React use JSX to write UI? Because of the `createElement` factory functi
 ```typescript
 // This is how React converts JSX to objects internally
 function createElement(type, props, ...children) {
-	return {
-		type, // Tag name like 'button', or a component
-		props: {
-			...props,
-			children: children.map((c) => (typeof c === 'object' ? c : { type: 'TEXT_ELEMENT', props: { nodeValue: c } })),
-		},
-	}
+  return {
+    type, // Tag name like 'button', or a component
+    props: {
+      ...props,
+      children: children.map((c) => (typeof c === 'object' ? c : { type: 'TEXT_ELEMENT', props: { nodeValue: c } })),
+    },
+  }
 }
 
 // <button className="btn">Click me</button>
@@ -350,33 +350,33 @@ Modal dialogs on a page don't need a new container every time:
 
 ```typescript
 class Modal {
-	// Key: Static property, only one exists at class level
-	private static instance: Modal
-	private container: HTMLElement
+  // Key: Static property, only one exists at class level
+  private static instance: Modal
+  private container: HTMLElement
 
-	// Key: Private constructor, can't use new Modal()
-	private constructor() {
-		this.container = document.createElement('div')
-		this.container.id = 'global-modal'
-		document.body.appendChild(this.container)
-	}
+  // Key: Private constructor, can't use new Modal()
+  private constructor() {
+    this.container = document.createElement('div')
+    this.container.id = 'global-modal'
+    document.body.appendChild(this.container)
+  }
 
-	// Key: Get the single instance via getInstance
-	public static getInstance(): Modal {
-		if (!Modal.instance) {
-			Modal.instance = new Modal()
-		}
-		return Modal.instance
-	}
+  // Key: Get the single instance via getInstance
+  public static getInstance(): Modal {
+    if (!Modal.instance) {
+      Modal.instance = new Modal()
+    }
+    return Modal.instance
+  }
 
-	show(content: string) {
-		this.container.innerHTML = content
-		this.container.style.display = 'block'
-	}
+  show(content: string) {
+    this.container.innerHTML = content
+    this.container.style.display = 'block'
+  }
 
-	hide() {
-		this.container.style.display = 'none'
-	}
+  hide() {
+    this.container.style.display = 'none'
+  }
 }
 
 // Usage: No matter how many times you call it, you get the same instance
@@ -406,30 +406,30 @@ JavaScript's prototype chain is itself an application of the prototype pattern:
 ```typescript
 // Define a base template
 const baseUser = {
-	getRole() {
-		return this.role
-	},
-	introduce() {
-		return `I'm ${this.name}`
-	},
+  getRole() {
+    return this.role
+  },
+  introduce() {
+    return `I'm ${this.name}`
+  },
 }
 
 // Create new objects with baseUser as the prototype
 const admin = Object.create(baseUser, {
-	role: {
-		value: 'ADMIN',
-		writable: false, // Cannot be modified
-	},
-	permissions: {
-		value: ['READ', 'WRITE', 'DELETE'],
-		writable: false,
-	},
-	name: { value: 'Admin User' },
+  role: {
+    value: 'ADMIN',
+    writable: false, // Cannot be modified
+  },
+  permissions: {
+    value: ['READ', 'WRITE', 'DELETE'],
+    writable: false,
+  },
+  name: { value: 'Admin User' },
 })
 
 const normalUser = Object.create(baseUser, {
-	role: { value: 'USER' },
-	name: { value: 'Normal User' },
+  role: { value: 'USER' },
+  name: { value: 'Normal User' },
 })
 
 console.log(admin.getRole()) // ADMIN
@@ -457,27 +457,27 @@ Vue3's reactivity system is built on Proxy:
 
 ```typescript
 function reactive<T extends object>(target: T): T {
-	return new Proxy(target, {
-		get(target, key, receiver) {
-			const res = Reflect.get(target, key, receiver)
+  return new Proxy(target, {
+    get(target, key, receiver) {
+      const res = Reflect.get(target, key, receiver)
 
-			// Auto-log when accessing properties
-			console.log(`Reading ${String(key)}`)
+      // Auto-log when accessing properties
+      console.log(`Reading ${String(key)}`)
 
-			// If it's a function, bind it back to the original object
-			if (typeof res === 'function') {
-				return res.bind(target)
-			}
+      // If it's a function, bind it back to the original object
+      if (typeof res === 'function') {
+        return res.bind(target)
+      }
 
-			// If it's an object, recursively proxy it (deep reactivity)
-			return typeof res === 'object' && res !== null ? reactive(res) : res
-		},
+      // If it's an object, recursively proxy it (deep reactivity)
+      return typeof res === 'object' && res !== null ? reactive(res) : res
+    },
 
-		set(target, key, value, receiver) {
-			console.log(`Setting ${String(key)} = ${value}`)
-			return Reflect.set(target, key, value, receiver)
-		},
-	})
+    set(target, key, value, receiver) {
+      console.log(`Setting ${String(key)} = ${value}`)
+      return Reflect.set(target, key, value, receiver)
+    },
+  })
 }
 
 // Usage
@@ -491,21 +491,21 @@ That's why modifying data in Vue3 automatically updates the view—Proxy does th
 
 ```typescript
 function lazyLoadImage(img: HTMLImageElement, realSrc: string) {
-	return new Proxy(img, {
-		get(target, prop) {
-			if (prop === 'src' && !target.dataset.loaded) {
-				// Return placeholder
-				return target.dataset.placeholder || ''
-			}
-			return target[prop as keyof HTMLImageElement]
-		},
-		set(target, prop, value) {
-			if (prop === 'src' && value === realSrc) {
-				target.dataset.loaded = 'true'
-			}
-			target[prop as keyof HTMLImageElement] = value
-		},
-	})
+  return new Proxy(img, {
+    get(target, prop) {
+      if (prop === 'src' && !target.dataset.loaded) {
+        // Return placeholder
+        return target.dataset.placeholder || ''
+      }
+      return target[prop as keyof HTMLImageElement]
+    },
+    set(target, prop, value) {
+      if (prop === 'src' && value === realSrc) {
+        target.dataset.loaded = 'true'
+      }
+      target[prop as keyof HTMLImageElement] = value
+    },
+  })
 }
 ```
 
@@ -520,30 +520,30 @@ function lazyLoadImage(img: HTMLImageElement, realSrc: string) {
 ```typescript
 // Timer decorator: Automatically logs function execution time
 function timeTrack(target: any, name: string, descriptor: PropertyDescriptor) {
-	const original = descriptor.value
+  const original = descriptor.value
 
-	descriptor.value = function (...args: any[]) {
-		const start = performance.now()
-		const result = original.apply(this, args)
-		const duration = performance.now() - start
-		console.log(`${name} took ${duration.toFixed(2)}ms`)
-		return result
-	}
+  descriptor.value = function (...args: any[]) {
+    const start = performance.now()
+    const result = original.apply(this, args)
+    const duration = performance.now() - start
+    console.log(`${name} took ${duration.toFixed(2)}ms`)
+    return result
+  }
 
-	return descriptor
+  return descriptor
 }
 
 class ApiService {
-	@timeTrack
-	fetchUserList() {
-		// Simulated API request
-		return new Promise((resolve) => setTimeout(() => resolve([1, 2, 3]), 500))
-	}
+  @timeTrack
+  fetchUserList() {
+    // Simulated API request
+    return new Promise((resolve) => setTimeout(() => resolve([1, 2, 3]), 500))
+  }
 
-	@timeTrack
-	fetchDetail(id: number) {
-		return new Promise((resolve) => setTimeout(() => resolve({ id }), 200))
-	}
+  @timeTrack
+  fetchDetail(id: number) {
+    return new Promise((resolve) => setTimeout(() => resolve({ id }), 200))
+  }
 }
 
 const api = new ApiService()
@@ -635,22 +635,22 @@ Behavioral patterns focus on **how objects talk to each other**, much like how p
 ```typescript
 // Simple implementation
 class Subject {
-	private observers: Function[] = []
+  private observers: Function[] = []
 
-	// Subscribe
-	subscribe(observer: Function) {
-		this.observers.push(observer)
-	}
+  // Subscribe
+  subscribe(observer: Function) {
+    this.observers.push(observer)
+  }
 
-	// Unsubscribe
-	unsubscribe(observer: Function) {
-		this.observers = this.observers.filter((o) => o !== observer)
-	}
+  // Unsubscribe
+  unsubscribe(observer: Function) {
+    this.observers = this.observers.filter((o) => o !== observer)
+  }
 
-	// Notify: When state changes, notify all subscribers
-	notify(data: any) {
-		this.observers.forEach((observer) => observer(data))
-	}
+  // Notify: When state changes, notify all subscribers
+  notify(data: any) {
+    this.observers.forEach((observer) => observer(data))
+  }
 }
 
 // Usage
@@ -683,30 +683,30 @@ graph LR
 type Handler = (data?: any) => void
 
 class EventEmitter {
-	private events: Map<string, Handler[]> = new Map()
+  private events: Map<string, Handler[]> = new Map()
 
-	// Subscribe
-	on(name: string, fn: Handler) {
-		const handlers = this.events.get(name) || []
-		handlers.push(fn)
-		this.events.set(name, handlers)
-	}
+  // Subscribe
+  on(name: string, fn: Handler) {
+    const handlers = this.events.get(name) || []
+    handlers.push(fn)
+    this.events.set(name, handlers)
+  }
 
-	// Publish
-	emit(name: string, data?: any) {
-		this.events.get(name)?.forEach((fn) => fn(data))
-	}
+  // Publish
+  emit(name: string, data?: any) {
+    this.events.get(name)?.forEach((fn) => fn(data))
+  }
 
-	// Unsubscribe
-	off(name: string, fn: Handler) {
-		const handlers = this.events.get(name)
-		if (handlers) {
-			this.events.set(
-				name,
-				handlers.filter((h) => h !== fn),
-			)
-		}
-	}
+  // Unsubscribe
+  off(name: string, fn: Handler) {
+    const handlers = this.events.get(name)
+    if (handlers) {
+      this.events.set(
+        name,
+        handlers.filter((h) => h !== fn),
+      )
+    }
+  }
 }
 
 // Usage
@@ -714,12 +714,12 @@ const bus = new EventEmitter()
 
 // Component A subscribes to event
 bus.on('user-login', (user) => {
-	console.log('Got user login info:', user)
+  console.log('Got user login info:', user)
 })
 
 // Component B publishes event
 setTimeout(() => {
-	bus.emit('user-login', { name: 'John', time: Date.now() })
+  bus.emit('user-login', { name: 'John', time: Date.now() })
 }, 1000)
 ```
 
@@ -743,54 +743,54 @@ setTimeout(() => {
 ```typescript
 // Define validation strategies
 const validatorStrategies = {
-	// Cannot be empty
-	isNonEmpty: (val: string) => {
-		return val.trim().length > 0 || 'This field is required'
-	},
+  // Cannot be empty
+  isNonEmpty: (val: string) => {
+    return val.trim().length > 0 || 'This field is required'
+  },
 
-	// Minimum length
-	minLength: (val: string, len: number) => {
-		return val.length >= len || `Must be at least ${len} characters`
-	},
+  // Minimum length
+  minLength: (val: string, len: number) => {
+    return val.length >= len || `Must be at least ${len} characters`
+  },
 
-	// Maximum length
-	maxLength: (val: string, len: number) => {
-		return val.length <= len || `Must be at most ${len} characters`
-	},
+  // Maximum length
+  maxLength: (val: string, len: number) => {
+    return val.length <= len || `Must be at most ${len} characters`
+  },
 
-	// Email format
-	isEmail: (val: string) => {
-		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-		return emailRegex.test(val) || 'Please enter a valid email address'
-	},
+  // Email format
+  isEmail: (val: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(val) || 'Please enter a valid email address'
+  },
 
-	// Phone number
-	isPhone: (val: string) => {
-		const phoneRegex = /^1[3-9]\d{9}$/
-		return phoneRegex.test(val) || 'Please enter a valid phone number'
-	},
+  // Phone number
+  isPhone: (val: string) => {
+    const phoneRegex = /^1[3-9]\d{9}$/
+    return phoneRegex.test(val) || 'Please enter a valid phone number'
+  },
 }
 
 // Validator class
 class FormValidator {
-	private checks: Array<() => string | true> = []
+  private checks: Array<() => string | true> = []
 
-	// Add validation rule
-	add(value: string, rule: keyof typeof validatorStrategies, ...args: any[]) {
-		const strategy = validatorStrategies[rule]
-		this.checks.push(() => strategy(value, ...args))
-	}
+  // Add validation rule
+  add(value: string, rule: keyof typeof validatorStrategies, ...args: any[]) {
+    const strategy = validatorStrategies[rule]
+    this.checks.push(() => strategy(value, ...args))
+  }
 
-	// Run validation
-	validate() {
-		for (const check of this.checks) {
-			const result = check()
-			if (result !== true) {
-				return result // Return first error message
-			}
-		}
-		return true // All passed
-	}
+  // Run validation
+  validate() {
+    for (const check of this.checks) {
+      const result = check()
+      if (result !== true) {
+        return result // Return first error message
+      }
+    }
+    return true // All passed
+  }
 }
 
 // Usage
@@ -824,15 +824,15 @@ This approach is much cleaner than using if-else, and adding new rules is as sim
 ```typescript
 // Make custom objects iterable with for...of
 const myIterable = {
-	[Symbol.iterator]: function* () {
-		yield 1
-		yield 2
-		yield 3
-	},
+  [Symbol.iterator]: function* () {
+    yield 1
+    yield 2
+    yield 3
+  },
 }
 
 for (const num of myIterable) {
-	console.log(num) // 1, 2, 3
+  console.log(num) // 1, 2, 3
 }
 
 // Also works with spread operator
@@ -845,8 +845,8 @@ JavaScript's built-in data structures (Array, Map, Set, NodeList, etc.) all impl
 // Uniform way to traverse
 const arr = [1, 2, 3]
 const map = new Map([
-	['a', 1],
-	['b', 2],
+  ['a', 1],
+  ['b', 2],
 ])
 const set = new Set([1, 2, 3])
 const nodeList = document.querySelectorAll('div')

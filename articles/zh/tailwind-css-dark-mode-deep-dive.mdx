@@ -26,13 +26,13 @@ date: '2026-02-10'
 ```tsx
 // GlassCard.tsx
 export function GlassCard({ children, className = '' }) {
-	return (
-		<div
-			className={`bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 backdrop-blur-md rounded-xl p-6 ${className}`}
-		>
-			{children}
-		</div>
-	)
+  return (
+    <div
+      className={`bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 backdrop-blur-md rounded-xl p-6 ${className}`}
+    >
+      {children}
+    </div>
+  )
 }
 ```
 
@@ -49,11 +49,11 @@ export function GlassCard({ children, className = '' }) {
 import { ThemeProvider } from 'next-themes'
 
 export function Providers({ children }) {
-	return (
-		<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-			{children}
-		</ThemeProvider>
-	)
+  return (
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      {children}
+    </ThemeProvider>
+  )
 }
 ```
 
@@ -62,13 +62,13 @@ export function Providers({ children }) {
 import { Providers } from './providers'
 
 export default function RootLayout({ children }) {
-	return (
-		<html lang="zh-CN" suppressHydrationWarning>
-			<body>
-				<Providers>{children}</Providers>
-			</body>
-		</html>
-	)
+  return (
+    <html lang="zh-CN" suppressHydrationWarning>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  )
 }
 ```
 
@@ -92,12 +92,12 @@ export default function RootLayout({ children }) {
 ```js
 // tailwind.config.js
 module.exports = {
-	darkMode: 'class', // 关键配置
-	content: ['./src/**/*.{js,jsx,ts,tsx}'],
-	theme: {
-		extend: {},
-	},
-	plugins: [],
+  darkMode: 'class', // 关键配置
+  content: ['./src/**/*.{js,jsx,ts,tsx}'],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
 }
 ```
 
@@ -108,7 +108,7 @@ module.exports = {
 ```css
 /* v3 生成的 dark: 样式 */
 .dark\:bg-black\/40 {
-	background-color: rgb(0 0 0 / 0.4);
+  background-color: rgb(0 0 0 / 0.4);
 }
 ```
 
@@ -125,9 +125,9 @@ module.exports = {
 ```css
 /* v4 默认生成的 dark: 样式 */
 @media (prefers-color-scheme: dark) {
-	.dark\:bg-black\/40 {
-		background-color: rgb(0 0 0 / 0.4);
-	}
+  .dark\:bg-black\/40 {
+    background-color: rgb(0 0 0 / 0.4);
+  }
 }
 ```
 
@@ -148,18 +148,18 @@ module.exports = {
 ```css
 /* globals.css */
 :root {
-	--background: 255 255 255; /* 白色 */
-	--foreground: 0 0 0; /* 黑色 */
+  --background: 255 255 255; /* 白色 */
+  --foreground: 0 0 0; /* 黑色 */
 }
 
 .dark {
-	--background: 9 10 11; /* 黑色 */
-	--foreground: 255 255 255; /* 白色 */
+  --background: 9 10 11; /* 黑色 */
+  --foreground: 255 255 255; /* 白色 */
 }
 
 body {
-	background-color: rgb(var(--background));
-	color: rgb(var(--foreground));
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
 }
 ```
 
@@ -215,7 +215,7 @@ body {
 /* 修复后生成的 dark: 样式 */
 .dark\:bg-black\/40,
 :where(.dark, .dark *) .dark\:bg-black\/40 {
-	background-color: rgb(0 0 0 / 0.4);
+  background-color: rgb(0 0 0 / 0.4);
 }
 ```
 
@@ -234,24 +234,24 @@ body {
 
 /* CSS 变量定义（可选，用于非 Tailwind 工具类） */
 @theme {
-	--color-background: var(--background);
-	--color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
 }
 
 /* 全局样式 */
 :root {
-	--background: 255 255 255;
-	--foreground: 0 0 0;
+  --background: 255 255 255;
+  --foreground: 0 0 0;
 }
 
 .dark {
-	--background: 9 10 11;
-	--foreground: 255 255 255;
+  --background: 9 10 11;
+  --foreground: 255 255 255;
 }
 
 body {
-	background-color: rgb(var(--background));
-	color: rgb(var(--foreground));
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
 }
 ```
 
@@ -292,10 +292,10 @@ body {
 ```css
 /* @variant：内联使用变体 */
 .my-element {
-	background: white;
-	@variant dark {
-		background: black;
-	}
+  background: white;
+  @variant dark {
+    background: black;
+  }
 }
 
 /* @custom-variant：定义新变体 */
@@ -372,29 +372,29 @@ Tailwind CSS 把样式分成三层，这是 CSS 史上的一次创新。这种�
 
 ```css
 @layer base {
-	/* 重置浏览器默认样式 */
-	*,
-	*::before,
-	*::after {
-		box-sizing: border-box;
-	}
+  /* 重置浏览器默认样式 */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
 
-	/* 设置基础排版 */
-	h1 {
-		font-size: 2.5rem;
-		font-weight: 700;
-	}
+  /* 设置基础排版 */
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+  }
 
-	h2 {
-		font-size: 2rem;
-		font-weight: 600;
-	}
+  h2 {
+    font-size: 2rem;
+    font-weight: 600;
+  }
 
-	/* 设置链接默认样式 */
-	a {
-		color: inherit;
-		text-decoration: none;
-	}
+  /* 设置链接默认样式 */
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 }
 ```
 
@@ -404,21 +404,21 @@ Tailwind CSS 把样式分成三层，这是 CSS 史上的一次创新。这种�
 
 ```css
 @layer components {
-	.btn {
-		@apply px-4 py-2 rounded-lg font-medium transition-colors;
-	}
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-colors;
+  }
 
-	.btn-primary {
-		@apply bg-blue-500 text-white hover:bg-blue-600;
-	}
+  .btn-primary {
+    @apply bg-blue-500 text-white hover:bg-blue-600;
+  }
 
-	.btn-secondary {
-		@apply bg-gray-200 text-gray-800 hover:bg-gray-300;
-	}
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
+  }
 
-	.card {
-		@apply bg-white rounded-xl shadow-lg p-6;
-	}
+  .card {
+    @apply bg-white rounded-xl shadow-lg p-6;
+  }
 }
 ```
 
@@ -428,18 +428,18 @@ Tailwind CSS 把样式分成三层，这是 CSS 史上的一次创新。这种�
 
 ```css
 @layer utilities {
-	.text-balance {
-		text-wrap: balance;
-	}
+  .text-balance {
+    text-wrap: balance;
+  }
 
-	.scrollbar-hide {
-		-ms-overflow-style: none;
-		scrollbar-width: none;
-	}
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 
-	.scrollbar-hide::-webkit-scrollbar {
-		display: none;
-	}
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 ```
 
@@ -452,12 +452,12 @@ Tailwind CSS 把样式分成三层，这是 CSS 史上的一次创新。这种�
 ```css
 /* 你定义的 card 样式 */
 .card {
-	padding: 16px;
+  padding: 16px;
 }
 
 /* 某个第三方插件 */
 .card {
-	padding: 24px; /* 覆盖了你的！ */
+  padding: 24px; /* 覆盖了你的！ */
 }
 ```
 
@@ -474,16 +474,16 @@ Tailwind CSS 把样式分成三层，这是 CSS 史上的一次创新。这种�
 ```css
 /* v4 推荐写法 */
 @layer utilities {
-	.my-utility {
-		/* 工具类样式 */
-	}
+  .my-utility {
+    /* 工具类样式 */
+  }
 }
 
 /* v4 新增的 @utility 指令 */
 @utility my-utility {
-	/* 新的工具类语法 */
-	--tw-bg-opacity: 1;
-	background-color: rgb(255 255 255 / var(--tw-bg-opacity));
+  /* 新的工具类语法 */
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 255 255 / var(--tw-bg-opacity));
 }
 ```
 
@@ -499,7 +499,7 @@ Tailwind CSS 把样式分成三层，这是 CSS 史上的一次创新。这种�
 
 ```tsx
 <ThemeProvider attribute="class" defaultTheme="system">
-	{children}
+  {children}
 </ThemeProvider>
 ```
 
@@ -508,8 +508,8 @@ Tailwind CSS 把样式分成三层，这是 CSS 史上的一次创新。这种�
 ```html
 <!-- 浅色模式 -->
 <html class="light">
-	<!-- 深色模式 -->
-	<html class="dark"></html>
+  <!-- 深色模式 -->
+  <html class="dark"></html>
 </html>
 ```
 
@@ -526,7 +526,7 @@ Tailwind CSS 把样式分成三层，这是 CSS 史上的一次创新。这种�
 
 ```tsx
 <ThemeProvider attribute="data-theme" defaultTheme="system">
-	{children}
+  {children}
 </ThemeProvider>
 ```
 
@@ -535,8 +535,8 @@ Tailwind CSS 把样式分成三层，这是 CSS 史上的一次创新。这种�
 ```html
 <!-- 浅色模式 -->
 <html data-theme="light">
-	<!-- 深色模式 -->
-	<html data-theme="dark"></html>
+  <!-- 深色模式 -->
+  <html data-theme="dark"></html>
 </html>
 ```
 
@@ -557,8 +557,8 @@ Tailwind CSS 把样式分成三层，这是 CSS 史上的一次创新。这种�
 // tailwind.config.js
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-	darkMode: ['class', "[data-theme='dark']"],
-	// ...其他配置
+  darkMode: ['class', "[data-theme='dark']"],
+  // ...其他配置
 }
 ```
 
@@ -574,12 +574,12 @@ module.exports = {
 
 ```tsx
 <ThemeProvider
-	attribute="class"
-	defaultTheme="system" /* 默认跟随系统 */
-	enableSystem={true} /* 允许系统主题 */
-	disableTransitionOnChange /* 切换时禁用动画（可选） */
+  attribute="class"
+  defaultTheme="system" /* 默认跟随系统 */
+  enableSystem={true} /* 允许系统主题 */
+  disableTransitionOnChange /* 切换时禁用动画（可选） */
 >
-	{children}
+  {children}
 </ThemeProvider>
 ```
 
@@ -620,9 +620,9 @@ npm install tailwindcss @tailwindcss/postcss next-themes
 ```js
 // postcss.config.js
 export default {
-	plugins: {
-		'@tailwindcss/postcss': {},
-	},
+  plugins: {
+    '@tailwindcss/postcss': {},
+  },
 }
 ```
 
@@ -640,23 +640,23 @@ export default {
 
 /* CSS 变量定义 */
 @theme {
-	--color-primary: #3b82f6;
-	--color-secondary: #64748b;
+  --color-primary: #3b82f6;
+  --color-secondary: #64748b;
 }
 
 :root {
-	--background: 255 255 255;
-	--foreground: 0 0 0;
+  --background: 255 255 255;
+  --foreground: 0 0 0;
 }
 
 .dark {
-	--background: 9 10 11;
-	--foreground: 255 255 255;
+  --background: 9 10 11;
+  --foreground: 255 255 255;
 }
 
 body {
-	background-color: rgb(var(--background));
-	color: rgb(var(--foreground));
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
 }
 ```
 
@@ -722,12 +722,12 @@ npm run dev
 import { Html, Head, Body, Main, NextScript } from 'next/document'
 
 export default function Document() {
-	return (
-		<Html>
-			<Head>
-				<script
-					dangerouslySetInnerHTML={{
-						__html: `
+  return (
+    <Html>
+      <Head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
               (function() {
                 const theme = localStorage.getItem('theme');
                 if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -735,15 +735,15 @@ export default function Document() {
                 }
               })();
             `,
-					}}
-				/>
-			</Head>
-			<Body>
-				<Main />
-				<NextScript />
-			</Body>
-		</Html>
-	)
+          }}
+        />
+      </Head>
+      <Body>
+        <Main />
+        <NextScript />
+      </Body>
+    </Html>
+  )
 }
 ```
 
@@ -808,41 +808,41 @@ Tailwind 支持叠加多个变体：
 
 /* CSS 变量定义 */
 :root {
-	--background: 255 255 255;
-	--foreground: 0 0 0;
-	--card: 255 255 255;
-	--card-foreground: 0 0 0;
-	--primary: 59 130 246;
-	--primary-foreground: 255 255 255;
-	--secondary: 241 245 249;
-	--secondary-foreground: 0 0 0;
+  --background: 255 255 255;
+  --foreground: 0 0 0;
+  --card: 255 255 255;
+  --card-foreground: 0 0 0;
+  --primary: 59 130 246;
+  --primary-foreground: 255 255 255;
+  --secondary: 241 245 249;
+  --secondary-foreground: 0 0 0;
 }
 
 .dark {
-	--background: 9 10 11;
-	--foreground: 255 255 255;
-	--card: 15 23 42;
-	--card-foreground: 255 255 255;
-	--primary: 96 165 250;
-	--primary-foreground: 0 0 0;
-	--secondary: 30 41 59;
-	--secondary-foreground: 255 255 255;
+  --background: 9 10 11;
+  --foreground: 255 255 255;
+  --card: 15 23 42;
+  --card-foreground: 255 255 255;
+  --primary: 96 165 250;
+  --primary-foreground: 0 0 0;
+  --secondary: 30 41 59;
+  --secondary-foreground: 255 255 255;
 }
 
 /* 使用 CSS 变量 */
 body {
-	background-color: rgb(var(--background));
-	color: rgb(var(--foreground));
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
 }
 
 .card {
-	background-color: rgb(var(--card));
-	color: rgb(var(--card-foreground));
+  background-color: rgb(var(--card));
+  color: rgb(var(--card-foreground));
 }
 
 .btn-primary {
-	background-color: rgb(var(--primary));
-	color: rgb(var(--primary-foreground));
+  background-color: rgb(var(--primary));
+  color: rgb(var(--primary-foreground));
 }
 ```
 
@@ -855,8 +855,8 @@ body {
 
    ```tsx
    function Card({ className, children }) {
-   	const cardClass = 'bg-white dark:bg-slate-800 rounded-xl p-6'
-   	return <div className={`${cardClass} ${className}`}>{children}</div>
+     const cardClass = 'bg-white dark:bg-slate-800 rounded-xl p-6'
+     return <div className={`${cardClass} ${className}`}>{children}</div>
    }
    ```
 

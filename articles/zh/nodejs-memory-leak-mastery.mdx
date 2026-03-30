@@ -63,8 +63,8 @@ const buffer = Buffer.alloc(1024 * 1024) // 1MB的缓冲区
 
 // 闭包也会占用堆内存
 function createCounter() {
-	let count = 0 // 这个变量存在堆里，因为被闭包引用着
-	return () => ++count
+  let count = 0 // 这个变量存在堆里，因为被闭包引用着
+  return () => ++count
 }
 ```
 
@@ -255,15 +255,15 @@ flowchart TD
 import fs from 'node:fs'
 
 function createLeakingClosure() {
-	// 创建一个大缓冲区
-	const hugeBuffer = Buffer.alloc(1024 * 1024 * 10) // 10MB
+  // 创建一个大缓冲区
+  const hugeBuffer = Buffer.alloc(1024 * 1024 * 10) // 10MB
 
-	// 返回一个闭包
-	return () => {
-		// 闭包只用了 hugeBuffer 的一个字节
-		// 但整个 10MB 都会被闭包抓着不放！
-		console.log(hugeBuffer[0])
-	}
+  // 返回一个闭包
+  return () => {
+    // 闭包只用了 hugeBuffer 的一个字节
+    // 但整个 10MB 都会被闭包抓着不放！
+    console.log(hugeBuffer[0])
+  }
 }
 
 // 这个 leak 变量会一直存在
@@ -282,13 +282,13 @@ const leak = createLeakingClosure()
 ```javascript
 // ✅ 正确示例：闭包安全写法
 function createSafeClosure() {
-	let hugeBuffer = Buffer.alloc(1024 * 1024 * 10)
+  let hugeBuffer = Buffer.alloc(1024 * 1024 * 10)
 
-	return () => {
-		if (!hugeBuffer) return // 已经释放过了
-		console.log(hugeBuffer[0])
-		hugeBuffer = null // 手动释放引用！
-	}
+  return () => {
+    if (!hugeBuffer) return // 已经释放过了
+    console.log(hugeBuffer[0])
+    hugeBuffer = null // 手动释放引用！
+  }
 }
 ```
 
@@ -308,18 +308,18 @@ const globalEmitter = new EventEmitter()
 
 // 处理请求的函数
 export async function handleRequest(req, res) {
-	const onData = (data) => {
-		console.log('收到数据:', data)
-	}
+  const onData = (data) => {
+    console.log('收到数据:', data)
+  }
 
-	// 每次请求都添加监听器
-	globalEmitter.on('update', onData)
+  // 每次请求都添加监听器
+  globalEmitter.on('update', onData)
 
-	// 请求结束了...
-	res.end('OK')
+  // 请求结束了...
+  res.end('OK')
 
-	// ❌ 忘记移除监听器！
-	// 这个 onData 函数会一直挂在 globalEmitter 上
+  // ❌ 忘记移除监听器！
+  // 这个 onData 函数会一直挂在 globalEmitter 上
 }
 ```
 
@@ -339,36 +339,36 @@ export async function handleRequest(req, res) {
 ```javascript
 // ✅ 方案一：用完了记得移除
 export async function handleRequest(req, res) {
-	const onData = (data) => {
-		console.log('收到数据:', data)
-	}
+  const onData = (data) => {
+    console.log('收到数据:', data)
+  }
 
-	globalEmitter.on('update', onData)
+  globalEmitter.on('update', onData)
 
-	// 请求结束或者响应完成时移除
-	res.on('finish', () => {
-		globalEmitter.off('update', onData)
-	})
+  // 请求结束或者响应完成时移除
+  res.on('finish', () => {
+    globalEmitter.off('update', onData)
+  })
 
-	res.end('OK')
+  res.end('OK')
 }
 
 // ✅ 方案二：用 once 只触发一次
 globalEmitter.once('update', (data) => {
-	console.log('收到数据:', data)
+  console.log('收到数据:', data)
 })
 
 // ✅ 方案三：用 AbortController 统一管理（推荐）
 const controller = new AbortController()
 
 emitter.on(
-	'data',
-	(data) => console.log(data),
-	{ signal: controller.signal }, // 绑定了信号
+  'data',
+  (data) => console.log(data),
+  { signal: controller.signal }, // 绑定了信号
 )
 
 res.on('finish', () => {
-	controller.abort() // 一键清理所有相关监听器
+  controller.abort() // 一键清理所有相关监听器
 })
 ```
 
@@ -381,13 +381,13 @@ res.on('finish', () => {
 ```javascript
 // ❌ 错误示例：定时器泄露
 function startTask(data) {
-	// 创建定时器，每秒发送一次状态
-	const timer = setInterval(() => {
-		// data 会一直被 timer 引用着
-		process.send(data.status)
-	}, 1000)
+  // 创建定时器，每秒发送一次状态
+  const timer = setInterval(() => {
+    // data 会一直被 timer 引用着
+    process.send(data.status)
+  }, 1000)
 
-	// ❌ 如果没有对应的 clearInterval，timer 永远不会停
+  // ❌ 如果没有对应的 clearInterval，timer 永远不会停
 }
 
 // 如果 startTask 被调用了 100 次
@@ -412,41 +412,41 @@ startTask({ status: '任务100' })
 const activeTimers = new Map()
 
 function startTask(taskId, data) {
-	const timer = setInterval(() => {
-		process.send({ taskId, status: data.status })
-	}, 1000)
+  const timer = setInterval(() => {
+    process.send({ taskId, status: data.status })
+  }, 1000)
 
-	activeTimers.set(taskId, timer)
-	return timer
+  activeTimers.set(taskId, timer)
+  return timer
 }
 
 function stopTask(taskId) {
-	const timer = activeTimers.get(taskId)
-	if (timer) {
-		clearInterval(timer)
-		activeTimers.delete(taskId)
-	}
+  const timer = activeTimers.get(taskId)
+  if (timer) {
+    clearInterval(timer)
+    activeTimers.delete(taskId)
+  }
 }
 
 // ✅ 方案二：用 setTimeout 递归实现，更灵活
 async function safeRepeatTask(data) {
-	await processData(data)
+  await processData(data)
 
-	// 用 setTimeout 递归，条件满足时自然停止
-	if (shouldContinue(data)) {
-		setTimeout(() => safeRepeatTask(data), 1000)
-	}
+  // 用 setTimeout 递归，条件满足时自然停止
+  if (shouldContinue(data)) {
+    setTimeout(() => safeRepeatTask(data), 1000)
+  }
 }
 
 // ✅ 方案三：用 AbortController
 const controller = new AbortController()
 
 setInterval(
-	() => {
-		process.send(data.status)
-	},
-	1000,
-	{ signal: controller.signal },
+  () => {
+    process.send(data.status)
+  },
+  1000,
+  { signal: controller.signal },
 )
 
 // 需要停止时
@@ -464,18 +464,18 @@ import fs from 'node:fs'
 
 // ❌ 错误示例：流泄露
 function processFile(filePath) {
-	const stream = fs.createReadStream(filePath)
+  const stream = fs.createReadStream(filePath)
 
-	stream.on('data', (chunk) => {
-		// 处理数据...
-		processChunk(chunk)
-	})
+  stream.on('data', (chunk) => {
+    // 处理数据...
+    processChunk(chunk)
+  })
 
-	// ❌ 如果中途报错，或者流程中断
-	// error/close 事件可能没触发
-	// stream 就一直开着，文件描述符不释放
+  // ❌ 如果中途报错，或者流程中断
+  // error/close 事件可能没触发
+  // stream 就一直开着，文件描述符不释放
 
-	// 更糟的是：缓冲区可能还占着内存
+  // 更糟的是：缓冲区可能还占着内存
 }
 
 // 比如这样调用
@@ -496,18 +496,18 @@ processFile('huge-file-2.bin')
 import fs from 'node:fs'
 
 async function processFileSafely(filePath) {
-	const stream = fs.createReadStream(filePath)
+  const stream = fs.createReadStream(filePath)
 
-	try {
-		for await (const chunk of stream) {
-			await processChunk(chunk)
-		}
-		// 自动到达这里表示正常结束
-	} catch (error) {
-		console.error('处理文件失败:', filePath, error)
-		// 发生错误时主动销毁流
-		stream.destroy()
-	}
+  try {
+    for await (const chunk of stream) {
+      await processChunk(chunk)
+    }
+    // 自动到达这里表示正常结束
+  } catch (error) {
+    console.error('处理文件失败:', filePath, error)
+    // 发生错误时主动销毁流
+    stream.destroy()
+  }
 }
 
 // ✅ 或者用 pipeline 自动管理
@@ -515,13 +515,13 @@ import { pipeline } from 'node:stream/promises'
 import { createGzip } from 'node:zlib'
 
 async function compressFile(input, output) {
-	try {
-		await pipeline(fs.createReadStream(input), createGzip(), fs.createWriteStream(output))
-		console.log('压缩完成:', input)
-	} catch (error) {
-		console.error('压缩失败:', error)
-		// pipeline 会自动关闭所有流
-	}
+  try {
+    await pipeline(fs.createReadStream(input), createGzip(), fs.createWriteStream(output))
+    console.log('压缩完成:', input)
+  } catch (error) {
+    console.error('压缩失败:', error)
+    // pipeline 会自动关闭所有流
+  }
 }
 
 // ✅ 也可以用 AbortController
@@ -546,13 +546,13 @@ controller.abort()
 const userCache = new Map() // 模块顶层定义，跨请求持久存在
 
 export async function getUserData(userId) {
-	if (userCache.has(userId)) {
-		return userCache.get(userId)
-	}
+  if (userCache.has(userId)) {
+    return userCache.get(userId)
+  }
 
-	const data = await fetchUserData(userId)
-	userCache.set(userId, data) // 问题在这里！
-	return data
+  const data = await fetchUserData(userId)
+  userCache.set(userId, data) // 问题在这里！
+  return data
 }
 ```
 
@@ -578,39 +578,39 @@ import { LRUCache } from 'lru-cache'
 // 最多 500 条，超过就自动清理最老的
 // 每条数据 10 分钟后自动过期
 const userCache = new LRUCache({
-	max: 500, // 最多存 500 条
-	ttl: 1000 * 60 * 10, // 每条 10 分钟后过期
+  max: 500, // 最多存 500 条
+  ttl: 1000 * 60 * 10, // 每条 10 分钟后过期
 })
 
 export async function getUserData(userId) {
-	if (userCache.has(userId)) {
-		return userCache.get(userId)
-	}
+  if (userCache.has(userId)) {
+    return userCache.get(userId)
+  }
 
-	const data = await fetchUserData(userId)
-	userCache.set(userId, data)
-	return data
+  const data = await fetchUserData(userId)
+  userCache.set(userId, data)
+  return data
 }
 
 // ✅ 方案二：设置 TTL 的 Map（简单实现）
 const userCacheWithTTL = new Map()
 
 export async function getUserDataWithTTL(userId) {
-	const cached = userCacheWithTTL.get(userId)
+  const cached = userCacheWithTTL.get(userId)
 
-	// 检查是否过期
-	if (cached && Date.now() - cached.timestamp < 10 * 60 * 1000) {
-		return cached.data
-	}
+  // 检查是否过期
+  if (cached && Date.now() - cached.timestamp < 10 * 60 * 1000) {
+    return cached.data
+  }
 
-	const data = await fetchUserData(userId)
-	userCacheWithTTL.set(userId, {
-		data,
-		timestamp: Date.now(),
-	})
+  const data = await fetchUserData(userId)
+  userCacheWithTTL.set(userId, {
+    data,
+    timestamp: Date.now(),
+  })
 
-	// 定期清理过期数据（可以用定时器或按需清理）
-	return data
+  // 定期清理过期数据（可以用定时器或按需清理）
+  return data
 }
 
 // ✅ 方案三：使用 Redis 等外部缓存（生产推荐）
@@ -619,14 +619,14 @@ import { createClient } from 'redis'
 const redis = createClient()
 
 export async function getUserDataFromRedis(userId) {
-	const cached = await redis.get(`user:${userId}`)
-	if (cached) {
-		return JSON.parse(cached)
-	}
+  const cached = await redis.get(`user:${userId}`)
+  if (cached) {
+    return JSON.parse(cached)
+  }
 
-	const data = await fetchUserData(userId)
-	await redis.setEx(`user:${userId}`, 600, JSON.stringify(data)) // 10分钟过期
-	return data
+  const data = await fetchUserData(userId)
+  await redis.setEx(`user:${userId}`, 600, JSON.stringify(data)) // 10分钟过期
+  return data
 }
 ```
 
@@ -665,21 +665,21 @@ const { signal } = controller
 const emitter = new EventEmitter()
 
 emitter.on(
-	'data',
-	(data) => {
-		console.log('收到数据:', data)
-	},
-	{ signal }, // 关键：绑定了信号
+  'data',
+  (data) => {
+    console.log('收到数据:', data)
+  },
+  { signal }, // 关键：绑定了信号
 )
 
 // 用法二：控制定时器
 setTimeout(5000, '时间到！', { signal })
-	.then(console.log)
-	.catch((err) => {
-		if (err.name === 'AbortError') {
-			console.log('定时器被取消了')
-		}
-	})
+  .then(console.log)
+  .catch((err) => {
+    if (err.name === 'AbortError') {
+      console.log('定时器被取消了')
+    }
+  })
 
 // 用法三：控制 Stream
 const stream = Readable.from([1, 2, 3, 4, 5], { signal })
@@ -687,7 +687,7 @@ const stream = Readable.from([1, 2, 3, 4, 5], { signal })
 // 当需要清理时，一行代码全部搞定！
 // 比如请求结束时：
 res.on('finish', () => {
-	controller.abort() // 所有绑定了这个 signal 的资源全部自动清理
+  controller.abort() // 所有绑定了这个 signal 的资源全部自动清理
 })
 ```
 
@@ -712,21 +712,21 @@ res.on('finish', () => {
 ```javascript
 // 创建预警器
 const registry = new FinalizationRegistry((heldValue) => {
-	console.warn(`🔔 预警：对象 "${heldValue}" 已被 GC 回收`)
+  console.warn(`🔔 预警：对象 "${heldValue}" 已被 GC 回收`)
 })
 
 function createSession(userId) {
-	const session = {
-		id: Math.random().toString(36).slice(2),
-		userId,
-		data: Buffer.alloc(1024 * 1024), // 模拟占用 1MB
-	}
+  const session = {
+    id: Math.random().toString(36).slice(2),
+    userId,
+    data: Buffer.alloc(1024 * 1024), // 模拟占用 1MB
+  }
 
-	// 注册监控
-	// 当 session 被 GC 回收时，会触发回调
-	registry.register(session, `Session_${session.id}`)
+  // 注册监控
+  // 当 session 被 GC 回收时，会触发回调
+  registry.register(session, `Session_${session.id}`)
 
-	return session
+  return session
 }
 
 // 模拟使用
@@ -808,14 +808,14 @@ node --inspect app.js
 ```javascript
 // 定期打印内存使用情况
 setInterval(() => {
-	const mem = process.memoryUsage()
+  const mem = process.memoryUsage()
 
-	console.log({
-		heapUsed: `${Math.round(mem.heapUsed / 1024 / 1024)}MB`, // 堆已使用
-		heapTotal: `${Math.round(mem.heapTotal / 1024 / 1024)}MB`, // 堆总量
-		rss: `${Math.round(mem.rss / 1024 / 1024)}MB`, // 进程占用总内存
-		external: `${Math.round(mem.external / 1024 / 1024)}MB`, // C++ 对象内存
-	})
+  console.log({
+    heapUsed: `${Math.round(mem.heapUsed / 1024 / 1024)}MB`, // 堆已使用
+    heapTotal: `${Math.round(mem.heapTotal / 1024 / 1024)}MB`, // 堆总量
+    rss: `${Math.round(mem.rss / 1024 / 1024)}MB`, // 进程占用总内存
+    external: `${Math.round(mem.external / 1024 / 1024)}MB`, // C++ 对象内存
+  })
 }, 10000)
 ```
 
@@ -834,11 +834,11 @@ node --expose-gc app.js
 ```javascript
 // 在代码中手动触发 GC
 if (global.gc) {
-	console.log('手动触发 GC 前的内存:', process.memoryUsage().heapUsed)
-	global.gc() // 强制执行一次完整 GC
-	console.log('手动触发 GC 后的内存:', process.memoryUsage().heapUsed)
+  console.log('手动触发 GC 前的内存:', process.memoryUsage().heapUsed)
+  global.gc() // 强制执行一次完整 GC
+  console.log('手动触发 GC 后的内存:', process.memoryUsage().heapUsed)
 } else {
-	console.warn('GC 未暴露，请用 --expose-gc 启动')
+  console.warn('GC 未暴露，请用 --expose-gc 启动')
 }
 ```
 
@@ -919,10 +919,10 @@ clinic doctor -- node app.js
 const cache = new WeakMap()
 
 function processObject(obj) {
-	if (!cache.has(obj)) {
-		cache.set(obj, expensiveOperation(obj))
-	}
-	return cache.get(obj)
+  if (!cache.has(obj)) {
+    cache.set(obj, expensiveOperation(obj))
+  }
+  return cache.get(obj)
 }
 // 当 obj 不再被其他地方引用时，cache 自动清空
 
@@ -939,8 +939,8 @@ global.userCache = new Map()
 
 // ✅ 好：用完即弃
 function getUserData(userId) {
-	const cache = new Map() // 函数内局部变量
-	// ...
+  const cache = new Map() // 函数内局部变量
+  // ...
 } // 函数结束，cache 自动清理
 ```
 
@@ -976,9 +976,9 @@ controller.abort()
 import { LRUCache } from 'lru-cache'
 
 const cache = new LRUCache({
-	max: 1000, // 最多 1000 条
-	ttl: 1000 * 60 * 5, // 5 分钟后过期
-	maxSize: 1000 * 1024 * 1024, // 最大 1GB
+  max: 1000, // 最多 1000 条
+  ttl: 1000 * 60 * 5, // 5 分钟后过期
+  maxSize: 1000 * 1024 * 1024, // 最大 1GB
 })
 ```
 

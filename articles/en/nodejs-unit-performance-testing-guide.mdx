@@ -137,7 +137,7 @@ Let's start with the simplest possible example.
  * @returns {number} Sum of the two numbers
  */
 export function add(a, b) {
-	return a + b
+  return a + b
 }
 
 /**
@@ -147,7 +147,7 @@ export function add(a, b) {
  * @returns {number} Difference
  */
 export function subtract(a, b) {
-	return a - b
+  return a - b
 }
 
 /**
@@ -157,7 +157,7 @@ export function subtract(a, b) {
  * @returns {number} Product
  */
 export function multiply(a, b) {
-	return a * b
+  return a * b
 }
 
 /**
@@ -168,10 +168,10 @@ export function multiply(a, b) {
  * @throws {Error} Division by zero not allowed
  */
 export function divide(a, b) {
-	if (b === 0) {
-		throw new Error('Division by zero')
-	}
-	return a / b
+  if (b === 0) {
+    throw new Error('Division by zero')
+  }
+  return a / b
 }
 ```
 
@@ -183,63 +183,63 @@ import assert from 'node:assert'
 import { add, subtract, multiply, divide } from '../math.js'
 
 describe('Calculator Module Tests', () => {
-	// ===== Addition Tests =====
-	describe('add function', () => {
-		it('should return the sum of two positive numbers', () => {
-			// Arrange
-			const a = 2
-			const b = 3
-			const expected = 5
+  // ===== Addition Tests =====
+  describe('add function', () => {
+    it('should return the sum of two positive numbers', () => {
+      // Arrange
+      const a = 2
+      const b = 3
+      const expected = 5
 
-			// Act
-			const result = add(a, b)
+      // Act
+      const result = add(a, b)
 
-			// Assert
-			assert.strictEqual(result, expected)
-		})
+      // Assert
+      assert.strictEqual(result, expected)
+    })
 
-		it('should handle negative numbers correctly', () => {
-			assert.strictEqual(add(-1, 1), 0)
-			assert.strictEqual(add(-5, -3), -8)
-		})
+    it('should handle negative numbers correctly', () => {
+      assert.strictEqual(add(-1, 1), 0)
+      assert.strictEqual(add(-5, -3), -8)
+    })
 
-		it('should handle zero correctly', () => {
-			assert.strictEqual(add(0, 0), 0)
-			assert.strictEqual(add(5, 0), 5)
-		})
+    it('should handle zero correctly', () => {
+      assert.strictEqual(add(0, 0), 0)
+      assert.strictEqual(add(5, 0), 5)
+    })
 
-		it('should handle decimal numbers', () => {
-			assert.strictEqual(add(0.1, 0.2), 0.3)
-		})
-	})
+    it('should handle decimal numbers', () => {
+      assert.strictEqual(add(0.1, 0.2), 0.3)
+    })
+  })
 
-	// ===== Subtraction Tests =====
-	describe('subtract function', () => {
-		it('should return the difference of two numbers', () => {
-			assert.strictEqual(subtract(5, 3), 2)
-			assert.strictEqual(subtract(3, 5), -2)
-		})
-	})
+  // ===== Subtraction Tests =====
+  describe('subtract function', () => {
+    it('should return the difference of two numbers', () => {
+      assert.strictEqual(subtract(5, 3), 2)
+      assert.strictEqual(subtract(3, 5), -2)
+    })
+  })
 
-	// ===== Multiplication Tests =====
-	describe('multiply function', () => {
-		it('should return the product of two numbers', () => {
-			assert.strictEqual(multiply(3, 4), 12)
-			assert.strictEqual(multiply(-2, 3), -6)
-		})
-	})
+  // ===== Multiplication Tests =====
+  describe('multiply function', () => {
+    it('should return the product of two numbers', () => {
+      assert.strictEqual(multiply(3, 4), 12)
+      assert.strictEqual(multiply(-2, 3), -6)
+    })
+  })
 
-	// ===== Division Tests =====
-	describe('divide function', () => {
-		it('should return the quotient of two numbers', () => {
-			assert.strictEqual(divide(10, 2), 5)
-		})
+  // ===== Division Tests =====
+  describe('divide function', () => {
+    it('should return the quotient of two numbers', () => {
+      assert.strictEqual(divide(10, 2), 5)
+    })
 
-		// Edge case: division by zero
-		it('should throw error when divisor is zero', () => {
-			assert.throws(() => divide(10, 0), /Division by zero/)
-		})
-	})
+    // Edge case: division by zero
+    it('should throw error when divisor is zero', () => {
+      assert.throws(() => divide(10, 0), /Division by zero/)
+    })
+  })
 })
 ```
 
@@ -363,8 +363,8 @@ Mocha is just a test runner by itself—you need to bring your own assertions an
 import axios from 'axios'
 
 export async function fetchUser(userId) {
-	const response = await axios.get(`/api/users/${userId}`)
-	return response.data
+  const response = await axios.get(`/api/users/${userId}`)
+  return response.data
 }
 ```
 
@@ -377,41 +377,41 @@ import { fetchUser } from './api.js'
 
 // Mock axios
 describe('fetchUser', () => {
-	let stub
+  let stub
 
-	beforeEach(() => {
-		// Create a new stub before each test
-		stub = sinon.stub(axios, 'get')
-	})
+  beforeEach(() => {
+    // Create a new stub before each test
+    stub = sinon.stub(axios, 'get')
+  })
 
-	afterEach(() => {
-		// Restore stub after each test
-		stub.restore()
-	})
+  afterEach(() => {
+    // Restore stub after each test
+    stub.restore()
+  })
 
-	it('should successfully fetch user data', async () => {
-		// Arrange: set up mock return value
-		const mockUser = { id: 1, name: 'John' }
-		stub.resolves({ data: mockUser })
+  it('should successfully fetch user data', async () => {
+    // Arrange: set up mock return value
+    const mockUser = { id: 1, name: 'John' }
+    stub.resolves({ data: mockUser })
 
-		// Act
-		const result = await fetchUser(1)
+    // Act
+    const result = await fetchUser(1)
 
-		// Assert
-		expect(result).to.deep.equal(mockUser)
-		expect(stub.calledOnce).to.be.true
-		expect(stub.calledWith('/api/users/1')).to.be.true
-	})
+    // Assert
+    expect(result).to.deep.equal(mockUser)
+    expect(stub.calledOnce).to.be.true
+    expect(stub.calledWith('/api/users/1')).to.be.true
+  })
 
-	it('should return null when user not found', async () => {
-		// Arrange: simulate 404 response
-		const error = new Error('Request failed with status 404')
-		error.response = { status: 404 }
-		stub.rejects(error)
+  it('should return null when user not found', async () => {
+    // Arrange: simulate 404 response
+    const error = new Error('Request failed with status 404')
+    error.response = { status: 404 }
+    stub.rejects(error)
 
-		// Act & Assert
-		await expect(fetchUser(999)).to.eventually.be.rejected
-	})
+    // Act & Assert
+    await expect(fetchUser(999)).to.eventually.be.rejected
+  })
 })
 ```
 
@@ -426,15 +426,15 @@ Jest's biggest strength is **batteries included**—assertions, mocks, coverage,
 ```javascript
 // user.js
 export function createUser(name, email) {
-	if (!name || !email) {
-		throw new Error('Name and email are required')
-	}
-	return {
-		id: Date.now(),
-		name,
-		email,
-		createdAt: new Date().toISOString(),
-	}
+  if (!name || !email) {
+    throw new Error('Name and email are required')
+  }
+  return {
+    id: Date.now(),
+    name,
+    email,
+    createdAt: new Date().toISOString(),
+  }
 }
 ```
 
@@ -443,23 +443,23 @@ export function createUser(name, email) {
 import { createUser } from './user.js'
 
 describe('createUser', () => {
-	test('should return object with id, name, email', () => {
-		const user = createUser('John', 'john@example.com')
+  test('should return object with id, name, email', () => {
+    const user = createUser('John', 'john@example.com')
 
-		// Jest's built-in matchers
-		expect(user).toHaveProperty('id')
-		expect(user).toHaveProperty('name', 'John')
-		expect(user).toHaveProperty('email', 'john@example.com')
-		expect(user).toHaveProperty('createdAt')
-	})
+    // Jest's built-in matchers
+    expect(user).toHaveProperty('id')
+    expect(user).toHaveProperty('name', 'John')
+    expect(user).toHaveProperty('email', 'john@example.com')
+    expect(user).toHaveProperty('createdAt')
+  })
 
-	test('should throw error for empty name', () => {
-		expect(() => createUser('', 'test@example.com')).toThrow('Name and email are required')
-	})
+  test('should throw error for empty name', () => {
+    expect(() => createUser('', 'test@example.com')).toThrow('Name and email are required')
+  })
 
-	test('should throw error for empty email', () => {
-		expect(() => createUser('John', '')).toThrow('Name and email are required')
-	})
+  test('should throw error for empty email', () => {
+    expect(() => createUser('John', '')).toThrow('Name and email are required')
+  })
 })
 ```
 
@@ -474,18 +474,18 @@ Vitest bills itself as "the next-generation testing framework built on Vite," co
 ```javascript
 // arrayUtils.js
 export function filterByStatus(items, status) {
-	return items.filter((item) => item.status === status)
+  return items.filter((item) => item.status === status)
 }
 
 export function groupByCategory(items) {
-	return items.reduce((acc, item) => {
-		const key = item.category
-		if (!acc[key]) {
-			acc[key] = []
-		}
-		acc[key].push(item)
-		return acc
-	}, {})
+  return items.reduce((acc, item) => {
+    const key = item.category
+    if (!acc[key]) {
+      acc[key] = []
+    }
+    acc[key].push(item)
+    return acc
+  }, {})
 }
 ```
 
@@ -495,34 +495,34 @@ import { describe, it, expect } from 'vitest'
 import { filterByStatus, groupByCategory } from './arrayUtils.js'
 
 describe('Array utility functions', () => {
-	const mockItems = [
-		{ id: 1, status: 'active', category: 'A' },
-		{ id: 2, status: 'inactive', category: 'A' },
-		{ id: 3, status: 'active', category: 'B' },
-	]
+  const mockItems = [
+    { id: 1, status: 'active', category: 'A' },
+    { id: 2, status: 'inactive', category: 'A' },
+    { id: 3, status: 'active', category: 'B' },
+  ]
 
-	describe('filterByStatus', () => {
-		it('should filter items by specified status', () => {
-			const result = filterByStatus(mockItems, 'active')
-			expect(result).toHaveLength(2)
-			expect(result.every((item) => item.status === 'active')).toBe(true)
-		})
+  describe('filterByStatus', () => {
+    it('should filter items by specified status', () => {
+      const result = filterByStatus(mockItems, 'active')
+      expect(result).toHaveLength(2)
+      expect(result.every((item) => item.status === 'active')).toBe(true)
+    })
 
-		it('should return empty array when no match', () => {
-			const result = filterByStatus(mockItems, 'deleted')
-			expect(result).toHaveLength(0)
-		})
-	})
+    it('should return empty array when no match', () => {
+      const result = filterByStatus(mockItems, 'deleted')
+      expect(result).toHaveLength(0)
+    })
+  })
 
-	describe('groupByCategory', () => {
-		it('should group items by category', () => {
-			const result = groupByCategory(mockItems)
-			expect(result).toHaveProperty('A')
-			expect(result).toHaveProperty('B')
-			expect(result['A']).toHaveLength(2)
-			expect(result['B']).toHaveLength(1)
-		})
-	})
+  describe('groupByCategory', () => {
+    it('should group items by category', () => {
+      const result = groupByCategory(mockItems)
+      expect(result).toHaveProperty('A')
+      expect(result).toHaveProperty('B')
+      expect(result['A']).toHaveLength(2)
+      expect(result['B']).toHaveLength(1)
+    })
+  })
 })
 ```
 
@@ -536,9 +536,9 @@ Real-world development often requires testing async code (database queries, API 
 
 ```javascript
 it('should asynchronously fetch user list', async () => {
-	const users = await getUsers()
-	expect(users).to.be.an('array')
-	expect(users.length).to.be.greaterThan(0)
+  const users = await getUsers()
+  expect(users).to.be.an('array')
+  expect(users.length).to.be.greaterThan(0)
 })
 ```
 
@@ -546,35 +546,35 @@ it('should asynchronously fetch user list', async () => {
 
 ```javascript
 describe('Database-related tests', () => {
-	// Run once before all tests start
-	before(async () => {
-		console.log('Connecting to database...')
-		await db.connect()
-	})
+  // Run once before all tests start
+  before(async () => {
+    console.log('Connecting to database...')
+    await db.connect()
+  })
 
-	// Run once after all tests finish
-	after(async () => {
-		console.log('Closing database connection...')
-		await db.close()
-	})
+  // Run once after all tests finish
+  after(async () => {
+    console.log('Closing database connection...')
+    await db.close()
+  })
 
-	// Run before each test
-	beforeEach(() => {
-		console.log('Clearing test data...')
-		db.clear()
-	})
+  // Run before each test
+  beforeEach(() => {
+    console.log('Clearing test data...')
+    db.clear()
+  })
 
-	// Run after each test
-	afterEach(() => {
-		console.log('Cleaning up temporary files from tests...')
-		cleanupTempFiles()
-	})
+  // Run after each test
+  afterEach(() => {
+    console.log('Cleaning up temporary files from tests...')
+    cleanupTempFiles()
+  })
 
-	// Actual test cases
-	it('should create user correctly', async () => {
-		const user = await db.users.create({ name: 'Test User' })
-		expect(user.id).to.exist
-	})
+  // Actual test cases
+  it('should create user correctly', async () => {
+    const user = await db.users.create({ name: 'Test User' })
+    expect(user.id).to.exist
+  })
 })
 ```
 
@@ -623,9 +623,9 @@ flowchart TD
 ```javascript
 // userService.js
 export async function getUserWithPosts(userId) {
-	const user = await fetchUser(userId)
-	const posts = await fetchPosts(userId)
-	return { user, posts }
+  const user = await fetchUser(userId)
+  const posts = await fetchPosts(userId)
+  return { user, posts }
 }
 ```
 
@@ -638,40 +638,40 @@ import { fetchUser, fetchPosts } from './api.js'
 jest.mock('./api.js')
 
 describe('getUserWithPosts', () => {
-	beforeEach(() => {
-		jest.clearAllMocks() // Clear mock records before each test
-	})
+  beforeEach(() => {
+    jest.clearAllMocks() // Clear mock records before each test
+  })
 
-	it('should return user and their posts', async () => {
-		// Stub: preset return values
-		fetchUser.mockResolvedValue({ id: 1, name: 'John' })
-		fetchPosts.mockResolvedValue([{ id: 1, title: 'First Post' }])
+  it('should return user and their posts', async () => {
+    // Stub: preset return values
+    fetchUser.mockResolvedValue({ id: 1, name: 'John' })
+    fetchPosts.mockResolvedValue([{ id: 1, title: 'First Post' }])
 
-		const result = await getUserWithPosts(1)
+    const result = await getUserWithPosts(1)
 
-		expect(result.user.name).toBe('John')
-		expect(result.posts).toHaveLength(1)
+    expect(result.user.name).toBe('John')
+    expect(result.posts).toHaveLength(1)
 
-		// Verify function was called
-		expect(fetchUser).toHaveBeenCalledWith(1)
-		expect(fetchPosts).toHaveBeenCalledWith(1)
-	})
+    // Verify function was called
+    expect(fetchUser).toHaveBeenCalledWith(1)
+    expect(fetchPosts).toHaveBeenCalledWith(1)
+  })
 
-	it('should return null when user not found', async () => {
-		fetchUser.mockResolvedValue(null)
-		fetchPosts.mockResolvedValue([])
+  it('should return null when user not found', async () => {
+    fetchUser.mockResolvedValue(null)
+    fetchPosts.mockResolvedValue([])
 
-		const result = await getUserWithPosts(999)
+    const result = await getUserWithPosts(999)
 
-		expect(result.user).toBeNull()
-		expect(result.posts).toHaveLength(0)
-	})
+    expect(result.user).toBeNull()
+    expect(result.posts).toHaveLength(0)
+  })
 
-	it('should throw error on API failure', async () => {
-		fetchUser.mockRejectedValue(new Error('Network error'))
+  it('should throw error on API failure', async () => {
+    fetchUser.mockRejectedValue(new Error('Network error'))
 
-		await expect(getUserWithPosts(1)).rejects.toThrow('Network error')
-	})
+    await expect(getUserWithPosts(1)).rejects.toThrow('Network error')
+  })
 })
 ```
 
@@ -1099,22 +1099,22 @@ scenarios:
 const fs = require('fs')
 
 module.exports = {
-	// Custom processor: runs before request
-	onRequest: (request, userContext, events, done) => {
-		// Add random delay to simulate real user
-		const delay = Math.random() * 1000
-		setTimeout(() => done(), delay)
-	},
+  // Custom processor: runs before request
+  onRequest: (request, userContext, events, done) => {
+    // Add random delay to simulate real user
+    const delay = Math.random() * 1000
+    setTimeout(() => done(), delay)
+  },
 
-	// Custom processor: runs after response
-	afterResponse: (request, response, userContext, events, done) => {
-		// Log response time
-		events.log({
-			type: 'custom',
-			message: `Response time: ${response.elapsedTime}ms`,
-		})
-		done()
-	},
+  // Custom processor: runs after response
+  afterResponse: (request, response, userContext, events, done) => {
+    // Log response time
+    events.log({
+      type: 'custom',
+      message: `Response time: ${response.elapsedTime}ms`,
+    })
+    done()
+  },
 }
 ```
 
@@ -1150,34 +1150,34 @@ import { check, sleep } from 'k6'
 
 // Test configuration
 export const options = {
-	stages: [
-		// Gradually increase to 10 users within 1 minute
-		{ duration: '1m', target: 10 },
-		// Sustain for 3 minutes
-		{ duration: '3m', target: 10 },
-		// Decrease to 0 within 1 minute
-		{ duration: '1m', target: 0 },
-	],
-	thresholds: {
-		// P95 response time must be under 500ms
-		http_req_duration: ['p(95)<500'],
-		// Failure rate must be under 1%
-		http_req_failed: ['rate<0.01'],
-	},
+  stages: [
+    // Gradually increase to 10 users within 1 minute
+    { duration: '1m', target: 10 },
+    // Sustain for 3 minutes
+    { duration: '3m', target: 10 },
+    // Decrease to 0 within 1 minute
+    { duration: '1m', target: 0 },
+  ],
+  thresholds: {
+    // P95 response time must be under 500ms
+    http_req_duration: ['p(95)<500'],
+    // Failure rate must be under 1%
+    http_req_failed: ['rate<0.01'],
+  },
 }
 
 export default function () {
-	// Send GET request
-	const res = http.get('http://localhost:3000/api/users')
+  // Send GET request
+  const res = http.get('http://localhost:3000/api/users')
 
-	// Check response status
-	check(res, {
-		'status is 200': (r) => r.status === 200,
-		'response has users': (r) => r.json('data').length > 0,
-	})
+  // Check response status
+  check(res, {
+    'status is 200': (r) => r.status === 200,
+    'response has users': (r) => r.json('data').length > 0,
+  })
 
-	// Think time: wait 1 second
-	sleep(1)
+  // Think time: wait 1 second
+  sleep(1)
 }
 ```
 
@@ -1223,17 +1223,17 @@ const errorRate = new Rate('errors')
 
 // Test configuration
 export const options = {
-	stages: [
-		{ duration: '2m', target: 50 }, // Ramp to 50 users in 2 minutes
-		{ duration: '5m', target: 50 }, // Sustain for 5 minutes
-		{ duration: '2m', target: 0 }, // Ramp down in 2 minutes
-	],
-	thresholds: {
-		http_req_duration: ['p(95)<200'], // P95 < 200ms
-		login_duration: ['p(95)<100'], // Login P95 < 100ms
-		order_duration: ['p(95)<500'], // Order P95 < 500ms
-		errors: ['rate<0.05'], // Error rate < 5%
-	},
+  stages: [
+    { duration: '2m', target: 50 }, // Ramp to 50 users in 2 minutes
+    { duration: '5m', target: 50 }, // Sustain for 5 minutes
+    { duration: '2m', target: 0 }, // Ramp down in 2 minutes
+  ],
+  thresholds: {
+    http_req_duration: ['p(95)<200'], // P95 < 200ms
+    login_duration: ['p(95)<100'], // Login P95 < 100ms
+    order_duration: ['p(95)<500'], // Order P95 < 500ms
+    errors: ['rate<0.05'], // Error rate < 5%
+  },
 }
 
 // Read config from environment variables
@@ -1241,73 +1241,73 @@ const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000'
 
 // Test scenarios
 export default function () {
-	// ===== Scenario 1: User Login =====
-	const loginRes = http.post(
-		`${BASE_URL}/api/auth/login`,
-		JSON.stringify({
-			username: `user${__VU}`, // __VU is the virtual user ID
-			password: 'test123',
-		}),
-		{
-			headers: { 'Content-Type': 'application/json' },
-			tags: { name: 'login' },
-		},
-	)
+  // ===== Scenario 1: User Login =====
+  const loginRes = http.post(
+    `${BASE_URL}/api/auth/login`,
+    JSON.stringify({
+      username: `user${__VU}`, // __VU is the virtual user ID
+      password: 'test123',
+    }),
+    {
+      headers: { 'Content-Type': 'application/json' },
+      tags: { name: 'login' },
+    },
+  )
 
-	loginDuration.add(loginRes.timings.duration)
+  loginDuration.add(loginRes.timings.duration)
 
-	check(loginRes, {
-		'login successful': (r) => r.status === 200,
-		'has token': (r) => r.json('token') !== undefined,
-	}) || errorRate.add(1)
+  check(loginRes, {
+    'login successful': (r) => r.status === 200,
+    'has token': (r) => r.json('token') !== undefined,
+  }) || errorRate.add(1)
 
-	const token = loginRes.json('token')
-	const headers = {
-		Authorization: `Bearer ${token}`,
-		'Content-Type': 'application/json',
-	}
+  const token = loginRes.json('token')
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  }
 
-	sleep(1)
+  sleep(1)
 
-	// ===== Scenario 2: Get product list =====
-	const productsRes = http.get(`${BASE_URL}/api/products`, {
-		headers,
-		tags: { name: 'products' },
-	})
+  // ===== Scenario 2: Get product list =====
+  const productsRes = http.get(`${BASE_URL}/api/products`, {
+    headers,
+    tags: { name: 'products' },
+  })
 
-	check(productsRes, {
-		'products loaded': (r) => r.status === 200,
-		'has products': (r) => r.json('data').length > 0,
-	}) || errorRate.add(1)
+  check(productsRes, {
+    'products loaded': (r) => r.status === 200,
+    'has products': (r) => r.json('data').length > 0,
+  }) || errorRate.add(1)
 
-	// Randomly select a product
-	const products = productsRes.json('data')
-	const randomProduct = products[Math.floor(Math.random() * products.length)]
+  // Randomly select a product
+  const products = productsRes.json('data')
+  const randomProduct = products[Math.floor(Math.random() * products.length)]
 
-	sleep(1)
+  sleep(1)
 
-	// ===== Scenario 3: Create order =====
-	const orderRes = http.post(
-		`${BASE_URL}/api/orders`,
-		JSON.stringify({
-			productId: randomProduct.id,
-			quantity: Math.floor(Math.random() * 3) + 1,
-		}),
-		{
-			headers,
-			tags: { name: 'order' },
-		},
-	)
+  // ===== Scenario 3: Create order =====
+  const orderRes = http.post(
+    `${BASE_URL}/api/orders`,
+    JSON.stringify({
+      productId: randomProduct.id,
+      quantity: Math.floor(Math.random() * 3) + 1,
+    }),
+    {
+      headers,
+      tags: { name: 'order' },
+    },
+  )
 
-	orderDuration.add(orderRes.timings.duration)
+  orderDuration.add(orderRes.timings.duration)
 
-	check(orderRes, {
-		'order created': (r) => r.status === 201,
-		'has orderId': (r) => r.json('orderId') !== undefined,
-	}) || errorRate.add(1)
+  check(orderRes, {
+    'order created': (r) => r.status === 201,
+    'has orderId': (r) => r.json('orderId') !== undefined,
+  }) || errorRate.add(1)
 
-	// Think time
-	sleep(2)
+  // Think time
+  sleep(2)
 }
 ```
 

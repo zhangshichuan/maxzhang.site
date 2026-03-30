@@ -99,9 +99,9 @@ Essential for viewing complex data structures:
 
 ```javascript
 const users = [
-	{ id: 1, name: 'Alice', role: 'Admin' },
-	{ id: 2, name: 'Bob', role: 'User' },
-	{ id: 3, name: 'Charlie', role: 'User' },
+  { id: 1, name: 'Alice', role: 'Admin' },
+  { id: 2, name: 'Bob', role: 'User' },
+  { id: 3, name: 'Charlie', role: 'User' },
 ]
 
 // Normal print is a mess
@@ -129,15 +129,15 @@ Print the current call stack to understand function call chains:
 
 ```javascript
 function level3() {
-	console.trace('Reached here')
+  console.trace('Reached here')
 }
 
 function level2() {
-	level3()
+  level3()
 }
 
 function level1() {
-	level2()
+  level2()
 }
 
 level1()
@@ -177,8 +177,8 @@ console.time('fetch-data')
 
 // Simulate async operation
 setTimeout(() => {
-	console.timeEnd('fetch-data')
-	// Output: fetch-data: 2003.123ms
+  console.timeEnd('fetch-data')
+  // Output: fetch-data: 2003.123ms
 }, 2000)
 
 // Can also be nested
@@ -218,13 +218,13 @@ Control display depth when printing complex nested objects:
 
 ```javascript
 const bigObject = {
-	level1: {
-		level2: {
-			level3: {
-				value: 'Deep value',
-			},
-		},
-	},
+  level1: {
+    level2: {
+      level3: {
+        value: 'Deep value',
+      },
+    },
+  },
 }
 
 // Default might only show a few levels
@@ -267,9 +267,9 @@ import fs from 'node:fs'
 
 // Never do this!
 function logMessage(message) {
-	fs.appendFile('app.log', message + '\n', (err) => {
-		if (err) console.error('Write failed')
-	})
+  fs.appendFile('app.log', message + '\n', (err) => {
+    if (err) console.error('Write failed')
+  })
 }
 
 // Business code calls this repeatedly
@@ -307,8 +307,8 @@ logStream.write('Payment successful\n')
 
 // Close stream before program exits
 process.on('SIGINT', () => {
-	logStream.end()
-	process.exit(0)
+  logStream.end()
+  process.exit(0)
 })
 ```
 
@@ -322,12 +322,12 @@ process.on('SIGINT', () => {
 
 ```javascript
 function safeWrite(stream, message) {
-	if (!stream.write(message)) {
-		// Return false means buffer is full, wait for drain
-		stream.once('drain', () => {
-			stream.write(message)
-		})
-	}
+  if (!stream.write(message)) {
+    // Return false means buffer is full, wait for drain
+    stream.once('drain', () => {
+      stream.write(message)
+    })
+  }
 }
 ```
 
@@ -383,29 +383,29 @@ const app = express()
 
 // Request logging middleware
 app.use((req, res, next) => {
-	const start = Date.now()
+  const start = Date.now()
 
-	// Callback when request finishes
-	res.on('finish', () => {
-		const duration = Date.now() - start
+  // Callback when request finishes
+  res.on('finish', () => {
+    const duration = Date.now() - start
 
-		console.log(
-			JSON.stringify({
-				timestamp: new Date().toISOString(),
-				type: 'access',
-				method: req.method,
-				url: req.originalUrl,
-				status: res.statusCode,
-				duration, // Response time in milliseconds
-				ip: req.ip,
-				userAgent: req.get('User-Agent'),
-				userId: req.user?.id, // If user auth is implemented
-				traceId: req.headers['x-trace-id'], // Distributed tracing ID
-			}),
-		)
-	})
+    console.log(
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        type: 'access',
+        method: req.method,
+        url: req.originalUrl,
+        status: res.statusCode,
+        duration, // Response time in milliseconds
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        userId: req.user?.id, // If user auth is implemented
+        traceId: req.headers['x-trace-id'], // Distributed tracing ID
+      }),
+    )
+  })
 
-	next()
+  next()
 })
 ```
 
@@ -428,52 +428,52 @@ When Node.js acts as a BFF layer calling backend services, log complete call inf
 
 ```javascript
 async function callBackend(serviceUrl, params, options = {}) {
-	const start = Date.now()
-	const requestId = crypto.randomUUID()
+  const start = Date.now()
+  const requestId = crypto.randomUUID()
 
-	try {
-		const response = await axios.post(serviceUrl, params, {
-			headers: {
-				'X-Request-ID': requestId,
-				...options.headers,
-			},
-			timeout: options.timeout || 5000,
-		})
+  try {
+    const response = await axios.post(serviceUrl, params, {
+      headers: {
+        'X-Request-ID': requestId,
+        ...options.headers,
+      },
+      timeout: options.timeout || 5000,
+    })
 
-		const duration = Date.now() - start
+    const duration = Date.now() - start
 
-		console.log(
-			JSON.stringify({
-				type: 'backend_call',
-				requestId,
-				service: serviceUrl,
-				params: params, // Note: Must sanitize in production!
-				responseStatus: response.status,
-				duration,
-				timestamp: new Date().toISOString(),
-			}),
-		)
+    console.log(
+      JSON.stringify({
+        type: 'backend_call',
+        requestId,
+        service: serviceUrl,
+        params: params, // Note: Must sanitize in production!
+        responseStatus: response.status,
+        duration,
+        timestamp: new Date().toISOString(),
+      }),
+    )
 
-		return response.data
-	} catch (err) {
-		const duration = Date.now() - start
+    return response.data
+  } catch (err) {
+    const duration = Date.now() - start
 
-		console.error(
-			JSON.stringify({
-				type: 'backend_error',
-				requestId,
-				service: serviceUrl,
-				params: params,
-				error: err.message,
-				errorCode: err.code,
-				stack: err.stack,
-				duration,
-				timestamp: new Date().toISOString(),
-			}),
-		)
+    console.error(
+      JSON.stringify({
+        type: 'backend_error',
+        requestId,
+        service: serviceUrl,
+        params: params,
+        error: err.message,
+        errorCode: err.code,
+        stack: err.stack,
+        duration,
+        timestamp: new Date().toISOString(),
+      }),
+    )
 
-		throw err
-	}
+    throw err
+  }
 }
 ```
 
@@ -489,31 +489,31 @@ async function callBackend(serviceUrl, params, options = {}) {
 
 ```javascript
 app.get('/api/user/:id', async (req, res) => {
-	try {
-		const user = await getUser(req.params.id)
+  try {
+    const user = await getUser(req.params.id)
 
-		if (!user) {
-			return res.status(404).json({ error: 'User not found' })
-		}
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' })
+    }
 
-		res.json(user)
-	} catch (err) {
-		// Must log complete context!
-		console.error(
-			JSON.stringify({
-				type: 'error',
-				route: '/api/user/:id',
-				params: req.params,
-				query: req.query,
-				userId: req.user?.id,
-				error: err.message,
-				stack: err.stack,
-				timestamp: new Date().toISOString(),
-			}),
-		)
+    res.json(user)
+  } catch (err) {
+    // Must log complete context!
+    console.error(
+      JSON.stringify({
+        type: 'error',
+        route: '/api/user/:id',
+        params: req.params,
+        query: req.query,
+        userId: req.user?.id,
+        error: err.message,
+        stack: err.stack,
+        timestamp: new Date().toISOString(),
+      }),
+    )
 
-		res.status(500).json({ error: 'Internal Server Error' })
-	}
+    res.status(500).json({ error: 'Internal Server Error' })
+  }
 })
 ```
 
@@ -524,18 +524,18 @@ Promise.reject won't be caught by try/catch:
 ```javascript
 // This is wrong!
 try {
-	Promise.reject(new Error('async error'))
+  Promise.reject(new Error('async error'))
 } catch (err) {
-	// This will never execute
+  // This will never execute
 }
 
 // Correct写法
 async function wrong() {
-	try {
-		await Promise.reject(new Error('async error'))
-	} catch (err) {
-		console.error(err)
-	}
+  try {
+    await Promise.reject(new Error('async error'))
+  } catch (err) {
+    console.error(err)
+  }
 }
 
 // Or use .catch()
@@ -549,29 +549,29 @@ Set up the last line of defense for the process:
 ```javascript
 // Catch unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
-	console.error(
-		JSON.stringify({
-			type: 'unhandled_rejection',
-			reason: reason instanceof Error ? reason.message : reason,
-			stack: reason instanceof Error ? reason.stack : undefined,
-			timestamp: new Date().toISOString(),
-		}),
-	)
+  console.error(
+    JSON.stringify({
+      type: 'unhandled_rejection',
+      reason: reason instanceof Error ? reason.message : reason,
+      stack: reason instanceof Error ? reason.stack : undefined,
+      timestamp: new Date().toISOString(),
+    }),
+  )
 })
 
 // Catch unhandled exceptions
 process.on('uncaughtException', (err) => {
-	console.error(
-		JSON.stringify({
-			type: 'uncaught_exception',
-			error: err.message,
-			stack: err.stack,
-			timestamp: new Date().toISOString(),
-		}),
-	)
+  console.error(
+    JSON.stringify({
+      type: 'uncaught_exception',
+      error: err.message,
+      stack: err.stack,
+      timestamp: new Date().toISOString(),
+    }),
+  )
 
-	// For uncaught exceptions, usually need graceful exit
-	process.exit(1)
+  // For uncaught exceptions, usually need graceful exit
+  process.exit(1)
 })
 ```
 
@@ -584,68 +584,68 @@ Record state changes at critical business nodes:
 ```javascript
 // Order creation
 async function createOrder(orderData) {
-	const orderId = generateOrderId()
+  const orderId = generateOrderId()
 
-	console.log(
-		JSON.stringify({
-			type: 'business',
-			action: 'create_order_start',
-			orderId,
-			userId: orderData.userId,
-			productId: orderData.productId,
-			quantity: orderData.quantity,
-			totalPrice: orderData.totalPrice,
-			timestamp: new Date().toISOString(),
-		}),
-	)
+  console.log(
+    JSON.stringify({
+      type: 'business',
+      action: 'create_order_start',
+      orderId,
+      userId: orderData.userId,
+      productId: orderData.productId,
+      quantity: orderData.quantity,
+      totalPrice: orderData.totalPrice,
+      timestamp: new Date().toISOString(),
+    }),
+  )
 
-	try {
-		// Check inventory
-		const stockAvailable = await checkStock(orderData.productId, orderData.quantity)
+  try {
+    // Check inventory
+    const stockAvailable = await checkStock(orderData.productId, orderData.quantity)
 
-		if (!stockAvailable) {
-			console.log(
-				JSON.stringify({
-					type: 'business',
-					action: 'create_order_failed',
-					orderId,
-					reason: 'stock_insufficient',
-					timestamp: new Date().toISOString(),
-				}),
-			)
-			throw new Error('Insufficient stock')
-		}
+    if (!stockAvailable) {
+      console.log(
+        JSON.stringify({
+          type: 'business',
+          action: 'create_order_failed',
+          orderId,
+          reason: 'stock_insufficient',
+          timestamp: new Date().toISOString(),
+        }),
+      )
+      throw new Error('Insufficient stock')
+    }
 
-		// Reduce stock
-		await reduceStock(orderData.productId, orderData.quantity)
+    // Reduce stock
+    await reduceStock(orderData.productId, orderData.quantity)
 
-		// Create order
-		const order = await saveOrder(orderId, orderData)
+    // Create order
+    const order = await saveOrder(orderId, orderData)
 
-		console.log(
-			JSON.stringify({
-				type: 'business',
-				action: 'create_order_success',
-				orderId,
-				userId: orderData.userId,
-				totalPrice: orderData.totalPrice,
-				timestamp: new Date().toISOString(),
-			}),
-		)
+    console.log(
+      JSON.stringify({
+        type: 'business',
+        action: 'create_order_success',
+        orderId,
+        userId: orderData.userId,
+        totalPrice: orderData.totalPrice,
+        timestamp: new Date().toISOString(),
+      }),
+    )
 
-		return order
-	} catch (err) {
-		console.error(
-			JSON.stringify({
-				type: 'business',
-				action: 'create_order_error',
-				orderId,
-				error: err.message,
-				timestamp: new Date().toISOString(),
-			}),
-		)
-		throw err
-	}
+    return order
+  } catch (err) {
+    console.error(
+      JSON.stringify({
+        type: 'business',
+        action: 'create_order_error',
+        orderId,
+        error: err.message,
+        timestamp: new Date().toISOString(),
+      }),
+    )
+    throw err
+  }
 }
 ```
 
@@ -677,15 +677,15 @@ From low to high:
 
 ```json
 {
-	"timestamp": "2025-03-10T10:00:00.000Z",
-	"level": "info",
-	"service": "user-service",
-	"pid": 12345,
-	"hostname": "server-01",
-	"message": "User logged in",
-	"userId": "user_1001",
-	"ip": "192.168.1.100",
-	"requestId": "req_abc123"
+  "timestamp": "2025-03-10T10:00:00.000Z",
+  "level": "info",
+  "service": "user-service",
+  "pid": 12345,
+  "hostname": "server-01",
+  "message": "User logged in",
+  "userId": "user_1001",
+  "ip": "192.168.1.100",
+  "requestId": "req_abc123"
 }
 ```
 
@@ -708,20 +708,20 @@ Problems with string logs:
 ```javascript
 // Wrong
 function log(message) {
-	if (!message) {
-		throw new Error('message cannot be empty') // Logging throwing exceptions?
-	}
-	console.log(message)
+  if (!message) {
+    throw new Error('message cannot be empty') // Logging throwing exceptions?
+  }
+  console.log(message)
 }
 
 // Correct
 function log(message) {
-	try {
-		console.log(message)
-	} catch (err) {
-		// Logging failed, but business must continue
-		// Can try writing to a fallback location
-	}
+  try {
+    console.log(message)
+  } catch (err) {
+    // Logging failed, but business must continue
+    // Can try writing to a fallback location
+  }
 }
 ```
 
@@ -730,18 +730,18 @@ function log(message) {
 ```javascript
 // Wrong
 function logUser(user) {
-	console.log(user)
-	user.lastLogged = new Date() // Side effect!
-	db.save(user) // Changed data because of logging
+  console.log(user)
+  user.lastLogged = new Date() // Side effect!
+  db.save(user) // Changed data because of logging
 }
 
 // Correct
 function logUser(user) {
-	console.log({
-		id: user.id,
-		name: user.name,
-		// Only print needed info, don't modify original object
-	})
+  console.log({
+    id: user.id,
+    name: user.name,
+    // Only print needed info, don't modify original object
+  })
 }
 ```
 
@@ -759,20 +759,20 @@ These must be sanitized:
 
 ```javascript
 function sanitizeObject(obj) {
-	const sensitiveFields = ['password', 'token', 'secret', 'apiKey']
-	const sanitized = { ...obj }
+  const sensitiveFields = ['password', 'token', 'secret', 'apiKey']
+  const sanitized = { ...obj }
 
-	for (const field of sensitiveFields) {
-		if (sanitized[field]) {
-			if (sanitized[field].length > 10) {
-				sanitized[field] = sanitized[field].slice(0, 5) + '...' + sanitized[field].slice(-5)
-			} else {
-				sanitized[field] = '***'
-			}
-		}
-	}
+  for (const field of sensitiveFields) {
+    if (sanitized[field]) {
+      if (sanitized[field].length > 10) {
+        sanitized[field] = sanitized[field].slice(0, 5) + '...' + sanitized[field].slice(-5)
+      } else {
+        sanitized[field] = '***'
+      }
+    }
+  }
 
-	return sanitized
+  return sanitized
 }
 ```
 
@@ -909,17 +909,17 @@ console.log(chalk`{red Error:} {green Success:} {blue Info:}`)
 import ProgressBar from 'progress'
 
 const bar = new ProgressBar('Downloading: [:bar] :percent :etas', {
-	total: 100,
-	width: 40,
+  total: 100,
+  width: 40,
 })
 
 const timer = setInterval(() => {
-	bar.tick()
+  bar.tick()
 
-	if (bar.complete) {
-		clearInterval(timer)
-		console.log('\nDownload complete!')
-	}
+  if (bar.complete) {
+    clearInterval(timer)
+    console.log('\nDownload complete!')
+  }
 }, 100)
 ```
 
@@ -935,26 +935,26 @@ Downloading: [████████████████████] 80% 
 import inquirer from 'inquirer'
 
 async function askQuestions() {
-	const answers = await inquirer.prompt([
-		{
-			type: 'input',
-			name: 'name',
-			message: 'What is your name?',
-		},
-		{
-			type: 'list',
-			name: 'color',
-			message: 'What is your favorite color?',
-			choices: ['Red', 'Green', 'Blue'],
-		},
-		{
-			type: 'confirm',
-			name: 'confirm',
-			message: 'Do you want to continue?',
-		},
-	])
+  const answers = await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'name',
+      message: 'What is your name?',
+    },
+    {
+      type: 'list',
+      name: 'color',
+      message: 'What is your favorite color?',
+      choices: ['Red', 'Green', 'Blue'],
+    },
+    {
+      type: 'confirm',
+      name: 'confirm',
+      message: 'Do you want to continue?',
+    },
+  ])
 
-	console.log('Your answers:', answers)
+  console.log('Your answers:', answers)
 }
 
 askQuestions()
@@ -970,18 +970,18 @@ const screen = blessed.screen()
 
 // Create line chart
 const line = contrib.line({
-	label: 'Request Statistics',
-	showLegend: true,
-	legend: { width: 20 },
+  label: 'Request Statistics',
+  showLegend: true,
+  legend: { width: 20 },
 })
 
 screen.append(line)
 
 // Update data
 setInterval(() => {
-	const data = Math.random() * 100
-	line.setData([{ x: ['00:00', '00:01', '00:02'], y: [10, 20, data] }])
-	screen.render()
+  const data = Math.random() * 100
+  line.setData([{ x: ['00:00', '00:01', '00:02'], y: [10, 20, data] }])
+  screen.render()
 }, 1000)
 ```
 
@@ -995,21 +995,21 @@ const program = new Command()
 program.name('myapp').description('My CLI Tool').version('1.0.0')
 
 program
-	.command('serve')
-	.description('Start the server')
-	.option('-p, --port <number>', 'Port number', 3000)
-	.option('-d, --debug', 'Enable debug mode')
-	.action((options) => {
-		console.log('Starting server on port:', options.port)
-		console.log('Debug mode:', options.debug)
-	})
+  .command('serve')
+  .description('Start the server')
+  .option('-p, --port <number>', 'Port number', 3000)
+  .option('-d, --debug', 'Enable debug mode')
+  .action((options) => {
+    console.log('Starting server on port:', options.port)
+    console.log('Debug mode:', options.debug)
+  })
 
 program
-	.command('init')
-	.description('Initialize project')
-	.action(() => {
-		console.log('Initializing...')
-	})
+  .command('init')
+  .description('Initialize project')
+  .action(() => {
+    console.log('Initializing...')
+  })
 
 program.parse()
 ```
@@ -1028,11 +1028,11 @@ myapp --version
 import cfonts from 'cfonts'
 
 cfonts.say('Hello World!', {
-	font: 'block', // Font: block, huge, simple
-	colors: ['blue', 'yellow'], // Gradient colors
-	background: 'black', // Background color
-	align: 'center', // Alignment
-	letterSpacing: 1,
+  font: 'block', // Font: block, huge, simple
+  colors: ['blue', 'yellow'], // Gradient colors
+  background: 'black', // Background color
+  align: 'center', // Alignment
+  letterSpacing: 1,
 })
 ```
 
@@ -1165,12 +1165,12 @@ Pino is the fastest Node.js logger, 10x faster than winston:
 import pino from 'pino'
 
 const logger = pino({
-	level: 'info', // Log info and above only
-	base: {
-		service: 'user-service', // Add common fields
-		pid: process.pid,
-	},
-	timestamp: pino.stdTimeFunctions.isoTime, // ISO format time
+  level: 'info', // Log info and above only
+  base: {
+    service: 'user-service', // Add common fields
+    pid: process.pid,
+  },
+  timestamp: pino.stdTimeFunctions.isoTime, // ISO format time
 })
 
 // Usage
@@ -1195,36 +1195,36 @@ import { ElasticsearchTransport } from 'winston-elasticsearch'
 
 // Create logger
 const logger = winston.createLogger({
-	level: 'info',
-	format: winston.format.combine(
-		winston.format.timestamp(),
-		winston.format.json(), // JSON format
-	),
-	defaultMeta: { service: 'user-service' },
-	transports: [
-		// File output
-		new winston.transports.File({
-			filename: 'logs/error.log',
-			level: 'error',
-		}),
-		new winston.transports.File({
-			filename: 'logs/combined.log',
-		}),
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json(), // JSON format
+  ),
+  defaultMeta: { service: 'user-service' },
+  transports: [
+    // File output
+    new winston.transports.File({
+      filename: 'logs/error.log',
+      level: 'error',
+    }),
+    new winston.transports.File({
+      filename: 'logs/combined.log',
+    }),
 
-		// Console output (colorful for development)
-		new winston.transports.Console({
-			format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
-		}),
+    // Console output (colorful for development)
+    new winston.transports.Console({
+      format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
+    }),
 
-		// Elasticsearch output
-		new ElasticsearchTransport({
-			level: 'info',
-			clientOpts: {
-				node: 'http://elasticsearch:9200',
-			},
-			indexPrefix: 'myapp',
-		}),
-	],
+    // Elasticsearch output
+    new ElasticsearchTransport({
+      level: 'info',
+      clientOpts: {
+        node: 'http://elasticsearch:9200',
+      },
+      indexPrefix: 'myapp',
+    }),
+  ],
 })
 ```
 
@@ -1354,9 +1354,9 @@ Can also add manually:
 
 ```javascript
 Sentry.setUser({
-	id: 'user_123',
-	email: 'user@example.com',
-	username: 'john_doe',
+  id: 'user_123',
+  email: 'user@example.com',
+  username: 'john_doe',
 })
 
 Sentry.setTag('version', '1.0.0')
@@ -1389,20 +1389,20 @@ npm install @sentry/node
 import * as Sentry from '@sentry/node'
 
 Sentry.init({
-	dsn: 'https://your-dsn@sentry.io/project-id',
-	environment: process.env.NODE_ENV,
-	release: process.env.APP_VERSION,
+  dsn: 'https://your-dsn@sentry.io/project-id',
+  environment: process.env.NODE_ENV,
+  release: process.env.APP_VERSION,
 
-	// Sample rate: 1.0 = 100%, 0.1 = 10%
-	tracesSampleRate: 1.0,
+  // Sample rate: 1.0 = 100%, 0.1 = 10%
+  tracesSampleRate: 1.0,
 
-	// Custom sample rate
-	tracesSampler: (samplingContext) => {
-		if (samplingContext.transactionContext.name === '/health') {
-			return 0 // Don't sample health checks
-		}
-		return 0.1
-	},
+  // Custom sample rate
+  tracesSampler: (samplingContext) => {
+    if (samplingContext.transactionContext.name === '/health') {
+      return 0 // Don't sample health checks
+    }
+    return 0.1
+  },
 })
 
 // Use with Express
@@ -1419,10 +1419,10 @@ Sentry.setupExpressErrorHandler(app)
 ```javascript
 // Capture exception
 try {
-	riskyOperation()
+  riskyOperation()
 } catch (err) {
-	Sentry.captureException(err)
-	throw err // Still throw for other handlers
+  Sentry.captureException(err)
+  throw err // Still throw for other handlers
 }
 
 // Capture message (not an exception)
@@ -1430,13 +1430,13 @@ Sentry.captureMessage('Something went wrong', 'warning')
 
 // Capture custom event
 Sentry.captureEvent({
-	message: 'Custom event',
-	contexts: {
-		custom: {
-			orderId: '123',
-			action: 'checkout',
-		},
-	},
+  message: 'Custom event',
+  contexts: {
+    custom: {
+      orderId: '123',
+      action: 'checkout',
+    },
+  },
 })
 ```
 
@@ -1445,18 +1445,18 @@ Sentry.captureEvent({
 ```javascript
 // Create transaction
 const transaction = Sentry.startTransaction({
-	op: 'task',
-	name: 'Process Order',
+  op: 'task',
+  name: 'Process Order',
 })
 
 try {
-	await processOrder()
-	transaction.setStatus('ok')
+  await processOrder()
+  transaction.setStatus('ok')
 } catch (err) {
-	transaction.setStatus('error')
-	Sentry.captureException(err)
+  transaction.setStatus('error')
+  Sentry.captureException(err)
 } finally {
-	transaction.finish()
+  transaction.finish()
 }
 ```
 

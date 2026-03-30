@@ -63,8 +63,8 @@ const buffer = Buffer.alloc(1024 * 1024) // 1MB buffer
 
 // Closures also occupy heap memory
 function createCounter() {
-	let count = 0 // This variable exists in the heap because the closure references it
-	return () => ++count
+  let count = 0 // This variable exists in the heap because the closure references it
+  return () => ++count
 }
 ```
 
@@ -255,15 +255,15 @@ Closures can "remember" variables from outer functions. But if the closure is he
 import fs from 'node:fs'
 
 function createLeakingClosure() {
-	// Create a large buffer
-	const hugeBuffer = Buffer.alloc(1024 * 1024 * 10) // 10MB
+  // Create a large buffer
+  const hugeBuffer = Buffer.alloc(1024 * 1024 * 10) // 10MB
 
-	// Return a closure
-	return () => {
-		// Closure only uses one byte of hugeBuffer
-		// But the entire 10MB is held by the closure!
-		console.log(hugeBuffer[0])
-	}
+  // Return a closure
+  return () => {
+    // Closure only uses one byte of hugeBuffer
+    // But the entire 10MB is held by the closure!
+    console.log(hugeBuffer[0])
+  }
 }
 
 // This leak variable will persist forever
@@ -282,13 +282,13 @@ Think of it like a photograph. If someone appears in a photo, even if you only w
 ```javascript
 // ✅ Correct example: Safe closure
 function createSafeClosure() {
-	let hugeBuffer = Buffer.alloc(1024 * 1024 * 10)
+  let hugeBuffer = Buffer.alloc(1024 * 1024 * 10)
 
-	return () => {
-		if (!hugeBuffer) return // Already released
-		console.log(hugeBuffer[0])
-		hugeBuffer = null // Manually release reference!
-	}
+  return () => {
+    if (!hugeBuffer) return // Already released
+    console.log(hugeBuffer[0])
+    hugeBuffer = null // Manually release reference!
+  }
 }
 ```
 
@@ -308,18 +308,18 @@ const globalEmitter = new EventEmitter()
 
 // Request handler
 export async function handleRequest(req, res) {
-	const onData = (data) => {
-		console.log('Received data:', data)
-	}
+  const onData = (data) => {
+    console.log('Received data:', data)
+  }
 
-	// Add listener on every request
-	globalEmitter.on('update', onData)
+  // Add listener on every request
+  globalEmitter.on('update', onData)
 
-	// Request ends...
-	res.end('OK')
+  // Request ends...
+  res.end('OK')
 
-	// ❌ Forgot to remove the listener!
-	// This onData function stays attached to globalEmitter forever
+  // ❌ Forgot to remove the listener!
+  // This onData function stays attached to globalEmitter forever
 }
 ```
 
@@ -339,36 +339,36 @@ Like a restaurant where every guest arrival causes a waiter to stand by waiting 
 ```javascript
 // ✅ Solution 1: Remove when done
 export async function handleRequest(req, res) {
-	const onData = (data) => {
-		console.log('Received data:', data)
-	}
+  const onData = (data) => {
+    console.log('Received data:', data)
+  }
 
-	globalEmitter.on('update', onData)
+  globalEmitter.on('update', onData)
 
-	// Remove when request ends or response completes
-	res.on('finish', () => {
-		globalEmitter.off('update', onData)
-	})
+  // Remove when request ends or response completes
+  res.on('finish', () => {
+    globalEmitter.off('update', onData)
+  })
 
-	res.end('OK')
+  res.end('OK')
 }
 
 // ✅ Solution 2: Use once for single trigger
 globalEmitter.once('update', (data) => {
-	console.log('Received data:', data)
+  console.log('Received data:', data)
 })
 
 // ✅ Solution 3: Use AbortController for unified management (recommended)
 const controller = new AbortController()
 
 emitter.on(
-	'data',
-	(data) => console.log(data),
-	{ signal: controller.signal }, // Bound to signal
+  'data',
+  (data) => console.log(data),
+  { signal: controller.signal }, // Bound to signal
 )
 
 res.on('finish', () => {
-	controller.abort() // Clean up all related listeners in one line
+  controller.abort() // Clean up all related listeners in one line
 })
 ```
 
@@ -381,13 +381,13 @@ res.on('finish', () => {
 ```javascript
 // ❌ Bad example: Timer leak
 function startTask(data) {
-	// Create timer that sends status every second
-	const timer = setInterval(() => {
-		// data will always be referenced by the timer
-		process.send(data.status)
-	}, 1000)
+  // Create timer that sends status every second
+  const timer = setInterval(() => {
+    // data will always be referenced by the timer
+    process.send(data.status)
+  }, 1000)
 
-	// ❌ If there's no corresponding clearInterval, timer never stops
+  // ❌ If there's no corresponding clearInterval, timer never stops
 }
 
 // If startTask is called 100 times
@@ -412,41 +412,41 @@ Like booking 100 couriers who deliver packages every hour. But you don't need th
 const activeTimers = new Map()
 
 function startTask(taskId, data) {
-	const timer = setInterval(() => {
-		process.send({ taskId, status: data.status })
-	}, 1000)
+  const timer = setInterval(() => {
+    process.send({ taskId, status: data.status })
+  }, 1000)
 
-	activeTimers.set(taskId, timer)
-	return timer
+  activeTimers.set(taskId, timer)
+  return timer
 }
 
 function stopTask(taskId) {
-	const timer = activeTimers.get(taskId)
-	if (timer) {
-		clearInterval(timer)
-		activeTimers.delete(taskId)
-	}
+  const timer = activeTimers.get(taskId)
+  if (timer) {
+    clearInterval(timer)
+    activeTimers.delete(taskId)
+  }
 }
 
 // ✅ Solution 2: Use recursive setTimeout for more flexibility
 async function safeRepeatTask(data) {
-	await processData(data)
+  await processData(data)
 
-	// Recursive setTimeout with condition check
-	if (shouldContinue(data)) {
-		setTimeout(() => safeRepeatTask(data), 1000)
-	}
+  // Recursive setTimeout with condition check
+  if (shouldContinue(data)) {
+    setTimeout(() => safeRepeatTask(data), 1000)
+  }
 }
 
 // ✅ Solution 3: Use AbortController
 const controller = new AbortController()
 
 setInterval(
-	() => {
-		process.send(data.status)
-	},
-	1000,
-	{ signal: controller.signal },
+  () => {
+    process.send(data.status)
+  },
+  1000,
+  { signal: controller.signal },
 )
 
 // When you need to stop
@@ -464,18 +464,18 @@ import fs from 'node:fs'
 
 // ❌ Bad example: Stream leak
 function processFile(filePath) {
-	const stream = fs.createReadStream(filePath)
+  const stream = fs.createReadStream(filePath)
 
-	stream.on('data', (chunk) => {
-		// Process data...
-		processChunk(chunk)
-	})
+  stream.on('data', (chunk) => {
+    // Process data...
+    processChunk(chunk)
+  })
 
-	// ❌ If an error occurs mid-process or flow is interrupted
-	// error/close events might not fire
-	// Stream stays open, file descriptor not released
+  // ❌ If an error occurs mid-process or flow is interrupted
+  // error/close events might not fire
+  // Stream stays open, file descriptor not released
 
-	// Worse: internal buffers may still occupy memory
+  // Worse: internal buffers may still occupy memory
 }
 
 // Like calling this
@@ -496,18 +496,18 @@ Like opening many doors to grab things, but halfway through发现不对，又去
 import fs from 'node:fs'
 
 async function processFileSafely(filePath) {
-	const stream = fs.createReadStream(filePath)
+  const stream = fs.createReadStream(filePath)
 
-	try {
-		for await (const chunk of stream) {
-			await processChunk(chunk)
-		}
-		// Automatically reaches here on normal completion
-	} catch (error) {
-		console.error('File processing failed:', filePath, error)
-		// Actively destroy stream on error
-		stream.destroy()
-	}
+  try {
+    for await (const chunk of stream) {
+      await processChunk(chunk)
+    }
+    // Automatically reaches here on normal completion
+  } catch (error) {
+    console.error('File processing failed:', filePath, error)
+    // Actively destroy stream on error
+    stream.destroy()
+  }
 }
 
 // ✅ Or use pipeline for automatic management
@@ -515,13 +515,13 @@ import { pipeline } from 'node:stream/promises'
 import { createGzip } from 'node:zlib'
 
 async function compressFile(input, output) {
-	try {
-		await pipeline(fs.createReadStream(input), createGzip(), fs.createWriteStream(output))
-		console.log('Compression complete:', input)
-	} catch (error) {
-		console.error('Compression failed:', error)
-		// pipeline automatically closes all streams
-	}
+  try {
+    await pipeline(fs.createReadStream(input), createGzip(), fs.createWriteStream(output))
+    console.log('Compression complete:', input)
+  } catch (error) {
+    console.error('Compression failed:', error)
+    // pipeline automatically closes all streams
+  }
 }
 
 // ✅ Or use AbortController
@@ -546,13 +546,13 @@ In SSR (Server-Side Rendering) frameworks like Next.js and Nuxt.js, singleton pa
 const userCache = new Map() // Module-level definition, persists across requests
 
 export async function getUserData(userId) {
-	if (userCache.has(userId)) {
-		return userCache.get(userId)
-	}
+  if (userCache.has(userId)) {
+    return userCache.get(userId)
+  }
 
-	const data = await fetchUserData(userId)
-	userCache.set(userId, data) // Problem here!
-	return data
+  const data = await fetchUserData(userId)
+  userCache.set(userId, data) // Problem here!
+  return data
 }
 ```
 
@@ -578,38 +578,38 @@ import { LRUCache } from 'lru-cache'
 // Max 500 items, auto-cleanup of oldest when exceeded
 // Each item expires after 10 minutes
 const userCache = new LRUCache({
-	max: 500, // Max 500 items
-	ttl: 1000 * 60 * 10, // 10 minute expiration
+  max: 500, // Max 500 items
+  ttl: 1000 * 60 * 10, // 10 minute expiration
 })
 
 export async function getUserData(userId) {
-	if (userCache.has(userId)) {
-		return userCache.get(userId)
-	}
+  if (userCache.has(userId)) {
+    return userCache.get(userId)
+  }
 
-	const data = await fetchUserData(userId)
-	userCache.set(userId, data)
-	return data
+  const data = await fetchUserData(userId)
+  userCache.set(userId, data)
+  return data
 }
 
 // ✅ Solution 2: Simple Map with TTL
 const userCacheWithTTL = new Map()
 
 export async function getUserDataWithTTL(userId) {
-	const cached = userCacheWithTTL.get(userId)
+  const cached = userCacheWithTTL.get(userId)
 
-	// Check if expired
-	if (cached && Date.now() - cached.timestamp < 10 * 60 * 1000) {
-		return cached.data
-	}
+  // Check if expired
+  if (cached && Date.now() - cached.timestamp < 10 * 60 * 1000) {
+    return cached.data
+  }
 
-	const data = await fetchUserData(userId)
-	userCacheWithTTL.set(userId, {
-		data,
-		timestamp: Date.now(),
-	})
+  const data = await fetchUserData(userId)
+  userCacheWithTTL.set(userId, {
+    data,
+    timestamp: Date.now(),
+  })
 
-	return data
+  return data
 }
 
 // ✅ Solution 3: Use external cache like Redis (recommended for production)
@@ -618,14 +618,14 @@ import { createClient } from 'redis'
 const redis = createClient()
 
 export async function getUserDataFromRedis(userId) {
-	const cached = await redis.get(`user:${userId}`)
-	if (cached) {
-		return JSON.parse(cached)
-	}
+  const cached = await redis.get(`user:${userId}`)
+  if (cached) {
+    return JSON.parse(cached)
+  }
 
-	const data = await fetchUserData(userId)
-	await redis.setEx(`user:${userId}`, 600, JSON.stringify(data)) // 10 min expiration
-	return data
+  const data = await fetchUserData(userId)
+  await redis.setEx(`user:${userId}`, 600, JSON.stringify(data)) // 10 min expiration
+  return data
 }
 ```
 
@@ -664,21 +664,21 @@ const { signal } = controller
 const emitter = new EventEmitter()
 
 emitter.on(
-	'data',
-	(data) => {
-		console.log('Data received:', data)
-	},
-	{ signal }, // Key: bound to signal
+  'data',
+  (data) => {
+    console.log('Data received:', data)
+  },
+  { signal }, // Key: bound to signal
 )
 
 // Use case 2: Control timers
 setTimeout(5000, 'Time is up!', { signal })
-	.then(console.log)
-	.catch((err) => {
-		if (err.name === 'AbortError') {
-			console.log('Timer cancelled')
-		}
-	})
+  .then(console.log)
+  .catch((err) => {
+    if (err.name === 'AbortError') {
+      console.log('Timer cancelled')
+    }
+  })
 
 // Use case 3: Control Streams
 const stream = Readable.from([1, 2, 3, 4, 5], { signal })
@@ -686,7 +686,7 @@ const stream = Readable.from([1, 2, 3, 4, 5], { signal })
 // When you need to cleanup, one line handles everything!
 // For example, when request ends:
 res.on('finish', () => {
-	controller.abort() // All resources bound to this signal auto-cleanup
+  controller.abort() // All resources bound to this signal auto-cleanup
 })
 ```
 
@@ -711,21 +711,21 @@ When you register an object with a FinalizationRegistry, you'll get notified if 
 ```javascript
 // Create warning registry
 const registry = new FinalizationRegistry((heldValue) => {
-	console.warn(`🔔 Alert: Object "${heldValue}" has been GC'd`)
+  console.warn(`🔔 Alert: Object "${heldValue}" has been GC'd`)
 })
 
 function createSession(userId) {
-	const session = {
-		id: Math.random().toString(36).slice(2),
-		userId,
-		data: Buffer.alloc(1024 * 1024), // Simulate 1MB usage
-	}
+  const session = {
+    id: Math.random().toString(36).slice(2),
+    userId,
+    data: Buffer.alloc(1024 * 1024), // Simulate 1MB usage
+  }
 
-	// Register for monitoring
-	// When session is GC'd, callback fires
-	registry.register(session, `Session_${session.id}`)
+  // Register for monitoring
+  // When session is GC'd, callback fires
+  registry.register(session, `Session_${session.id}`)
 
-	return session
+  return session
 }
 
 // Simulate usage
@@ -807,14 +807,14 @@ Then:
 ```javascript
 // Print memory usage regularly
 setInterval(() => {
-	const mem = process.memoryUsage()
+  const mem = process.memoryUsage()
 
-	console.log({
-		heapUsed: `${Math.round(mem.heapUsed / 1024 / 1024)}MB`, // Heap used
-		heapTotal: `${Math.round(mem.heapTotal / 1024 / 1024)}MB`, // Heap total
-		rss: `${Math.round(mem.rss / 1024 / 1024)}MB`, // Process total memory
-		external: `${Math.round(mem.external / 1024 / 1024)}MB`, // C++ object memory
-	})
+  console.log({
+    heapUsed: `${Math.round(mem.heapUsed / 1024 / 1024)}MB`, // Heap used
+    heapTotal: `${Math.round(mem.heapTotal / 1024 / 1024)}MB`, // Heap total
+    rss: `${Math.round(mem.rss / 1024 / 1024)}MB`, // Process total memory
+    external: `${Math.round(mem.external / 1024 / 1024)}MB`, // C++ object memory
+  })
 }, 10000)
 ```
 
@@ -833,11 +833,11 @@ node --expose-gc app.js
 ```javascript
 // Trigger GC in code
 if (global.gc) {
-	console.log('Memory before manual GC:', process.memoryUsage().heapUsed)
-	global.gc() // Force full GC
-	console.log('Memory after manual GC:', process.memoryUsage().heapUsed)
+  console.log('Memory before manual GC:', process.memoryUsage().heapUsed)
+  global.gc() // Force full GC
+  console.log('Memory after manual GC:', process.memoryUsage().heapUsed)
 } else {
-	console.warn('GC not exposed, start with --expose-gc')
+  console.warn('GC not exposed, start with --expose-gc')
 }
 ```
 
@@ -918,10 +918,10 @@ clinic doctor -- node app.js
 const cache = new WeakMap()
 
 function processObject(obj) {
-	if (!cache.has(obj)) {
-		cache.set(obj, expensiveOperation(obj))
-	}
-	return cache.get(obj)
+  if (!cache.has(obj)) {
+    cache.set(obj, expensiveOperation(obj))
+  }
+  return cache.get(obj)
 }
 // When obj is no longer referenced elsewhere, cache auto-clears
 
@@ -938,8 +938,8 @@ global.userCache = new Map()
 
 // ✅ Good: Dispose after use
 function getUserData(userId) {
-	const cache = new Map() // Function-local variable
-	// ...
+  const cache = new Map() // Function-local variable
+  // ...
 } // Function ends, cache auto-cleans
 ```
 
@@ -975,9 +975,9 @@ controller.abort()
 import { LRUCache } from 'lru-cache'
 
 const cache = new LRUCache({
-	max: 1000, // Max 1000 items
-	ttl: 1000 * 60 * 5, // 5 minute expiration
-	maxSize: 1000 * 1024 * 1024, // Max 1GB
+  max: 1000, // Max 1000 items
+  ttl: 1000 * 60 * 5, // 5 minute expiration
+  maxSize: 1000 * 1024 * 1024, // Max 1GB
 })
 ```
 

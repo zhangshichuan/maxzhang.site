@@ -3,98 +3,98 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-	/* 字体定义 */
-	--font-sans:
-		system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif,
-		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-	--font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  /* 字体定义 */
+  --font-sans:
+    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif,
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 
-	/* 核心色彩映射 - Tailwind v4 使用 --color-* */
-	--color-background: var(--background);
-	--color-foreground: var(--foreground);
-	--color-primary: var(--primary);
-	--color-primary-foreground: var(--primary-foreground);
-	--color-secondary: var(--secondary);
-	--color-secondary-foreground: var(--secondary-foreground);
-	--color-muted: var(--muted);
-	--color-muted-foreground: var(--muted-foreground);
-	--color-accent: var(--accent);
-	--color-accent-foreground: var(--accent-foreground);
-	--color-destructive: var(--destructive);
-	--color-destructive-foreground: var(--destructive-foreground);
-	--color-border: var(--border);
-	--color-input: var(--input);
-	--color-ring: var(--ring);
+  /* 核心色彩映射 - Tailwind v4 使用 --color-* */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
-	--radius-lg: var(--radius);
-	--radius-md: calc(var(--radius) - 2px);
-	--radius-sm: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
 }
 
 :root {
-	--background: #fdfcf0;
-	--foreground: #1a1a1a;
-	--card: #ffffff;
-	--card-foreground: #1a1a1a;
-	--popover: #ffffff;
-	--popover-foreground: #1a1a1a;
-	--primary: #4755f4;
-	--primary-foreground: #ffffff;
-	--secondary: #fbe332;
-	--secondary-foreground: #1a1a1a;
-	--muted: #f1f1e6;
-	--muted-foreground: #666666;
-	--accent: #ff61d8;
-	--accent-foreground: #ffffff;
-	--destructive: #ff4747;
-	--destructive-foreground: #ffffff;
-	--border: #1a1a1a;
-	--input: #f1f1e6;
-	--ring: #4755f4;
-	--radius: 0.75rem;
-	--shadow-pop: 4px 4px 0px #1a1a1a;
-	--shadow-pop-hover: 6px 6px 0px #1a1a1a;
+  --background: #fdfcf0;
+  --foreground: #1a1a1a;
+  --card: #ffffff;
+  --card-foreground: #1a1a1a;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a1a;
+  --primary: #4755f4;
+  --primary-foreground: #ffffff;
+  --secondary: #fbe332;
+  --secondary-foreground: #1a1a1a;
+  --muted: #f1f1e6;
+  --muted-foreground: #666666;
+  --accent: #ff61d8;
+  --accent-foreground: #ffffff;
+  --destructive: #ff4747;
+  --destructive-foreground: #ffffff;
+  --border: #1a1a1a;
+  --input: #f1f1e6;
+  --ring: #4755f4;
+  --radius: 0.75rem;
+  --shadow-pop: 4px 4px 0px #1a1a1a;
+  --shadow-pop-hover: 6px 6px 0px #1a1a1a;
 }
 
 .dark {
-	--background: #0b0b10;
-	--foreground: #f0f0f0;
-	--card: #161620;
-	--card-foreground: #f0f0f0;
-	--popover: #161620;
-	--popover-foreground: #f0f0f0;
-	--primary: #6366f1;
-	--primary-foreground: #ffffff;
-	--secondary: #eab308;
-	--secondary-foreground: #000000;
-	--muted: #1e1e2d;
-	--muted-foreground: #a0a0b0;
-	--accent: #d946ef;
-	--accent-foreground: #ffffff;
-	--destructive: #ef4444;
-	--destructive-foreground: #ffffff;
-	--border: #2e2e3e;
-	--input: #1e1e2d;
-	--ring: #6366f1;
-	--shadow-pop: 4px 4px 0px #000000;
-	--shadow-pop-hover: 6px 6px 0px #000000;
+  --background: #0b0b10;
+  --foreground: #f0f0f0;
+  --card: #161620;
+  --card-foreground: #f0f0f0;
+  --popover: #161620;
+  --popover-foreground: #f0f0f0;
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+  --secondary: #eab308;
+  --secondary-foreground: #000000;
+  --muted: #1e1e2d;
+  --muted-foreground: #a0a0b0;
+  --accent: #d946ef;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #2e2e3e;
+  --input: #1e1e2d;
+  --ring: #6366f1;
+  --shadow-pop: 4px 4px 0px #000000;
+  --shadow-pop-hover: 6px 6px 0px #000000;
 }
 
 html,
 body {
-	overflow-x: hidden;
+  overflow-x: hidden;
 }
 
 body {
-	background-color: var(--background);
-	color: var(--foreground);
-	transition:
-		background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-		color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-	background-image: radial-gradient(var(--muted) 1px, transparent 1px);
-	background-size: 24px 24px;
+  background-color: var(--background);
+  color: var(--foreground);
+  transition:
+    background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background-image: radial-gradient(var(--muted) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 main {
-	min-height: calc(100vh - 4rem - 6rem);
+  min-height: calc(100vh - 4rem - 6rem);
 }

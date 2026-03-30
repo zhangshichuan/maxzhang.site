@@ -64,13 +64,13 @@ const myData: z.infer<typeof schema> = { name: 'test' }
 
 // 有satisfies - 如果忘记写某个字段，编译时就会报错
 const schema = z.object({
-	name: z.string(),
-	age: z.number(),
+  name: z.string(),
+  age: z.number(),
 })
 
 // 如果我们忘记了age字段，TypeScript会报错：缺少属性'age'
 const user = {
-	name: 'Alice',
+  name: 'Alice',
 } satisfies z.infer<typeof schema>
 ```
 
@@ -104,8 +104,8 @@ Zod是一个“数据验证库”。你可以定义数据“长什么样”，�
 import { z } from 'zod'
 
 const UserSchema = z.object({
-	username: z.string().min(1).max(20),
-	email: z.string().email().optional(),
+  username: z.string().min(1).max(20),
+  email: z.string().email().optional(),
 })
 
 type User = z.infer<typeof UserSchema>
@@ -341,10 +341,10 @@ import { type ZodObject, type ZodType, type ZodOptional, type ZodDefault } from 
  * 单个Ant Design Form.Item规则的结果类型
  */
 export interface AntdValidatorRule {
-	validator: (rule: unknown, value: unknown) => Promise<void>
-	message?: string
-	required?: boolean
-	type?: string
+  validator: (rule: unknown, value: unknown) => Promise<void>
+  message?: string
+  required?: boolean
+  type?: string
 }
 
 /**
@@ -360,113 +360,113 @@ export interface AntdValidatorRule {
  * - 错误消息自动格式化
  */
 export const createZodFormValidator = <T extends Record<string, unknown>>(
-	schema: ZodObject<T>,
+  schema: ZodObject<T>,
 ): Record<keyof T, AntdValidatorRule[]> => {
-	const rules = {} as Record<keyof T, AntdValidatorRule[]>
+  const rules = {} as Record<keyof T, AntdValidatorRule[]>
 
-	// 遍历schema中的每个字段
-	for (const key in schema.shape) {
-		const fieldSchema = schema.shape[key as keyof T]
-		rules[key as keyof T] = [createSingleFieldValidator(fieldSchema, key)]
-	}
+  // 遍历schema中的每个字段
+  for (const key in schema.shape) {
+    const fieldSchema = schema.shape[key as keyof T]
+    rules[key as keyof T] = [createSingleFieldValidator(fieldSchema, key)]
+  }
 
-	return rules
+  return rules
 }
 
 /**
  * 为单个字段创建验证器
  */
 const createSingleFieldValidator = (fieldSchema: ZodType<unknown>, fieldName: string): AntdValidatorRule => {
-	return {
-		validator: async (_rule: unknown, value: unknown) => {
-			// 处理空值
-			if (value === undefined || value === null || value === '') {
-				// 通过检查schema结构来判断字段是否可选
-				if (isOptionalSchema(fieldSchema)) {
-					return Promise.resolve()
-				}
-				return Promise.reject(new Error('此字段为必填项'))
-			}
+  return {
+    validator: async (_rule: unknown, value: unknown) => {
+      // 处理空值
+      if (value === undefined || value === null || value === '') {
+        // 通过检查schema结构来判断字段是否可选
+        if (isOptionalSchema(fieldSchema)) {
+          return Promise.resolve()
+        }
+        return Promise.reject(new Error('此字段为必填项'))
+      }
 
-			// 异步运行Zod验证
-			const result = await fieldSchema.safeParseAsync(value)
+      // 异步运行Zod验证
+      const result = await fieldSchema.safeParseAsync(value)
 
-			if (!result.success) {
-				// 获取第一个错误消息
-				const issue = result.error.issues[0]
-				const message = formatErrorMessage(issue, fieldName)
-				return Promise.reject(new Error(message))
-			}
+      if (!result.success) {
+        // 获取第一个错误消息
+        const issue = result.error.issues[0]
+        const message = formatErrorMessage(issue, fieldName)
+        return Promise.reject(new Error(message))
+      }
 
-			return Promise.resolve()
-		},
-	}
+      return Promise.resolve()
+    },
+  }
 }
 
 /**
  * 递归检查schema是否表示可选字段
  */
 const isOptionalSchema = (schema: ZodType<unknown>): boolean => {
-	const def = (schema as unknown as { _def: { innerType?: ZodType } })._def
+  const def = (schema as unknown as { _def: { innerType?: ZodType } })._def
 
-	// ZodOptional在innerType中包装了实际schema
-	if (def.innerType) {
-		return isOptionalSchema(def.innerType)
-	}
+  // ZodOptional在innerType中包装了实际schema
+  if (def.innerType) {
+    return isOptionalSchema(def.innerType)
+  }
 
-	// ZodDefault表示有默认值
-	if ((schema as unknown as { _def: { defaultValue?: unknown } })._def.defaultValue !== undefined) {
-		return true
-	}
+  // ZodDefault表示有默认值
+  if ((schema as unknown as { _def: { defaultValue?: unknown } })._def.defaultValue !== undefined) {
+    return true
+  }
 
-	return false
+  return false
 }
 
 /**
  * 将Zod错误代码转换为用户友好的消息
  */
 const formatErrorMessage = (
-	issue: { code: string; message: string; path: (string | number)[] },
-	fieldName: string,
+  issue: { code: string; message: string; path: (string | number)[] },
+  fieldName: string,
 ): string => {
-	// 人类可读的字段名称
-	const fieldLabels: Record<string, string> = {
-		username: '用户名',
-		password: '密码',
-		email: '邮箱',
-		confirmPassword: '确认密码',
-	}
+  // 人类可读的字段名称
+  const fieldLabels: Record<string, string> = {
+    username: '用户名',
+    password: '密码',
+    email: '邮箱',
+    confirmPassword: '确认密码',
+  }
 
-	const label = fieldLabels[fieldName] || fieldName
+  const label = fieldLabels[fieldName] || fieldName
 
-	switch (issue.code) {
-		case 'too_small':
-			if (issue.type === 'string') {
-				return `${label}长度不能少于${issue.minimum}个字符`
-			}
-			return `${label}不能为空`
+  switch (issue.code) {
+    case 'too_small':
+      if (issue.type === 'string') {
+        return `${label}长度不能少于${issue.minimum}个字符`
+      }
+      return `${label}不能为空`
 
-		case 'too_big':
-			if (issue.type === 'string') {
-				return `${label}长度不能超过${issue.maximum}个字符`
-			}
-			return `${label}超出范围`
+    case 'too_big':
+      if (issue.type === 'string') {
+        return `${label}长度不能超过${issue.maximum}个字符`
+      }
+      return `${label}超出范围`
 
-		case 'invalid_string':
-			if (issue.validation === 'email') {
-				return '请输入有效的邮箱地址'
-			}
-			if (issue.validation === 'regex') {
-				return `${label}格式不正确`
-			}
-			return `${label}格式不正确`
+    case 'invalid_string':
+      if (issue.validation === 'email') {
+        return '请输入有效的邮箱地址'
+      }
+      if (issue.validation === 'regex') {
+        return `${label}格式不正确`
+      }
+      return `${label}格式不正确`
 
-		case 'invalid_type':
-			return `${label}类型错误`
+    case 'invalid_type':
+      return `${label}类型错误`
 
-		default:
-			return issue.message || `${label}验证失败`
-	}
+    default:
+      return issue.message || `${label}验证失败`
+  }
 }
 ```
 
@@ -489,92 +489,92 @@ const { Title } = Typography
 const formRules = createZodFormValidator(userSchema)
 
 export default function RegisterForm() {
-	const [form] = Form.useForm<UserInput>()
-	const [loading, setLoading] = useState(false)
+  const [form] = Form.useForm<UserInput>()
+  const [loading, setLoading] = useState(false)
 
-	const onFinish = async (values: UserInput) => {
-		setLoading(true)
+  const onFinish = async (values: UserInput) => {
+    setLoading(true)
 
-		try {
-			// 发送到后端API
-			const response = await fetch('/api/register', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(values),
-			})
+    try {
+      // 发送到后端API
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      })
 
-			const data = await response.json()
+      const data = await response.json()
 
-			if (!response.ok) {
-				// 处理服务端验证错误
-				if (data.details) {
-					// 将服务端错误映射回表单字段
-					const fieldErrors = Object.entries(data.details).map(([name, errors]) => ({
-						name: name as keyof UserInput,
-						errors: errors as string[],
-					}))
-					form.setFields(fieldErrors)
-				} else {
-					message.error(data.error || '注册失败')
-				}
-				return
-			}
+      if (!response.ok) {
+        // 处理服务端验证错误
+        if (data.details) {
+          // 将服务端错误映射回表单字段
+          const fieldErrors = Object.entries(data.details).map(([name, errors]) => ({
+            name: name as keyof UserInput,
+            errors: errors as string[],
+          }))
+          form.setFields(fieldErrors)
+        } else {
+          message.error(data.error || '注册失败')
+        }
+        return
+      }
 
-			message.success('注册成功！')
-			form.resetFields()
-		} catch (error) {
-			message.error('网络错误，请稍后重试')
-		} finally {
-			setLoading(false)
-		}
-	}
+      message.success('注册成功！')
+      form.resetFields()
+    } catch (error) {
+      message.error('网络错误，请稍后重试')
+    } finally {
+      setLoading(false)
+    }
+  }
 
-	return (
-		<Card
-			style={{ width: 400 }}
-			bordered
-			title={
-				<Title level={4} style={{ margin: 0 }}>
-					创建账号
-				</Title>
-			}
-		>
-			<Form
-				form={form}
-				layout="vertical"
-				onFinish={onFinish}
-				autoComplete="off"
-				initialValues={{
-					email: '',
-				}}
-			>
-				<Form.Item
-					label="用户名"
-					name="username"
-					rules={formRules.username}
-					extra="只能包含字母、数字和下划线，最多30个字符"
-				>
-					<Input prefix={<UserOutlined />} placeholder="请输入用户名" maxLength={30} />
-				</Form.Item>
+  return (
+    <Card
+      style={{ width: 400 }}
+      bordered
+      title={
+        <Title level={4} style={{ margin: 0 }}>
+          创建账号
+        </Title>
+      }
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={onFinish}
+        autoComplete="off"
+        initialValues={{
+          email: '',
+        }}
+      >
+        <Form.Item
+          label="用户名"
+          name="username"
+          rules={formRules.username}
+          extra="只能包含字母、数字和下划线，最多30个字符"
+        >
+          <Input prefix={<UserOutlined />} placeholder="请输入用户名" maxLength={30} />
+        </Form.Item>
 
-				<Form.Item label="密码" name="password" rules={formRules.password} extra="至少8个字符">
-					<Input.Password prefix={<LockOutlined />} placeholder="请输入密码" />
-				</Form.Item>
+        <Form.Item label="密码" name="password" rules={formRules.password} extra="至少8个字符">
+          <Input.Password prefix={<LockOutlined />} placeholder="请输入密码" />
+        </Form.Item>
 
-				<Form.Item label="邮箱（选填）" name="email" rules={formRules.email}>
-					<Input prefix={<MailOutlined />} placeholder="your@email.com" />
-				</Form.Item>
+        <Form.Item label="邮箱（选填）" name="email" rules={formRules.email}>
+          <Input prefix={<MailOutlined />} placeholder="your@email.com" />
+        </Form.Item>
 
-				<Form.Item style={{ marginBottom: 0 }}>
-					<Button type="primary" htmlType="submit" loading={loading} block size="large">
-						注册
-					</Button>
-				</Form.Item>
-			</Form>
-		</Card>
-	)
+        <Form.Item style={{ marginBottom: 0 }}>
+          <Button type="primary" htmlType="submit" loading={loading} block size="large">
+            注册
+          </Button>
+        </Form.Item>
+      </Form>
+    </Card>
+  )
 }
 ```
 
@@ -591,83 +591,83 @@ import { db } from '@/lib/db'
 import { hashPassword } from '@/lib/auth'
 
 export async function POST(request: Request) {
-	try {
-		// 第一步：解析传入的JSON
-		const json = await request.json()
+  try {
+    // 第一步：解析传入的JSON
+    const json = await request.json()
 
-		// 第二步：使用Zod进行运行时验证
-		// safeParse返回 { success: true, data } 或 { success: false, error }
-		// 与parse()不同，它不会抛出异常
-		const result = userSchema.safeParse(json)
+    // 第二步：使用Zod进行运行时验证
+    // safeParse返回 { success: true, data } 或 { success: false, error }
+    // 与parse()不同，它不会抛出异常
+    const result = userSchema.safeParse(json)
 
-		if (!result.success) {
-			// 返回验证错误给客户端
-			return NextResponse.json(
-				{
-					error: '输入数据格式错误',
-					details: result.error.flatten().fieldErrors,
-				},
-				{ status: 400 },
-			)
-		}
+    if (!result.success) {
+      // 返回验证错误给客户端
+      return NextResponse.json(
+        {
+          error: '输入数据格式错误',
+          details: result.error.flatten().fieldErrors,
+        },
+        { status: 400 },
+      )
+    }
 
-		// 第三步：安全地解构数据
-		// TypeScript现在确切知道这个对象包含什么
-		const { username, password, email } = result.data
+    // 第三步：安全地解构数据
+    // TypeScript现在确切知道这个对象包含什么
+    const { username, password, email } = result.data
 
-		// 第四步：检查用户名是否已存在
-		const existingUser = await db.user.findUnique({
-			where: { username },
-			select: { id: true }, // 只查询我们需要的字段
-		})
+    // 第四步：检查用户名是否已存在
+    const existingUser = await db.user.findUnique({
+      where: { username },
+      select: { id: true }, // 只查询我们需要的字段
+    })
 
-		if (existingUser) {
-			return NextResponse.json({ error: '用户名已存在' }, { status: 409 })
-		}
+    if (existingUser) {
+      return NextResponse.json({ error: '用户名已存在' }, { status: 409 })
+    }
 
-		// 第五步：对密码进行加密（永远不要存储明文！）
-		const hashedPassword = await hashPassword(password)
+    // 第五步：对密码进行加密（永远不要存储明文！）
+    const hashedPassword = await hashPassword(password)
 
-		// 第六步：在数据库中创建用户
-		const newUser = await db.user.create({
-			data: {
-				username,
-				password: hashedPassword,
-				email: email || null,
-			},
-			select: {
-				id: true,
-				username: true,
-				createdAt: true,
-			},
-		})
+    // 第六步：在数据库中创建用户
+    const newUser = await db.user.create({
+      data: {
+        username,
+        password: hashedPassword,
+        email: email || null,
+      },
+      select: {
+        id: true,
+        username: true,
+        createdAt: true,
+      },
+    })
 
-		// 第七步：返回成功响应
-		return NextResponse.json(
-			{
-				message: '注册成功',
-				user: {
-					id: newUser.id,
-					username: newUser.username,
-				},
-			},
-			{ status: 201 },
-		)
-	} catch (error) {
-		// 记录实际错误（生产环境应使用专业的日志系统）
-		console.error('注册失败：', error)
+    // 第七步：返回成功响应
+    return NextResponse.json(
+      {
+        message: '注册成功',
+        user: {
+          id: newUser.id,
+          username: newUser.username,
+        },
+      },
+      { status: 201 },
+    )
+  } catch (error) {
+    // 记录实际错误（生产环境应使用专业的日志系统）
+    console.error('注册失败：', error)
 
-		// 处理特定错误类型
-		if (error instanceof Error) {
-			// Prisma唯一约束冲突
-			if (error.message.includes('Unique constraint')) {
-				return NextResponse.json({ error: '用户名已存在' }, { status: 409 })
-			}
-		}
+    // 处理特定错误类型
+    if (error instanceof Error) {
+      // Prisma唯一约束冲突
+      if (error.message.includes('Unique constraint')) {
+        return NextResponse.json({ error: '用户名已存在' }, { status: 409 })
+      }
+    }
 
-		// 通用错误响应（不要泄露内部细节）
-		return NextResponse.json({ error: '服务器内部错误' }, { status: 500 })
-	}
+    // 通用错误响应（不要泄露内部细节）
+    return NextResponse.json({ error: '服务器内部错误' }, { status: 500 })
+  }
 }
 ```
 
@@ -691,7 +691,7 @@ const SALT_ROUNDS = 12 // 越高越安全，但越慢
  * - 可配置的工作因子（随着计算机变快可以增加）
  */
 export const hashPassword = async (password: string): Promise<string> => {
-	return hash(password, SALT_ROUNDS)
+  return hash(password, SALT_ROUNDS)
 }
 
 /**
@@ -701,7 +701,7 @@ export const hashPassword = async (password: string): Promise<string> => {
  * 使用时间安全比较防止时序攻击。
  */
 export const comparePassword = async (plainPassword: string, hashedPassword: string): Promise<boolean> => {
-	return compare(plainPassword, hashedPassword)
+  return compare(plainPassword, hashedPassword)
 }
 ```
 
@@ -779,16 +779,16 @@ npx prisma generate
 import { z } from 'zod'
 
 export const UserModel = z.object({
-	id: z.string().cuid(),
-	username: z
-		.string()
-		.min(1, { message: '用户名不能为空' })
-		.max(30, { message: '用户名最多30个字符' })
-		.regex(/^[a-zA-Z0-9_]+$/, { message: '只能包含字母、数字、下划线' }),
-	password: z.string().min(8, { message: '密码至少需要8位' }).max(128),
-	email: z.string().email({ message: '请输入有效的邮箱' }).optional(),
-	createdAt: z.date(),
-	updatedAt: z.date(),
+  id: z.string().cuid(),
+  username: z
+    .string()
+    .min(1, { message: '用户名不能为空' })
+    .max(30, { message: '用户名最多30个字符' })
+    .regex(/^[a-zA-Z0-9_]+$/, { message: '只能包含字母、数字、下划线' }),
+  password: z.string().min(8, { message: '密码至少需要8位' }).max(128),
+  email: z.string().email({ message: '请输入有效的邮箱' }).optional(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
 })
 
 export type User = z.infer<typeof UserModel>
@@ -803,17 +803,17 @@ import { z } from 'zod'
 
 // 移除自动生成的字段（id、时间戳等）用于表单
 const RegisterFormSchema = UserModel.omit({
-	id: true,
-	createdAt: true,
-	updatedAt: true,
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 })
 
 // 添加前端特定的验证
 const RegisterFormSchemaWithConfirm = RegisterFormSchema.extend({
-	confirmPassword: z.string().min(1, '请确认密码'),
+  confirmPassword: z.string().min(1, '请确认密码'),
 }).refine((data) => data.password === data.confirmPassword, {
-	message: '两次密码输入不一致',
-	path: ['confirmPassword'],
+  message: '两次密码输入不一致',
+  path: ['confirmPassword'],
 })
 
 // 提取TypeScript类型
@@ -1004,14 +1004,14 @@ Zod自然地处理嵌套：
 
 ```typescript
 const addressSchema = z.object({
-	city: z.string().min(1, '城市不能为空'),
-	street: z.string().min(1, '街道不能为空'),
-	zipCode: z.string().regex(/^\d{6}$/, '无效的邮编'),
+  city: z.string().min(1, '城市不能为空'),
+  street: z.string().min(1, '街道不能为空'),
+  zipCode: z.string().regex(/^\d{6}$/, '无效的邮编'),
 })
 
 const userWithAddressSchema = z.object({
-	username: z.string().min(1),
-	address: addressSchema, // 嵌套！
+  username: z.string().min(1),
+  address: addressSchema, // 嵌套！
 })
 
 // 适配器自动处理嵌套结构
@@ -1039,11 +1039,11 @@ z.string().min(1, '自定义必填提示')
 
 ```typescript
 const formatErrorMessage = (issue, fieldName) => {
-	const messages: Record<string, string> = {
-		'username.too_small': '用户名至少需要1个字符',
-		'password.too_small': '密码至少需要8个字符',
-	}
-	return messages[`${fieldName}.${issue.code}`] || issue.message
+  const messages: Record<string, string> = {
+    'username.too_small': '用户名至少需要1个字符',
+    'password.too_small': '密码至少需要8个字符',
+  }
+  return messages[`${fieldName}.${issue.code}`] || issue.message
 }
 ```
 
@@ -1052,20 +1052,20 @@ const formatErrorMessage = (issue, fieldName) => {
 ```typescript
 // 用户名必须包含至少一个字母
 const userSchema = z.object({
-	username: z
-		.string()
-		.min(1)
-		.max(30)
-		.refine((val) => /[a-zA-Z]/.test(val), { message: '用户名必须包含至少一个字母' }),
+  username: z
+    .string()
+    .min(1)
+    .max(30)
+    .refine((val) => /[a-zA-Z]/.test(val), { message: '用户名必须包含至少一个字母' }),
 })
 
 // 密码强度要求
 const strongPassword = z
-	.string()
-	.min(8)
-	.refine((val) => /[A-Z]/.test(val) && /[a-z]/.test(val) && /[0-9]/.test(val), {
-		message: '密码必须包含大写字母、小写字母和数字',
-	})
+  .string()
+  .min(8)
+  .refine((val) => /[A-Z]/.test(val) && /[a-z]/.test(val) && /[0-9]/.test(val), {
+    message: '密码必须包含大写字母、小写字母和数字',
+  })
 ```
 
 ### Q5：如何测试验证逻辑？
@@ -1076,68 +1076,68 @@ const strongPassword = z
 import { userSchema, loginSchema } from '@/shared/schemas/user.schema'
 
 describe('用户schema验证', () => {
-	describe('userSchema', () => {
-		it('应该接受有效数据', () => {
-			const validData = {
-				username: 'testuser',
-				password: 'password123',
-				email: 'test@example.com',
-			}
-			const result = userSchema.safeParse(validData)
-			expect(result.success).toBe(true)
-		})
+  describe('userSchema', () => {
+    it('应该接受有效数据', () => {
+      const validData = {
+        username: 'testuser',
+        password: 'password123',
+        email: 'test@example.com',
+      }
+      const result = userSchema.safeParse(validData)
+      expect(result.success).toBe(true)
+    })
 
-		it('应该拒绝空用户名', () => {
-			const invalidData = {
-				username: '',
-				password: 'password123',
-			}
-			const result = userSchema.safeParse(invalidData)
-			expect(result.success).toBe(false)
-			expect(result.error?.issues[0].path).toEqual(['username'])
-		})
+    it('应该拒绝空用户名', () => {
+      const invalidData = {
+        username: '',
+        password: 'password123',
+      }
+      const result = userSchema.safeParse(invalidData)
+      expect(result.success).toBe(false)
+      expect(result.error?.issues[0].path).toEqual(['username'])
+    })
 
-		it('应该拒绝无效邮箱', () => {
-			const invalidData = {
-				username: 'testuser',
-				password: 'password123',
-				email: 'not-an-email',
-			}
-			const result = userSchema.safeParse(invalidData)
-			expect(result.success).toBe(false)
-			expect(result.error?.issues[0].path).toEqual(['email'])
-		})
+    it('应该拒绝无效邮箱', () => {
+      const invalidData = {
+        username: 'testuser',
+        password: 'password123',
+        email: 'not-an-email',
+      }
+      const result = userSchema.safeParse(invalidData)
+      expect(result.success).toBe(false)
+      expect(result.error?.issues[0].path).toEqual(['email'])
+    })
 
-		it('应该接受缺少可选邮箱的数据', () => {
-			const validData = {
-				username: 'testuser',
-				password: 'password123',
-			}
-			const result = userSchema.safeParse(validData)
-			expect(result.success).toBe(true)
-		})
-	})
+    it('应该接受缺少可选邮箱的数据', () => {
+      const validData = {
+        username: 'testuser',
+        password: 'password123',
+      }
+      const result = userSchema.safeParse(validData)
+      expect(result.success).toBe(true)
+    })
+  })
 
-	describe('loginSchema', () => {
-		it('只应该要求用户名和密码', () => {
-			const validData = {
-				username: 'testuser',
-				password: 'password123',
-			}
-			const result = loginSchema.safeParse(validData)
-			expect(result.success).toBe(true)
-		})
+  describe('loginSchema', () => {
+    it('只应该要求用户名和密码', () => {
+      const validData = {
+        username: 'testuser',
+        password: 'password123',
+      }
+      const result = loginSchema.safeParse(validData)
+      expect(result.success).toBe(true)
+    })
 
-		it('应该拒绝邮箱字段', () => {
-			const invalidData = {
-				username: 'testuser',
-				password: 'password123',
-				email: 'test@example.com',
-			}
-			const result = loginSchema.safeParse(invalidData)
-			expect(result.success).toBe(false)
-		})
-	})
+    it('应该拒绝邮箱字段', () => {
+      const invalidData = {
+        username: 'testuser',
+        password: 'password123',
+        email: 'test@example.com',
+      }
+      const result = loginSchema.safeParse(invalidData)
+      expect(result.success).toBe(false)
+    })
+  })
 })
 ```
 

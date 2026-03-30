@@ -6,8 +6,8 @@ import { routing } from './i18n/routing'
  * 用于处理国际化的请求路由
  */
 export default createMiddleware({
-	...routing,
-	localeDetection: false,
+  ...routing,
+  localeDetection: false,
 })
 
 /**
@@ -15,5 +15,5 @@ export default createMiddleware({
  * 匹配所有路径，排除 API、Next.js 内部路径和静态文件
  */
 export const config = {
-	matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
+  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
 }

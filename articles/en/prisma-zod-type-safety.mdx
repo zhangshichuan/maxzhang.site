@@ -85,13 +85,13 @@ const myData: z.infer<typeof schema> = { name: 'test' }
 
 // With satisfies - catches missing fields at compile time
 const schema = z.object({
-	name: z.string(),
-	age: z.number(),
+  name: z.string(),
+  age: z.number(),
 })
 
 // If we forget 'age', TypeScript error: Property 'age' is missing
 const user = {
-	name: 'Alice',
+  name: 'Alice',
 } satisfies z.infer<typeof schema>
 ```
 
@@ -129,8 +129,8 @@ Zod is a "schema validation library." You define what valid data looks like, and
 import { z } from 'zod'
 
 const UserSchema = z.object({
-	username: z.string().min(1).max(20),
-	email: z.string().email().optional(),
+  username: z.string().min(1).max(20),
+  email: z.string().email().optional(),
 })
 
 type User = z.infer<typeof UserSchema>
@@ -367,10 +367,10 @@ import { type ZodObject, type ZodType, type ZodOptional, type ZodDefault } from 
  * Result type for a single Ant Design Form.Item rule
  */
 export interface AntdValidatorRule {
-	validator: (rule: unknown, value: unknown) => Promise<void>
-	message?: string
-	required?: boolean
-	type?: string
+  validator: (rule: unknown, value: unknown) => Promise<void>
+  message?: string
+  required?: boolean
+  type?: string
 }
 
 /**
@@ -386,113 +386,113 @@ export interface AntdValidatorRule {
  * - Automatic error message formatting
  */
 export const createZodFormValidator = <T extends Record<string, unknown>>(
-	schema: ZodObject<T>,
+  schema: ZodObject<T>,
 ): Record<keyof T, AntdValidatorRule[]> => {
-	const rules = {} as Record<keyof T, AntdValidatorRule[]>
+  const rules = {} as Record<keyof T, AntdValidatorRule[]>
 
-	// Iterate over each field in the schema
-	for (const key in schema.shape) {
-		const fieldSchema = schema.shape[key as keyof T]
-		rules[key as keyof T] = [createSingleFieldValidator(fieldSchema, key)]
-	}
+  // Iterate over each field in the schema
+  for (const key in schema.shape) {
+    const fieldSchema = schema.shape[key as keyof T]
+    rules[key as keyof T] = [createSingleFieldValidator(fieldSchema, key)]
+  }
 
-	return rules
+  return rules
 }
 
 /**
  * Create a validator function for a single field
  */
 const createSingleFieldValidator = (fieldSchema: ZodType<unknown>, fieldName: string): AntdValidatorRule => {
-	return {
-		validator: async (_rule: unknown, value: unknown) => {
-			// Handle empty values
-			if (value === undefined || value === null || value === '') {
-				// Check if field is optional by examining the schema structure
-				if (isOptionalSchema(fieldSchema)) {
-					return Promise.resolve()
-				}
-				return Promise.reject(new Error('This field is required'))
-			}
+  return {
+    validator: async (_rule: unknown, value: unknown) => {
+      // Handle empty values
+      if (value === undefined || value === null || value === '') {
+        // Check if field is optional by examining the schema structure
+        if (isOptionalSchema(fieldSchema)) {
+          return Promise.resolve()
+        }
+        return Promise.reject(new Error('This field is required'))
+      }
 
-			// Run Zod validation asynchronously
-			const result = await fieldSchema.safeParseAsync(value)
+      // Run Zod validation asynchronously
+      const result = await fieldSchema.safeParseAsync(value)
 
-			if (!result.success) {
-				// Get the first error message
-				const issue = result.error.issues[0]
-				const message = formatErrorMessage(issue, fieldName)
-				return Promise.reject(new Error(message))
-			}
+      if (!result.success) {
+        // Get the first error message
+        const issue = result.error.issues[0]
+        const message = formatErrorMessage(issue, fieldName)
+        return Promise.reject(new Error(message))
+      }
 
-			return Promise.resolve()
-		},
-	}
+      return Promise.resolve()
+    },
+  }
 }
 
 /**
  * Recursively check if a schema represents an optional field
  */
 const isOptionalSchema = (schema: ZodType<unknown>): boolean => {
-	const def = (schema as unknown as { _def: { innerType?: ZodType } })._def
+  const def = (schema as unknown as { _def: { innerType?: ZodType } })._def
 
-	// ZodOptional wraps the actual schema in innerType
-	if (def.innerType) {
-		return isOptionalSchema(def.innerType)
-	}
+  // ZodOptional wraps the actual schema in innerType
+  if (def.innerType) {
+    return isOptionalSchema(def.innerType)
+  }
 
-	// ZodDefault means there's a default value
-	if ((schema as unknown as { _def: { defaultValue?: unknown } })._def.defaultValue !== undefined) {
-		return true
-	}
+  // ZodDefault means there's a default value
+  if ((schema as unknown as { _def: { defaultValue?: unknown } })._def.defaultValue !== undefined) {
+    return true
+  }
 
-	return false
+  return false
 }
 
 /**
  * Convert Zod error codes into user-friendly messages
  */
 const formatErrorMessage = (
-	issue: { code: string; message: string; path: (string | number)[] },
-	fieldName: string,
+  issue: { code: string; message: string; path: (string | number)[] },
+  fieldName: string,
 ): string => {
-	// Human-readable field names
-	const fieldLabels: Record<string, string> = {
-		username: 'Username',
-		password: 'Password',
-		email: 'Email',
-		confirmPassword: 'Password confirmation',
-	}
+  // Human-readable field names
+  const fieldLabels: Record<string, string> = {
+    username: 'Username',
+    password: 'Password',
+    email: 'Email',
+    confirmPassword: 'Password confirmation',
+  }
 
-	const label = fieldLabels[fieldName] || fieldName
+  const label = fieldLabels[fieldName] || fieldName
 
-	switch (issue.code) {
-		case 'too_small':
-			if (issue.type === 'string') {
-				return `${label} must be at least ${issue.minimum} characters`
-			}
-			return `${label} is required`
+  switch (issue.code) {
+    case 'too_small':
+      if (issue.type === 'string') {
+        return `${label} must be at least ${issue.minimum} characters`
+      }
+      return `${label} is required`
 
-		case 'too_big':
-			if (issue.type === 'string') {
-				return `${label} must be ${issue.maximum} characters or less`
-			}
-			return `${label} is too large`
+    case 'too_big':
+      if (issue.type === 'string') {
+        return `${label} must be ${issue.maximum} characters or less`
+      }
+      return `${label} is too large`
 
-		case 'invalid_string':
-			if (issue.validation === 'email') {
-				return 'Please enter a valid email address'
-			}
-			if (issue.validation === 'regex') {
-				return `${label} format is invalid`
-			}
-			return `${label} format is invalid`
+    case 'invalid_string':
+      if (issue.validation === 'email') {
+        return 'Please enter a valid email address'
+      }
+      if (issue.validation === 'regex') {
+        return `${label} format is invalid`
+      }
+      return `${label} format is invalid`
 
-		case 'invalid_type':
-			return `${label} has the wrong type`
+    case 'invalid_type':
+      return `${label} has the wrong type`
 
-		default:
-			return issue.message || `${label} validation failed`
-	}
+    default:
+      return issue.message || `${label} validation failed`
+  }
 }
 ```
 
@@ -515,92 +515,92 @@ const { Title } = Typography
 const formRules = createZodFormValidator(userSchema)
 
 export default function RegisterForm() {
-	const [form] = Form.useForm<UserInput>()
-	const [loading, setLoading] = useState(false)
+  const [form] = Form.useForm<UserInput>()
+  const [loading, setLoading] = useState(false)
 
-	const onFinish = async (values: UserInput) => {
-		setLoading(true)
+  const onFinish = async (values: UserInput) => {
+    setLoading(true)
 
-		try {
-			// Send to backend API
-			const response = await fetch('/api/register', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(values),
-			})
+    try {
+      // Send to backend API
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      })
 
-			const data = await response.json()
+      const data = await response.json()
 
-			if (!response.ok) {
-				// Handle server-side validation errors
-				if (data.details) {
-					// Map server errors back to form fields
-					const fieldErrors = Object.entries(data.details).map(([name, errors]) => ({
-						name: name as keyof UserInput,
-						errors: errors as string[],
-					}))
-					form.setFields(fieldErrors)
-				} else {
-					message.error(data.error || 'Registration failed')
-				}
-				return
-			}
+      if (!response.ok) {
+        // Handle server-side validation errors
+        if (data.details) {
+          // Map server errors back to form fields
+          const fieldErrors = Object.entries(data.details).map(([name, errors]) => ({
+            name: name as keyof UserInput,
+            errors: errors as string[],
+          }))
+          form.setFields(fieldErrors)
+        } else {
+          message.error(data.error || 'Registration failed')
+        }
+        return
+      }
 
-			message.success('Registration successful!')
-			form.resetFields()
-		} catch (error) {
-			message.error('Network error. Please try again.')
-		} finally {
-			setLoading(false)
-		}
-	}
+      message.success('Registration successful!')
+      form.resetFields()
+    } catch (error) {
+      message.error('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
-	return (
-		<Card
-			style={{ width: 400 }}
-			bordered
-			title={
-				<Title level={4} style={{ margin: 0 }}>
-					Create Account
-				</Title>
-			}
-		>
-			<Form
-				form={form}
-				layout="vertical"
-				onFinish={onFinish}
-				autoComplete="off"
-				initialValues={{
-					email: '',
-				}}
-			>
-				<Form.Item
-					label="Username"
-					name="username"
-					rules={formRules.username}
-					extra="Letters, numbers, and underscores only. Max 30 characters."
-				>
-					<Input prefix={<UserOutlined />} placeholder="Choose a username" maxLength={30} />
-				</Form.Item>
+  return (
+    <Card
+      style={{ width: 400 }}
+      bordered
+      title={
+        <Title level={4} style={{ margin: 0 }}>
+          Create Account
+        </Title>
+      }
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={onFinish}
+        autoComplete="off"
+        initialValues={{
+          email: '',
+        }}
+      >
+        <Form.Item
+          label="Username"
+          name="username"
+          rules={formRules.username}
+          extra="Letters, numbers, and underscores only. Max 30 characters."
+        >
+          <Input prefix={<UserOutlined />} placeholder="Choose a username" maxLength={30} />
+        </Form.Item>
 
-				<Form.Item label="Password" name="password" rules={formRules.password} extra="At least 8 characters">
-					<Input.Password prefix={<LockOutlined />} placeholder="Create a password" />
-				</Form.Item>
+        <Form.Item label="Password" name="password" rules={formRules.password} extra="At least 8 characters">
+          <Input.Password prefix={<LockOutlined />} placeholder="Create a password" />
+        </Form.Item>
 
-				<Form.Item label="Email (Optional)" name="email" rules={formRules.email}>
-					<Input prefix={<MailOutlined />} placeholder="your@email.com" />
-				</Form.Item>
+        <Form.Item label="Email (Optional)" name="email" rules={formRules.email}>
+          <Input prefix={<MailOutlined />} placeholder="your@email.com" />
+        </Form.Item>
 
-				<Form.Item style={{ marginBottom: 0 }}>
-					<Button type="primary" htmlType="submit" loading={loading} block size="large">
-						Register
-					</Button>
-				</Form.Item>
-			</Form>
-		</Card>
-	)
+        <Form.Item style={{ marginBottom: 0 }}>
+          <Button type="primary" htmlType="submit" loading={loading} block size="large">
+            Register
+          </Button>
+        </Form.Item>
+      </Form>
+    </Card>
+  )
 }
 ```
 
@@ -617,83 +617,83 @@ import { db } from '@/lib/db'
 import { hashPassword } from '@/lib/auth'
 
 export async function POST(request: Request) {
-	try {
-		// Step 1: Parse the incoming JSON
-		const json = await request.json()
+  try {
+    // Step 1: Parse the incoming JSON
+    const json = await request.json()
 
-		// Step 2: Runtime validation with Zod
-		// safeParse returns { success: true, data } or { success: false, error }
-		// Unlike parse(), it doesn't throw exceptions
-		const result = userSchema.safeParse(json)
+    // Step 2: Runtime validation with Zod
+    // safeParse returns { success: true, data } or { success: false, error }
+    // Unlike parse(), it doesn't throw exceptions
+    const result = userSchema.safeParse(json)
 
-		if (!result.success) {
-			// Return validation errors to client
-			return NextResponse.json(
-				{
-					error: 'Validation failed',
-					details: result.error.flatten().fieldErrors,
-				},
-				{ status: 400 },
-			)
-		}
+    if (!result.success) {
+      // Return validation errors to client
+      return NextResponse.json(
+        {
+          error: 'Validation failed',
+          details: result.error.flatten().fieldErrors,
+        },
+        { status: 400 },
+      )
+    }
 
-		// Step 3: Destructure validated data
-		// TypeScript now knows exactly what this object contains
-		const { username, password, email } = result.data
+    // Step 3: Destructure validated data
+    // TypeScript now knows exactly what this object contains
+    const { username, password, email } = result.data
 
-		// Step 4: Check if username already exists
-		const existingUser = await db.user.findUnique({
-			where: { username },
-			select: { id: true }, // Only fetch what we need
-		})
+    // Step 4: Check if username already exists
+    const existingUser = await db.user.findUnique({
+      where: { username },
+      select: { id: true }, // Only fetch what we need
+    })
 
-		if (existingUser) {
-			return NextResponse.json({ error: 'Username already taken' }, { status: 409 })
-		}
+    if (existingUser) {
+      return NextResponse.json({ error: 'Username already taken' }, { status: 409 })
+    }
 
-		// Step 5: Hash the password (NEVER store plaintext!)
-		const hashedPassword = await hashPassword(password)
+    // Step 5: Hash the password (NEVER store plaintext!)
+    const hashedPassword = await hashPassword(password)
 
-		// Step 6: Create the user in database
-		const newUser = await db.user.create({
-			data: {
-				username,
-				password: hashedPassword,
-				email: email || null,
-			},
-			select: {
-				id: true,
-				username: true,
-				createdAt: true,
-			},
-		})
+    // Step 6: Create the user in database
+    const newUser = await db.user.create({
+      data: {
+        username,
+        password: hashedPassword,
+        email: email || null,
+      },
+      select: {
+        id: true,
+        username: true,
+        createdAt: true,
+      },
+    })
 
-		// Step 7: Return success response
-		return NextResponse.json(
-			{
-				message: 'Registration successful',
-				user: {
-					id: newUser.id,
-					username: newUser.username,
-				},
-			},
-			{ status: 201 },
-		)
-	} catch (error) {
-		// Log the actual error (use proper logging in production)
-		console.error('Registration error:', error)
+    // Step 7: Return success response
+    return NextResponse.json(
+      {
+        message: 'Registration successful',
+        user: {
+          id: newUser.id,
+          username: newUser.username,
+        },
+      },
+      { status: 201 },
+    )
+  } catch (error) {
+    // Log the actual error (use proper logging in production)
+    console.error('Registration error:', error)
 
-		// Handle specific error types
-		if (error instanceof Error) {
-			// Prisma unique constraint violation
-			if (error.message.includes('Unique constraint')) {
-				return NextResponse.json({ error: 'Username already taken' }, { status: 409 })
-			}
-		}
+    // Handle specific error types
+    if (error instanceof Error) {
+      // Prisma unique constraint violation
+      if (error.message.includes('Unique constraint')) {
+        return NextResponse.json({ error: 'Username already taken' }, { status: 409 })
+      }
+    }
 
-		// Generic error response (don't leak internal details)
-		return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-	}
+    // Generic error response (don't leak internal details)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
 ```
 
@@ -717,7 +717,7 @@ const SALT_ROUNDS = 12 // Higher = more secure but slower
  * - Configurable work factor (can increase as computers get faster)
  */
 export const hashPassword = async (password: string): Promise<string> => {
-	return hash(password, SALT_ROUNDS)
+  return hash(password, SALT_ROUNDS)
 }
 
 /**
@@ -727,7 +727,7 @@ export const hashPassword = async (password: string): Promise<string> => {
  * Timing-safe comparison prevents timing attacks.
  */
 export const comparePassword = async (plainPassword: string, hashedPassword: string): Promise<boolean> => {
-	return compare(plainPassword, hashedPassword)
+  return compare(plainPassword, hashedPassword)
 }
 ```
 
@@ -805,16 +805,16 @@ This creates files in `src/shared/generated-schemas/`:
 import { z } from 'zod'
 
 export const UserModel = z.object({
-	id: z.string().cuid(),
-	username: z
-		.string()
-		.min(1, { message: 'Username is required' })
-		.max(30, { message: 'Username must be 30 characters or less' })
-		.regex(/^[a-zA-Z0-9_]+$/, { message: 'Only letters, numbers, underscores' }),
-	password: z.string().min(8, { message: 'Password must be at least 8 characters' }).max(128),
-	email: z.string().email({ message: 'Please enter a valid email' }).optional(),
-	createdAt: z.date(),
-	updatedAt: z.date(),
+  id: z.string().cuid(),
+  username: z
+    .string()
+    .min(1, { message: 'Username is required' })
+    .max(30, { message: 'Username must be 30 characters or less' })
+    .regex(/^[a-zA-Z0-9_]+$/, { message: 'Only letters, numbers, underscores' }),
+  password: z.string().min(8, { message: 'Password must be at least 8 characters' }).max(128),
+  email: z.string().email({ message: 'Please enter a valid email' }).optional(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
 })
 
 export type User = z.infer<typeof UserModel>
@@ -829,17 +829,17 @@ import { z } from 'zod'
 
 // Remove auto-generated fields (id, timestamps) for forms
 const RegisterFormSchema = UserModel.omit({
-	id: true,
-	createdAt: true,
-	updatedAt: true,
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 })
 
 // Add frontend-specific validations
 const RegisterFormSchemaWithConfirm = RegisterFormSchema.extend({
-	confirmPassword: z.string().min(1, 'Please confirm your password'),
+  confirmPassword: z.string().min(1, 'Please confirm your password'),
 }).refine((data) => data.password === data.confirmPassword, {
-	message: 'Passwords do not match',
-	path: ['confirmPassword'],
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
 })
 
 // Extract TypeScript type
@@ -1031,14 +1031,14 @@ Zod handles nesting naturally:
 
 ```typescript
 const addressSchema = z.object({
-	city: z.string().min(1, 'City is required'),
-	street: z.string().min(1, 'Street is required'),
-	zipCode: z.string().regex(/^\d{6}$/, 'Invalid zip code'),
+  city: z.string().min(1, 'City is required'),
+  street: z.string().min(1, 'Street is required'),
+  zipCode: z.string().regex(/^\d{6}$/, 'Invalid zip code'),
 })
 
 const userWithAddressSchema = z.object({
-	username: z.string().min(1),
-	address: addressSchema, // Nested!
+  username: z.string().min(1),
+  address: addressSchema, // Nested!
 })
 
 // The adapter handles nested structures automatically
@@ -1066,11 +1066,11 @@ z.string().min(1, 'Custom required message')
 
 ```typescript
 const formatErrorMessage = (issue, fieldName) => {
-	const messages: Record<string, string> = {
-		'username.too_small': 'Username must be at least 1 character',
-		'password.too_small': 'Password must be at least 8 characters',
-	}
-	return messages[`${fieldName}.${issue.code}`] || issue.message
+  const messages: Record<string, string> = {
+    'username.too_small': 'Username must be at least 1 character',
+    'password.too_small': 'Password must be at least 8 characters',
+  }
+  return messages[`${fieldName}.${issue.code}`] || issue.message
 }
 ```
 
@@ -1079,20 +1079,20 @@ const formatErrorMessage = (issue, fieldName) => {
 ```typescript
 // Username must contain at least one letter
 const userSchema = z.object({
-	username: z
-		.string()
-		.min(1)
-		.max(30)
-		.refine((val) => /[a-zA-Z]/.test(val), { message: 'Username must contain at least one letter' }),
+  username: z
+    .string()
+    .min(1)
+    .max(30)
+    .refine((val) => /[a-zA-Z]/.test(val), { message: 'Username must contain at least one letter' }),
 })
 
 // Password strength requirements
 const strongPassword = z
-	.string()
-	.min(8)
-	.refine((val) => /[A-Z]/.test(val) && /[a-z]/.test(val) && /[0-9]/.test(val), {
-		message: 'Password must contain uppercase, lowercase, and numbers',
-	})
+  .string()
+  .min(8)
+  .refine((val) => /[A-Z]/.test(val) && /[a-z]/.test(val) && /[0-9]/.test(val), {
+    message: 'Password must contain uppercase, lowercase, and numbers',
+  })
 ```
 
 ### Q5: How do I write tests for validation?
@@ -1103,68 +1103,68 @@ const strongPassword = z
 import { userSchema, loginSchema } from '@/shared/schemas/user.schema'
 
 describe('User schema validation', () => {
-	describe('userSchema', () => {
-		it('accepts valid data', () => {
-			const validData = {
-				username: 'testuser',
-				password: 'password123',
-				email: 'test@example.com',
-			}
-			const result = userSchema.safeParse(validData)
-			expect(result.success).toBe(true)
-		})
+  describe('userSchema', () => {
+    it('accepts valid data', () => {
+      const validData = {
+        username: 'testuser',
+        password: 'password123',
+        email: 'test@example.com',
+      }
+      const result = userSchema.safeParse(validData)
+      expect(result.success).toBe(true)
+    })
 
-		it('rejects empty username', () => {
-			const invalidData = {
-				username: '',
-				password: 'password123',
-			}
-			const result = userSchema.safeParse(invalidData)
-			expect(result.success).toBe(false)
-			expect(result.error?.issues[0].path).toEqual(['username'])
-		})
+    it('rejects empty username', () => {
+      const invalidData = {
+        username: '',
+        password: 'password123',
+      }
+      const result = userSchema.safeParse(invalidData)
+      expect(result.success).toBe(false)
+      expect(result.error?.issues[0].path).toEqual(['username'])
+    })
 
-		it('rejects invalid email', () => {
-			const invalidData = {
-				username: 'testuser',
-				password: 'password123',
-				email: 'not-an-email',
-			}
-			const result = userSchema.safeParse(invalidData)
-			expect(result.success).toBe(false)
-			expect(result.error?.issues[0].path).toEqual(['email'])
-		})
+    it('rejects invalid email', () => {
+      const invalidData = {
+        username: 'testuser',
+        password: 'password123',
+        email: 'not-an-email',
+      }
+      const result = userSchema.safeParse(invalidData)
+      expect(result.success).toBe(false)
+      expect(result.error?.issues[0].path).toEqual(['email'])
+    })
 
-		it('accepts missing optional email', () => {
-			const validData = {
-				username: 'testuser',
-				password: 'password123',
-			}
-			const result = userSchema.safeParse(validData)
-			expect(result.success).toBe(true)
-		})
-	})
+    it('accepts missing optional email', () => {
+      const validData = {
+        username: 'testuser',
+        password: 'password123',
+      }
+      const result = userSchema.safeParse(validData)
+      expect(result.success).toBe(true)
+    })
+  })
 
-	describe('loginSchema', () => {
-		it('only requires username and password', () => {
-			const validData = {
-				username: 'testuser',
-				password: 'password123',
-			}
-			const result = loginSchema.safeParse(validData)
-			expect(result.success).toBe(true)
-		})
+  describe('loginSchema', () => {
+    it('only requires username and password', () => {
+      const validData = {
+        username: 'testuser',
+        password: 'password123',
+      }
+      const result = loginSchema.safeParse(validData)
+      expect(result.success).toBe(true)
+    })
 
-		it('rejects email field', () => {
-			const invalidData = {
-				username: 'testuser',
-				password: 'password123',
-				email: 'test@example.com',
-			}
-			const result = loginSchema.safeParse(invalidData)
-			expect(result.success).toBe(false)
-		})
-	})
+    it('rejects email field', () => {
+      const invalidData = {
+        username: 'testuser',
+        password: 'password123',
+        email: 'test@example.com',
+      }
+      const result = loginSchema.safeParse(invalidData)
+      expect(result.success).toBe(false)
+    })
+  })
 })
 ```
 

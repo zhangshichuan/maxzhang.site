@@ -99,9 +99,9 @@ console.log({ user, status })
 
 ```javascript
 const users = [
-	{ id: 1, name: '小明', role: '管理员' },
-	{ id: 2, name: '小红', role: '普通用户' },
-	{ id: 3, name: '小刚', role: '普通用户' },
+  { id: 1, name: '小明', role: '管理员' },
+  { id: 2, name: '小红', role: '普通用户' },
+  { id: 3, name: '小刚', role: '普通用户' },
 ]
 
 // 普通打印乱成一团
@@ -129,15 +129,15 @@ console.table(users)
 
 ```javascript
 function 第三层函数() {
-	console.trace('执行到这里了')
+  console.trace('执行到这里了')
 }
 
 function 第二层函数() {
-	第三层函数()
+  第三层函数()
 }
 
 function 第一层函数() {
-	第二层函数()
+  第二层函数()
 }
 
 第一层函数()
@@ -177,8 +177,8 @@ console.time('获取数据')
 
 // 模拟异步操作
 setTimeout(() => {
-	console.timeEnd('获取数据')
-	// 输出: 获取数据: 2003.123ms
+  console.timeEnd('获取数据')
+  // 输出: 获取数据: 2003.123ms
 }, 2000)
 
 // 还可以嵌套使用
@@ -218,13 +218,13 @@ console.groupEnd()
 
 ```javascript
 const bigObject = {
-	level1: {
-		level2: {
-			level3: {
-				value: '深处的值',
-			},
-		},
-	},
+  level1: {
+    level2: {
+      level3: {
+        value: '深处的值',
+      },
+    },
+  },
 }
 
 // 默认可能只显示几层
@@ -267,9 +267,9 @@ import fs from 'node:fs'
 
 // 千万不要这样写！
 function logMessage(message) {
-	fs.appendFile('app.log', message + '\n', (err) => {
-		if (err) console.error('写入失败')
-	})
+  fs.appendFile('app.log', message + '\n', (err) => {
+    if (err) console.error('写入失败')
+  })
 }
 
 // 业务代码反复调用
@@ -307,8 +307,8 @@ logStream.write('支付成功了\n')
 
 // 程序退出前关闭流
 process.on('SIGINT', () => {
-	logStream.end()
-	process.exit(0)
+  logStream.end()
+  process.exit(0)
 })
 ```
 
@@ -322,12 +322,12 @@ process.on('SIGINT', () => {
 
 ```javascript
 function safeWrite(stream, message) {
-	if (!stream.write(message)) {
-		// 返回 false 说明缓冲区满了，需要等待 drain
-		stream.once('drain', () => {
-			stream.write(message)
-		})
-	}
+  if (!stream.write(message)) {
+    // 返回 false 说明缓冲区满了，需要等待 drain
+    stream.once('drain', () => {
+      stream.write(message)
+    })
+  }
 }
 ```
 
@@ -383,29 +383,29 @@ const app = express()
 
 // 请求日志中间件
 app.use((req, res, next) => {
-	const start = Date.now()
+  const start = Date.now()
 
-	// 请求结束时的回调
-	res.on('finish', () => {
-		const duration = Date.now() - start
+  // 请求结束时的回调
+  res.on('finish', () => {
+    const duration = Date.now() - start
 
-		console.log(
-			JSON.stringify({
-				timestamp: new Date().toISOString(),
-				type: 'access',
-				method: req.method,
-				url: req.originalUrl,
-				status: res.statusCode,
-				duration, // 响应时间，毫秒为单位
-				ip: req.ip,
-				userAgent: req.get('User-Agent'),
-				userId: req.user?.id, // 如果实现了用户认证
-				traceId: req.headers['x-trace-id'], // 分布式追踪 ID
-			}),
-		)
-	})
+    console.log(
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        type: 'access',
+        method: req.method,
+        url: req.originalUrl,
+        status: res.statusCode,
+        duration, // 响应时间，毫秒为单位
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        userId: req.user?.id, // 如果实现了用户认证
+        traceId: req.headers['x-trace-id'], // 分布式追踪 ID
+      }),
+    )
+  })
 
-	next()
+  next()
 })
 ```
 
@@ -428,52 +428,52 @@ app.use((req, res, next) => {
 
 ```javascript
 async function callBackend(serviceUrl, params, options = {}) {
-	const start = Date.now()
-	const requestId = crypto.randomUUID()
+  const start = Date.now()
+  const requestId = crypto.randomUUID()
 
-	try {
-		const response = await axios.post(serviceUrl, params, {
-			headers: {
-				'X-Request-ID': requestId,
-				...options.headers,
-			},
-			timeout: options.timeout || 5000,
-		})
+  try {
+    const response = await axios.post(serviceUrl, params, {
+      headers: {
+        'X-Request-ID': requestId,
+        ...options.headers,
+      },
+      timeout: options.timeout || 5000,
+    })
 
-		const duration = Date.now() - start
+    const duration = Date.now() - start
 
-		console.log(
-			JSON.stringify({
-				type: 'backend_call',
-				requestId,
-				service: serviceUrl,
-				params: params, // 注意：生产环境必须脱敏！
-				responseStatus: response.status,
-				duration,
-				timestamp: new Date().toISOString(),
-			}),
-		)
+    console.log(
+      JSON.stringify({
+        type: 'backend_call',
+        requestId,
+        service: serviceUrl,
+        params: params, // 注意：生产环境必须脱敏！
+        responseStatus: response.status,
+        duration,
+        timestamp: new Date().toISOString(),
+      }),
+    )
 
-		return response.data
-	} catch (err) {
-		const duration = Date.now() - start
+    return response.data
+  } catch (err) {
+    const duration = Date.now() - start
 
-		console.error(
-			JSON.stringify({
-				type: 'backend_error',
-				requestId,
-				service: serviceUrl,
-				params: params,
-				error: err.message,
-				errorCode: err.code,
-				stack: err.stack,
-				duration,
-				timestamp: new Date().toISOString(),
-			}),
-		)
+    console.error(
+      JSON.stringify({
+        type: 'backend_error',
+        requestId,
+        service: serviceUrl,
+        params: params,
+        error: err.message,
+        errorCode: err.code,
+        stack: err.stack,
+        duration,
+        timestamp: new Date().toISOString(),
+      }),
+    )
 
-		throw err
-	}
+    throw err
+  }
 }
 ```
 
@@ -489,31 +489,31 @@ async function callBackend(serviceUrl, params, options = {}) {
 
 ```javascript
 app.get('/api/user/:id', async (req, res) => {
-	try {
-		const user = await getUser(req.params.id)
+  try {
+    const user = await getUser(req.params.id)
 
-		if (!user) {
-			return res.status(404).json({ error: '用户不存在' })
-		}
+    if (!user) {
+      return res.status(404).json({ error: '用户不存在' })
+    }
 
-		res.json(user)
-	} catch (err) {
-		// 必须记录完整上下文！
-		console.error(
-			JSON.stringify({
-				type: 'error',
-				route: '/api/user/:id',
-				params: req.params,
-				query: req.query,
-				userId: req.user?.id,
-				error: err.message,
-				stack: err.stack,
-				timestamp: new Date().toISOString(),
-			}),
-		)
+    res.json(user)
+  } catch (err) {
+    // 必须记录完整上下文！
+    console.error(
+      JSON.stringify({
+        type: 'error',
+        route: '/api/user/:id',
+        params: req.params,
+        query: req.query,
+        userId: req.user?.id,
+        error: err.message,
+        stack: err.stack,
+        timestamp: new Date().toISOString(),
+      }),
+    )
 
-		res.status(500).json({ error: '服务器内部错误' })
-	}
+    res.status(500).json({ error: '服务器内部错误' })
+  }
 })
 ```
 
@@ -524,18 +524,18 @@ Promise.reject 不会被 try/catch 捕获：
 ```javascript
 // 这是错误的写法！
 try {
-	Promise.reject(new Error('异步错误'))
+  Promise.reject(new Error('异步错误'))
 } catch (err) {
-	// 这里永远不会执行
+  // 这里永远不会执行
 }
 
 // 正确写法
 async function 错误示例() {
-	try {
-		await Promise.reject(new Error('异步错误'))
-	} catch (err) {
-		console.error(err)
-	}
+  try {
+    await Promise.reject(new Error('异步错误'))
+  } catch (err) {
+    console.error(err)
+  }
 }
 
 // 或者用 .catch()
@@ -549,29 +549,29 @@ Promise.reject(new Error('异步错误')).catch((err) => console.error(err))
 ```javascript
 // 捕获未处理的 Promise 拒绝
 process.on('unhandledRejection', (reason, promise) => {
-	console.error(
-		JSON.stringify({
-			type: 'unhandled_rejection',
-			reason: reason instanceof Error ? reason.message : reason,
-			stack: reason instanceof Error ? reason.stack : undefined,
-			timestamp: new Date().toISOString(),
-		}),
-	)
+  console.error(
+    JSON.stringify({
+      type: 'unhandled_rejection',
+      reason: reason instanceof Error ? reason.message : reason,
+      stack: reason instanceof Error ? reason.stack : undefined,
+      timestamp: new Date().toISOString(),
+    }),
+  )
 })
 
 // 捕获未处理的异常
 process.on('uncaughtException', (err) => {
-	console.error(
-		JSON.stringify({
-			type: 'uncaught_exception',
-			error: err.message,
-			stack: err.stack,
-			timestamp: new Date().toISOString(),
-		}),
-	)
+  console.error(
+    JSON.stringify({
+      type: 'uncaught_exception',
+      error: err.message,
+      stack: err.stack,
+      timestamp: new Date().toISOString(),
+    }),
+  )
 
-	// 对于 uncaught exception，通常还是需要优雅退出
-	process.exit(1)
+  // 对于 uncaught exception，通常还是需要优雅退出
+  process.exit(1)
 })
 ```
 
@@ -584,68 +584,68 @@ process.on('uncaughtException', (err) => {
 ```javascript
 // 创建订单
 async function createOrder(orderData) {
-	const orderId = generateOrderId()
+  const orderId = generateOrderId()
 
-	console.log(
-		JSON.stringify({
-			type: 'business',
-			action: 'create_order_start',
-			orderId,
-			userId: orderData.userId,
-			productId: orderData.productId,
-			quantity: orderData.quantity,
-			totalPrice: orderData.totalPrice,
-			timestamp: new Date().toISOString(),
-		}),
-	)
+  console.log(
+    JSON.stringify({
+      type: 'business',
+      action: 'create_order_start',
+      orderId,
+      userId: orderData.userId,
+      productId: orderData.productId,
+      quantity: orderData.quantity,
+      totalPrice: orderData.totalPrice,
+      timestamp: new Date().toISOString(),
+    }),
+  )
 
-	try {
-		// 检查库存
-		const stockAvailable = await checkStock(orderData.productId, orderData.quantity)
+  try {
+    // 检查库存
+    const stockAvailable = await checkStock(orderData.productId, orderData.quantity)
 
-		if (!stockAvailable) {
-			console.log(
-				JSON.stringify({
-					type: 'business',
-					action: 'create_order_failed',
-					orderId,
-					reason: 'stock_insufficient',
-					timestamp: new Date().toISOString(),
-				}),
-			)
-			throw new Error('库存不足')
-		}
+    if (!stockAvailable) {
+      console.log(
+        JSON.stringify({
+          type: 'business',
+          action: 'create_order_failed',
+          orderId,
+          reason: 'stock_insufficient',
+          timestamp: new Date().toISOString(),
+        }),
+      )
+      throw new Error('库存不足')
+    }
 
-		// 扣减库存
-		await reduceStock(orderData.productId, orderData.quantity)
+    // 扣减库存
+    await reduceStock(orderData.productId, orderData.quantity)
 
-		// 创建订单
-		const order = await saveOrder(orderId, orderData)
+    // 创建订单
+    const order = await saveOrder(orderId, orderData)
 
-		console.log(
-			JSON.stringify({
-				type: 'business',
-				action: 'create_order_success',
-				orderId,
-				userId: orderData.userId,
-				totalPrice: orderData.totalPrice,
-				timestamp: new Date().toISOString(),
-			}),
-		)
+    console.log(
+      JSON.stringify({
+        type: 'business',
+        action: 'create_order_success',
+        orderId,
+        userId: orderData.userId,
+        totalPrice: orderData.totalPrice,
+        timestamp: new Date().toISOString(),
+      }),
+    )
 
-		return order
-	} catch (err) {
-		console.error(
-			JSON.stringify({
-				type: 'business',
-				action: 'create_order_error',
-				orderId,
-				error: err.message,
-				timestamp: new Date().toISOString(),
-			}),
-		)
-		throw err
-	}
+    return order
+  } catch (err) {
+    console.error(
+      JSON.stringify({
+        type: 'business',
+        action: 'create_order_error',
+        orderId,
+        error: err.message,
+        timestamp: new Date().toISOString(),
+      }),
+    )
+    throw err
+  }
 }
 ```
 
@@ -677,15 +677,15 @@ async function createOrder(orderData) {
 
 ```json
 {
-	"timestamp": "2025-03-10T10:00:00.000Z",
-	"level": "info",
-	"service": "user-service",
-	"pid": 12345,
-	"hostname": "server-01",
-	"message": "用户登录了",
-	"userId": "user_1001",
-	"ip": "192.168.1.100",
-	"requestId": "req_abc123"
+  "timestamp": "2025-03-10T10:00:00.000Z",
+  "level": "info",
+  "service": "user-service",
+  "pid": 12345,
+  "hostname": "server-01",
+  "message": "用户登录了",
+  "userId": "user_1001",
+  "ip": "192.168.1.100",
+  "requestId": "req_abc123"
 }
 ```
 
@@ -708,20 +708,20 @@ async function createOrder(orderData) {
 ```javascript
 // 错误写法
 function log(message) {
-	if (!message) {
-		throw new Error('消息不能为空') // 日志函数抛异常？
-	}
-	console.log(message)
+  if (!message) {
+    throw new Error('消息不能为空') // 日志函数抛异常？
+  }
+  console.log(message)
 }
 
 // 正确写法
 function log(message) {
-	try {
-		console.log(message)
-	} catch (err) {
-		// 日志失败了，但业务必须继续
-		// 可以尝试写到备用位置
-	}
+  try {
+    console.log(message)
+  } catch (err) {
+    // 日志失败了，但业务必须继续
+    // 可以尝试写到备用位置
+  }
 }
 ```
 
@@ -730,18 +730,18 @@ function log(message) {
 ```javascript
 // 错误写法
 function logUser(user) {
-	console.log(user)
-	user.lastLogged = new Date() // 副作用！
-	db.save(user) // 因为打印日志改了数据
+  console.log(user)
+  user.lastLogged = new Date() // 副作用！
+  db.save(user) // 因为打印日志改了数据
 }
 
 // 正确写法
 function logUser(user) {
-	console.log({
-		id: user.id,
-		name: user.name,
-		// 只打印需要的信息，不要修改原对象
-	})
+  console.log({
+    id: user.id,
+    name: user.name,
+    // 只打印需要的信息，不要修改原对象
+  })
 }
 ```
 
@@ -759,20 +759,20 @@ function logUser(user) {
 
 ```javascript
 function sanitizeObject(obj) {
-	const sensitiveFields = ['password', 'token', 'secret', 'apiKey']
-	const sanitized = { ...obj }
+  const sensitiveFields = ['password', 'token', 'secret', 'apiKey']
+  const sanitized = { ...obj }
 
-	for (const field of sensitiveFields) {
-		if (sanitized[field]) {
-			if (sanitized[field].length > 10) {
-				sanitized[field] = sanitized[field].slice(0, 5) + '...' + sanitized[field].slice(-5)
-			} else {
-				sanitized[field] = '***'
-			}
-		}
-	}
+  for (const field of sensitiveFields) {
+    if (sanitized[field]) {
+      if (sanitized[field].length > 10) {
+        sanitized[field] = sanitized[field].slice(0, 5) + '...' + sanitized[field].slice(-5)
+      } else {
+        sanitized[field] = '***'
+      }
+    }
+  }
 
-	return sanitized
+  return sanitized
 }
 ```
 
@@ -909,17 +909,17 @@ console.log(chalk`{red 错误:} {green 成功:} {blue 提示:}`)
 import ProgressBar from 'progress'
 
 const bar = new ProgressBar('下载中: [:bar] :percent 剩余: :etas', {
-	total: 100,
-	width: 40,
+  total: 100,
+  width: 40,
 })
 
 const timer = setInterval(() => {
-	bar.tick()
+  bar.tick()
 
-	if (bar.complete) {
-		clearInterval(timer)
-		console.log('\n下载完成！')
-	}
+  if (bar.complete) {
+    clearInterval(timer)
+    console.log('\n下载完成！')
+  }
 }, 100)
 ```
 
@@ -935,26 +935,26 @@ const timer = setInterval(() => {
 import inquirer from 'inquirer'
 
 async function askQuestions() {
-	const answers = await inquirer.prompt([
-		{
-			type: 'input',
-			name: 'name',
-			message: '你叫什么名字？',
-		},
-		{
-			type: 'list',
-			name: 'color',
-			message: '你最喜欢的颜色是什么？',
-			choices: ['红色', '绿色', '蓝色'],
-		},
-		{
-			type: 'confirm',
-			name: 'confirm',
-			message: '确定要继续吗？',
-		},
-	])
+  const answers = await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'name',
+      message: '你叫什么名字？',
+    },
+    {
+      type: 'list',
+      name: 'color',
+      message: '你最喜欢的颜色是什么？',
+      choices: ['红色', '绿色', '蓝色'],
+    },
+    {
+      type: 'confirm',
+      name: 'confirm',
+      message: '确定要继续吗？',
+    },
+  ])
 
-	console.log('你的回答:', answers)
+  console.log('你的回答:', answers)
 }
 
 askQuestions()
@@ -970,18 +970,18 @@ const screen = blessed.screen()
 
 // 创建折线图
 const line = contrib.line({
-	label: '请求统计',
-	showLegend: true,
-	legend: { width: 20 },
+  label: '请求统计',
+  showLegend: true,
+  legend: { width: 20 },
 })
 
 screen.append(line)
 
 // 更新数据
 setInterval(() => {
-	const data = Math.random() * 100
-	line.setData([{ x: ['00:00', '00:01', '00:02'], y: [10, 20, data] }])
-	screen.render()
+  const data = Math.random() * 100
+  line.setData([{ x: ['00:00', '00:01', '00:02'], y: [10, 20, data] }])
+  screen.render()
 }, 1000)
 ```
 
@@ -995,21 +995,21 @@ const program = new Command()
 program.name('myapp').description('我的命令行工具').version('1.0.0')
 
 program
-	.command('serve')
-	.description('启动服务器')
-	.option('-p, --port <number>', '端口号', 3000)
-	.option('-d, --debug', '开启调试模式')
-	.action((options) => {
-		console.log('服务器启动在端口:', options.port)
-		console.log('调试模式:', options.debug)
-	})
+  .command('serve')
+  .description('启动服务器')
+  .option('-p, --port <number>', '端口号', 3000)
+  .option('-d, --debug', '开启调试模式')
+  .action((options) => {
+    console.log('服务器启动在端口:', options.port)
+    console.log('调试模式:', options.debug)
+  })
 
 program
-	.command('init')
-	.description('初始化项目')
-	.action(() => {
-		console.log('初始化中...')
-	})
+  .command('init')
+  .description('初始化项目')
+  .action(() => {
+    console.log('初始化中...')
+  })
 
 program.parse()
 ```
@@ -1028,11 +1028,11 @@ myapp --version
 import cfonts from 'cfonts'
 
 cfonts.say('Hello World!', {
-	font: 'block', // 字体: block, huge, simple
-	colors: ['blue', 'yellow'], // 渐变色
-	background: 'black', // 背景色
-	align: 'center', // 对齐方式
-	letterSpacing: 1,
+  font: 'block', // 字体: block, huge, simple
+  colors: ['blue', 'yellow'], // 渐变色
+  background: 'black', // 背景色
+  align: 'center', // 对齐方式
+  letterSpacing: 1,
 })
 ```
 
@@ -1165,12 +1165,12 @@ Pino 是最快的 Node.js 日志库，比 winston 快 10 倍：
 import pino from 'pino'
 
 const logger = pino({
-	level: 'info', // 只记录 info 及以上
-	base: {
-		service: 'user-service', // 添加公共字段
-		pid: process.pid,
-	},
-	timestamp: pino.stdTimeFunctions.isoTime, // ISO 格式时间
+  level: 'info', // 只记录 info 及以上
+  base: {
+    service: 'user-service', // 添加公共字段
+    pid: process.pid,
+  },
+  timestamp: pino.stdTimeFunctions.isoTime, // ISO 格式时间
 })
 
 // 使用
@@ -1195,36 +1195,36 @@ import { ElasticsearchTransport } from 'winston-elasticsearch'
 
 // 创建日志器
 const logger = winston.createLogger({
-	level: 'info',
-	format: winston.format.combine(
-		winston.format.timestamp(),
-		winston.format.json(), // JSON 格式
-	),
-	defaultMeta: { service: 'user-service' },
-	transports: [
-		// 文件输出
-		new winston.transports.File({
-			filename: 'logs/error.log',
-			level: 'error',
-		}),
-		new winston.transports.File({
-			filename: 'logs/combined.log',
-		}),
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json(), // JSON 格式
+  ),
+  defaultMeta: { service: 'user-service' },
+  transports: [
+    // 文件输出
+    new winston.transports.File({
+      filename: 'logs/error.log',
+      level: 'error',
+    }),
+    new winston.transports.File({
+      filename: 'logs/combined.log',
+    }),
 
-		// 控制台输出（开发环境彩色）
-		new winston.transports.Console({
-			format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
-		}),
+    // 控制台输出（开发环境彩色）
+    new winston.transports.Console({
+      format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
+    }),
 
-		// Elasticsearch 输出
-		new ElasticsearchTransport({
-			level: 'info',
-			clientOpts: {
-				node: 'http://elasticsearch:9200',
-			},
-			indexPrefix: 'myapp',
-		}),
-	],
+    // Elasticsearch 输出
+    new ElasticsearchTransport({
+      level: 'info',
+      clientOpts: {
+        node: 'http://elasticsearch:9200',
+      },
+      indexPrefix: 'myapp',
+    }),
+  ],
 })
 ```
 
@@ -1354,9 +1354,9 @@ level: error AND userId: user_1001
 
 ```javascript
 Sentry.setUser({
-	id: 'user_123',
-	email: 'user@example.com',
-	username: 'john_doe',
+  id: 'user_123',
+  email: 'user@example.com',
+  username: 'john_doe',
 })
 
 Sentry.setTag('version', '1.0.0')
@@ -1389,20 +1389,20 @@ npm install @sentry/node
 import * as Sentry from '@sentry/node'
 
 Sentry.init({
-	dsn: 'https://your-dsn@sentry.io/project-id',
-	environment: process.env.NODE_ENV,
-	release: process.env.APP_VERSION,
+  dsn: 'https://your-dsn@sentry.io/project-id',
+  environment: process.env.NODE_ENV,
+  release: process.env.APP_VERSION,
 
-	// 采样率：1.0 = 100%，0.1 = 10%
-	tracesSampleRate: 1.0,
+  // 采样率：1.0 = 100%，0.1 = 10%
+  tracesSampleRate: 1.0,
 
-	// 自定义采样
-	tracesSampler: (samplingContext) => {
-		if (samplingContext.transactionContext.name === '/health') {
-			return 0 // 健康检查不采样
-		}
-		return 0.1
-	},
+  // 自定义采样
+  tracesSampler: (samplingContext) => {
+    if (samplingContext.transactionContext.name === '/health') {
+      return 0 // 健康检查不采样
+    }
+    return 0.1
+  },
 })
 
 // 和 Express 一起使用
@@ -1419,10 +1419,10 @@ Sentry.setupExpressErrorHandler(app)
 ```javascript
 // 捕获异常
 try {
-	riskyOperation()
+  riskyOperation()
 } catch (err) {
-	Sentry.captureException(err)
-	throw err // 仍然要抛出，让其他处理器处理
+  Sentry.captureException(err)
+  throw err // 仍然要抛出，让其他处理器处理
 }
 
 // 捕获消息（不是异常）
@@ -1430,13 +1430,13 @@ Sentry.captureMessage('出问题了', 'warning')
 
 // 捕获自定义事件
 Sentry.captureEvent({
-	message: '自定义事件',
-	contexts: {
-		custom: {
-			orderId: '123',
-			action: 'checkout',
-		},
-	},
+  message: '自定义事件',
+  contexts: {
+    custom: {
+      orderId: '123',
+      action: 'checkout',
+    },
+  },
 })
 ```
 
@@ -1445,18 +1445,18 @@ Sentry.captureEvent({
 ```javascript
 // 创建事务
 const transaction = Sentry.startTransaction({
-	op: 'task',
-	name: '处理订单',
+  op: 'task',
+  name: '处理订单',
 })
 
 try {
-	await processOrder()
-	transaction.setStatus('ok')
+  await processOrder()
+  transaction.setStatus('ok')
 } catch (err) {
-	transaction.setStatus('error')
-	Sentry.captureException(err)
+  transaction.setStatus('error')
+  Sentry.captureException(err)
 } finally {
-	transaction.finish()
+  transaction.finish()
 }
 ```
 

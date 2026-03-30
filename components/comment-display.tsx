@@ -8,14 +8,14 @@ import { MessageCircle } from 'lucide-react'
  * 评论数通过 getAllPostsWithViews 一次性获取，不再单独查询。
  */
 interface CommentDisplayProps {
-	comments: number
+  comments: number
 }
 
 export function CommentDisplay({ comments }: CommentDisplayProps) {
-	return (
-		<span className="flex items-center gap-1.5 rounded-md border border-border/5 bg-muted px-2 py-1">
-			<MessageCircle className="size-4 text-primary" />
-			<span>{comments}</span>
-		</span>
-	)
+  return (
+    <span className="flex items-center gap-1.5 rounded-md border border-border/5 bg-muted px-2 py-1">
+      <MessageCircle className="size-4 text-primary" />
+      <span>{comments}</span>
+    </span>
+  )
 }

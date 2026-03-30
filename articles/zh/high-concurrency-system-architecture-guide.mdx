@@ -270,24 +270,24 @@ const redisClient = createClient({ url: 'redis://localhost:6379' })
 
 // 创建一个限流器
 const limiter = rateLimit({
-	// 使用Redis存储限流数据
-	store: new RedisStore({
-		sendCommand: (...args) => redisClient.sendCommand(args),
-	}),
-	windowMs: 1 * 60 * 1000, // 时间窗口：1分钟
-	max: 1000, // 限制每个IP每分钟最多1000个请求
-	standardHeaders: true, // 返回标准限流头信息
-	legacyHeaders: false, // 关闭旧的限流头信息
-	handler: (req, res) => {
-		// 请求被限流时返回什么
-		res.status(429).json({ error: '请求过于频繁，请稍后再试' })
-	},
+  // 使用Redis存储限流数据
+  store: new RedisStore({
+    sendCommand: (...args) => redisClient.sendCommand(args),
+  }),
+  windowMs: 1 * 60 * 1000, // 时间窗口：1分钟
+  max: 1000, // 限制每个IP每分钟最多1000个请求
+  standardHeaders: true, // 返回标准限流头信息
+  legacyHeaders: false, // 关闭旧的限流头信息
+  handler: (req, res) => {
+    // 请求被限流时返回什么
+    res.status(429).json({ error: '请求过于频繁，请稍后再试' })
+  },
 })
 
 // 应用到订单服务路由
 // 所有 /api/order 开头的请求都要过限流器
 app.use('/api/order', limiter, (req, res) => {
-	// 转发请求到订单微服务
+  // 转发请求到订单微服务
 })
 ```
 
@@ -302,17 +302,17 @@ app.use('/api/order', limiter, (req, res) => {
 ```javascript
 // Node.js 轮询负载均衡器实现
 class LoadBalancer {
-	constructor(servers) {
-		this.servers = servers
-		this.currentIndex = 0
-	}
+  constructor(servers) {
+    this.servers = servers
+    this.currentIndex = 0
+  }
 
-	getNextServer() {
-		const server = this.servers[this.currentIndex]
-		// 递增索引，超过数组长度就回到0
-		this.currentIndex = (this.currentIndex + 1) % this.servers.length
-		return server
-	}
+  getNextServer() {
+    const server = this.servers[this.currentIndex]
+    // 递增索引，超过数组长度就回到0
+    this.currentIndex = (this.currentIndex + 1) % this.servers.length
+    return server
+  }
 }
 
 // 使用示例
@@ -321,8 +321,8 @@ const lb = new LoadBalancer(servers)
 
 // 模拟10个请求
 for (let i = 0; i < 10; i++) {
-	const server = lb.getNextServer()
-	console.log(`请求 ${i + 1} 转发到 ${server}`)
+  const server = lb.getNextServer()
+  console.log(`请求 ${i + 1} 转发到 ${server}`)
 }
 ```
 
@@ -357,38 +357,38 @@ for (let i = 0; i < 10; i++) {
 // Node.js 加权轮询算法（平滑加权）
 // "平滑"是指请求分配得更均匀，不会一下子全打到某一台
 class WeightedRoundRobin {
-	constructor(servers) {
-		// servers: [{ name: 'S1', weight: 5 }, { name: 'S2', weight: 1 }]
-		this.servers = servers
-		// 每个节点当前的"权重"，初始为0
-		this.currentWeights = servers.map(() => 0)
-		// 所有节点的权重总和
-		this.totalWeight = servers.reduce((sum, s) => sum + s.weight, 0)
-	}
+  constructor(servers) {
+    // servers: [{ name: 'S1', weight: 5 }, { name: 'S2', weight: 1 }]
+    this.servers = servers
+    // 每个节点当前的"权重"，初始为0
+    this.currentWeights = servers.map(() => 0)
+    // 所有节点的权重总和
+    this.totalWeight = servers.reduce((sum, s) => sum + s.weight, 0)
+  }
 
-	getNextServer() {
-		let maxWeight = -1
-		let index = -1
+  getNextServer() {
+    let maxWeight = -1
+    let index = -1
 
-		// 第一步：给每个节点的当前权重加上它的原始权重
-		for (let i = 0; i < this.servers.length; i++) {
-			this.currentWeights[i] += this.servers[i].weight
+    // 第一步：给每个节点的当前权重加上它的原始权重
+    for (let i = 0; i < this.servers.length; i++) {
+      this.currentWeights[i] += this.servers[i].weight
 
-			// 同时找出当前权重最大的节点
-			if (this.currentWeights[i] > maxWeight) {
-				maxWeight = this.currentWeights[i]
-				index = i
-			}
-		}
+      // 同时找出当前权重最大的节点
+      if (this.currentWeights[i] > maxWeight) {
+        maxWeight = this.currentWeights[i]
+        index = i
+      }
+    }
 
-		// 第二步：被选中的节点，减去总权重
-		if (index !== -1) {
-			this.currentWeights[index] -= this.totalWeight
-			return this.servers[index]
-		}
+    // 第二步：被选中的节点，减去总权重
+    if (index !== -1) {
+      this.currentWeights[index] -= this.totalWeight
+      return this.servers[index]
+    }
 
-		return null
-	}
+    return null
+  }
 }
 ```
 
@@ -404,18 +404,18 @@ IP哈希通过计算IP的哈希值来决定路由：
 import crypto from 'node:crypto'
 
 function ipHash(ipAddress, serverList) {
-	/**
-	 * 根据客户端IP哈希选择服务器
-	 * 核心思想：同一个IP，每次计算结果一样
-	 */
-	// 计算IP的MD5哈希值
-	const hash = crypto.createHash('md5').update(ipAddress).digest('hex')
-	// 取哈希值的一部分转为整数，然后对服务器数量取模
-	// 取模的结果永远在 0 ~ 服务器数量-1 之间
-	const hashInt = parseInt(hash.substring(0, 8), 16)
-	const serverIndex = hashInt % serverList.length
+  /**
+   * 根据客户端IP哈希选择服务器
+   * 核心思想：同一个IP，每次计算结果一样
+   */
+  // 计算IP的MD5哈希值
+  const hash = crypto.createHash('md5').update(ipAddress).digest('hex')
+  // 取哈希值的一部分转为整数，然后对服务器数量取模
+  // 取模的结果永远在 0 ~ 服务器数量-1 之间
+  const hashInt = parseInt(hash.substring(0, 8), 16)
+  const serverIndex = hashInt % serverList.length
 
-	return serverList[serverIndex]
+  return serverList[serverIndex]
 }
 
 // 测试
@@ -423,8 +423,8 @@ const servers = ['Server1', 'Server2', 'Server3', 'Server4']
 const ips = ['192.168.1.100', '192.168.1.101', '192.168.1.100']
 
 ips.forEach((ip) => {
-	const selected = ipHash(ip, servers)
-	console.log(`IP ${ip} -> ${selected}`)
+  const selected = ipHash(ip, servers)
+  console.log(`IP ${ip} -> ${selected}`)
 })
 ```
 
@@ -448,72 +448,72 @@ IP 192.168.1.100 -> Server3  # 相同IP始终命中同一台服务器
 import crypto from 'node:crypto'
 
 class ConsistentHash {
-	constructor(nodes = [], virtualNodes = 150) {
-		// 虚拟节点数：每个物理节点在哈希环上占多少个位置
-		// 虚拟节点越多，数据分布越均匀
-		this.virtualNodes = virtualNodes
-		this.ring = new Map() // 哈希环：hash值 -> 节点名
-		this.sortedKeys = [] // 排序后的哈希值列表，用于二分查找
+  constructor(nodes = [], virtualNodes = 150) {
+    // 虚拟节点数：每个物理节点在哈希环上占多少个位置
+    // 虚拟节点越多，数据分布越均匀
+    this.virtualNodes = virtualNodes
+    this.ring = new Map() // 哈希环：hash值 -> 节点名
+    this.sortedKeys = [] // 排序后的哈希值列表，用于二分查找
 
-		// 初始化时把每个节点加到环上
-		nodes.forEach((node) => this.addNode(node))
-	}
+    // 初始化时把每个节点加到环上
+    nodes.forEach((node) => this.addNode(node))
+  }
 
-	// 计算哈希值
-	_hash(key) {
-		const hash = crypto.createHash('md5').update(key).digest('hex')
-		return parseInt(hash.substring(0, 8), 16)
-	}
+  // 计算哈希值
+  _hash(key) {
+    const hash = crypto.createHash('md5').update(key).digest('hex')
+    return parseInt(hash.substring(0, 8), 16)
+  }
 
-	// 把节点加到环上
-	addNode(node) {
-		// 每个物理节点对应多个虚拟节点
-		for (let i = 0; i < this.virtualNodes; i++) {
-			const virtualKey = `${node}:${i}`
-			const hashValue = this._hash(virtualKey)
-			this.ring.set(hashValue, node)
-			this.sortedKeys.push(hashValue)
-		}
-		// 排序，便于二分查找
-		this.sortedKeys.sort((a, b) => a - b)
-	}
+  // 把节点加到环上
+  addNode(node) {
+    // 每个物理节点对应多个虚拟节点
+    for (let i = 0; i < this.virtualNodes; i++) {
+      const virtualKey = `${node}:${i}`
+      const hashValue = this._hash(virtualKey)
+      this.ring.set(hashValue, node)
+      this.sortedKeys.push(hashValue)
+    }
+    // 排序，便于二分查找
+    this.sortedKeys.sort((a, b) => a - b)
+  }
 
-	// 把节点从环上移除
-	removeNode(node) {
-		for (let i = 0; i < this.virtualNodes; i++) {
-			const virtualKey = `${node}:${i}`
-			const hashValue = this._hash(virtualKey)
-			this.ring.delete(hashValue)
-			this.sortedKeys = this.sortedKeys.filter((k) => k !== hashValue)
-		}
-	}
+  // 把节点从环上移除
+  removeNode(node) {
+    for (let i = 0; i < this.virtualNodes; i++) {
+      const virtualKey = `${node}:${i}`
+      const hashValue = this._hash(virtualKey)
+      this.ring.delete(hashValue)
+      this.sortedKeys = this.sortedKeys.filter((k) => k !== hashValue)
+    }
+  }
 
-	// 查找数据应该存在哪个节点上
-	getNode(key) {
-		if (this.ring.size === 0) return null
+  // 查找数据应该存在哪个节点上
+  getNode(key) {
+    if (this.ring.size === 0) return null
 
-		// 计算数据的哈希值
-		const hashValue = this._hash(key)
+    // 计算数据的哈希值
+    const hashValue = this._hash(key)
 
-		// 二分查找：找到第一个 >= hashValue 的位置
-		// 因为哈希环是闭环，如果找不到，就回到环的开头
-		let low = 0,
-			high = this.sortedKeys.length - 1
+    // 二分查找：找到第一个 >= hashValue 的位置
+    // 因为哈希环是闭环，如果找不到，就回到环的开头
+    let low = 0,
+      high = this.sortedKeys.length - 1
 
-		while (low <= high) {
-			const mid = Math.floor((low + high) / 2)
-			if (this.sortedKeys[mid] >= hashValue) {
-				high = mid - 1
-			} else {
-				low = mid + 1
-			}
-		}
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2)
+      if (this.sortedKeys[mid] >= hashValue) {
+        high = mid - 1
+      } else {
+        low = mid + 1
+      }
+    }
 
-		// 如果超出范围，则返回第一个节点（闭合环）
-		if (low === this.sortedKeys.length) low = 0
+    // 如果超出范围，则返回第一个节点（闭合环）
+    if (low === this.sortedKeys.length) low = 0
 
-		return this.ring.get(this.sortedKeys[low])
-	}
+    return this.ring.get(this.sortedKeys[low])
+  }
 }
 
 // 使用示例
@@ -522,8 +522,8 @@ const ch = new ConsistentHash(nodes, 100) // 每个节点100个虚拟节点
 
 const keys = ['user:1001', 'user:1002', 'user:1003', 'product:2001', 'order:3001']
 keys.forEach((key) => {
-	const node = ch.getNode(key)
-	console.log(`Key: ${key} -> Node: ${node}`)
+  const node = ch.getNode(key)
+  console.log(`Key: ${key} -> Node: ${node}`)
 })
 ```
 
@@ -544,40 +544,40 @@ keys.forEach((key) => {
 ```javascript
 // Node.js 最少连接负载均衡实现
 class LeastConnectionsLB {
-	constructor(servers) {
-		// 初始化每个服务器的连接数
-		this.servers = servers.map((addr) => ({
-			address: addr,
-			connections: 0,
-		}))
-	}
+  constructor(servers) {
+    // 初始化每个服务器的连接数
+    this.servers = servers.map((addr) => ({
+      address: addr,
+      connections: 0,
+    }))
+  }
 
-	// 获取下一个服务器
-	getNextServer() {
-		let selected = null
-		let minConns = Infinity
+  // 获取下一个服务器
+  getNextServer() {
+    let selected = null
+    let minConns = Infinity
 
-		// 找出连接数最少的服务器
-		for (const server of this.servers) {
-			if (server.connections < minConns) {
-				minConns = server.connections
-				selected = server
-			}
-		}
+    // 找出连接数最少的服务器
+    for (const server of this.servers) {
+      if (server.connections < minConns) {
+        minConns = server.connections
+        selected = server
+      }
+    }
 
-		// 给选中的服务器连接数+1
-		if (selected) {
-			selected.connections++
-		}
-		return selected
-	}
+    // 给选中的服务器连接数+1
+    if (selected) {
+      selected.connections++
+    }
+    return selected
+  }
 
-	// 释放连接（请求处理完后调用）
-	release(server) {
-		if (server && server.connections > 0) {
-			server.connections--
-		}
-	}
+  // 释放连接（请求处理完后调用）
+  release(server) {
+    if (server && server.connections > 0) {
+      server.connections--
+    }
+  }
 }
 ```
 
@@ -654,55 +654,55 @@ const app = express()
 // 健康检查端点
 // 访问 GET /health 会返回应用的详细健康状态
 app.get('/health', async (req, res) => {
-	const healthcheck = {
-		uptime: process.uptime(), // 进程运行时间
-		status: 'OK',
-		timestamp: Date.now(),
-		checks: {}, // 各项检查的结果
-	}
+  const healthcheck = {
+    uptime: process.uptime(), // 进程运行时间
+    status: 'OK',
+    timestamp: Date.now(),
+    checks: {}, // 各项检查的结果
+  }
 
-	try {
-		// 检查数据库连接
-		// mongoose.connection.readyState:
-		// 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
-		if (mongoose.connection.readyState === 1) {
-			healthcheck.checks.database = 'up'
-		} else {
-			healthcheck.checks.database = 'down'
-		}
+  try {
+    // 检查数据库连接
+    // mongoose.connection.readyState:
+    // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+    if (mongoose.connection.readyState === 1) {
+      healthcheck.checks.database = 'up'
+    } else {
+      healthcheck.checks.database = 'down'
+    }
 
-		// 检查Redis连接
-		const redisClient = createClient()
-		await redisClient.connect()
-		await redisClient.ping()
-		healthcheck.checks.redis = 'up'
-		await redisClient.quit()
+    // 检查Redis连接
+    const redisClient = createClient()
+    await redisClient.connect()
+    await redisClient.ping()
+    healthcheck.checks.redis = 'up'
+    await redisClient.quit()
 
-		// 检查磁盘空间
-		const diskSpace = await checkDiskSpace('/')
-		const freeSpaceGB = diskSpace.free / 1024 / 1024 / 1024
+    // 检查磁盘空间
+    const diskSpace = await checkDiskSpace('/')
+    const freeSpaceGB = diskSpace.free / 1024 / 1024 / 1024
 
-		if (freeSpaceGB > 10) {
-			healthcheck.checks.disk = 'up'
-		} else {
-			healthcheck.checks.disk = 'warning'
-		}
-	} catch (error) {
-		healthcheck.status = 'error'
-		healthcheck.error = error.message
-		return res.status(503).json(healthcheck) // 503表示服务不可用
-	}
+    if (freeSpaceGB > 10) {
+      healthcheck.checks.disk = 'up'
+    } else {
+      healthcheck.checks.disk = 'warning'
+    }
+  } catch (error) {
+    healthcheck.status = 'error'
+    healthcheck.error = error.message
+    return res.status(503).json(healthcheck) // 503表示服务不可用
+  }
 
-	// 如果有任何关键依赖异常，返回503
-	if (healthcheck.checks.database === 'down' || healthcheck.checks.redis === 'down') {
-		return res.status(503).json(healthcheck)
-	}
+  // 如果有任何关键依赖异常，返回503
+  if (healthcheck.checks.database === 'down' || healthcheck.checks.redis === 'down') {
+    return res.status(503).json(healthcheck)
+  }
 
-	res.json(healthcheck)
+  res.json(healthcheck)
 })
 
 app.listen(3000, () => {
-	console.log('Health check server running on port 3000')
+  console.log('Health check server running on port 3000')
 })
 ```
 
@@ -768,56 +768,56 @@ const numCPUs = cpus().length
 
 // 判断是主进程还是工作进程
 if (cluster.isPrimary) {
-	// ============ 主进程（Manager）============
+  // ============ 主进程（Manager）============
 
-	console.log(`主进程 ${process.pid} 正在运行`)
-	console.log(`CPU核心数: ${numCPUs}`)
+  console.log(`主进程 ${process.pid} 正在运行`)
+  console.log(`CPU核心数: ${numCPUs}`)
 
-	// 记录工作进程数量
-	let workerCount = 0
+  // 记录工作进程数量
+  let workerCount = 0
 
-	// 衍生工作进程
-	for (let i = 0; i < numCPUs; i++) {
-		const worker = cluster.fork() // fork一个工作进程
-		workerCount++
+  // 衍生工作进程
+  for (let i = 0; i < numCPUs; i++) {
+    const worker = cluster.fork() // fork一个工作进程
+    workerCount++
 
-		// 监听工作进程消息
-		worker.on('message', (msg) => {
-			console.log(`主进程收到消息: ${msg} from ${worker.process.pid}`)
-		})
-	}
+    // 监听工作进程消息
+    worker.on('message', (msg) => {
+      console.log(`主进程收到消息: ${msg} from ${worker.process.pid}`)
+    })
+  }
 
-	console.log(`已启动 ${workerCount} 个工作进程`)
+  console.log(`已启动 ${workerCount} 个工作进程`)
 
-	// 监听工作进程退出事件
-	cluster.on('exit', (worker, code, signal) => {
-		console.log(`工作进程 ${worker.process.pid} 退出，退出码: ${code}, 信号: ${signal}`)
+  // 监听工作进程退出事件
+  cluster.on('exit', (worker, code, signal) => {
+    console.log(`工作进程 ${worker.process.pid} 退出，退出码: ${code}, 信号: ${signal}`)
 
-		// 自动重启（生产环境必须有这个！）
-		console.log('正在重启工作进程...')
-		cluster.fork()
-	})
+    // 自动重启（生产环境必须有这个！）
+    console.log('正在重启工作进程...')
+    cluster.fork()
+  })
 
-	// 定期向工作进程发送状态查询（可选）
-	setInterval(() => {
-		const workers = Object.values(cluster.workers)
-		workers.forEach((worker) => {
-			worker.send({ cmd: 'status' })
-		})
-	}, 10000)
+  // 定期向工作进程发送状态查询（可选）
+  setInterval(() => {
+    const workers = Object.values(cluster.workers)
+    workers.forEach((worker) => {
+      worker.send({ cmd: 'status' })
+    })
+  }, 10000)
 } else {
-	// ============ 工作进程（Worker）============
+  // ============ 工作进程（Worker）============
 
-	// 工作进程启动HTTP服务
-	const server = http
-		.createServer((req, res) => {
-			// 模拟请求处理
-			const start = Date.now()
+  // 工作进程启动HTTP服务
+  const server = http
+    .createServer((req, res) => {
+      // 模拟请求处理
+      const start = Date.now()
 
-			// 根据不同路径返回不同内容
-			if (req.url === '/') {
-				res.writeHead(200, { 'Content-Type': 'text/html' })
-				res.end(`
+      // 根据不同路径返回不同内容
+      if (req.url === '/') {
+        res.writeHead(200, { 'Content-Type': 'text/html' })
+        res.end(`
                 <html>
                 <head><title>Cluster Demo</title></head>
                 <body>
@@ -826,62 +826,62 @@ if (cluster.isPrimary) {
                 </body>
                 </html>
             `)
-			} else if (req.url === '/health') {
-				// 健康检查
-				res.writeHead(200, { 'Content-Type': 'application/json' })
-				res.end(
-					JSON.stringify({
-						pid: process.pid,
-						memory: process.memoryUsage(),
-						uptime: process.uptime(),
-						timestamp: Date.now(),
-					}),
-				)
-			} else if (req.url === '/slow') {
-				// 模拟慢请求（处理需要5秒）
-				setTimeout(() => {
-					res.writeHead(200)
-					res.end(`Slow response from ${process.pid}`)
-				}, 5000)
-			} else {
-				res.writeHead(404)
-				res.end('Not Found')
-			}
-		})
-		.listen(3000)
+      } else if (req.url === '/health') {
+        // 健康检查
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(
+          JSON.stringify({
+            pid: process.pid,
+            memory: process.memoryUsage(),
+            uptime: process.uptime(),
+            timestamp: Date.now(),
+          }),
+        )
+      } else if (req.url === '/slow') {
+        // 模拟慢请求（处理需要5秒）
+        setTimeout(() => {
+          res.writeHead(200)
+          res.end(`Slow response from ${process.pid}`)
+        }, 5000)
+      } else {
+        res.writeHead(404)
+        res.end('Not Found')
+      }
+    })
+    .listen(3000)
 
-	console.log(`工作进程 ${process.pid} 启动，监听端口 3000`)
+  console.log(`工作进程 ${process.pid} 启动，监听端口 3000`)
 
-	// 处理主进程发来的消息
-	process.on('message', (msg) => {
-		if (msg.cmd === 'status') {
-			console.log(`Worker ${process.pid} 状态: 存活`)
-			process.send({ cmd: 'status', pid: process.pid, memory: process.memoryUsage() })
-		} else if (msg.cmd === 'shutdown') {
-			console.log(`Worker ${process.pid} 收到关闭信号，优雅退出`)
-			gracefulShutdown()
-		}
-	})
+  // 处理主进程发来的消息
+  process.on('message', (msg) => {
+    if (msg.cmd === 'status') {
+      console.log(`Worker ${process.pid} 状态: 存活`)
+      process.send({ cmd: 'status', pid: process.pid, memory: process.memoryUsage() })
+    } else if (msg.cmd === 'shutdown') {
+      console.log(`Worker ${process.pid} 收到关闭信号，优雅退出`)
+      gracefulShutdown()
+    }
+  })
 
-	// 优雅退出函数
-	function gracefulShutdown() {
-		server.close(() => {
-			console.log(`Worker ${process.pid} 已关闭所有连接`)
-			process.exit(0)
-		})
+  // 优雅退出函数
+  function gracefulShutdown() {
+    server.close(() => {
+      console.log(`Worker ${process.pid} 已关闭所有连接`)
+      process.exit(0)
+    })
 
-		// 设置超时强制退出（防止有请求一直不结束）
-		setTimeout(() => {
-			console.error(`Worker ${process.pid} 强制退出`)
-			process.exit(1)
-		}, 10000)
-	}
+    // 设置超时强制退出（防止有请求一直不结束）
+    setTimeout(() => {
+      console.error(`Worker ${process.pid} 强制退出`)
+      process.exit(1)
+    }, 10000)
+  }
 
-	// 处理未捕获的异常（防止进程崩溃）
-	process.on('uncaughtException', (err) => {
-		console.error(`Worker ${process.pid} 未捕获异常:`, err)
-		gracefulShutdown()
-	})
+  // 处理未捕获的异常（防止进程崩溃）
+  process.on('uncaughtException', (err) => {
+    console.error(`Worker ${process.pid} 未捕获异常:`, err)
+    gracefulShutdown()
+  })
 }
 ```
 
@@ -928,113 +928,113 @@ sequenceDiagram
 // graceful-shutdown.js
 // 这是一个通用的优雅退出管理器
 class GracefulShutdownManager {
-	constructor(server, options = {}) {
-		this.server = server
-		this.options = {
-			timeout: options.timeout || 10000, // 超时时间，默认10秒
-			connections: new Set(), // 跟踪所有连接
-			...options,
-		}
+  constructor(server, options = {}) {
+    this.server = server
+    this.options = {
+      timeout: options.timeout || 10000, // 超时时间，默认10秒
+      connections: new Set(), // 跟踪所有连接
+      ...options,
+    }
 
-		this.isShuttingDown = false
-		this.pendingRequests = 0 // 等待中的请求数
+    this.isShuttingDown = false
+    this.pendingRequests = 0 // 等待中的请求数
 
-		// 开始跟踪连接
-		this.trackConnections()
-	}
+    // 开始跟踪连接
+    this.trackConnections()
+  }
 
-	// 跟踪TCP连接
-	trackConnections() {
-		this.server.on('connection', (socket) => {
-			// 如果正在关闭，销毁新连接
-			if (this.isShuttingDown) {
-				socket.destroy()
-				return
-			}
+  // 跟踪TCP连接
+  trackConnections() {
+    this.server.on('connection', (socket) => {
+      // 如果正在关闭，销毁新连接
+      if (this.isShuttingDown) {
+        socket.destroy()
+        return
+      }
 
-			this.options.connections.add(socket)
+      this.options.connections.add(socket)
 
-			socket.on('close', () => {
-				this.options.connections.delete(socket)
-			})
-		})
+      socket.on('close', () => {
+        this.options.connections.delete(socket)
+      })
+    })
 
-		// 跟踪HTTP请求
-		this.server.on('request', (req, res) => {
-			// 正在关闭时，告诉客户端关闭连接
-			if (this.isShuttingDown) {
-				res.setHeader('Connection', 'close')
-			}
+    // 跟踪HTTP请求
+    this.server.on('request', (req, res) => {
+      // 正在关闭时，告诉客户端关闭连接
+      if (this.isShuttingDown) {
+        res.setHeader('Connection', 'close')
+      }
 
-			this.pendingRequests++
+      this.pendingRequests++
 
-			res.on('finish', () => {
-				this.pendingRequests--
-				this.checkIfDone()
-			})
-		})
-	}
+      res.on('finish', () => {
+        this.pendingRequests--
+        this.checkIfDone()
+      })
+    })
+  }
 
-	// 执行关闭
-	shutdown(callback) {
-		if (this.isShuttingDown) return
+  // 执行关闭
+  shutdown(callback) {
+    if (this.isShuttingDown) return
 
-		this.isShuttingDown = true
-		console.log('开始优雅退出...')
+    this.isShuttingDown = true
+    console.log('开始优雅退出...')
 
-		// 停止接收新连接
-		this.server.close(() => {
-			console.log('服务器已关闭，不再接受新连接')
-		})
+    // 停止接收新连接
+    this.server.close(() => {
+      console.log('服务器已关闭，不再接受新连接')
+    })
 
-		// 设置超时强制退出
-		const forceShutdown = setTimeout(() => {
-			console.error(`优雅退出超时(${this.options.timeout}ms)，强制退出`)
-			this.destroyConnections()
-			process.exit(1)
-		}, this.options.timeout)
+    // 设置超时强制退出
+    const forceShutdown = setTimeout(() => {
+      console.error(`优雅退出超时(${this.options.timeout}ms)，强制退出`)
+      this.destroyConnections()
+      process.exit(1)
+    }, this.options.timeout)
 
-		// 定期检查是否所有请求都处理完了
-		const checkInterval = setInterval(() => {
-			if (this.pendingRequests === 0 && this.options.connections.size === 0) {
-				// 所有请求处理完毕，可以安全退出了
-				clearInterval(checkInterval)
-				clearTimeout(forceShutdown)
-				console.log('所有请求处理完成，退出进程')
-				process.exit(0)
-			} else {
-				console.log(`等待中 - 请求: ${this.pendingRequests}, 连接: ${this.options.connections.size}`)
-			}
-		}, 1000)
-	}
+    // 定期检查是否所有请求都处理完了
+    const checkInterval = setInterval(() => {
+      if (this.pendingRequests === 0 && this.options.connections.size === 0) {
+        // 所有请求处理完毕，可以安全退出了
+        clearInterval(checkInterval)
+        clearTimeout(forceShutdown)
+        console.log('所有请求处理完成，退出进程')
+        process.exit(0)
+      } else {
+        console.log(`等待中 - 请求: ${this.pendingRequests}, 连接: ${this.options.connections.size}`)
+      }
+    }, 1000)
+  }
 
-	// 强制销毁所有连接
-	destroyConnections() {
-		this.options.connections.forEach((socket) => {
-			if (!socket.destroyed) {
-				socket.destroy()
-			}
-		})
-		this.options.connections.clear()
-	}
+  // 强制销毁所有连接
+  destroyConnections() {
+    this.options.connections.forEach((socket) => {
+      if (!socket.destroyed) {
+        socket.destroy()
+      }
+    })
+    this.options.connections.clear()
+  }
 
-	// 检查是否可以退出
-	checkIfDone() {
-		if (this.isShuttingDown && this.pendingRequests === 0 && this.options.connections.size === 0) {
-			console.log('所有请求处理完成，退出进程')
-			process.exit(0)
-		}
-	}
+  // 检查是否可以退出
+  checkIfDone() {
+    if (this.isShuttingDown && this.pendingRequests === 0 && this.options.connections.size === 0) {
+      console.log('所有请求处理完成，退出进程')
+      process.exit(0)
+    }
+  }
 }
 
 // 使用示例
 import http from 'node:http'
 const server = http.createServer((req, res) => {
-	// 模拟请求处理需要2秒
-	setTimeout(() => {
-		res.writeHead(200)
-		res.end('OK')
-	}, 2000)
+  // 模拟请求处理需要2秒
+  setTimeout(() => {
+    res.writeHead(200)
+    res.end('OK')
+  }, 2000)
 })
 
 const shutdownManager = new GracefulShutdownManager(server)
@@ -1049,12 +1049,12 @@ process.on('SIGQUIT', () => shutdownManager.shutdown())
 
 // 处理未捕获异常
 process.on('uncaughtException', (err) => {
-	console.error('未捕获异常:', err)
-	shutdownManager.shutdown()
+  console.error('未捕获异常:', err)
+  shutdownManager.shutdown()
 })
 
 server.listen(3000, () => {
-	console.log('服务器启动，PID:', process.pid)
+  console.log('服务器启动，PID:', process.pid)
 })
 ```
 
@@ -1081,68 +1081,68 @@ server.listen(3000, () => {
 // ecosystem.config.js
 // 使用 CommonJS 还是 ESM 取决于你的项目配置
 export default {
-	apps: [
-		{
-			name: 'my-app', // 应用名称
-			script: './app.js',
-			instances: 'max', // 启动多少个实例，'max'表示CPU核心数
-			exec_mode: 'cluster', // cluster模式 vs fork模式
+  apps: [
+    {
+      name: 'my-app', // 应用名称
+      script: './app.js',
+      instances: 'max', // 启动多少个实例，'max'表示CPU核心数
+      exec_mode: 'cluster', // cluster模式 vs fork模式
 
-			// 开发时可以用watch，上线后要关闭
-			watch: false,
+      // 开发时可以用watch，上线后要关闭
+      watch: false,
 
-			// ============ 自动重启配置 ============
-			autorestart: true, // 崩溃后自动重启
-			restart_delay: 5000, // 重启前等待5秒
-			max_restarts: 10, // 最多重启10次
-			min_uptime: '10s', // 运行超过10秒才算"正常启动"
+      // ============ 自动重启配置 ============
+      autorestart: true, // 崩溃后自动重启
+      restart_delay: 5000, // 重启前等待5秒
+      max_restarts: 10, // 最多重启10次
+      min_uptime: '10s', // 运行超过10秒才算"正常启动"
 
-			// ============ 内存限制 ============
-			// 内存超过500M就自动重启，防止内存泄漏
-			max_memory_restart: '500M',
+      // ============ 内存限制 ============
+      // 内存超过500M就自动重启，防止内存泄漏
+      max_memory_restart: '500M',
 
-			// ============ 优雅退出配置 ============
-			kill_timeout: 10000, // 发送SIGTERM后等待10秒，强制SIGKILL
-			listen_timeout: 3000, // 启动超时时间
+      // ============ 优雅退出配置 ============
+      kill_timeout: 10000, // 发送SIGTERM后等待10秒，强制SIGKILL
+      listen_timeout: 3000, // 启动超时时间
 
-			// ============ 环境变量 ============
-			env: {
-				NODE_ENV: 'production',
-				PORT: 3000,
-			},
+      // ============ 环境变量 ============
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+      },
 
-			// ============ 日志配置 ============
-			log_file: './logs/app.log', // 所有日志
-			error_file: './logs/err.log', // 错误日志
-			out_file: './logs/out.log', // 标准输出
-			log_date_format: 'YYYY-MM-DD HH:mm:ss', // 日志时间格式
-			merge_logs: true, // 合并多实例日志
+      // ============ 日志配置 ============
+      log_file: './logs/app.log', // 所有日志
+      error_file: './logs/err.log', // 错误日志
+      out_file: './logs/out.log', // 标准输出
+      log_date_format: 'YYYY-MM-DD HH:mm:ss', // 日志时间格式
+      merge_logs: true, // 合并多实例日志
 
-			// ============ 监控配置 ============
-			instance_var: 'INSTANCE_ID', // 环境变量名，包含实例ID
+      // ============ 监控配置 ============
+      instance_var: 'INSTANCE_ID', // 环境变量名，包含实例ID
 
-			// ============ 健康检查 ============
-			// PM2会定期访问这个URL，失败就重启
-			health_check: {
-				url: 'http://localhost:3000/health',
-				interval: 30000, // 每30秒检查一次
-				timeout: 5000, // 超时5秒
-			},
-		},
-		{
-			// 第二个应用：后台Worker
-			name: 'worker-app',
-			script: './worker.js',
-			instances: 2, // 启动2个Worker
-			exec_mode: 'fork', // 后台任务用fork模式
-			cron_restart: '0 0 * * *', // 每天凌晨重启，防止内存泄漏
+      // ============ 健康检查 ============
+      // PM2会定期访问这个URL，失败就重启
+      health_check: {
+        url: 'http://localhost:3000/health',
+        interval: 30000, // 每30秒检查一次
+        timeout: 5000, // 超时5秒
+      },
+    },
+    {
+      // 第二个应用：后台Worker
+      name: 'worker-app',
+      script: './worker.js',
+      instances: 2, // 启动2个Worker
+      exec_mode: 'fork', // 后台任务用fork模式
+      cron_restart: '0 0 * * *', // 每天凌晨重启，防止内存泄漏
 
-			env: {
-				NODE_ENV: 'production',
-				WORKER_TYPE: 'background',
-			},
-		},
-	],
+      env: {
+        NODE_ENV: 'production',
+        WORKER_TYPE: 'background',
+      },
+    },
+  ],
 }
 ```
 
@@ -1159,29 +1159,29 @@ const app = express()
 
 // 优雅退出处理
 process.on('SIGINT', () => {
-	console.log('收到SIGINT信号，准备优雅退出')
+  console.log('收到SIGINT信号，准备优雅退出')
 
-	// 关闭数据库连接
-	db.close(() => {
-		console.log('数据库连接已关闭')
+  // 关闭数据库连接
+  db.close(() => {
+    console.log('数据库连接已关闭')
 
-		// 关闭Redis连接
-		redis.quit(() => {
-			console.log('Redis连接已关闭')
+    // 关闭Redis连接
+    redis.quit(() => {
+      console.log('Redis连接已关闭')
 
-			// 关闭HTTP服务器
-			server.close(() => {
-				console.log('HTTP服务器已关闭')
-				process.exit(0)
-			})
-		})
-	})
+      // 关闭HTTP服务器
+      server.close(() => {
+        console.log('HTTP服务器已关闭')
+        process.exit(0)
+      })
+    })
+  })
 
-	// 超时强制退出（防止有些连接一直不断开）
-	setTimeout(() => {
-		console.error('优雅退出超时，强制退出')
-		process.exit(1)
-	}, 10000)
+  // 超时强制退出（防止有些连接一直不断开）
+  setTimeout(() => {
+    console.error('优雅退出超时，强制退出')
+    process.exit(1)
+  }, 10000)
 })
 ```
 
@@ -1290,221 +1290,221 @@ Redis是最常用的分布式缓存。来看一个完整的缓存实现：
 import { createClient } from 'redis'
 
 class RedisCache {
-	constructor(options = {}) {
-		this.client = createClient({
-			url: `redis://${options.host || 'localhost'}:${options.port || 6379}`,
-			password: options.password,
-			database: options.db || 0,
-		})
+  constructor(options = {}) {
+    this.client = createClient({
+      url: `redis://${options.host || 'localhost'}:${options.port || 6379}`,
+      password: options.password,
+      database: options.db || 0,
+    })
 
-		// 错误处理
-		this.client.on('error', (err) => console.error('Redis错误:', err))
-		this.client.on('connect', () => console.log('Redis连接成功'))
+    // 错误处理
+    this.client.on('error', (err) => console.error('Redis错误:', err))
+    this.client.on('connect', () => console.log('Redis连接成功'))
 
-		this.client.connect().catch(console.error)
+    this.client.connect().catch(console.error)
 
-		// 默认过期时间（秒）
-		this.defaultTTL = options.defaultTTL || 3600
+    // 默认过期时间（秒）
+    this.defaultTTL = options.defaultTTL || 3600
 
-		// 缓存前缀，避免key冲突
-		this.prefix = options.prefix || 'cache:'
-	}
+    // 缓存前缀，避免key冲突
+    this.prefix = options.prefix || 'cache:'
+  }
 
-	// 生成带前缀的key
-	_getKey(key) {
-		return `${this.prefix}${key}`
-	}
+  // 生成带前缀的key
+  _getKey(key) {
+    return `${this.prefix}${key}`
+  }
 
-	// ============ 基础操作 ============
+  // ============ 基础操作 ============
 
-	// 获取缓存
-	async get(key) {
-		try {
-			const cacheKey = this._getKey(key)
-			const data = await this.client.get(cacheKey)
+  // 获取缓存
+  async get(key) {
+    try {
+      const cacheKey = this._getKey(key)
+      const data = await this.client.get(cacheKey)
 
-			if (data) {
-				console.log(`缓存命中: ${key}`)
-				return JSON.parse(data)
-			}
+      if (data) {
+        console.log(`缓存命中: ${key}`)
+        return JSON.parse(data)
+      }
 
-			console.log(`缓存未命中: ${key}`)
-			return null
-		} catch (err) {
-			console.error('获取缓存失败:', err)
-			return null
-		}
-	}
+      console.log(`缓存未命中: ${key}`)
+      return null
+    } catch (err) {
+      console.error('获取缓存失败:', err)
+      return null
+    }
+  }
 
-	// 设置缓存
-	async set(key, value, ttl = this.defaultTTL) {
-		try {
-			const cacheKey = this._getKey(key)
-			const data = JSON.stringify(value)
+  // 设置缓存
+  async set(key, value, ttl = this.defaultTTL) {
+    try {
+      const cacheKey = this._getKey(key)
+      const data = JSON.stringify(value)
 
-			if (ttl > 0) {
-				// EX: 设置过期时间（秒）
-				await this.client.set(cacheKey, data, { EX: ttl })
-			} else {
-				// 不过期
-				await this.client.set(cacheKey, data)
-			}
+      if (ttl > 0) {
+        // EX: 设置过期时间（秒）
+        await this.client.set(cacheKey, data, { EX: ttl })
+      } else {
+        // 不过期
+        await this.client.set(cacheKey, data)
+      }
 
-			console.log(`缓存设置: ${key}, TTL: ${ttl}s`)
-			return true
-		} catch (err) {
-			console.error('设置缓存失败:', err)
-			return false
-		}
-	}
+      console.log(`缓存设置: ${key}, TTL: ${ttl}s`)
+      return true
+    } catch (err) {
+      console.error('设置缓存失败:', err)
+      return false
+    }
+  }
 
-	// 删除缓存
-	async del(key) {
-		try {
-			const cacheKey = this._getKey(key)
-			await this.client.del(cacheKey)
-			console.log(`缓存删除: ${key}`)
-			return true
-		} catch (err) {
-			console.error('删除缓存失败:', err)
-			return false
-		}
-	}
+  // 删除缓存
+  async del(key) {
+    try {
+      const cacheKey = this._getKey(key)
+      await this.client.del(cacheKey)
+      console.log(`缓存删除: ${key}`)
+      return true
+    } catch (err) {
+      console.error('删除缓存失败:', err)
+      return false
+    }
+  }
 
-	// ============ 高级操作 ============
+  // ============ 高级操作 ============
 
-	// 获取缓存，如果不存在则通过回调获取并缓存
-	// 这是最常用的模式，一次搞定缓存穿透和缓存击穿
-	async remember(key, ttl, callback) {
-		let value = await this.get(key)
+  // 获取缓存，如果不存在则通过回调获取并缓存
+  // 这是最常用的模式，一次搞定缓存穿透和缓存击穿
+  async remember(key, ttl, callback) {
+    let value = await this.get(key)
 
-		if (value !== null) {
-			return value
-		}
+    if (value !== null) {
+      return value
+    }
 
-		// 缓存不存在，使用互斥锁防止缓存击穿
-		const lockKey = `lock:${key}`
-		const lockAcquired = await this.acquireLock(lockKey, 10)
+    // 缓存不存在，使用互斥锁防止缓存击穿
+    const lockKey = `lock:${key}`
+    const lockAcquired = await this.acquireLock(lockKey, 10)
 
-		if (lockAcquired) {
-			try {
-				// 双重检查：可能其他进程已经加载了缓存
-				value = await this.get(key)
-				if (value !== null) {
-					return value
-				}
+    if (lockAcquired) {
+      try {
+        // 双重检查：可能其他进程已经加载了缓存
+        value = await this.get(key)
+        if (value !== null) {
+          return value
+        }
 
-				// 调用回调函数获取数据（通常是查数据库）
-				value = await callback()
+        // 调用回调函数获取数据（通常是查数据库）
+        value = await callback()
 
-				// 缓存起来
-				await this.set(key, value, ttl)
-				return value
-			} finally {
-				// 释放锁
-				await this.releaseLock(lockKey)
-			}
-		} else {
-			// 没拿到锁，说明其他进程正在加载，等一下再试
-			await new Promise((resolve) => setTimeout(resolve, 100))
-			return await this.get(key)
-		}
-	}
+        // 缓存起来
+        await this.set(key, value, ttl)
+        return value
+      } finally {
+        // 释放锁
+        await this.releaseLock(lockKey)
+      }
+    } else {
+      // 没拿到锁，说明其他进程正在加载，等一下再试
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      return await this.get(key)
+    }
+  }
 
-	// 获取分布式锁
-	async acquireLock(lockKey, ttl) {
-		// SET ... NX EX: 只有key不存在时才设置，并设置过期时间
-		const result = await this.client.set(lockKey, 'locked', { NX: true, EX: ttl })
-		return result === 'OK'
-	}
+  // 获取分布式锁
+  async acquireLock(lockKey, ttl) {
+    // SET ... NX EX: 只有key不存在时才设置，并设置过期时间
+    const result = await this.client.set(lockKey, 'locked', { NX: true, EX: ttl })
+    return result === 'OK'
+  }
 
-	// 释放锁
-	async releaseLock(lockKey) {
-		await this.client.del(lockKey)
-	}
+  // 释放锁
+  async releaseLock(lockKey) {
+    await this.client.del(lockKey)
+  }
 
-	// ============ 标签功能（批量失效） ============
+  // ============ 标签功能（批量失效） ============
 
-	// 给一组缓存打标签
-	async tag(tag, keys) {
-		const tagKey = `tag:${tag}`
-		await this.client.set(tagKey, JSON.stringify(keys))
-		// 设置tag永不过期，但可以手动删除
-		return true
-	}
+  // 给一组缓存打标签
+  async tag(tag, keys) {
+    const tagKey = `tag:${tag}`
+    await this.client.set(tagKey, JSON.stringify(keys))
+    // 设置tag永不过期，但可以手动删除
+    return true
+  }
 
-	// 获取标签下的所有缓存
-	async getByTag(tag) {
-		const tagKey = `tag:${tag}`
-		const data = await this.client.get(tagKey)
+  // 获取标签下的所有缓存
+  async getByTag(tag) {
+    const tagKey = `tag:${tag}`
+    const data = await this.client.get(tagKey)
 
-		if (!data) return []
+    if (!data) return []
 
-		const keys = JSON.parse(data)
-		const results = []
+    const keys = JSON.parse(data)
+    const results = []
 
-		for (const key of keys) {
-			const value = await this.get(key)
-			if (value) {
-				results.push({ key, value })
-			}
-		}
+    for (const key of keys) {
+      const value = await this.get(key)
+      if (value) {
+        results.push({ key, value })
+      }
+    }
 
-		return results
-	}
+    return results
+  }
 
-	// 清理标签下的所有缓存
-	async flushTag(tag) {
-		const tagKey = `tag:${tag}`
-		const data = await this.client.get(tagKey)
+  // 清理标签下的所有缓存
+  async flushTag(tag) {
+    const tagKey = `tag:${tag}`
+    const data = await this.client.get(tagKey)
 
-		if (data) {
-			const keys = JSON.parse(data)
-			for (const key of keys) {
-				await this.client.del(key)
-			}
-			await this.client.del(tagKey)
-		}
+    if (data) {
+      const keys = JSON.parse(data)
+      for (const key of keys) {
+        await this.client.del(key)
+      }
+      await this.client.del(tagKey)
+    }
 
-		return true
-	}
+    return true
+  }
 }
 
 // 使用示例
 async function example() {
-	const cache = new RedisCache({
-		host: 'localhost',
-		port: 6379,
-		prefix: 'app:',
-		defaultTTL: 1800, // 30分钟
-	})
+  const cache = new RedisCache({
+    host: 'localhost',
+    port: 6379,
+    prefix: 'app:',
+    defaultTTL: 1800, // 30分钟
+  })
 
-	// ============ 基础使用 ============
-	await cache.set('user:1001', { name: '张三', age: 30 })
-	const user = await cache.get('user:1001')
-	console.log('用户数据:', user)
+  // ============ 基础使用 ============
+  await cache.set('user:1001', { name: '张三', age: 30 })
+  const user = await cache.get('user:1001')
+  console.log('用户数据:', user)
 
-	// ============ remember模式 ============
-	// 自动处理缓存不存在的情况
-	const product = await cache.remember('product:2001', 3600, async () => {
-		console.log('从数据库加载产品数据...')
-		// 模拟数据库查询
-		return {
-			id: 2001,
-			name: 'iPhone 15',
-			price: 6999,
-		}
-	})
-	console.log('产品数据:', product)
+  // ============ remember模式 ============
+  // 自动处理缓存不存在的情况
+  const product = await cache.remember('product:2001', 3600, async () => {
+    console.log('从数据库加载产品数据...')
+    // 模拟数据库查询
+    return {
+      id: 2001,
+      name: 'iPhone 15',
+      price: 6999,
+    }
+  })
+  console.log('产品数据:', product)
 
-	// ============ 标签使用 ============
-	// 给"手机"分类下的产品打标签
-	await cache.tag('category:phone', ['app:product:2001', 'app:product:2002'])
-	const phones = await cache.getByTag('category:phone')
-	console.log('手机产品:', phones)
+  // ============ 标签使用 ============
+  // 给"手机"分类下的产品打标签
+  await cache.tag('category:phone', ['app:product:2001', 'app:product:2002'])
+  const phones = await cache.getByTag('category:phone')
+  console.log('手机产品:', phones)
 
-	// 当手机分类更新时，一键清理所有相关缓存
-	await cache.flushTag('category:phone')
+  // 当手机分类更新时，一键清理所有相关缓存
+  await cache.flushTag('category:phone')
 }
 
 example()
@@ -1525,31 +1525,31 @@ example()
 ```javascript
 // 缓存穿透解决方案：缓存空值
 async function getUserById(id) {
-	const cacheKey = `user:${id}`
-	let user = await cache.get(cacheKey)
+  const cacheKey = `user:${id}`
+  let user = await cache.get(cacheKey)
 
-	// 缓存中有值
-	if (user !== null) {
-		// 判断是否是空值标记
-		if (user === 'NULL_VALUE') {
-			return null
-		}
-		return user
-	}
+  // 缓存中有值
+  if (user !== null) {
+    // 判断是否是空值标记
+    if (user === 'NULL_VALUE') {
+      return null
+    }
+    return user
+  }
 
-	// 缓存中没有，查询数据库
-	user = await db.query('SELECT * FROM users WHERE id = ?', [id])
+  // 缓存中没有，查询数据库
+  user = await db.query('SELECT * FROM users WHERE id = ?', [id])
 
-	if (user) {
-		// 有数据，缓存真实值
-		await cache.set(cacheKey, user, 3600)
-		return user
-	} else {
-		// 没数据，缓存空值（短期）
-		// 这样下次查询同样的ID，1分钟内不会打到数据库
-		await cache.set(cacheKey, 'NULL_VALUE', 300)
-		return null
-	}
+  if (user) {
+    // 有数据，缓存真实值
+    await cache.set(cacheKey, user, 3600)
+    return user
+  } else {
+    // 没数据，缓存空值（短期）
+    // 这样下次查询同样的ID，1分钟内不会打到数据库
+    await cache.set(cacheKey, 'NULL_VALUE', 300)
+    return null
+  }
 }
 ```
 
@@ -1564,40 +1564,40 @@ async function getUserById(id) {
 ```javascript
 // 缓存击穿解决方案：互斥锁
 async function getHotProduct(id) {
-	const cacheKey = `product:${id}`
-	let product = await cache.get(cacheKey)
+  const cacheKey = `product:${id}`
+  let product = await cache.get(cacheKey)
 
-	if (product) {
-		return product
-	}
+  if (product) {
+    return product
+  }
 
-	// 尝试获取锁
-	const lockKey = `lock:product:${id}`
-	const lock = await cache.acquireLock(lockKey, 10)
+  // 尝试获取锁
+  const lockKey = `lock:product:${id}`
+  const lock = await cache.acquireLock(lockKey, 10)
 
-	if (lock) {
-		try {
-			// 双重检查：可能其他进程已经加载了缓存
-			product = await cache.get(cacheKey)
-			if (product) {
-				return product
-			}
+  if (lock) {
+    try {
+      // 双重检查：可能其他进程已经加载了缓存
+      product = await cache.get(cacheKey)
+      if (product) {
+        return product
+      }
 
-			// 查数据库
-			product = await db.query('SELECT * FROM products WHERE id = ?', [id])
+      // 查数据库
+      product = await db.query('SELECT * FROM products WHERE id = ?', [id])
 
-			// 设置缓存，不过期或长过期时间
-			await cache.set(cacheKey, product, 3600)
+      // 设置缓存，不过期或长过期时间
+      await cache.set(cacheKey, product, 3600)
 
-			return product
-		} finally {
-			await cache.releaseLock(lockKey)
-		}
-	} else {
-		// 没拿到锁，等一下再试（可能其他进程正在加载缓存）
-		await new Promise((resolve) => setTimeout(resolve, 100))
-		return getHotProduct(id)
-	}
+      return product
+    } finally {
+      await cache.releaseLock(lockKey)
+    }
+  } else {
+    // 没拿到锁，等一下再试（可能其他进程正在加载缓存）
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    return getHotProduct(id)
+  }
 }
 ```
 
@@ -1610,10 +1610,10 @@ async function getHotProduct(id) {
 ```javascript
 // 缓存雪崩解决方案：随机过期时间
 async function setWithRandomExpire(key, value, baseTTL) {
-	// 在基础过期时间上增加0-300秒随机值
-	// 这样不会所有缓存同时过期
-	const randomTTL = baseTTL + Math.floor(Math.random() * 300)
-	await cache.set(key, value, randomTTL)
+  // 在基础过期时间上增加0-300秒随机值
+  // 这样不会所有缓存同时过期
+  const randomTTL = baseTTL + Math.floor(Math.random() * 300)
+  await cache.set(key, value, randomTTL)
 }
 ```
 
@@ -1622,31 +1622,31 @@ async function setWithRandomExpire(key, value, baseTTL) {
 ```javascript
 // 永不过期，后台异步更新
 async function getWithBackgroundRefresh(key, ttl, fetchFunction) {
-	let value = await cache.get(key)
+  let value = await cache.get(key)
 
-	// 检查是否需要刷新
-	const ttlRemaining = await cache.client.ttl(cache._getKey(key))
+  // 检查是否需要刷新
+  const ttlRemaining = await cache.client.ttl(cache._getKey(key))
 
-	// 如果剩余时间小于1/3，异步刷新
-	// 这样缓存永远不会"过期"，只有"需要更新"的概念
-	if (ttlRemaining < ttl / 3) {
-		// 异步刷新，不阻塞当前请求
-		refreshCache(key, ttl, fetchFunction).catch((err) => {
-			console.error('缓存刷新失败:', err)
-		})
-	}
+  // 如果剩余时间小于1/3，异步刷新
+  // 这样缓存永远不会"过期"，只有"需要更新"的概念
+  if (ttlRemaining < ttl / 3) {
+    // 异步刷新，不阻塞当前请求
+    refreshCache(key, ttl, fetchFunction).catch((err) => {
+      console.error('缓存刷新失败:', err)
+    })
+  }
 
-	return value
+  return value
 }
 
 async function refreshCache(key, ttl, fetchFunction) {
-	try {
-		const newValue = await fetchFunction()
-		await cache.set(key, newValue, ttl)
-		console.log(`缓存刷新成功: ${key}`)
-	} catch (err) {
-		console.error(`缓存刷新失败: ${key}`, err)
-	}
+  try {
+    const newValue = await fetchFunction()
+    await cache.set(key, newValue, ttl)
+    console.log(`缓存刷新成功: ${key}`)
+  } catch (err) {
+    console.error(`缓存刷新失败: ${key}`, err)
+  }
 }
 ```
 
@@ -1824,46 +1824,46 @@ WHERE tablename = 'users';
 ```javascript
 // Node.js PostgreSQL数据库水平分片路由示例
 class ShardingManager {
-	constructor(dbClusters) {
-		// dbClusters: PostgreSQL数据库连接池数组 [db0, db1, ...]
-		this.dbClusters = dbClusters
-	}
+  constructor(dbClusters) {
+    // dbClusters: PostgreSQL数据库连接池数组 [db0, db1, ...]
+    this.dbClusters = dbClusters
+  }
 
-	// 根据用户ID获取对应的数据库节点（库级分片）
-	// 比如4个数据库节点，userId % 4 决定用哪个
-	getDatabaseNode(userId) {
-		const dbIndex = Number(BigInt(userId) % BigInt(this.dbClusters.length))
-		return this.dbClusters[dbIndex]
-	}
+  // 根据用户ID获取对应的数据库节点（库级分片）
+  // 比如4个数据库节点，userId % 4 决定用哪个
+  getDatabaseNode(userId) {
+    const dbIndex = Number(BigInt(userId) % BigInt(this.dbClusters.length))
+    return this.dbClusters[dbIndex]
+  }
 
-	// 根据订单ID获取对应的表名（表级分片）
-	// 比如16个表，orderId % 16 决定用哪个
-	getTableName(orderId) {
-		const tableIndex = Number(BigInt(orderId) % BigInt(16))
-		return `orders_${tableIndex}`
-	}
+  // 根据订单ID获取对应的表名（表级分片）
+  // 比如16个表，orderId % 16 决定用哪个
+  getTableName(orderId) {
+    const tableIndex = Number(BigInt(orderId) % BigInt(16))
+    return `orders_${tableIndex}`
+  }
 
-	// 执行分片查询
-	async executeQuery(userId, orderId, sql, params) {
-		const db = this.getDatabaseNode(userId)
+  // 执行分片查询
+  async executeQuery(userId, orderId, sql, params) {
+    const db = this.getDatabaseNode(userId)
 
-		// 对于PostgreSQL分区表，可以直接使用主表名
-		// 但如果需要手动路由到特定分区：
-		const tableName = this.getTableName(orderId)
+    // 对于PostgreSQL分区表，可以直接使用主表名
+    // 但如果需要手动路由到特定分区：
+    const tableName = this.getTableName(orderId)
 
-		// 将逻辑表名替换为实际分区表名
-		const finalSql = sql.replace('orders', tableName)
+    // 将逻辑表名替换为实际分区表名
+    const finalSql = sql.replace('orders', tableName)
 
-		console.log(`路由至PostgreSQL节点: ${userId % this.dbClusters.length}, 表名: ${tableName}`)
-		return await db.query(finalSql, params)
-	}
+    console.log(`路由至PostgreSQL节点: ${userId % this.dbClusters.length}, 表名: ${tableName}`)
+    return await db.query(finalSql, params)
+  }
 
-	// 使用PostgreSQL原生分区表（推荐）
-	async executePartitionedQuery(userId, sql, params) {
-		const db = this.getDatabaseNode(userId)
-		console.log(`路由至PostgreSQL节点: ${userId % this.dbClusters.length}, 使用分区表`)
-		return await db.query(sql, params)
-	}
+  // 使用PostgreSQL原生分区表（推荐）
+  async executePartitionedQuery(userId, sql, params) {
+    const db = this.getDatabaseNode(userId)
+    console.log(`路由至PostgreSQL节点: ${userId % this.dbClusters.length}, 使用分区表`)
+    return await db.query(sql, params)
+  }
 }
 ```
 
@@ -1879,137 +1879,137 @@ const { Pool } = pg
 
 // 创建连接池
 const pool = new Pool({
-	host: 'localhost',
-	port: 5432,
-	user: 'postgres',
-	password: 'password',
-	database: 'myapp',
+  host: 'localhost',
+  port: 5432,
+  user: 'postgres',
+  password: 'password',
+  database: 'myapp',
 
-	// 连接池大小
-	max: 50, // 最多50个连接
-	min: 5, // 保持最少5个连接
+  // 连接池大小
+  max: 50, // 最多50个连接
+  min: 5, // 保持最少5个连接
 
-	// 超时配置
-	idleTimeoutMillis: 60000, // 空闲60秒就释放
-	connectionTimeoutMillis: 10000, // 获取连接超时10秒
+  // 超时配置
+  idleTimeoutMillis: 60000, // 空闲60秒就释放
+  connectionTimeoutMillis: 10000, // 获取连接超时10秒
 
-	allowExitOnIdle: false, // 空闲时不退出
+  allowExitOnIdle: false, // 空闲时不退出
 
-	// SSL配置（生产环境必须开）
-	ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  // SSL配置（生产环境必须开）
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 
-	// PostgreSQL特定配置
-	application_name: 'myapp-api', // 用于日志和监控
-	statement_timeout: 30000, // 单条SQL超时30秒
-	query_timeout: 60000, // 查询超时
-	keepAlive: true, // 保持连接活跃
-	keepAliveInitialDelayMillis: 10000, // 10秒后开始心跳
+  // PostgreSQL特定配置
+  application_name: 'myapp-api', // 用于日志和监控
+  statement_timeout: 30000, // 单条SQL超时30秒
+  query_timeout: 60000, // 查询超时
+  keepAlive: true, // 保持连接活跃
+  keepAliveInitialDelayMillis: 10000, // 10秒后开始心跳
 })
 
 // 连接池事件监听
 pool.on('connect', (client) => {
-	console.log('PostgreSQL连接建立')
+  console.log('PostgreSQL连接建立')
 })
 
 pool.on('acquire', (client) => {
-	console.log('客户端从连接池获取')
+  console.log('客户端从连接池获取')
 })
 
 pool.on('remove', (client) => {
-	console.log('客户端从连接池移除')
+  console.log('客户端从连接池移除')
 })
 
 pool.on('error', (err, client) => {
-	console.error('PostgreSQL连接池错误:', err)
+  console.error('PostgreSQL连接池错误:', err)
 })
 
 // 带重试的查询
 async function queryWithRetry(sql, params, retries = 3) {
-	for (let i = 0; i < retries; i++) {
-		try {
-			const result = await pool.query(sql, params)
-			return result.rows
-		} catch (err) {
-			console.error(`查询失败，重试 ${i + 1}/${retries}:`, err.message)
+  for (let i = 0; i < retries; i++) {
+    try {
+      const result = await pool.query(sql, params)
+      return result.rows
+    } catch (err) {
+      console.error(`查询失败，重试 ${i + 1}/${retries}:`, err.message)
 
-			// 如果是连接错误，等一下再试
-			if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
-				console.log('连接失败，等待后重试...')
-				await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)))
-				continue
-			}
+      // 如果是连接错误，等一下再试
+      if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
+        console.log('连接失败，等待后重试...')
+        await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)))
+        continue
+      }
 
-			if (i === retries - 1) {
-				throw err
-			}
+      if (i === retries - 1) {
+        throw err
+      }
 
-			await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)))
-		}
-	}
+      await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)))
+    }
+  }
 }
 
 // 事务示例
 async function transactionExample() {
-	const client = await pool.connect()
+  const client = await pool.connect()
 
-	try {
-		await client.query('BEGIN') // 开始事务
+  try {
+    await client.query('BEGIN') // 开始事务
 
-		// 执行多个操作
-		await client.query('UPDATE accounts SET balance = balance - $1 WHERE id = $2', [100, 1])
-		await client.query('UPDATE accounts SET balance = balance + $1 WHERE id = $2', [100, 2])
+    // 执行多个操作
+    await client.query('UPDATE accounts SET balance = balance - $1 WHERE id = $2', [100, 1])
+    await client.query('UPDATE accounts SET balance = balance + $1 WHERE id = $2', [100, 2])
 
-		// 检查约束
-		const checkResult = await client.query('SELECT balance FROM accounts WHERE balance < 0')
-		if (checkResult.rows.length > 0) {
-			throw new Error('余额不足，事务回滚')
-		}
+    // 检查约束
+    const checkResult = await client.query('SELECT balance FROM accounts WHERE balance < 0')
+    if (checkResult.rows.length > 0) {
+      throw new Error('余额不足，事务回滚')
+    }
 
-		await client.query('COMMIT')
-		console.log('事务提交成功')
-	} catch (err) {
-		await client.query('ROLLBACK')
-		console.error('事务回滚:', err.message)
-		throw err
-	} finally {
-		client.release() // 释放连接回池
-	}
+    await client.query('COMMIT')
+    console.log('事务提交成功')
+  } catch (err) {
+    await client.query('ROLLBACK')
+    console.error('事务回滚:', err.message)
+    throw err
+  } finally {
+    client.release() // 释放连接回池
+  }
 }
 
 // 批量插入优化
 async function batchInsert(tableName, rows) {
-	if (!rows || rows.length === 0) return
+  if (!rows || rows.length === 0) return
 
-	const columns = Object.keys(rows[0])
-	const placeholders = rows
-		.map(
-			(_, rowIndex) => `(${columns.map((_, colIndex) => `$${rowIndex * columns.length + colIndex + 1}`).join(', ')})`,
-		)
-		.join(', ')
+  const columns = Object.keys(rows[0])
+  const placeholders = rows
+    .map(
+      (_, rowIndex) => `(${columns.map((_, colIndex) => `$${rowIndex * columns.length + colIndex + 1}`).join(', ')})`,
+    )
+    .join(', ')
 
-	const values = rows.flatMap((row) => columns.map((col) => row[col]))
-	const sql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES ${placeholders} ON CONFLICT DO NOTHING`
+  const values = rows.flatMap((row) => columns.map((col) => row[col]))
+  const sql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES ${placeholders} ON CONFLICT DO NOTHING`
 
-	try {
-		const result = await pool.query(sql, values)
-		console.log(`批量插入 ${result.rowCount} 行数据`)
-		return result
-	} catch (err) {
-		console.error('批量插入失败:', err.message)
-		throw err
-	}
+  try {
+    const result = await pool.query(sql, values)
+    console.log(`批量插入 ${result.rowCount} 行数据`)
+    return result
+  } catch (err) {
+    console.error('批量插入失败:', err.message)
+    throw err
+  }
 }
 
 // 连接池健康检查
 async function checkPoolHealth() {
-	try {
-		const result = await pool.query('SELECT 1 as health, version() as pg_version, current_timestamp as timestamp')
-		console.log('PostgreSQL连接池健康检查通过:', result.rows[0])
-		return true
-	} catch (err) {
-		console.error('PostgreSQL连接池健康检查失败:', err.message)
-		return false
-	}
+  try {
+    const result = await pool.query('SELECT 1 as health, version() as pg_version, current_timestamp as timestamp')
+    console.log('PostgreSQL连接池健康检查通过:', result.rows[0])
+    return true
+  } catch (err) {
+    console.error('PostgreSQL连接池健康检查失败:', err.message)
+    return false
+  }
 }
 ```
 
@@ -2265,96 +2265,96 @@ import { createClient } from 'redis'
 const client = createClient()
 
 class FeatureToggle {
-	constructor() {
-		this.features = new Map()
-		this.watchInterval = 5000 // 5秒检查一次配置变更
-		this.startWatching()
-	}
+  constructor() {
+    this.features = new Map()
+    this.watchInterval = 5000 // 5秒检查一次配置变更
+    this.startWatching()
+  }
 
-	async getFeature(featureName, userId) {
-		// 从Redis获取配置
-		const config = await this.getConfig(featureName)
+  async getFeature(featureName, userId) {
+    // 从Redis获取配置
+    const config = await this.getConfig(featureName)
 
-		if (!config.enabled) {
-			return false
-		}
+    if (!config.enabled) {
+      return false
+    }
 
-		// 根据配置决定是否启用
-		switch (config.strategy) {
-			case 'percentage':
-				// 按百分比启用（比如10%的用户）
-				return this._checkPercentage(userId, config.percentage)
+    // 根据配置决定是否启用
+    switch (config.strategy) {
+      case 'percentage':
+        // 按百分比启用（比如10%的用户）
+        return this._checkPercentage(userId, config.percentage)
 
-			case 'userList':
-				// 白名单用户（指定ID的用户）
-				return config.users.includes(userId)
+      case 'userList':
+        // 白名单用户（指定ID的用户）
+        return config.users.includes(userId)
 
-			case 'environment':
-				// 按环境启用（dev/staging/production）
-				return process.env.NODE_ENV === config.environment
+      case 'environment':
+        // 按环境启用（dev/staging/production）
+        return process.env.NODE_ENV === config.environment
 
-			default:
-				return config.enabled
-		}
-	}
+      default:
+        return config.enabled
+    }
+  }
 
-	// 按用户ID哈希，决定是否启用
-	_checkPercentage(userId, percentage) {
-		const hash = this._hash(userId)
-		return hash % 100 < percentage
-	}
+  // 按用户ID哈希，决定是否启用
+  _checkPercentage(userId, percentage) {
+    const hash = this._hash(userId)
+    return hash % 100 < percentage
+  }
 
-	_hash(str) {
-		let hash = 0
-		for (let i = 0; i < str.length; i++) {
-			hash = (hash << 5) - hash + str.charCodeAt(i)
-			hash = hash & hash // Convert to 32bit integer
-		}
-		return Math.abs(hash)
-	}
+  _hash(str) {
+    let hash = 0
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash << 5) - hash + str.charCodeAt(i)
+      hash = hash & hash // Convert to 32bit integer
+    }
+    return Math.abs(hash)
+  }
 
-	async getConfig(featureName) {
-		// 先从本地缓存获取
-		if (this.features.has(featureName)) {
-			return this.features.get(featureName)
-		}
+  async getConfig(featureName) {
+    // 先从本地缓存获取
+    if (this.features.has(featureName)) {
+      return this.features.get(featureName)
+    }
 
-		// 从Redis获取
-		return new Promise((resolve) => {
-			client.get(`feature:${featureName}`, (err, data) => {
-				if (err || !data) {
-					resolve({ enabled: false, strategy: 'default' })
-					return
-				}
+    // 从Redis获取
+    return new Promise((resolve) => {
+      client.get(`feature:${featureName}`, (err, data) => {
+        if (err || !data) {
+          resolve({ enabled: false, strategy: 'default' })
+          return
+        }
 
-				const config = JSON.parse(data)
-				this.features.set(featureName, config)
-				resolve(config)
-			})
-		})
-	}
+        const config = JSON.parse(data)
+        this.features.set(featureName, config)
+        resolve(config)
+      })
+    })
+  }
 
-	startWatching() {
-		// 定期清除本地缓存，从Redis重新获取
-		setInterval(() => {
-			this.features.clear()
-		}, this.watchInterval)
-	}
+  startWatching() {
+    // 定期清除本地缓存，从Redis重新获取
+    setInterval(() => {
+      this.features.clear()
+    }, this.watchInterval)
+  }
 }
 
 // 使用示例
 const toggle = new FeatureToggle()
 
 app.get('/api/new-payment', async (req, res) => {
-	const userId = req.user.id
-	const enabled = await toggle.getFeature('new-payment', userId)
+  const userId = req.user.id
+  const enabled = await toggle.getFeature('new-payment', userId)
 
-	if (!enabled) {
-		return res.redirect('/api/old-payment')
-	}
+  if (!enabled) {
+    return res.redirect('/api/old-payment')
+  }
 
-	// 新支付逻辑
-	res.json({ payment: 'new', method: '新支付方式' })
+  // 新支付逻辑
+  res.json({ payment: 'new', method: '新支付方式' })
 })
 ```
 
@@ -2430,32 +2430,32 @@ promClient.collectDefaultMetrics({ register })
 // HTTP请求持续时间（直方图）
 // 用于计算P50/P90/P99等
 const httpRequestDuration = new promClient.Histogram({
-	name: 'http_request_duration_seconds',
-	help: 'HTTP请求持续时间（秒）',
-	labelNames: ['method', 'route', 'status_code'],
-	// 桶的范围：0.1s, 0.3s, 0.5s, 0.8s, 1s, 3s, 5s, 10s
-	buckets: [0.1, 0.3, 0.5, 0.8, 1, 3, 5, 10],
+  name: 'http_request_duration_seconds',
+  help: 'HTTP请求持续时间（秒）',
+  labelNames: ['method', 'route', 'status_code'],
+  // 桶的范围：0.1s, 0.3s, 0.5s, 0.8s, 1s, 3s, 5s, 10s
+  buckets: [0.1, 0.3, 0.5, 0.8, 1, 3, 5, 10],
 })
 
 // HTTP请求总数（计数器）
 const httpRequestTotal = new promClient.Counter({
-	name: 'http_requests_total',
-	help: 'HTTP请求总数',
-	labelNames: ['method', 'route', 'status_code'],
+  name: 'http_requests_total',
+  help: 'HTTP请求总数',
+  labelNames: ['method', 'route', 'status_code'],
 })
 
 // 当前活跃连接数（仪表盘）
 const activeConnections = new promClient.Gauge({
-	name: 'http_active_connections',
-	help: '当前活跃连接数',
+  name: 'http_active_connections',
+  help: '当前活跃连接数',
 })
 
 // 数据库查询持续时间
 const dbQueryDuration = new promClient.Histogram({
-	name: 'db_query_duration_seconds',
-	help: '数据库查询持续时间',
-	labelNames: ['query_type', 'table'],
-	buckets: [0.01, 0.05, 0.1, 0.5, 1, 2],
+  name: 'db_query_duration_seconds',
+  help: '数据库查询持续时间',
+  labelNames: ['query_type', 'table'],
+  buckets: [0.01, 0.05, 0.1, 0.5, 1, 2],
 })
 
 // 注册指标
@@ -2468,73 +2468,73 @@ register.registerMetric(dbQueryDuration)
 
 // 记录HTTP指标
 const metricsMiddleware = responseTime((req, res, time) => {
-	// 记录请求持续时间
-	httpRequestDuration.labels(req.method, req.route?.path || req.path, res.statusCode).observe(time / 1000)
+  // 记录请求持续时间
+  httpRequestDuration.labels(req.method, req.route?.path || req.path, res.statusCode).observe(time / 1000)
 
-	// 记录请求总数
-	httpRequestTotal.labels(req.method, req.route?.path || req.path, res.statusCode).inc()
+  // 记录请求总数
+  httpRequestTotal.labels(req.method, req.route?.path || req.path, res.statusCode).inc()
 })
 
 // 活跃连接跟踪
 app.use((req, res, next) => {
-	activeConnections.inc()
+  activeConnections.inc()
 
-	res.on('finish', () => {
-		activeConnections.dec()
-	})
+  res.on('finish', () => {
+    activeConnections.dec()
+  })
 
-	next()
+  next()
 })
 
 // ============ 监控端点 ============
 // Prometheus会定期访问这个端点拉取指标
 app.get('/metrics', async (req, res) => {
-	try {
-		res.set('Content-Type', register.contentType)
-		res.end(await register.metrics())
-	} catch (err) {
-		res.status(500).end(err.message)
-	}
+  try {
+    res.set('Content-Type', register.contentType)
+    res.end(await register.metrics())
+  } catch (err) {
+    res.status(500).end(err.message)
+  }
 })
 
 // ============ 业务监控示例 ============
 class BusinessMetrics {
-	constructor() {
-		// 订单计数器
-		this.orderCounter = new promClient.Counter({
-			name: 'orders_total',
-			help: '订单总数',
-			labelNames: ['status', 'payment_method'],
-		})
+  constructor() {
+    // 订单计数器
+    this.orderCounter = new promClient.Counter({
+      name: 'orders_total',
+      help: '订单总数',
+      labelNames: ['status', 'payment_method'],
+    })
 
-		// 收入仪表盘
-		this.revenueGauge = new promClient.Gauge({
-			name: 'revenue_total',
-			help: '总收入',
-		})
+    // 收入仪表盘
+    this.revenueGauge = new promClient.Gauge({
+      name: 'revenue_total',
+      help: '总收入',
+    })
 
-		register.registerMetric(this.orderCounter)
-		register.registerMetric(this.revenueGauge)
-	}
+    register.registerMetric(this.orderCounter)
+    register.registerMetric(this.revenueGauge)
+  }
 
-	recordOrder(status, paymentMethod) {
-		this.orderCounter.labels(status, paymentMethod).inc()
-	}
+  recordOrder(status, paymentMethod) {
+    this.orderCounter.labels(status, paymentMethod).inc()
+  }
 
-	updateRevenue(amount) {
-		this.revenueGauge.set(amount)
-	}
+  updateRevenue(amount) {
+    this.revenueGauge.set(amount)
+  }
 }
 
 const businessMetrics = new BusinessMetrics()
 
 // 使用示例
 app.post('/api/orders', (req, res) => {
-	// 创建订单逻辑...
-	businessMetrics.recordOrder('completed', 'alipay')
-	businessMetrics.updateRevenue(2999)
+  // 创建订单逻辑...
+  businessMetrics.recordOrder('completed', 'alipay')
+  businessMetrics.updateRevenue(2999)
 
-	res.json({ success: true })
+  res.json({ success: true })
 })
 ```
 
@@ -2646,116 +2646,116 @@ import { ElasticsearchTransport } from 'winston-elasticsearch'
 
 // Elasticsearch传输
 const esTransport = new ElasticsearchTransport({
-	level: 'info',
-	clientOpts: {
-		node: 'http://elasticsearch:9200',
-		maxRetries: 5,
-		requestTimeout: 10000,
-	},
-	index: 'app-logs-' + new Date().toISOString().split('T')[0], // 每天一个索引
-	transformer: (logData) => {
-		return {
-			'@timestamp': logData.timestamp,
-			severity: logData.level,
-			message: logData.message,
-			service: 'my-app',
-			pid: process.pid,
-			...logData.meta,
-		}
-	},
+  level: 'info',
+  clientOpts: {
+    node: 'http://elasticsearch:9200',
+    maxRetries: 5,
+    requestTimeout: 10000,
+  },
+  index: 'app-logs-' + new Date().toISOString().split('T')[0], // 每天一个索引
+  transformer: (logData) => {
+    return {
+      '@timestamp': logData.timestamp,
+      severity: logData.level,
+      message: logData.message,
+      service: 'my-app',
+      pid: process.pid,
+      ...logData.meta,
+    }
+  },
 })
 
 // 创建logger
 const logger = winston.createLogger({
-	level: process.env.LOG_LEVEL || 'info',
-	format: winston.format.combine(
-		winston.format.timestamp(),
-		winston.format.errors({ stack: true }),
-		winston.format.json(), // JSON格式，便于ELK解析
-	),
-	defaultMeta: { service: 'my-app' },
-	transports: [
-		// 错误日志文件
-		new winston.transports.File({
-			filename: 'logs/error.log',
-			level: 'error',
-			maxsize: 10485760, // 10MB
-			maxFiles: 10,
-		}),
-		// 全部日志文件
-		new winston.transports.File({
-			filename: 'logs/combined.log',
-			maxsize: 10485760,
-			maxFiles: 5,
-		}),
-		// Elasticsearch
-		esTransport,
-		// 开发环境输出到控制台
-		...(process.env.NODE_ENV !== 'production'
-			? [
-					new winston.transports.Console({
-						format: winston.format.simple(),
-					}),
-				]
-			: []),
-	],
+  level: process.env.LOG_LEVEL || 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json(), // JSON格式，便于ELK解析
+  ),
+  defaultMeta: { service: 'my-app' },
+  transports: [
+    // 错误日志文件
+    new winston.transports.File({
+      filename: 'logs/error.log',
+      level: 'error',
+      maxsize: 10485760, // 10MB
+      maxFiles: 10,
+    }),
+    // 全部日志文件
+    new winston.transports.File({
+      filename: 'logs/combined.log',
+      maxsize: 10485760,
+      maxFiles: 5,
+    }),
+    // Elasticsearch
+    esTransport,
+    // 开发环境输出到控制台
+    ...(process.env.NODE_ENV !== 'production'
+      ? [
+          new winston.transports.Console({
+            format: winston.format.simple(),
+          }),
+        ]
+      : []),
+  ],
 })
 
 // 请求日志中间件
 function requestLogger(req, res, next) {
-	const start = Date.now()
+  const start = Date.now()
 
-	res.on('finish', () => {
-		const duration = Date.now() - start
-		const logData = {
-			method: req.method,
-			url: req.originalUrl || req.url,
-			status: res.statusCode,
-			duration: duration,
-			ip: req.ip,
-			userAgent: req.get('User-Agent'),
-			userId: req.user?.id,
-			requestId: req.id,
-		}
+  res.on('finish', () => {
+    const duration = Date.now() - start
+    const logData = {
+      method: req.method,
+      url: req.originalUrl || req.url,
+      status: res.statusCode,
+      duration: duration,
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      userId: req.user?.id,
+      requestId: req.id,
+    }
 
-		// 按状态码级别记录日志
-		if (res.statusCode >= 500) {
-			logger.error('请求失败', logData)
-		} else if (res.statusCode >= 400) {
-			logger.warn('请求警告', logData)
-		} else {
-			logger.info('请求完成', logData)
-		}
-	})
+    // 按状态码级别记录日志
+    if (res.statusCode >= 500) {
+      logger.error('请求失败', logData)
+    } else if (res.statusCode >= 400) {
+      logger.warn('请求警告', logData)
+    } else {
+      logger.info('请求完成', logData)
+    }
+  })
 
-	next()
+  next()
 }
 
 // 使用示例
 app.use(requestLogger)
 
 app.post('/api/orders', async (req, res) => {
-	try {
-		const order = await createOrder(req.body)
+  try {
+    const order = await createOrder(req.body)
 
-		logger.info('订单创建成功', {
-			orderId: order.id,
-			userId: req.user.id,
-			amount: order.amount,
-			items: order.items.length,
-		})
+    logger.info('订单创建成功', {
+      orderId: order.id,
+      userId: req.user.id,
+      amount: order.amount,
+      items: order.items.length,
+    })
 
-		res.json(order)
-	} catch (err) {
-		logger.error('订单创建失败', {
-			error: err.message,
-			stack: err.stack,
-			userId: req.user?.id,
-			body: req.body,
-		})
+    res.json(order)
+  } catch (err) {
+    logger.error('订单创建失败', {
+      error: err.message,
+      stack: err.stack,
+      userId: req.user?.id,
+      body: req.body,
+    })
 
-		res.status(500).json({ error: '创建订单失败' })
-	}
+    res.status(500).json({ error: '创建订单失败' })
+  }
 })
 ```
 

@@ -16,15 +16,15 @@ export type ReadingTime = ReturnType<typeof readingTime>
  * 文章完整数据类型
  */
 export interface Post {
-	slug: string
-	title: string
-	date: string
-	summary: string
-	content: string
-	readTime: ReadingTime
-	tags: string[]
-	author: string
-	category: string
+  slug: string
+  title: string
+  date: string
+  summary: string
+  content: string
+  readTime: ReadingTime
+  tags: string[]
+  author: string
+  category: string
 }
 
 /**
@@ -37,8 +37,8 @@ export type PostSummary = Omit<Post, 'content'>
  * 用于列表页一次性获取文章和阅读数，避免 N+1 查询
  */
 export interface PostSummaryWithViews extends PostSummary {
-	views: number
-	comments: number
+  views: number
+  comments: number
 }
 
 /**
@@ -47,15 +47,15 @@ export interface PostSummaryWithViews extends PostSummary {
  * @returns string[] - 包含 .md 或 .mdx 后缀的文件名列表
  */
 export function getPostSlugs(locale: string = routing.defaultLocale) {
-	const localeDir = path.join(postsDirectory, locale)
+  const localeDir = path.join(postsDirectory, locale)
 
-	if (!fs.existsSync(localeDir)) {
-		// 如果语言子目录不存在，尝试读取根目录（兜底）
-		if (!fs.existsSync(postsDirectory)) return []
-		return fs.readdirSync(postsDirectory).filter((file) => file.match(/\.mdx?$/))
-	}
+  if (!fs.existsSync(localeDir)) {
+    // 如果语言子目录不存在，尝试读取根目录（兜底）
+    if (!fs.existsSync(postsDirectory)) return []
+    return fs.readdirSync(postsDirectory).filter((file) => file.match(/\.mdx?$/))
+  }
 
-	return fs.readdirSync(localeDir).filter((file) => file.match(/\.mdx?$/))
+  return fs.readdirSync(localeDir).filter((file) => file.match(/\.mdx?$/))
 }
 
 /**
@@ -67,54 +67,54 @@ export function getPostSlugs(locale: string = routing.defaultLocale) {
 export function getPostBySlug(slug: string, locale: string, includeContent: false): PostSummary
 export function getPostBySlug(slug: string, locale?: string, includeContent?: true): Post
 export function getPostBySlug(
-	slug: string,
-	locale: string = routing.defaultLocale,
-	includeContent: boolean = true,
+  slug: string,
+  locale: string = routing.defaultLocale,
+  includeContent: boolean = true,
 ): Post | PostSummary {
-	// 解码 URL 编码的 slug
-	const realSlug = decodeURIComponent(slug).replace(/\.mdx?$/, '')
+  // 解码 URL 编码的 slug
+  const realSlug = decodeURIComponent(slug).replace(/\.mdx?$/, '')
 
-	// 尝试在语言子目录下查找
-	let fullPath = path.join(postsDirectory, locale, `${realSlug}.mdx`)
-	if (!fs.existsSync(fullPath)) {
-		fullPath = path.join(postsDirectory, locale, `${realSlug}.md`)
-	}
+  // 尝试在语言子目录下查找
+  let fullPath = path.join(postsDirectory, locale, `${realSlug}.mdx`)
+  if (!fs.existsSync(fullPath)) {
+    fullPath = path.join(postsDirectory, locale, `${realSlug}.md`)
+  }
 
-	// 如果子目录下没找到，尝试在根目录下查找（兜底）
-	if (!fs.existsSync(fullPath)) {
-		fullPath = path.join(postsDirectory, `${realSlug}.mdx`)
-		if (!fs.existsSync(fullPath)) {
-			fullPath = path.join(postsDirectory, `${realSlug}.md`)
-		}
-	}
+  // 如果子目录下没找到，尝试在根目录下查找（兜底）
+  if (!fs.existsSync(fullPath)) {
+    fullPath = path.join(postsDirectory, `${realSlug}.mdx`)
+    if (!fs.existsSync(fullPath)) {
+      fullPath = path.join(postsDirectory, `${realSlug}.md`)
+    }
+  }
 
-	// 如果还是没找到，抛出错误
-	if (!fs.existsSync(fullPath)) {
-		throw new Error(`Post not found: ${realSlug} in locale: ${locale}`)
-	}
+  // 如果还是没找到，抛出错误
+  if (!fs.existsSync(fullPath)) {
+    throw new Error(`Post not found: ${realSlug} in locale: ${locale}`)
+  }
 
-	// 读取文件内容
-	const fileContents = fs.readFileSync(fullPath, 'utf8')
-	const { data, content } = matter(fileContents)
-	const stats = readingTime(content)
+  // 读取文件内容
+  const fileContents = fs.readFileSync(fullPath, 'utf8')
+  const { data, content } = matter(fileContents)
+  const stats = readingTime(content)
 
-	const postBase = {
-		slug: realSlug,
-		title: data.title,
-		date: data.date ? new Date(data.date).toISOString().split('T')[0] : '',
-		summary: data.summary || '',
-		readTime: stats,
-		tags: data.tags || [],
-		author: data.author || 'Max Zhang',
-		category: data.category || 'Uncategorized',
-		...data,
-	}
+  const postBase = {
+    slug: realSlug,
+    title: data.title,
+    date: data.date ? new Date(data.date).toISOString().split('T')[0] : '',
+    summary: data.summary || '',
+    readTime: stats,
+    tags: data.tags || [],
+    author: data.author || 'Max Zhang',
+    category: data.category || 'Uncategorized',
+    ...data,
+  }
 
-	if (includeContent) {
-		return { ...postBase, content } as Post
-	}
+  if (includeContent) {
+    return { ...postBase, content } as Post
+  }
 
-	return postBase as PostSummary
+  return postBase as PostSummary
 }
 
 /**
@@ -125,31 +125,31 @@ export function getPostBySlug(
  * @returns 包含阅读数的文章摘要列表，按日期降序排序
  */
 export async function getAllPostsWithViews(locale: string = routing.defaultLocale): Promise<PostSummaryWithViews[]> {
-	const slugs = getPostSlugs(locale)
+  const slugs = getPostSlugs(locale)
 
-	// 获取所有文章摘要，按日期降序排序
-	const posts = slugs
-		.map((slug) => {
-			try {
-				return getPostBySlug(slug, locale, false)
-			} catch (e) {
-				console.error(e)
-				return null
-			}
-		})
-		.filter((post): post is PostSummary => post !== null)
-		.sort((post1, post2) => (post1.date > post2.date ? -1 : 1))
+  // 获取所有文章摘要，按日期降序排序
+  const posts = slugs
+    .map((slug) => {
+      try {
+        return getPostBySlug(slug, locale, false)
+      } catch (e) {
+        console.error(e)
+        return null
+      }
+    })
+    .filter((post): post is PostSummary => post !== null)
+    .sort((post1, post2) => (post1.date > post2.date ? -1 : 1))
 
-	// 批量查询所有文章的阅读数和评论数
-	const slugsForQuery = slugs.map((s) => s.replace(/\.mdx?$/, ''))
-	const [viewCounts, commentCounts] = await Promise.all([
-		getViewCounts(slugsForQuery, locale),
-		getCommentCounts(slugsForQuery),
-	])
+  // 批量查询所有文章的阅读数和评论数
+  const slugsForQuery = slugs.map((s) => s.replace(/\.mdx?$/, ''))
+  const [viewCounts, commentCounts] = await Promise.all([
+    getViewCounts(slugsForQuery, locale),
+    getCommentCounts(slugsForQuery),
+  ])
 
-	return posts.map((post) => ({
-		...post,
-		views: viewCounts[post.slug] || 0,
-		comments: commentCounts[post.slug] || 0,
-	}))
+  return posts.map((post) => ({
+    ...post,
+    views: viewCounts[post.slug] || 0,
+    comments: commentCounts[post.slug] || 0,
+  }))
 }

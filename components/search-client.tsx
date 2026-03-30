@@ -9,323 +9,323 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 interface SearchClientProps {
-	posts: PostSummaryWithViews[]
+  posts: PostSummaryWithViews[]
 }
 
 export function SearchClient({ posts }: SearchClientProps) {
-	const searchParams = useSearchParams()
-	const t = useTranslations('SearchPage')
+  const searchParams = useSearchParams()
+  const t = useTranslations('SearchPage')
 
-	// 1. 初始化：仅在首次渲染时从 URL 读取参数作为初始状态
-	// 后续 URL 的变化（除非是刷新页面）不会自动影响这些 State，实现了“解耦”
-	// 使用函数式初始化来确保只读取一次
-	const [query, setQuery] = useState(() => searchParams.get('q') || '')
-	const [selectedTag, setSelectedTag] = useState(() => searchParams.get('tag') || '')
-	const [selectedCategory, setSelectedCategory] = useState(() => searchParams.get('category') || '')
+  // 1. 初始化：仅在首次渲染时从 URL 读取参数作为初始状态
+  // 后续 URL 的变化（除非是刷新页面）不会自动影响这些 State，实现了“解耦”
+  // 使用函数式初始化来确保只读取一次
+  const [query, setQuery] = useState(() => searchParams.get('q') || '')
+  const [selectedTag, setSelectedTag] = useState(() => searchParams.get('tag') || '')
+  const [selectedCategory, setSelectedCategory] = useState(() => searchParams.get('category') || '')
 
-	// 2. 初始化 Fuse.js 模糊搜索实例
-	const fuse = useMemo(() => {
-		return new Fuse(posts, {
-			keys: ['title', 'summary', 'tags', 'category'],
-			threshold: 0.3,
-			includeScore: true,
-		})
-	}, [posts])
+  // 2. 初始化 Fuse.js 模糊搜索实例
+  const fuse = useMemo(() => {
+    return new Fuse(posts, {
+      keys: ['title', 'summary', 'tags', 'category'],
+      threshold: 0.3,
+      includeScore: true,
+    })
+  }, [posts])
 
-	// 计算唯一标签和分类
-	const { allTags, allCategories } = useMemo(() => {
-		const tags = Array.from(new Set(posts.flatMap((post) => post.tags))).sort()
-		const categories = Array.from(new Set(posts.map((post) => post.category).filter(Boolean))).sort()
-		return { allTags: tags, allCategories: categories }
-	}, [posts])
+  // 计算唯一标签和分类
+  const { allTags, allCategories } = useMemo(() => {
+    const tags = Array.from(new Set(posts.flatMap((post) => post.tags))).sort()
+    const categories = Array.from(new Set(posts.map((post) => post.category).filter(Boolean))).sort()
+    return { allTags: tags, allCategories: categories }
+  }, [posts])
 
-	// 3. 核心过滤逻辑：完全依赖本地 State 进行计算
-	const filteredPosts = useMemo(() => {
-		if (!query && !selectedTag && !selectedCategory) {
-			return []
-		}
+  // 3. 核心过滤逻辑：完全依赖本地 State 进行计算
+  const filteredPosts = useMemo(() => {
+    if (!query && !selectedTag && !selectedCategory) {
+      return []
+    }
 
-		let results = posts
+    let results = posts
 
-		// 文本搜索
-		if (query) {
-			const fuseResults = fuse.search(query)
-			results = fuseResults.map((result) => result.item)
-		}
+    // 文本搜索
+    if (query) {
+      const fuseResults = fuse.search(query)
+      results = fuseResults.map((result) => result.item)
+    }
 
-		// 标签过滤
-		if (selectedTag) {
-			results = results.filter((post) => post.tags.includes(selectedTag))
-		}
+    // 标签过滤
+    if (selectedTag) {
+      results = results.filter((post) => post.tags.includes(selectedTag))
+    }
 
-		// 分类过滤
-		if (selectedCategory) {
-			results = results.filter((post) => post.category === selectedCategory)
-		}
+    // 分类过滤
+    if (selectedCategory) {
+      results = results.filter((post) => post.category === selectedCategory)
+    }
 
-		return results
-	}, [posts, query, selectedTag, selectedCategory, fuse])
+    return results
+  }, [posts, query, selectedTag, selectedCategory, fuse])
 
-	// 4. URL 同步逻辑：当 State 变化时，防抖更新 URL，不触发 Next.js 导航
-	useEffect(() => {
-		const timer = setTimeout(() => {
-			const params = new URLSearchParams()
-			if (query) params.set('q', query)
-			if (selectedTag) params.set('tag', selectedTag)
-			if (selectedCategory) params.set('category', selectedCategory)
+  // 4. URL 同步逻辑：当 State 变化时，防抖更新 URL，不触发 Next.js 导航
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams()
+      if (query) params.set('q', query)
+      if (selectedTag) params.set('tag', selectedTag)
+      if (selectedCategory) params.set('category', selectedCategory)
 
-			// 构建新的 URL query string
-			const queryString = params.toString()
-			const newUrl = queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname
+      // 构建新的 URL query string
+      const queryString = params.toString()
+      const newUrl = queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname
 
-			// 使用 history.replaceState 修改 URL 而不触发页面刷新或 Next.js 路由跳转
-			// 这样就避免了触发服务端的 RSC 请求
-			window.history.replaceState(null, '', newUrl)
-		}, 300) // 300ms 防抖
+      // 使用 history.replaceState 修改 URL 而不触发页面刷新或 Next.js 路由跳转
+      // 这样就避免了触发服务端的 RSC 请求
+      window.history.replaceState(null, '', newUrl)
+    }, 300) // 300ms 防抖
 
-		return () => clearTimeout(timer)
-	}, [query, selectedTag, selectedCategory])
+    return () => clearTimeout(timer)
+  }, [query, selectedTag, selectedCategory])
 
-	// 事件处理：直接更新 Local State
-	// 处理搜索输入
-	const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setQuery(e.target.value)
-	}
+  // 事件处理：直接更新 Local State
+  // 处理搜索输入
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value)
+  }
 
-	// 切换标签筛选
-	const handleTagClick = (tag: string) => {
-		setSelectedTag((prev) => (prev === tag ? '' : tag))
-	}
+  // 切换标签筛选
+  const handleTagClick = (tag: string) => {
+    setSelectedTag((prev) => (prev === tag ? '' : tag))
+  }
 
-	// 切换分类筛选
-	const handleCategoryClick = (category: string) => {
-		setSelectedCategory((prev) => (prev === category ? '' : category))
-	}
+  // 切换分类筛选
+  const handleCategoryClick = (category: string) => {
+    setSelectedCategory((prev) => (prev === category ? '' : category))
+  }
 
-	// 清除所有筛选条件
-	const clearFilters = () => {
-		setQuery('')
-		setSelectedTag('')
-		setSelectedCategory('')
-	}
+  // 清除所有筛选条件
+  const clearFilters = () => {
+    setQuery('')
+    setSelectedTag('')
+    setSelectedCategory('')
+  }
 
-	// 清除标签筛选
-	const clearTag = () => {
-		setSelectedTag('')
-	}
+  // 清除标签筛选
+  const clearTag = () => {
+    setSelectedTag('')
+  }
 
-	// 清除分类筛选
-	const clearCategory = () => {
-		setSelectedCategory('')
-	}
+  // 清除分类筛选
+  const clearCategory = () => {
+    setSelectedCategory('')
+  }
 
-	const hasFilters = Boolean(query || selectedTag || selectedCategory)
+  const hasFilters = Boolean(query || selectedTag || selectedCategory)
 
-	return (
-		<div className="space-y-8">
-			{/* 搜索输入框区域 */}
-			<div className="relative">
-				<Search
-					className="
+  return (
+    <div className="space-y-8">
+      {/* 搜索输入框区域 */}
+      <div className="relative">
+        <Search
+          className="
       absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-muted-foreground
     "
-				/>
-				<input
-					type="text"
-					value={query}
-					onChange={handleSearch}
-					placeholder={t('placeholder')} /* SearchPage/placeholder 搜索文章标题、内容、标签... */
-					className="
+        />
+        <input
+          type="text"
+          value={query}
+          onChange={handleSearch}
+          placeholder={t('placeholder')} /* SearchPage/placeholder 搜索文章标题、内容、标签... */
+          className="
        w-full rounded-lg border bg-background py-3 pr-4 pl-10 transition-all
        focus:border-transparent focus:ring-2 focus:ring-primary
        focus:outline-none
      "
-				/>
-				{query && (
-					<button
-						onClick={() => setQuery('')}
-						className="
+        />
+        {query && (
+          <button
+            onClick={() => setQuery('')}
+            className="
         absolute top-1/2 right-3 -translate-y-1/2 rounded-full p-1
         hover:bg-secondary
       "
-					>
-						<X className="h-4 w-4 text-muted-foreground" />
-					</button>
-				)}
-			</div>
+          >
+            <X className="h-4 w-4 text-muted-foreground" />
+          </button>
+        )}
+      </div>
 
-			{/* 分类和标签选择区域 */}
-			<div
-				className="
+      {/* 分类和标签选择区域 */}
+      <div
+        className="
      grid gap-6
      md:grid-cols-2
    "
-			>
-				{/* 分类列表 */}
-				<div className="space-y-3">
-					<h3
-						className="
+      >
+        {/* 分类列表 */}
+        <div className="space-y-3">
+          <h3
+            className="
        flex items-center gap-2 text-sm font-medium text-muted-foreground
      "
-					>
-						<Folder className="h-4 w-4" /> {t('category')} {/* SearchPage/category 分类 */}
-					</h3>
-					<div className="flex flex-wrap gap-2">
-						{allCategories.map((category) => (
-							<button
-								key={category}
-								onClick={() => handleCategoryClick(category)}
-								className={`
+          >
+            <Folder className="h-4 w-4" /> {t('category')} {/* SearchPage/category 分类 */}
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {allCategories.map((category) => (
+              <button
+                key={category}
+                onClick={() => handleCategoryClick(category)}
+                className={`
           inline-flex items-center rounded-md border px-2.5 py-1 text-xs
           font-medium transition-colors
           focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none
           ${
-						selectedCategory === category
-							? `
+            selectedCategory === category
+              ? `
             border-transparent bg-primary text-primary-foreground
             hover:bg-primary/80
           `
-							: `
+              : `
             border-transparent bg-secondary text-secondary-foreground
             hover:bg-secondary/80
           `
-					}
+          }
         `}
-							>
-								{category}
-							</button>
-						))}
-					</div>
-				</div>
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        </div>
 
-				{/* 标签列表 */}
-				<div className="space-y-3">
-					<h3 className="text-sm font-medium text-muted-foreground">
-						{t('tag')} {/* SearchPage/tag 标签 */}
-					</h3>
-					<div className="flex flex-wrap gap-2">
-						{allTags.map((tag) => (
-							<button
-								key={tag}
-								onClick={() => handleTagClick(tag)}
-								className={`
+        {/* 标签列表 */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            {t('tag')} {/* SearchPage/tag 标签 */}
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {allTags.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => handleTagClick(tag)}
+                className={`
           inline-flex items-center rounded-md border px-2.5 py-1 text-xs
           font-medium transition-colors
           focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none
           ${
-						selectedTag === tag
-							? `
+            selectedTag === tag
+              ? `
             border-transparent bg-primary text-primary-foreground
             hover:bg-primary/80
           `
-							: `
+              : `
             border-transparent bg-secondary text-secondary-foreground
             hover:bg-secondary/80
           `
-					}
+          }
         `}
-							>
-								{tag}
-							</button>
-						))}
-					</div>
-				</div>
-			</div>
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
-			{/* 当前筛选条件展示 */}
-			{hasFilters && (
-				<div className="flex flex-wrap items-center gap-2 border-t pt-4">
-					<span className="text-sm text-muted-foreground">
-						{t('currentFilter')}: {/* SearchPage/currentFilter 当前筛选 */}
-					</span>
-					{selectedCategory && (
-						<span
-							className="
+      {/* 当前筛选条件展示 */}
+      {hasFilters && (
+        <div className="flex flex-wrap items-center gap-2 border-t pt-4">
+          <span className="text-sm text-muted-foreground">
+            {t('currentFilter')}: {/* SearchPage/currentFilter 当前筛选 */}
+          </span>
+          {selectedCategory && (
+            <span
+              className="
         inline-flex items-center gap-1 rounded-md border border-primary/20
         bg-primary/10 px-2 py-1 text-xs font-medium text-primary
       "
-						>
-							{t('category')}: {selectedCategory} {/* SearchPage/category 分类 */}
-							<button
-								onClick={clearCategory}
-								className="
+            >
+              {t('category')}: {selectedCategory} {/* SearchPage/category 分类 */}
+              <button
+                onClick={clearCategory}
+                className="
          ml-1
          hover:text-primary/70
        "
-							>
-								<X className="size-3" />
-							</button>
-						</span>
-					)}
-					{selectedTag && (
-						<span
-							className="
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+          {selectedTag && (
+            <span
+              className="
         inline-flex items-center gap-1 rounded-md border border-primary/20
         bg-primary/10 px-2 py-1 text-xs font-medium text-primary
       "
-						>
-							{t('tag')}: {selectedTag} {/* SearchPage/tag 标签 */}
-							<button
-								onClick={clearTag}
-								className="
+            >
+              {t('tag')}: {selectedTag} {/* SearchPage/tag 标签 */}
+              <button
+                onClick={clearTag}
+                className="
          ml-1
          hover:text-primary/70
        "
-							>
-								<X className="size-3" />
-							</button>
-						</span>
-					)}
-					<button
-						onClick={clearFilters}
-						className="
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+          <button
+            onClick={clearFilters}
+            className="
        text-xs text-muted-foreground underline
        hover:text-primary
      "
-					>
-						{t('clearAll')} {/* SearchPage/clearAll 清除所有 */}
-					</button>
-				</div>
-			)}
+          >
+            {t('clearAll')} {/* SearchPage/clearAll 清除所有 */}
+          </button>
+        </div>
+      )}
 
-			{/* 搜索结果状态 */}
-			{hasFilters && <div className="text-sm text-muted-foreground">{t('found', { count: filteredPosts.length })}</div>}
+      {/* 搜索结果状态 */}
+      {hasFilters && <div className="text-sm text-muted-foreground">{t('found', { count: filteredPosts.length })}</div>}
 
-			{/* 文章列表 */}
-			<div className="space-y-8">
-				{filteredPosts.map((post) => (
-					<PostItem key={post.slug} post={post} />
-				))}
+      {/* 文章列表 */}
+      <div className="space-y-8">
+        {filteredPosts.map((post) => (
+          <PostItem key={post.slug} post={post} />
+        ))}
 
-				{/* 状态：有筛选条件但无结果 */}
-				{hasFilters && filteredPosts.length === 0 && (
-					<div className="py-20 text-center text-muted-foreground">
-						<Search className="mx-auto mb-4 h-10 w-10 opacity-20" />
-						<p className="text-lg">
-							{t('noResults')} {/* SearchPage/noResults 没有找到匹配的文章 */}
-						</p>
-						<button
-							onClick={clearFilters}
-							className="
+        {/* 状态：有筛选条件但无结果 */}
+        {hasFilters && filteredPosts.length === 0 && (
+          <div className="py-20 text-center text-muted-foreground">
+            <Search className="mx-auto mb-4 h-10 w-10 opacity-20" />
+            <p className="text-lg">
+              {t('noResults')} {/* SearchPage/noResults 没有找到匹配的文章 */}
+            </p>
+            <button
+              onClick={clearFilters}
+              className="
         mt-4 text-primary
         hover:underline
       "
-						>
-							{t('clearFilters')} {/* SearchPage/clearFilters 清除筛选条件 */}
-						</button>
-					</div>
-				)}
+            >
+              {t('clearFilters')} {/* SearchPage/clearFilters 清除筛选条件 */}
+            </button>
+          </div>
+        )}
 
-				{/* 状态：初始状态（无筛选） */}
-				{!hasFilters && (
-					<div className="py-20 text-center text-muted-foreground">
-						<Search className="mx-auto mb-4 h-10 w-10 opacity-10" />
-						<p className="text-lg">
-							{t('startSearch')} {/* SearchPage/startSearch 输入关键词或选择标签开始搜索 */}
-						</p>
-					</div>
-				)}
-			</div>
-		</div>
-	)
+        {/* 状态：初始状态（无筛选） */}
+        {!hasFilters && (
+          <div className="py-20 text-center text-muted-foreground">
+            <Search className="mx-auto mb-4 h-10 w-10 opacity-10" />
+            <p className="text-lg">
+              {t('startSearch')} {/* SearchPage/startSearch 输入关键词或选择标签开始搜索 */}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }

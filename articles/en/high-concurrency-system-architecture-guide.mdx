@@ -266,24 +266,24 @@ const redisClient = createClient({ url: 'redis://localhost:6379' })
 
 // Create a rate limiter
 const limiter = rateLimit({
-	// Use Redis to store rate limiting data
-	store: new RedisStore({
-		sendCommand: (...args) => redisClient.sendCommand(args),
-	}),
-	windowMs: 1 * 60 * 1000, // Time window: 1 minute
-	max: 1000, // Limit each IP to max 1000 requests per minute
-	standardHeaders: true, // Return standard rate limit headers
-	legacyHeaders: false, // Disable legacy rate limit headers
-	handler: (req, res) => {
-		// What to return when request is rate limited
-		res.status(429).json({ error: 'Too many requests, please try again later' })
-	},
+  // Use Redis to store rate limiting data
+  store: new RedisStore({
+    sendCommand: (...args) => redisClient.sendCommand(args),
+  }),
+  windowMs: 1 * 60 * 1000, // Time window: 1 minute
+  max: 1000, // Limit each IP to max 1000 requests per minute
+  standardHeaders: true, // Return standard rate limit headers
+  legacyHeaders: false, // Disable legacy rate limit headers
+  handler: (req, res) => {
+    // What to return when request is rate limited
+    res.status(429).json({ error: 'Too many requests, please try again later' })
+  },
 })
 
 // Apply to order service route
 // All requests starting with /api/order must pass through the limiter
 app.use('/api/order', limiter, (req, res) => {
-	// Forward request to order microservice
+  // Forward request to order microservice
 })
 ```
 
@@ -298,17 +298,17 @@ Load balancing algorithms determine "which server a request should go to." Based
 ```javascript
 // Node.js Round Robin Load Balancer Implementation
 class LoadBalancer {
-	constructor(servers) {
-		this.servers = servers
-		this.currentIndex = 0
-	}
+  constructor(servers) {
+    this.servers = servers
+    this.currentIndex = 0
+  }
 
-	getNextServer() {
-		const server = this.servers[this.currentIndex]
-		// Increment index, wrap to 0 when exceeding array length
-		this.currentIndex = (this.currentIndex + 1) % this.servers.length
-		return server
-	}
+  getNextServer() {
+    const server = this.servers[this.currentIndex]
+    // Increment index, wrap to 0 when exceeding array length
+    this.currentIndex = (this.currentIndex + 1) % this.servers.length
+    return server
+  }
 }
 
 // Usage example
@@ -317,8 +317,8 @@ const lb = new LoadBalancer(servers)
 
 // Simulate 10 requests
 for (let i = 0; i < 10; i++) {
-	const server = lb.getNextServer()
-	console.log(`Request ${i + 1} forwarded to ${server}`)
+  const server = lb.getNextServer()
+  console.log(`Request ${i + 1} forwarded to ${server}`)
 }
 ```
 
@@ -353,38 +353,38 @@ Weighted round robin can be configured like this:
 // Node.js Weighted Round Robin Algorithm (Smooth Weighted)
 // "Smooth" means requests are distributed more evenly, not all at once to one server
 class WeightedRoundRobin {
-	constructor(servers) {
-		// servers: [{ name: 'S1', weight: 5 }, { name: 'S2', weight: 1 }]
-		this.servers = servers
-		// Each node's current "weight", initially 0
-		this.currentWeights = servers.map(() => 0)
-		// Total weight of all nodes
-		this.totalWeight = servers.reduce((sum, s) => sum + s.weight, 0)
-	}
+  constructor(servers) {
+    // servers: [{ name: 'S1', weight: 5 }, { name: 'S2', weight: 1 }]
+    this.servers = servers
+    // Each node's current "weight", initially 0
+    this.currentWeights = servers.map(() => 0)
+    // Total weight of all nodes
+    this.totalWeight = servers.reduce((sum, s) => sum + s.weight, 0)
+  }
 
-	getNextServer() {
-		let maxWeight = -1
-		let index = -1
+  getNextServer() {
+    let maxWeight = -1
+    let index = -1
 
-		// Step 1: Add each node's current weight to its original weight
-		for (let i = 0; i < this.servers.length; i++) {
-			this.currentWeights[i] += this.servers[i].weight
+    // Step 1: Add each node's current weight to its original weight
+    for (let i = 0; i < this.servers.length; i++) {
+      this.currentWeights[i] += this.servers[i].weight
 
-			// At the same time, find the node with the highest current weight
-			if (this.currentWeights[i] > maxWeight) {
-				maxWeight = this.currentWeights[i]
-				index = i
-			}
-		}
+      // At the same time, find the node with the highest current weight
+      if (this.currentWeights[i] > maxWeight) {
+        maxWeight = this.currentWeights[i]
+        index = i
+      }
+    }
 
-		// Step 2: Subtract total weight from the selected node
-		if (index !== -1) {
-			this.currentWeights[index] -= this.totalWeight
-			return this.servers[index]
-		}
+    // Step 2: Subtract total weight from the selected node
+    if (index !== -1) {
+      this.currentWeights[index] -= this.totalWeight
+      return this.servers[index]
+    }
 
-		return null
-	}
+    return null
+  }
 }
 ```
 
@@ -400,18 +400,18 @@ IP hash determines routing by calculating a hash of the IP:
 import crypto from 'node:crypto'
 
 function ipHash(ipAddress, serverList) {
-	/**
-	 * Select server based on client IP hash
-	 * Core idea: Same IP, same calculation result every time
-	 */
-	// Calculate MD5 hash of the IP
-	const hash = crypto.createHash('md5').update(ipAddress).digest('hex')
-	// Take part of the hash value, convert to integer, then modulo by number of servers
-	// Modulo result is always between 0 and servers.length-1
-	const hashInt = parseInt(hash.substring(0, 8), 16)
-	const serverIndex = hashInt % serverList.length
+  /**
+   * Select server based on client IP hash
+   * Core idea: Same IP, same calculation result every time
+   */
+  // Calculate MD5 hash of the IP
+  const hash = crypto.createHash('md5').update(ipAddress).digest('hex')
+  // Take part of the hash value, convert to integer, then modulo by number of servers
+  // Modulo result is always between 0 and servers.length-1
+  const hashInt = parseInt(hash.substring(0, 8), 16)
+  const serverIndex = hashInt % serverList.length
 
-	return serverList[serverIndex]
+  return serverList[serverIndex]
 }
 
 // Test
@@ -419,8 +419,8 @@ const servers = ['Server1', 'Server2', 'Server3', 'Server4']
 const ips = ['192.168.1.100', '192.168.1.101', '192.168.1.100']
 
 ips.forEach((ip) => {
-	const selected = ipHash(ip, servers)
-	console.log(`IP ${ip} -> ${selected}`)
+  const selected = ipHash(ip, servers)
+  console.log(`IP ${ip} -> ${selected}`)
 })
 ```
 
@@ -444,72 +444,72 @@ Consistent hashing solves this: when a server goes down or is added, only a smal
 import crypto from 'node:crypto'
 
 class ConsistentHash {
-	constructor(nodes = [], virtualNodes = 150) {
-		// Number of virtual nodes: how many positions each physical node occupies on the hash ring
-		// More virtual nodes means more even data distribution
-		this.virtualNodes = virtualNodes
-		this.ring = new Map() // Hash ring: hash value -> node name
-		this.sortedKeys = [] // Sorted hash value list for binary search
+  constructor(nodes = [], virtualNodes = 150) {
+    // Number of virtual nodes: how many positions each physical node occupies on the hash ring
+    // More virtual nodes means more even data distribution
+    this.virtualNodes = virtualNodes
+    this.ring = new Map() // Hash ring: hash value -> node name
+    this.sortedKeys = [] // Sorted hash value list for binary search
 
-		// Initialize: add each node to the ring
-		nodes.forEach((node) => this.addNode(node))
-	}
+    // Initialize: add each node to the ring
+    nodes.forEach((node) => this.addNode(node))
+  }
 
-	// Calculate hash value
-	_hash(key) {
-		const hash = crypto.createHash('md5').update(key).digest('hex')
-		return parseInt(hash.substring(0, 8), 16)
-	}
+  // Calculate hash value
+  _hash(key) {
+    const hash = crypto.createHash('md5').update(key).digest('hex')
+    return parseInt(hash.substring(0, 8), 16)
+  }
 
-	// Add node to ring
-	addNode(node) {
-		// Each physical node corresponds to multiple virtual nodes
-		for (let i = 0; i < this.virtualNodes; i++) {
-			const virtualKey = `${node}:${i}`
-			const hashValue = this._hash(virtualKey)
-			this.ring.set(hashValue, node)
-			this.sortedKeys.push(hashValue)
-		}
-		// Sort for binary search
-		this.sortedKeys.sort((a, b) => a - b)
-	}
+  // Add node to ring
+  addNode(node) {
+    // Each physical node corresponds to multiple virtual nodes
+    for (let i = 0; i < this.virtualNodes; i++) {
+      const virtualKey = `${node}:${i}`
+      const hashValue = this._hash(virtualKey)
+      this.ring.set(hashValue, node)
+      this.sortedKeys.push(hashValue)
+    }
+    // Sort for binary search
+    this.sortedKeys.sort((a, b) => a - b)
+  }
 
-	// Remove node from ring
-	removeNode(node) {
-		for (let i = 0; i < this.virtualNodes; i++) {
-			const virtualKey = `${node}:${i}`
-			const hashValue = this._hash(virtualKey)
-			this.ring.delete(hashValue)
-			this.sortedKeys = this.sortedKeys.filter((k) => k !== hashValue)
-		}
-	}
+  // Remove node from ring
+  removeNode(node) {
+    for (let i = 0; i < this.virtualNodes; i++) {
+      const virtualKey = `${node}:${i}`
+      const hashValue = this._hash(virtualKey)
+      this.ring.delete(hashValue)
+      this.sortedKeys = this.sortedKeys.filter((k) => k !== hashValue)
+    }
+  }
 
-	// Find which node data should be stored on
-	getNode(key) {
-		if (this.ring.size === 0) return null
+  // Find which node data should be stored on
+  getNode(key) {
+    if (this.ring.size === 0) return null
 
-		// Calculate hash of the data
-		const hashValue = this._hash(key)
+    // Calculate hash of the data
+    const hashValue = this._hash(key)
 
-		// Binary search: find first position >= hashValue
-		// Because hash ring is closed loop, if not found, go back to start
-		let low = 0,
-			high = this.sortedKeys.length - 1
+    // Binary search: find first position >= hashValue
+    // Because hash ring is closed loop, if not found, go back to start
+    let low = 0,
+      high = this.sortedKeys.length - 1
 
-		while (low <= high) {
-			const mid = Math.floor((low + high) / 2)
-			if (this.sortedKeys[mid] >= hashValue) {
-				high = mid - 1
-			} else {
-				low = mid + 1
-			}
-		}
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2)
+      if (this.sortedKeys[mid] >= hashValue) {
+        high = mid - 1
+      } else {
+        low = mid + 1
+      }
+    }
 
-		// If out of range, return first node (closed loop)
-		if (low === this.sortedKeys.length) low = 0
+    // If out of range, return first node (closed loop)
+    if (low === this.sortedKeys.length) low = 0
 
-		return this.ring.get(this.sortedKeys[low])
-	}
+    return this.ring.get(this.sortedKeys[low])
+  }
 }
 
 // Usage example
@@ -518,8 +518,8 @@ const ch = new ConsistentHash(nodes, 100) // 100 virtual nodes per node
 
 const keys = ['user:1001', 'user:1002', 'user:1003', 'product:2001', 'order:3001']
 keys.forEach((key) => {
-	const node = ch.getNode(key)
-	console.log(`Key: ${key} -> Node: ${node}`)
+  const node = ch.getNode(key)
+  console.log(`Key: ${key} -> Node: ${node}`)
 })
 ```
 
@@ -540,40 +540,40 @@ Why? Because in short-connection scenarios, connections close quickly, which doe
 ```javascript
 // Node.js Least Connections Load Balancer Implementation
 class LeastConnectionsLB {
-	constructor(servers) {
-		// Initialize connection count for each server
-		this.servers = servers.map((addr) => ({
-			address: addr,
-			connections: 0,
-		}))
-	}
+  constructor(servers) {
+    // Initialize connection count for each server
+    this.servers = servers.map((addr) => ({
+      address: addr,
+      connections: 0,
+    }))
+  }
 
-	// Get next server
-	getNextServer() {
-		let selected = null
-		let minConns = Infinity
+  // Get next server
+  getNextServer() {
+    let selected = null
+    let minConns = Infinity
 
-		// Find server with fewest connections
-		for (const server of this.servers) {
-			if (server.connections < minConns) {
-				minConns = server.connections
-				selected = server
-			}
-		}
+    // Find server with fewest connections
+    for (const server of this.servers) {
+      if (server.connections < minConns) {
+        minConns = server.connections
+        selected = server
+      }
+    }
 
-		// Increment selected server's connection count
-		if (selected) {
-			selected.connections++
-		}
-		return selected
-	}
+    // Increment selected server's connection count
+    if (selected) {
+      selected.connections++
+    }
+    return selected
+  }
 
-	// Release connection (call after request processing)
-	release(server) {
-		if (server && server.connections > 0) {
-			server.connections--
-		}
-	}
+  // Release connection (call after request processing)
+  release(server) {
+    if (server && server.connections > 0) {
+      server.connections--
+    }
+  }
 }
 ```
 
@@ -650,55 +650,55 @@ const app = express()
 // Health check endpoint
 // Access GET /health to get detailed application health status
 app.get('/health', async (req, res) => {
-	const healthcheck = {
-		uptime: process.uptime(), // Process uptime
-		status: 'OK',
-		timestamp: Date.now(),
-		checks: {}, // Results of various checks
-	}
+  const healthcheck = {
+    uptime: process.uptime(), // Process uptime
+    status: 'OK',
+    timestamp: Date.now(),
+    checks: {}, // Results of various checks
+  }
 
-	try {
-		// Check database connection
-		// mongoose.connection.readyState:
-		// 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
-		if (mongoose.connection.readyState === 1) {
-			healthcheck.checks.database = 'up'
-		} else {
-			healthcheck.checks.database = 'down'
-		}
+  try {
+    // Check database connection
+    // mongoose.connection.readyState:
+    // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+    if (mongoose.connection.readyState === 1) {
+      healthcheck.checks.database = 'up'
+    } else {
+      healthcheck.checks.database = 'down'
+    }
 
-		// Check Redis connection
-		const redisClient = createClient()
-		await redisClient.connect()
-		await redisClient.ping()
-		healthcheck.checks.redis = 'up'
-		await redisClient.quit()
+    // Check Redis connection
+    const redisClient = createClient()
+    await redisClient.connect()
+    await redisClient.ping()
+    healthcheck.checks.redis = 'up'
+    await redisClient.quit()
 
-		// Check disk space
-		const diskSpace = await checkDiskSpace('/')
-		const freeSpaceGB = diskSpace.free / 1024 / 1024 / 1024
+    // Check disk space
+    const diskSpace = await checkDiskSpace('/')
+    const freeSpaceGB = diskSpace.free / 1024 / 1024 / 1024
 
-		if (freeSpaceGB > 10) {
-			healthcheck.checks.disk = 'up'
-		} else {
-			healthcheck.checks.disk = 'warning'
-		}
-	} catch (error) {
-		healthcheck.status = 'error'
-		healthcheck.error = error.message
-		return res.status(503).json(healthcheck) // 503 means service unavailable
-	}
+    if (freeSpaceGB > 10) {
+      healthcheck.checks.disk = 'up'
+    } else {
+      healthcheck.checks.disk = 'warning'
+    }
+  } catch (error) {
+    healthcheck.status = 'error'
+    healthcheck.error = error.message
+    return res.status(503).json(healthcheck) // 503 means service unavailable
+  }
 
-	// If any critical dependency is down, return 503
-	if (healthcheck.checks.database === 'down' || healthcheck.checks.redis === 'down') {
-		return res.status(503).json(healthcheck)
-	}
+  // If any critical dependency is down, return 503
+  if (healthcheck.checks.database === 'down' || healthcheck.checks.redis === 'down') {
+    return res.status(503).json(healthcheck)
+  }
 
-	res.json(healthcheck)
+  res.json(healthcheck)
 })
 
 app.listen(3000, () => {
-	console.log('Health check server running on port 3000')
+  console.log('Health check server running on port 3000')
 })
 ```
 
@@ -764,56 +764,56 @@ const numCPUs = cpus().length
 
 // Determine if this is master or worker process
 if (cluster.isPrimary) {
-	// ============ Master Process (Manager) ============
+  // ============ Master Process (Manager) ============
 
-	console.log(`Master process ${process.pid} is running`)
-	console.log(`Number of CPU cores: ${numCPUs}`)
+  console.log(`Master process ${process.pid} is running`)
+  console.log(`Number of CPU cores: ${numCPUs}`)
 
-	// Track worker count
-	let workerCount = 0
+  // Track worker count
+  let workerCount = 0
 
-	// Fork worker processes
-	for (let i = 0; i < numCPUs; i++) {
-		const worker = cluster.fork() // Fork a worker process
-		workerCount++
+  // Fork worker processes
+  for (let i = 0; i < numCPUs; i++) {
+    const worker = cluster.fork() // Fork a worker process
+    workerCount++
 
-		// Listen for messages from worker
-		worker.on('message', (msg) => {
-			console.log(`Master received message: ${msg} from ${worker.process.pid}`)
-		})
-	}
+    // Listen for messages from worker
+    worker.on('message', (msg) => {
+      console.log(`Master received message: ${msg} from ${worker.process.pid}`)
+    })
+  }
 
-	console.log(`Started ${workerCount} worker processes`)
+  console.log(`Started ${workerCount} worker processes`)
 
-	// Listen for worker exit events
-	cluster.on('exit', (worker, code, signal) => {
-		console.log(`Worker ${worker.process.pid} exited, exit code: ${code}, signal: ${signal}`)
+  // Listen for worker exit events
+  cluster.on('exit', (worker, code, signal) => {
+    console.log(`Worker ${worker.process.pid} exited, exit code: ${code}, signal: ${signal}`)
 
-		// Auto-restart (essential in production!)
-		console.log('Restarting worker...')
-		cluster.fork()
-	})
+    // Auto-restart (essential in production!)
+    console.log('Restarting worker...')
+    cluster.fork()
+  })
 
-	// Periodically send status queries to workers (optional)
-	setInterval(() => {
-		const workers = Object.values(cluster.workers)
-		workers.forEach((worker) => {
-			worker.send({ cmd: 'status' })
-		})
-	}, 10000)
+  // Periodically send status queries to workers (optional)
+  setInterval(() => {
+    const workers = Object.values(cluster.workers)
+    workers.forEach((worker) => {
+      worker.send({ cmd: 'status' })
+    })
+  }, 10000)
 } else {
-	// ============ Worker Process ============
+  // ============ Worker Process ============
 
-	// Worker starts HTTP server
-	const server = http
-		.createServer((req, res) => {
-			// Simulate request processing
-			const start = Date.now()
+  // Worker starts HTTP server
+  const server = http
+    .createServer((req, res) => {
+      // Simulate request processing
+      const start = Date.now()
 
-			// Return different content based on path
-			if (req.url === '/') {
-				res.writeHead(200, { 'Content-Type': 'text/html' })
-				res.end(`
+      // Return different content based on path
+      if (req.url === '/') {
+        res.writeHead(200, { 'Content-Type': 'text/html' })
+        res.end(`
                 <html>
                 <head><title>Cluster Demo</title></head>
                 <body>
@@ -822,62 +822,62 @@ if (cluster.isPrimary) {
                 </body>
                 </html>
             `)
-			} else if (req.url === '/health') {
-				// Health check
-				res.writeHead(200, { 'Content-Type': 'application/json' })
-				res.end(
-					JSON.stringify({
-						pid: process.pid,
-						memory: process.memoryUsage(),
-						uptime: process.uptime(),
-						timestamp: Date.now(),
-					}),
-				)
-			} else if (req.url === '/slow') {
-				// Simulate slow request (takes 5 seconds)
-				setTimeout(() => {
-					res.writeHead(200)
-					res.end(`Slow response from ${process.pid}`)
-				}, 5000)
-			} else {
-				res.writeHead(404)
-				res.end('Not Found')
-			}
-		})
-		.listen(3000)
+      } else if (req.url === '/health') {
+        // Health check
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(
+          JSON.stringify({
+            pid: process.pid,
+            memory: process.memoryUsage(),
+            uptime: process.uptime(),
+            timestamp: Date.now(),
+          }),
+        )
+      } else if (req.url === '/slow') {
+        // Simulate slow request (takes 5 seconds)
+        setTimeout(() => {
+          res.writeHead(200)
+          res.end(`Slow response from ${process.pid}`)
+        }, 5000)
+      } else {
+        res.writeHead(404)
+        res.end('Not Found')
+      }
+    })
+    .listen(3000)
 
-	console.log(`Worker ${process.pid} started, listening on port 3000`)
+  console.log(`Worker ${process.pid} started, listening on port 3000`)
 
-	// Handle messages from master process
-	process.on('message', (msg) => {
-		if (msg.cmd === 'status') {
-			console.log(`Worker ${process.pid} status: alive`)
-			process.send({ cmd: 'status', pid: process.pid, memory: process.memoryUsage() })
-		} else if (msg.cmd === 'shutdown') {
-			console.log(`Worker ${process.pid} received shutdown signal, graceful exit`)
-			gracefulShutdown()
-		}
-	})
+  // Handle messages from master process
+  process.on('message', (msg) => {
+    if (msg.cmd === 'status') {
+      console.log(`Worker ${process.pid} status: alive`)
+      process.send({ cmd: 'status', pid: process.pid, memory: process.memoryUsage() })
+    } else if (msg.cmd === 'shutdown') {
+      console.log(`Worker ${process.pid} received shutdown signal, graceful exit`)
+      gracefulShutdown()
+    }
+  })
 
-	// Graceful shutdown function
-	function gracefulShutdown() {
-		server.close(() => {
-			console.log(`Worker ${process.pid} closed all connections`)
-			process.exit(0)
-		})
+  // Graceful shutdown function
+  function gracefulShutdown() {
+    server.close(() => {
+      console.log(`Worker ${process.pid} closed all connections`)
+      process.exit(0)
+    })
 
-		// Set timeout to force exit (prevent requests from hanging indefinitely)
-		setTimeout(() => {
-			console.error(`Worker ${process.pid} forced exit`)
-			process.exit(1)
-		}, 10000)
-	}
+    // Set timeout to force exit (prevent requests from hanging indefinitely)
+    setTimeout(() => {
+      console.error(`Worker ${process.pid} forced exit`)
+      process.exit(1)
+    }, 10000)
+  }
 
-	// Handle uncaught exceptions (prevent process crash)
-	process.on('uncaughtException', (err) => {
-		console.error(`Worker ${process.pid} uncaught exception:`, err)
-		gracefulShutdown()
-	})
+  // Handle uncaught exceptions (prevent process crash)
+  process.on('uncaughtException', (err) => {
+    console.error(`Worker ${process.pid} uncaught exception:`, err)
+    gracefulShutdown()
+  })
 }
 ```
 
@@ -924,113 +924,113 @@ Complete graceful shutdown implementation:
 // graceful-shutdown.js
 // A general-purpose graceful shutdown manager
 class GracefulShutdownManager {
-	constructor(server, options = {}) {
-		this.server = server
-		this.options = {
-			timeout: options.timeout || 10000, // Timeout, default 10 seconds
-			connections: new Set(), // Track all connections
-			...options,
-		}
+  constructor(server, options = {}) {
+    this.server = server
+    this.options = {
+      timeout: options.timeout || 10000, // Timeout, default 10 seconds
+      connections: new Set(), // Track all connections
+      ...options,
+    }
 
-		this.isShuttingDown = false
-		this.pendingRequests = 0 // Number of pending requests
+    this.isShuttingDown = false
+    this.pendingRequests = 0 // Number of pending requests
 
-		// Start tracking connections
-		this.trackConnections()
-	}
+    // Start tracking connections
+    this.trackConnections()
+  }
 
-	// Track TCP connections
-	trackConnections() {
-		this.server.on('connection', (socket) => {
-			// If shutting down, destroy new connections
-			if (this.isShuttingDown) {
-				socket.destroy()
-				return
-			}
+  // Track TCP connections
+  trackConnections() {
+    this.server.on('connection', (socket) => {
+      // If shutting down, destroy new connections
+      if (this.isShuttingDown) {
+        socket.destroy()
+        return
+      }
 
-			this.options.connections.add(socket)
+      this.options.connections.add(socket)
 
-			socket.on('close', () => {
-				this.options.connections.delete(socket)
-			})
-		})
+      socket.on('close', () => {
+        this.options.connections.delete(socket)
+      })
+    })
 
-		// Track HTTP requests
-		this.server.on('request', (req, res) => {
-			// When shutting down, tell client to close connection
-			if (this.isShuttingDown) {
-				res.setHeader('Connection', 'close')
-			}
+    // Track HTTP requests
+    this.server.on('request', (req, res) => {
+      // When shutting down, tell client to close connection
+      if (this.isShuttingDown) {
+        res.setHeader('Connection', 'close')
+      }
 
-			this.pendingRequests++
+      this.pendingRequests++
 
-			res.on('finish', () => {
-				this.pendingRequests--
-				this.checkIfDone()
-			})
-		})
-	}
+      res.on('finish', () => {
+        this.pendingRequests--
+        this.checkIfDone()
+      })
+    })
+  }
 
-	// Execute shutdown
-	shutdown(callback) {
-		if (this.isShuttingDown) return
+  // Execute shutdown
+  shutdown(callback) {
+    if (this.isShuttingDown) return
 
-		this.isShuttingDown = true
-		console.log('Starting graceful shutdown...')
+    this.isShuttingDown = true
+    console.log('Starting graceful shutdown...')
 
-		// Stop accepting new connections
-		this.server.close(() => {
-			console.log('Server closed, no longer accepting new connections')
-		})
+    // Stop accepting new connections
+    this.server.close(() => {
+      console.log('Server closed, no longer accepting new connections')
+    })
 
-		// Set timeout for forced exit
-		const forceShutdown = setTimeout(() => {
-			console.error(`Graceful shutdown timed out (${this.options.timeout}ms), forcing exit`)
-			this.destroyConnections()
-			process.exit(1)
-		}, this.options.timeout)
+    // Set timeout for forced exit
+    const forceShutdown = setTimeout(() => {
+      console.error(`Graceful shutdown timed out (${this.options.timeout}ms), forcing exit`)
+      this.destroyConnections()
+      process.exit(1)
+    }, this.options.timeout)
 
-		// Periodically check if all requests are done
-		const checkInterval = setInterval(() => {
-			if (this.pendingRequests === 0 && this.options.connections.size === 0) {
-				// All requests completed, safe to exit
-				clearInterval(checkInterval)
-				clearTimeout(forceShutdown)
-				console.log('All requests processed, exiting process')
-				process.exit(0)
-			} else {
-				console.log(`Waiting - Requests: ${this.pendingRequests}, Connections: ${this.options.connections.size}`)
-			}
-		}, 1000)
-	}
+    // Periodically check if all requests are done
+    const checkInterval = setInterval(() => {
+      if (this.pendingRequests === 0 && this.options.connections.size === 0) {
+        // All requests completed, safe to exit
+        clearInterval(checkInterval)
+        clearTimeout(forceShutdown)
+        console.log('All requests processed, exiting process')
+        process.exit(0)
+      } else {
+        console.log(`Waiting - Requests: ${this.pendingRequests}, Connections: ${this.options.connections.size}`)
+      }
+    }, 1000)
+  }
 
-	// Force destroy all connections
-	destroyConnections() {
-		this.options.connections.forEach((socket) => {
-			if (!socket.destroyed) {
-				socket.destroy()
-			}
-		})
-		this.options.connections.clear()
-	}
+  // Force destroy all connections
+  destroyConnections() {
+    this.options.connections.forEach((socket) => {
+      if (!socket.destroyed) {
+        socket.destroy()
+      }
+    })
+    this.options.connections.clear()
+  }
 
-	// Check if can exit
-	checkIfDone() {
-		if (this.isShuttingDown && this.pendingRequests === 0 && this.options.connections.size === 0) {
-			console.log('All requests processed, exiting process')
-			process.exit(0)
-		}
-	}
+  // Check if can exit
+  checkIfDone() {
+    if (this.isShuttingDown && this.pendingRequests === 0 && this.options.connections.size === 0) {
+      console.log('All requests processed, exiting process')
+      process.exit(0)
+    }
+  }
 }
 
 // Usage example
 import http from 'node:http'
 const server = http.createServer((req, res) => {
-	// Simulate request taking 2 seconds to process
-	setTimeout(() => {
-		res.writeHead(200)
-		res.end('OK')
-	}, 2000)
+  // Simulate request taking 2 seconds to process
+  setTimeout(() => {
+    res.writeHead(200)
+    res.end('OK')
+  }, 2000)
 })
 
 const shutdownManager = new GracefulShutdownManager(server)
@@ -1045,12 +1045,12 @@ process.on('SIGQUIT', () => shutdownManager.shutdown())
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
-	console.error('Uncaught exception:', err)
-	shutdownManager.shutdown()
+  console.error('Uncaught exception:', err)
+  shutdownManager.shutdown()
 })
 
 server.listen(3000, () => {
-	console.log('Server started, PID:', process.pid)
+  console.log('Server started, PID:', process.pid)
 })
 ```
 
@@ -1077,68 +1077,68 @@ Configuration files allow finer control over PM2 behavior:
 // ecosystem.config.js
 // Whether to use CommonJS or ESM depends on your project configuration
 export default {
-	apps: [
-		{
-			name: 'my-app', // Application name
-			script: './app.js',
-			instances: 'max', // Number of instances to start, 'max' means CPU cores
-			exec_mode: 'cluster', // cluster mode vs fork mode
+  apps: [
+    {
+      name: 'my-app', // Application name
+      script: './app.js',
+      instances: 'max', // Number of instances to start, 'max' means CPU cores
+      exec_mode: 'cluster', // cluster mode vs fork mode
 
-			// Can enable watch in development, disable in production
-			watch: false,
+      // Can enable watch in development, disable in production
+      watch: false,
 
-			// ============ Auto-restart configuration ============
-			autorestart: true, // Auto restart after crash
-			restart_delay: 5000, // Wait 5 seconds before restart
-			max_restarts: 10, // Max 10 restarts
-			min_uptime: '10s', // Running for over 10 seconds counts as "normal start"
+      // ============ Auto-restart configuration ============
+      autorestart: true, // Auto restart after crash
+      restart_delay: 5000, // Wait 5 seconds before restart
+      max_restarts: 10, // Max 10 restarts
+      min_uptime: '10s', // Running for over 10 seconds counts as "normal start"
 
-			// ============ Memory limit ============
-			// Auto restart if memory exceeds 500M, prevent memory leaks
-			max_memory_restart: '500M',
+      // ============ Memory limit ============
+      // Auto restart if memory exceeds 500M, prevent memory leaks
+      max_memory_restart: '500M',
 
-			// ============ Graceful shutdown configuration ============
-			kill_timeout: 10000, // Wait 10 seconds after SIGTERM, then force SIGKILL
-			listen_timeout: 3000, // Startup timeout
+      // ============ Graceful shutdown configuration ============
+      kill_timeout: 10000, // Wait 10 seconds after SIGTERM, then force SIGKILL
+      listen_timeout: 3000, // Startup timeout
 
-			// ============ Environment variables ============
-			env: {
-				NODE_ENV: 'production',
-				PORT: 3000,
-			},
+      // ============ Environment variables ============
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+      },
 
-			// ============ Log configuration ============
-			log_file: './logs/app.log', // All logs
-			error_file: './logs/err.log', // Error logs
-			out_file: './logs/out.log', // Standard output
-			log_date_format: 'YYYY-MM-DD HH:mm:ss', // Log timestamp format
-			merge_logs: true, // Merge multi-instance logs
+      // ============ Log configuration ============
+      log_file: './logs/app.log', // All logs
+      error_file: './logs/err.log', // Error logs
+      out_file: './logs/out.log', // Standard output
+      log_date_format: 'YYYY-MM-DD HH:mm:ss', // Log timestamp format
+      merge_logs: true, // Merge multi-instance logs
 
-			// ============ Monitoring configuration ============
-			instance_var: 'INSTANCE_ID', // Environment variable containing instance ID
+      // ============ Monitoring configuration ============
+      instance_var: 'INSTANCE_ID', // Environment variable containing instance ID
 
-			// ============ Health check ============
-			// PM2 periodically accesses this URL, restarts if fails
-			health_check: {
-				url: 'http://localhost:3000/health',
-				interval: 30000, // Check every 30 seconds
-				timeout: 5000, // Timeout 5 seconds
-			},
-		},
-		{
-			// Second app: Background Worker
-			name: 'worker-app',
-			script: './worker.js',
-			instances: 2, // Start 2 Workers
-			exec_mode: 'fork', // Background tasks use fork mode
-			cron_restart: '0 0 * * *', // Restart daily at midnight, prevent memory leaks
+      // ============ Health check ============
+      // PM2 periodically accesses this URL, restarts if fails
+      health_check: {
+        url: 'http://localhost:3000/health',
+        interval: 30000, // Check every 30 seconds
+        timeout: 5000, // Timeout 5 seconds
+      },
+    },
+    {
+      // Second app: Background Worker
+      name: 'worker-app',
+      script: './worker.js',
+      instances: 2, // Start 2 Workers
+      exec_mode: 'fork', // Background tasks use fork mode
+      cron_restart: '0 0 * * *', // Restart daily at midnight, prevent memory leaks
 
-			env: {
-				NODE_ENV: 'production',
-				WORKER_TYPE: 'background',
-			},
-		},
-	],
+      env: {
+        NODE_ENV: 'production',
+        WORKER_TYPE: 'background',
+      },
+    },
+  ],
 }
 ```
 
@@ -1155,29 +1155,29 @@ const app = express()
 
 // Graceful shutdown handling
 process.on('SIGINT', () => {
-	console.log('Received SIGINT signal, preparing for graceful shutdown')
+  console.log('Received SIGINT signal, preparing for graceful shutdown')
 
-	// Close database connection
-	db.close(() => {
-		console.log('Database connection closed')
+  // Close database connection
+  db.close(() => {
+    console.log('Database connection closed')
 
-		// Close Redis connection
-		redis.quit(() => {
-			console.log('Redis connection closed')
+    // Close Redis connection
+    redis.quit(() => {
+      console.log('Redis connection closed')
 
-			// Close HTTP server
-			server.close(() => {
-				console.log('HTTP server closed')
-				process.exit(0)
-			})
-		})
-	})
+      // Close HTTP server
+      server.close(() => {
+        console.log('HTTP server closed')
+        process.exit(0)
+      })
+    })
+  })
 
-	// Timeout forced exit (prevent connections from hanging)
-	setTimeout(() => {
-		console.error('Graceful shutdown timed out, forcing exit')
-		process.exit(1)
-	}, 10000)
+  // Timeout forced exit (prevent connections from hanging)
+  setTimeout(() => {
+    console.error('Graceful shutdown timed out, forcing exit')
+    process.exit(1)
+  }, 10000)
 })
 ```
 
@@ -1286,221 +1286,221 @@ Redis is the most commonly used distributed cache. Here's a complete caching imp
 import { createClient } from 'redis'
 
 class RedisCache {
-	constructor(options = {}) {
-		this.client = createClient({
-			url: `redis://${options.host || 'localhost'}:${options.port || 6379}`,
-			password: options.password,
-			database: options.db || 0,
-		})
+  constructor(options = {}) {
+    this.client = createClient({
+      url: `redis://${options.host || 'localhost'}:${options.port || 6379}`,
+      password: options.password,
+      database: options.db || 0,
+    })
 
-		// Error handling
-		this.client.on('error', (err) => console.error('Redis error:', err))
-		this.client.on('connect', () => console.log('Redis connection successful'))
+    // Error handling
+    this.client.on('error', (err) => console.error('Redis error:', err))
+    this.client.on('connect', () => console.log('Redis connection successful'))
 
-		this.client.connect().catch(console.error)
+    this.client.connect().catch(console.error)
 
-		// Default expiration time (seconds)
-		this.defaultTTL = options.defaultTTL || 3600
+    // Default expiration time (seconds)
+    this.defaultTTL = options.defaultTTL || 3600
 
-		// Cache prefix to avoid key conflicts
-		this.prefix = options.prefix || 'cache:'
-	}
+    // Cache prefix to avoid key conflicts
+    this.prefix = options.prefix || 'cache:'
+  }
 
-	// Generate key with prefix
-	_getKey(key) {
-		return `${this.prefix}${key}`
-	}
+  // Generate key with prefix
+  _getKey(key) {
+    return `${this.prefix}${key}`
+  }
 
-	// ============ Basic Operations ============
+  // ============ Basic Operations ============
 
-	// Get cache
-	async get(key) {
-		try {
-			const cacheKey = this._getKey(key)
-			const data = await this.client.get(cacheKey)
+  // Get cache
+  async get(key) {
+    try {
+      const cacheKey = this._getKey(key)
+      const data = await this.client.get(cacheKey)
 
-			if (data) {
-				console.log(`Cache hit: ${key}`)
-				return JSON.parse(data)
-			}
+      if (data) {
+        console.log(`Cache hit: ${key}`)
+        return JSON.parse(data)
+      }
 
-			console.log(`Cache miss: ${key}`)
-			return null
-		} catch (err) {
-			console.error('Get cache failed:', err)
-			return null
-		}
-	}
+      console.log(`Cache miss: ${key}`)
+      return null
+    } catch (err) {
+      console.error('Get cache failed:', err)
+      return null
+    }
+  }
 
-	// Set cache
-	async set(key, value, ttl = this.defaultTTL) {
-		try {
-			const cacheKey = this._getKey(key)
-			const data = JSON.stringify(value)
+  // Set cache
+  async set(key, value, ttl = this.defaultTTL) {
+    try {
+      const cacheKey = this._getKey(key)
+      const data = JSON.stringify(value)
 
-			if (ttl > 0) {
-				// EX: Set expiration time (seconds)
-				await this.client.set(cacheKey, data, { EX: ttl })
-			} else {
-				// Never expire
-				await this.client.set(cacheKey, data)
-			}
+      if (ttl > 0) {
+        // EX: Set expiration time (seconds)
+        await this.client.set(cacheKey, data, { EX: ttl })
+      } else {
+        // Never expire
+        await this.client.set(cacheKey, data)
+      }
 
-			console.log(`Cache set: ${key}, TTL: ${ttl}s`)
-			return true
-		} catch (err) {
-			console.error('Set cache failed:', err)
-			return false
-		}
-	}
+      console.log(`Cache set: ${key}, TTL: ${ttl}s`)
+      return true
+    } catch (err) {
+      console.error('Set cache failed:', err)
+      return false
+    }
+  }
 
-	// Delete cache
-	async del(key) {
-		try {
-			const cacheKey = this._getKey(key)
-			await this.client.del(cacheKey)
-			console.log(`Cache deleted: ${key}`)
-			return true
-		} catch (err) {
-			console.error('Delete cache failed:', err)
-			return false
-		}
-	}
+  // Delete cache
+  async del(key) {
+    try {
+      const cacheKey = this._getKey(key)
+      await this.client.del(cacheKey)
+      console.log(`Cache deleted: ${key}`)
+      return true
+    } catch (err) {
+      console.error('Delete cache failed:', err)
+      return false
+    }
+  }
 
-	// ============ Advanced Operations ============
+  // ============ Advanced Operations ============
 
-	// Get cache, if not exists, fetch via callback and cache
-	// This is the most commonly used pattern, handles both cache penetration and breakdown
-	async remember(key, ttl, callback) {
-		let value = await this.get(key)
+  // Get cache, if not exists, fetch via callback and cache
+  // This is the most commonly used pattern, handles both cache penetration and breakdown
+  async remember(key, ttl, callback) {
+    let value = await this.get(key)
 
-		if (value !== null) {
-			return value
-		}
+    if (value !== null) {
+      return value
+    }
 
-		// Cache doesn't exist, use mutex lock to prevent cache breakdown
-		const lockKey = `lock:${key}`
-		const lockAcquired = await this.acquireLock(lockKey, 10)
+    // Cache doesn't exist, use mutex lock to prevent cache breakdown
+    const lockKey = `lock:${key}`
+    const lockAcquired = await this.acquireLock(lockKey, 10)
 
-		if (lockAcquired) {
-			try {
-				// Double-check: other process might have loaded cache
-				value = await this.get(key)
-				if (value !== null) {
-					return value
-				}
+    if (lockAcquired) {
+      try {
+        // Double-check: other process might have loaded cache
+        value = await this.get(key)
+        if (value !== null) {
+          return value
+        }
 
-				// Call callback to fetch data (usually from database)
-				value = await callback()
+        // Call callback to fetch data (usually from database)
+        value = await callback()
 
-				// Cache it
-				await this.set(key, value, ttl)
-				return value
-			} finally {
-				// Release lock
-				await this.releaseLock(lockKey)
-			}
-		} else {
-			// Didn't get lock, meaning other process is loading, wait and retry
-			await new Promise((resolve) => setTimeout(resolve, 100))
-			return await this.get(key)
-		}
-	}
+        // Cache it
+        await this.set(key, value, ttl)
+        return value
+      } finally {
+        // Release lock
+        await this.releaseLock(lockKey)
+      }
+    } else {
+      // Didn't get lock, meaning other process is loading, wait and retry
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      return await this.get(key)
+    }
+  }
 
-	// Acquire distributed lock
-	async acquireLock(lockKey, ttl) {
-		// SET ... NX EX: Only set if key doesn't exist, and set expiration
-		const result = await this.client.set(lockKey, 'locked', { NX: true, EX: ttl })
-		return result === 'OK'
-	}
+  // Acquire distributed lock
+  async acquireLock(lockKey, ttl) {
+    // SET ... NX EX: Only set if key doesn't exist, and set expiration
+    const result = await this.client.set(lockKey, 'locked', { NX: true, EX: ttl })
+    return result === 'OK'
+  }
 
-	// Release lock
-	async releaseLock(lockKey) {
-		await this.client.del(lockKey)
-	}
+  // Release lock
+  async releaseLock(lockKey) {
+    await this.client.del(lockKey)
+  }
 
-	// ============ Tag functionality (batch invalidation) ============
+  // ============ Tag functionality (batch invalidation) ============
 
-	// Tag a group of caches
-	async tag(tag, keys) {
-		const tagKey = `tag:${tag}`
-		await this.client.set(tagKey, JSON.stringify(keys))
-		// Set tag to never expire, can be manually deleted
-		return true
-	}
+  // Tag a group of caches
+  async tag(tag, keys) {
+    const tagKey = `tag:${tag}`
+    await this.client.set(tagKey, JSON.stringify(keys))
+    // Set tag to never expire, can be manually deleted
+    return true
+  }
 
-	// Get all caches under a tag
-	async getByTag(tag) {
-		const tagKey = `tag:${tag}`
-		const data = await this.client.get(tagKey)
+  // Get all caches under a tag
+  async getByTag(tag) {
+    const tagKey = `tag:${tag}`
+    const data = await this.client.get(tagKey)
 
-		if (!data) return []
+    if (!data) return []
 
-		const keys = JSON.parse(data)
-		const results = []
+    const keys = JSON.parse(data)
+    const results = []
 
-		for (const key of keys) {
-			const value = await this.get(key)
-			if (value) {
-				results.push({ key, value })
-			}
-		}
+    for (const key of keys) {
+      const value = await this.get(key)
+      if (value) {
+        results.push({ key, value })
+      }
+    }
 
-		return results
-	}
+    return results
+  }
 
-	// Clear all caches under a tag
-	async flushTag(tag) {
-		const tagKey = `tag:${tag}`
-		const data = await this.client.get(tagKey)
+  // Clear all caches under a tag
+  async flushTag(tag) {
+    const tagKey = `tag:${tag}`
+    const data = await this.client.get(tagKey)
 
-		if (data) {
-			const keys = JSON.parse(data)
-			for (const key of keys) {
-				await this.client.del(key)
-			}
-			await this.client.del(tagKey)
-		}
+    if (data) {
+      const keys = JSON.parse(data)
+      for (const key of keys) {
+        await this.client.del(key)
+      }
+      await this.client.del(tagKey)
+    }
 
-		return true
-	}
+    return true
+  }
 }
 
 // Usage example
 async function example() {
-	const cache = new RedisCache({
-		host: 'localhost',
-		port: 6379,
-		prefix: 'app:',
-		defaultTTL: 1800, // 30 minutes
-	})
+  const cache = new RedisCache({
+    host: 'localhost',
+    port: 6379,
+    prefix: 'app:',
+    defaultTTL: 1800, // 30 minutes
+  })
 
-	// ============ Basic usage ============
-	await cache.set('user:1001', { name: 'John', age: 30 })
-	const user = await cache.get('user:1001')
-	console.log('User data:', user)
+  // ============ Basic usage ============
+  await cache.set('user:1001', { name: 'John', age: 30 })
+  const user = await cache.get('user:1001')
+  console.log('User data:', user)
 
-	// ============ Remember pattern ============
-	// Automatically handles cache miss
-	const product = await cache.remember('product:2001', 3600, async () => {
-		console.log('Loading product data from database...')
-		// Simulate database query
-		return {
-			id: 2001,
-			name: 'iPhone 15',
-			price: 999,
-		}
-	})
-	console.log('Product data:', product)
+  // ============ Remember pattern ============
+  // Automatically handles cache miss
+  const product = await cache.remember('product:2001', 3600, async () => {
+    console.log('Loading product data from database...')
+    // Simulate database query
+    return {
+      id: 2001,
+      name: 'iPhone 15',
+      price: 999,
+    }
+  })
+  console.log('Product data:', product)
 
-	// ============ Tag usage ============
-	// Tag products under "phones" category
-	await cache.tag('category:phone', ['app:product:2001', 'app:product:2002'])
-	const phones = await cache.getByTag('category:phone')
-	console.log('Phone products:', phones)
+  // ============ Tag usage ============
+  // Tag products under "phones" category
+  await cache.tag('category:phone', ['app:product:2001', 'app:product:2002'])
+  const phones = await cache.getByTag('category:phone')
+  console.log('Phone products:', phones)
 
-	// When phones category updates, clear all related caches with one click
-	await cache.flushTag('category:phone')
+  // When phones category updates, clear all related caches with one click
+  await cache.flushTag('category:phone')
 }
 
 example()
@@ -1521,31 +1521,31 @@ For example, someone frequently queries user information with non-existent IDs. 
 ```javascript
 // Cache penetration solution: cache null values
 async function getUserById(id) {
-	const cacheKey = `user:${id}`
-	let user = await cache.get(cacheKey)
+  const cacheKey = `user:${id}`
+  let user = await cache.get(cacheKey)
 
-	// Value exists in cache
-	if (user !== null) {
-		// Check if it's the null value marker
-		if (user === 'NULL_VALUE') {
-			return null
-		}
-		return user
-	}
+  // Value exists in cache
+  if (user !== null) {
+    // Check if it's the null value marker
+    if (user === 'NULL_VALUE') {
+      return null
+    }
+    return user
+  }
 
-	// Not in cache, query database
-	user = await db.query('SELECT * FROM users WHERE id = ?', [id])
+  // Not in cache, query database
+  user = await db.query('SELECT * FROM users WHERE id = ?', [id])
 
-	if (user) {
-		// Has data, cache the real value
-		await cache.set(cacheKey, user, 3600)
-		return user
-	} else {
-		// No data, cache null value (short-term)
-		// Next time querying the same ID, won't hit database for 1 minute
-		await cache.set(cacheKey, 'NULL_VALUE', 300)
-		return null
-	}
+  if (user) {
+    // Has data, cache the real value
+    await cache.set(cacheKey, user, 3600)
+    return user
+  } else {
+    // No data, cache null value (short-term)
+    // Next time querying the same ID, won't hit database for 1 minute
+    await cache.set(cacheKey, 'NULL_VALUE', 300)
+    return null
+  }
 }
 ```
 
@@ -1560,40 +1560,40 @@ Under normal circumstances, cache blocks most requests. But if this key expires 
 ```javascript
 // Cache breakdown solution: mutex lock
 async function getHotProduct(id) {
-	const cacheKey = `product:${id}`
-	let product = await cache.get(cacheKey)
+  const cacheKey = `product:${id}`
+  let product = await cache.get(cacheKey)
 
-	if (product) {
-		return product
-	}
+  if (product) {
+    return product
+  }
 
-	// Try to acquire lock
-	const lockKey = `lock:product:${id}`
-	const lock = await cache.acquireLock(lockKey, 10)
+  // Try to acquire lock
+  const lockKey = `lock:product:${id}`
+  const lock = await cache.acquireLock(lockKey, 10)
 
-	if (lock) {
-		try {
-			// Double-check: other process might have loaded cache
-			product = await cache.get(cacheKey)
-			if (product) {
-				return product
-			}
+  if (lock) {
+    try {
+      // Double-check: other process might have loaded cache
+      product = await cache.get(cacheKey)
+      if (product) {
+        return product
+      }
 
-			// Query database
-			product = await db.query('SELECT * FROM products WHERE id = ?', [id])
+      // Query database
+      product = await db.query('SELECT * FROM products WHERE id = ?', [id])
 
-			// Set cache, no expiration or long TTL
-			await cache.set(cacheKey, product, 3600)
+      // Set cache, no expiration or long TTL
+      await cache.set(cacheKey, product, 3600)
 
-			return product
-		} finally {
-			await cache.releaseLock(lockKey)
-		}
-	} else {
-		// Didn't get lock, wait and retry (other process might be loading cache)
-		await new Promise((resolve) => setTimeout(resolve, 100))
-		return getHotProduct(id)
-	}
+      return product
+    } finally {
+      await cache.releaseLock(lockKey)
+    }
+  } else {
+    // Didn't get lock, wait and retry (other process might be loading cache)
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    return getHotProduct(id)
+  }
 }
 ```
 
@@ -1606,10 +1606,10 @@ async function getHotProduct(id) {
 ```javascript
 // Cache avalanche solution: random expiration time
 async function setWithRandomExpire(key, value, baseTTL) {
-	// Add 0-300 seconds random value to base expiration
-	// This prevents all caches from expiring simultaneously
-	const randomTTL = baseTTL + Math.floor(Math.random() * 300)
-	await cache.set(key, value, randomTTL)
+  // Add 0-300 seconds random value to base expiration
+  // This prevents all caches from expiring simultaneously
+  const randomTTL = baseTTL + Math.floor(Math.random() * 300)
+  await cache.set(key, value, randomTTL)
 }
 ```
 
@@ -1618,31 +1618,31 @@ async function setWithRandomExpire(key, value, baseTTL) {
 ```javascript
 // Never expire, refresh in background
 async function getWithBackgroundRefresh(key, ttl, fetchFunction) {
-	let value = await cache.get(key)
+  let value = await cache.get(key)
 
-	// Check if refresh is needed
-	const ttlRemaining = await cache.client.ttl(cache._getKey(key))
+  // Check if refresh is needed
+  const ttlRemaining = await cache.client.ttl(cache._getKey(key))
 
-	// If remaining time is less than 1/3, refresh asynchronously
-	// This way cache never "expires", only has "needs update" concept
-	if (ttlRemaining < ttl / 3) {
-		// Async refresh, doesn't block current request
-		refreshCache(key, ttl, fetchFunction).catch((err) => {
-			console.error('Cache refresh failed:', err)
-		})
-	}
+  // If remaining time is less than 1/3, refresh asynchronously
+  // This way cache never "expires", only has "needs update" concept
+  if (ttlRemaining < ttl / 3) {
+    // Async refresh, doesn't block current request
+    refreshCache(key, ttl, fetchFunction).catch((err) => {
+      console.error('Cache refresh failed:', err)
+    })
+  }
 
-	return value
+  return value
 }
 
 async function refreshCache(key, ttl, fetchFunction) {
-	try {
-		const newValue = await fetchFunction()
-		await cache.set(key, newValue, ttl)
-		console.log(`Cache refresh successful: ${key}`)
-	} catch (err) {
-		console.error(`Cache refresh failed: ${key}`, err)
-	}
+  try {
+    const newValue = await fetchFunction()
+    await cache.set(key, newValue, ttl)
+    console.log(`Cache refresh successful: ${key}`)
+  } catch (err) {
+    console.error(`Cache refresh failed: ${key}`, err)
+  }
 }
 ```
 
@@ -1820,46 +1820,46 @@ For databases that don't support native partitioning, or for more flexible routi
 ```javascript
 // Node.js PostgreSQL Database Horizontal Sharding Router Example
 class ShardingManager {
-	constructor(dbClusters) {
-		// dbClusters: Array of PostgreSQL database connection pools [db0, db1, ...]
-		this.dbClusters = dbClusters
-	}
+  constructor(dbClusters) {
+    // dbClusters: Array of PostgreSQL database connection pools [db0, db1, ...]
+    this.dbClusters = dbClusters
+  }
 
-	// Get corresponding database node based on user ID (database-level sharding)
-	// For example, 4 database nodes, userId % 4 determines which to use
-	getDatabaseNode(userId) {
-		const dbIndex = Number(BigInt(userId) % BigInt(this.dbClusters.length))
-		return this.dbClusters[dbIndex]
-	}
+  // Get corresponding database node based on user ID (database-level sharding)
+  // For example, 4 database nodes, userId % 4 determines which to use
+  getDatabaseNode(userId) {
+    const dbIndex = Number(BigInt(userId) % BigInt(this.dbClusters.length))
+    return this.dbClusters[dbIndex]
+  }
 
-	// Get corresponding table name based on order ID (table-level sharding)
-	// For example, 16 tables, orderId % 16 determines which
-	getTableName(orderId) {
-		const tableIndex = Number(BigInt(orderId) % BigInt(16))
-		return `orders_${tableIndex}`
-	}
+  // Get corresponding table name based on order ID (table-level sharding)
+  // For example, 16 tables, orderId % 16 determines which
+  getTableName(orderId) {
+    const tableIndex = Number(BigInt(orderId) % BigInt(16))
+    return `orders_${tableIndex}`
+  }
 
-	// Execute sharded query
-	async executeQuery(userId, orderId, sql, params) {
-		const db = this.getDatabaseNode(userId)
+  // Execute sharded query
+  async executeQuery(userId, orderId, sql, params) {
+    const db = this.getDatabaseNode(userId)
 
-		// For PostgreSQL partitioned tables, can directly use parent table name
-		// But if manual routing to specific partition needed:
-		const tableName = this.getTableName(orderId)
+    // For PostgreSQL partitioned tables, can directly use parent table name
+    // But if manual routing to specific partition needed:
+    const tableName = this.getTableName(orderId)
 
-		// Replace logical table name with actual partitioned table name
-		const finalSql = sql.replace('orders', tableName)
+    // Replace logical table name with actual partitioned table name
+    const finalSql = sql.replace('orders', tableName)
 
-		console.log(`Routing to PostgreSQL node: ${userId % this.dbClusters.length}, table: ${tableName}`)
-		return await db.query(finalSql, params)
-	}
+    console.log(`Routing to PostgreSQL node: ${userId % this.dbClusters.length}, table: ${tableName}`)
+    return await db.query(finalSql, params)
+  }
 
-	// Use PostgreSQL native partitioned tables (recommended)
-	async executePartitionedQuery(userId, sql, params) {
-		const db = this.getDatabaseNode(userId)
-		console.log(`Routing to PostgreSQL node: ${userId % this.dbClusters.length}, using partitioned tables`)
-		return await db.query(sql, params)
-	}
+  // Use PostgreSQL native partitioned tables (recommended)
+  async executePartitionedQuery(userId, sql, params) {
+    const db = this.getDatabaseNode(userId)
+    console.log(`Routing to PostgreSQL node: ${userId % this.dbClusters.length}, using partitioned tables`)
+    return await db.query(sql, params)
+  }
 }
 ```
 
@@ -1875,137 +1875,137 @@ const { Pool } = pg
 
 // Create connection pool
 const pool = new Pool({
-	host: 'localhost',
-	port: 5432,
-	user: 'postgres',
-	password: 'password',
-	database: 'myapp',
+  host: 'localhost',
+  port: 5432,
+  user: 'postgres',
+  password: 'password',
+  database: 'myapp',
 
-	// Connection pool size
-	max: 50, // Max 50 connections
-	min: 5, // Keep at least 5 connections
+  // Connection pool size
+  max: 50, // Max 50 connections
+  min: 5, // Keep at least 5 connections
 
-	// Timeout configuration
-	idleTimeoutMillis: 60000, // Release if idle for 60 seconds
-	connectionTimeoutMillis: 10000, // Connection acquisition timeout 10 seconds
+  // Timeout configuration
+  idleTimeoutMillis: 60000, // Release if idle for 60 seconds
+  connectionTimeoutMillis: 10000, // Connection acquisition timeout 10 seconds
 
-	allowExitOnIdle: false, // Don't exit when idle
+  allowExitOnIdle: false, // Don't exit when idle
 
-	// SSL configuration (must enable in production)
-	ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  // SSL configuration (must enable in production)
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 
-	// PostgreSQL-specific configuration
-	application_name: 'myapp-api', // For logging and monitoring
-	statement_timeout: 30000, // Single SQL timeout 30 seconds
-	query_timeout: 60000, // Query timeout
-	keepAlive: true, // Keep connections alive
-	keepAliveInitialDelayMillis: 10000, // Start heartbeat after 10 seconds
+  // PostgreSQL-specific configuration
+  application_name: 'myapp-api', // For logging and monitoring
+  statement_timeout: 30000, // Single SQL timeout 30 seconds
+  query_timeout: 60000, // Query timeout
+  keepAlive: true, // Keep connections alive
+  keepAliveInitialDelayMillis: 10000, // Start heartbeat after 10 seconds
 })
 
 // Connection pool event listeners
 pool.on('connect', (client) => {
-	console.log('PostgreSQL connection established')
+  console.log('PostgreSQL connection established')
 })
 
 pool.on('acquire', (client) => {
-	console.log('Client acquired from pool')
+  console.log('Client acquired from pool')
 })
 
 pool.on('remove', (client) => {
-	console.log('Client removed from pool')
+  console.log('Client removed from pool')
 })
 
 pool.on('error', (err, client) => {
-	console.error('PostgreSQL connection pool error:', err)
+  console.error('PostgreSQL connection pool error:', err)
 })
 
 // Query with retry
 async function queryWithRetry(sql, params, retries = 3) {
-	for (let i = 0; i < retries; i++) {
-		try {
-			const result = await pool.query(sql, params)
-			return result.rows
-		} catch (err) {
-			console.error(`Query failed, retry ${i + 1}/${retries}:`, err.message)
+  for (let i = 0; i < retries; i++) {
+    try {
+      const result = await pool.query(sql, params)
+      return result.rows
+    } catch (err) {
+      console.error(`Query failed, retry ${i + 1}/${retries}:`, err.message)
 
-			// If connection error, wait and retry
-			if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
-				console.log('Connection failed, waiting before retry...')
-				await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)))
-				continue
-			}
+      // If connection error, wait and retry
+      if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
+        console.log('Connection failed, waiting before retry...')
+        await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)))
+        continue
+      }
 
-			if (i === retries - 1) {
-				throw err
-			}
+      if (i === retries - 1) {
+        throw err
+      }
 
-			await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)))
-		}
-	}
+      await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)))
+    }
+  }
 }
 
 // Transaction example
 async function transactionExample() {
-	const client = await pool.connect()
+  const client = await pool.connect()
 
-	try {
-		await client.query('BEGIN') // Start transaction
+  try {
+    await client.query('BEGIN') // Start transaction
 
-		// Execute multiple operations
-		await client.query('UPDATE accounts SET balance = balance - $1 WHERE id = $2', [100, 1])
-		await client.query('UPDATE accounts SET balance = balance + $1 WHERE id = $2', [100, 2])
+    // Execute multiple operations
+    await client.query('UPDATE accounts SET balance = balance - $1 WHERE id = $2', [100, 1])
+    await client.query('UPDATE accounts SET balance = balance + $1 WHERE id = $2', [100, 2])
 
-		// Check constraints
-		const checkResult = await client.query('SELECT balance FROM accounts WHERE balance < 0')
-		if (checkResult.rows.length > 0) {
-			throw new Error('Insufficient balance, rolling back transaction')
-		}
+    // Check constraints
+    const checkResult = await client.query('SELECT balance FROM accounts WHERE balance < 0')
+    if (checkResult.rows.length > 0) {
+      throw new Error('Insufficient balance, rolling back transaction')
+    }
 
-		await client.query('COMMIT')
-		console.log('Transaction committed successfully')
-	} catch (err) {
-		await client.query('ROLLBACK')
-		console.error('Transaction rolled back:', err.message)
-		throw err
-	} finally {
-		client.release() // Release connection back to pool
-	}
+    await client.query('COMMIT')
+    console.log('Transaction committed successfully')
+  } catch (err) {
+    await client.query('ROLLBACK')
+    console.error('Transaction rolled back:', err.message)
+    throw err
+  } finally {
+    client.release() // Release connection back to pool
+  }
 }
 
 // Batch insert optimization
 async function batchInsert(tableName, rows) {
-	if (!rows || rows.length === 0) return
+  if (!rows || rows.length === 0) return
 
-	const columns = Object.keys(rows[0])
-	const placeholders = rows
-		.map(
-			(_, rowIndex) => `(${columns.map((_, colIndex) => `$${rowIndex * columns.length + colIndex + 1}`).join(', ')})`,
-		)
-		.join(', ')
+  const columns = Object.keys(rows[0])
+  const placeholders = rows
+    .map(
+      (_, rowIndex) => `(${columns.map((_, colIndex) => `$${rowIndex * columns.length + colIndex + 1}`).join(', ')})`,
+    )
+    .join(', ')
 
-	const values = rows.flatMap((row) => columns.map((col) => row[col]))
-	const sql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES ${placeholders} ON CONFLICT DO NOTHING`
+  const values = rows.flatMap((row) => columns.map((col) => row[col]))
+  const sql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES ${placeholders} ON CONFLICT DO NOTHING`
 
-	try {
-		const result = await pool.query(sql, values)
-		console.log(`Batch inserted ${result.rowCount} rows`)
-		return result
-	} catch (err) {
-		console.error('Batch insert failed:', err.message)
-		throw err
-	}
+  try {
+    const result = await pool.query(sql, values)
+    console.log(`Batch inserted ${result.rowCount} rows`)
+    return result
+  } catch (err) {
+    console.error('Batch insert failed:', err.message)
+    throw err
+  }
 }
 
 // Connection pool health check
 async function checkPoolHealth() {
-	try {
-		const result = await pool.query('SELECT 1 as health, version() as pg_version, current_timestamp as timestamp')
-		console.log('PostgreSQL connection pool health check passed:', result.rows[0])
-		return true
-	} catch (err) {
-		console.error('PostgreSQL connection pool health check failed:', err.message)
-		return false
-	}
+  try {
+    const result = await pool.query('SELECT 1 as health, version() as pg_version, current_timestamp as timestamp')
+    console.log('PostgreSQL connection pool health check passed:', result.rows[0])
+    return true
+  } catch (err) {
+    console.error('PostgreSQL connection pool health check failed:', err.message)
+    return false
+  }
 }
 ```
 
@@ -2261,96 +2261,96 @@ import { createClient } from 'redis'
 const client = createClient()
 
 class FeatureToggle {
-	constructor() {
-		this.features = new Map()
-		this.watchInterval = 5000 // Check for config changes every 5 seconds
-		this.startWatching()
-	}
+  constructor() {
+    this.features = new Map()
+    this.watchInterval = 5000 // Check for config changes every 5 seconds
+    this.startWatching()
+  }
 
-	async getFeature(featureName, userId) {
-		// Get config from Redis
-		const config = await this.getConfig(featureName)
+  async getFeature(featureName, userId) {
+    // Get config from Redis
+    const config = await this.getConfig(featureName)
 
-		if (!config.enabled) {
-			return false
-		}
+    if (!config.enabled) {
+      return false
+    }
 
-		// Decide whether to enable based on config
-		switch (config.strategy) {
-			case 'percentage':
-				// Enable by percentage (e.g., 10% of users)
-				return this._checkPercentage(userId, config.percentage)
+    // Decide whether to enable based on config
+    switch (config.strategy) {
+      case 'percentage':
+        // Enable by percentage (e.g., 10% of users)
+        return this._checkPercentage(userId, config.percentage)
 
-			case 'userList':
-				// Whitelist users (specific user IDs)
-				return config.users.includes(userId)
+      case 'userList':
+        // Whitelist users (specific user IDs)
+        return config.users.includes(userId)
 
-			case 'environment':
-				// Enable by environment (dev/staging/production)
-				return process.env.NODE_ENV === config.environment
+      case 'environment':
+        // Enable by environment (dev/staging/production)
+        return process.env.NODE_ENV === config.environment
 
-			default:
-				return config.enabled
-		}
-	}
+      default:
+        return config.enabled
+    }
+  }
 
-	// Hash by user ID, decide whether to enable
-	_checkPercentage(userId, percentage) {
-		const hash = this._hash(userId)
-		return hash % 100 < percentage
-	}
+  // Hash by user ID, decide whether to enable
+  _checkPercentage(userId, percentage) {
+    const hash = this._hash(userId)
+    return hash % 100 < percentage
+  }
 
-	_hash(str) {
-		let hash = 0
-		for (let i = 0; i < str.length; i++) {
-			hash = (hash << 5) - hash + str.charCodeAt(i)
-			hash = hash & hash // Convert to 32bit integer
-		}
-		return Math.abs(hash)
-	}
+  _hash(str) {
+    let hash = 0
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash << 5) - hash + str.charCodeAt(i)
+      hash = hash & hash // Convert to 32bit integer
+    }
+    return Math.abs(hash)
+  }
 
-	async getConfig(featureName) {
-		// Get from local cache first
-		if (this.features.has(featureName)) {
-			return this.features.get(featureName)
-		}
+  async getConfig(featureName) {
+    // Get from local cache first
+    if (this.features.has(featureName)) {
+      return this.features.get(featureName)
+    }
 
-		// Get from Redis
-		return new Promise((resolve) => {
-			client.get(`feature:${featureName}`, (err, data) => {
-				if (err || !data) {
-					resolve({ enabled: false, strategy: 'default' })
-					return
-				}
+    // Get from Redis
+    return new Promise((resolve) => {
+      client.get(`feature:${featureName}`, (err, data) => {
+        if (err || !data) {
+          resolve({ enabled: false, strategy: 'default' })
+          return
+        }
 
-				const config = JSON.parse(data)
-				this.features.set(featureName, config)
-				resolve(config)
-			})
-		})
-	}
+        const config = JSON.parse(data)
+        this.features.set(featureName, config)
+        resolve(config)
+      })
+    })
+  }
 
-	startWatching() {
-		// Periodically clear local cache, fetch from Redis
-		setInterval(() => {
-			this.features.clear()
-		}, this.watchInterval)
-	}
+  startWatching() {
+    // Periodically clear local cache, fetch from Redis
+    setInterval(() => {
+      this.features.clear()
+    }, this.watchInterval)
+  }
 }
 
 // Usage example
 const toggle = new FeatureToggle()
 
 app.get('/api/new-payment', async (req, res) => {
-	const userId = req.user.id
-	const enabled = await toggle.getFeature('new-payment', userId)
+  const userId = req.user.id
+  const enabled = await toggle.getFeature('new-payment', userId)
 
-	if (!enabled) {
-		return res.redirect('/api/old-payment')
-	}
+  if (!enabled) {
+    return res.redirect('/api/old-payment')
+  }
 
-	// New payment logic
-	res.json({ payment: 'new', method: 'New Payment Method' })
+  // New payment logic
+  res.json({ payment: 'new', method: 'New Payment Method' })
 })
 ```
 
@@ -2426,32 +2426,32 @@ promClient.collectDefaultMetrics({ register })
 // HTTP request duration (histogram)
 // Used to calculate P50/P90/P99
 const httpRequestDuration = new promClient.Histogram({
-	name: 'http_request_duration_seconds',
-	help: 'HTTP request duration in seconds',
-	labelNames: ['method', 'route', 'status_code'],
-	// Bucket ranges: 0.1s, 0.3s, 0.5s, 0.8s, 1s, 3s, 5s, 10s
-	buckets: [0.1, 0.3, 0.5, 0.8, 1, 3, 5, 10],
+  name: 'http_request_duration_seconds',
+  help: 'HTTP request duration in seconds',
+  labelNames: ['method', 'route', 'status_code'],
+  // Bucket ranges: 0.1s, 0.3s, 0.5s, 0.8s, 1s, 3s, 5s, 10s
+  buckets: [0.1, 0.3, 0.5, 0.8, 1, 3, 5, 10],
 })
 
 // HTTP request total (counter)
 const httpRequestTotal = new promClient.Counter({
-	name: 'http_requests_total',
-	help: 'Total HTTP requests',
-	labelNames: ['method', 'route', 'status_code'],
+  name: 'http_requests_total',
+  help: 'Total HTTP requests',
+  labelNames: ['method', 'route', 'status_code'],
 })
 
 // Current active connections (gauge)
 const activeConnections = new promClient.Gauge({
-	name: 'http_active_connections',
-	help: 'Current active connections',
+  name: 'http_active_connections',
+  help: 'Current active connections',
 })
 
 // Database query duration
 const dbQueryDuration = new promClient.Histogram({
-	name: 'db_query_duration_seconds',
-	help: 'Database query duration',
-	labelNames: ['query_type', 'table'],
-	buckets: [0.01, 0.05, 0.1, 0.5, 1, 2],
+  name: 'db_query_duration_seconds',
+  help: 'Database query duration',
+  labelNames: ['query_type', 'table'],
+  buckets: [0.01, 0.05, 0.1, 0.5, 1, 2],
 })
 
 // Register metrics
@@ -2464,73 +2464,73 @@ register.registerMetric(dbQueryDuration)
 
 // Record HTTP metrics
 const metricsMiddleware = responseTime((req, res, time) => {
-	// Record request duration
-	httpRequestDuration.labels(req.method, req.route?.path || req.path, res.statusCode).observe(time / 1000)
+  // Record request duration
+  httpRequestDuration.labels(req.method, req.route?.path || req.path, res.statusCode).observe(time / 1000)
 
-	// Record request total
-	httpRequestTotal.labels(req.method, req.route?.path || req.path, res.statusCode).inc()
+  // Record request total
+  httpRequestTotal.labels(req.method, req.route?.path || req.path, res.statusCode).inc()
 })
 
 // Active connection tracking
 app.use((req, res, next) => {
-	activeConnections.inc()
+  activeConnections.inc()
 
-	res.on('finish', () => {
-		activeConnections.dec()
-	})
+  res.on('finish', () => {
+    activeConnections.dec()
+  })
 
-	next()
+  next()
 })
 
 // ============ Metrics endpoint ============
 // Prometheus periodically pulls metrics from this endpoint
 app.get('/metrics', async (req, res) => {
-	try {
-		res.set('Content-Type', register.contentType)
-		res.end(await register.metrics())
-	} catch (err) {
-		res.status(500).end(err.message)
-	}
+  try {
+    res.set('Content-Type', register.contentType)
+    res.end(await register.metrics())
+  } catch (err) {
+    res.status(500).end(err.message)
+  }
 })
 
 // ============ Business monitoring example ============
 class BusinessMetrics {
-	constructor() {
-		// Order counter
-		this.orderCounter = new promClient.Counter({
-			name: 'orders_total',
-			help: 'Total orders',
-			labelNames: ['status', 'payment_method'],
-		})
+  constructor() {
+    // Order counter
+    this.orderCounter = new promClient.Counter({
+      name: 'orders_total',
+      help: 'Total orders',
+      labelNames: ['status', 'payment_method'],
+    })
 
-		// Revenue gauge
-		this.revenueGauge = new promClient.Gauge({
-			name: 'revenue_total',
-			help: 'Total revenue',
-		})
+    // Revenue gauge
+    this.revenueGauge = new promClient.Gauge({
+      name: 'revenue_total',
+      help: 'Total revenue',
+    })
 
-		register.registerMetric(this.orderCounter)
-		register.registerMetric(this.revenueGauge)
-	}
+    register.registerMetric(this.orderCounter)
+    register.registerMetric(this.revenueGauge)
+  }
 
-	recordOrder(status, paymentMethod) {
-		this.orderCounter.labels(status, paymentMethod).inc()
-	}
+  recordOrder(status, paymentMethod) {
+    this.orderCounter.labels(status, paymentMethod).inc()
+  }
 
-	updateRevenue(amount) {
-		this.revenueGauge.set(amount)
-	}
+  updateRevenue(amount) {
+    this.revenueGauge.set(amount)
+  }
 }
 
 const businessMetrics = new BusinessMetrics()
 
 // Usage example
 app.post('/api/orders', (req, res) => {
-	// Create order logic...
-	businessMetrics.recordOrder('completed', 'paypal')
-	businessMetrics.updateRevenue(299)
+  // Create order logic...
+  businessMetrics.recordOrder('completed', 'paypal')
+  businessMetrics.updateRevenue(299)
 
-	res.json({ success: true })
+  res.json({ success: true })
 })
 ```
 
@@ -2642,116 +2642,116 @@ import { ElasticsearchTransport } from 'winston-elasticsearch'
 
 // Elasticsearch transport
 const esTransport = new ElasticsearchTransport({
-	level: 'info',
-	clientOpts: {
-		node: 'http://elasticsearch:9200',
-		maxRetries: 5,
-		requestTimeout: 10000,
-	},
-	index: 'app-logs-' + new Date().toISOString().split('T')[0], // One index per day
-	transformer: (logData) => {
-		return {
-			'@timestamp': logData.timestamp,
-			severity: logData.level,
-			message: logData.message,
-			service: 'my-app',
-			pid: process.pid,
-			...logData.meta,
-		}
-	},
+  level: 'info',
+  clientOpts: {
+    node: 'http://elasticsearch:9200',
+    maxRetries: 5,
+    requestTimeout: 10000,
+  },
+  index: 'app-logs-' + new Date().toISOString().split('T')[0], // One index per day
+  transformer: (logData) => {
+    return {
+      '@timestamp': logData.timestamp,
+      severity: logData.level,
+      message: logData.message,
+      service: 'my-app',
+      pid: process.pid,
+      ...logData.meta,
+    }
+  },
 })
 
 // Create logger
 const logger = winston.createLogger({
-	level: process.env.LOG_LEVEL || 'info',
-	format: winston.format.combine(
-		winston.format.timestamp(),
-		winston.format.errors({ stack: true }),
-		winston.format.json(), // JSON format for ELK parsing
-	),
-	defaultMeta: { service: 'my-app' },
-	transports: [
-		// Error log file
-		new winston.transports.File({
-			filename: 'logs/error.log',
-			level: 'error',
-			maxsize: 10485760, // 10MB
-			maxFiles: 10,
-		}),
-		// All logs file
-		new winston.transports.File({
-			filename: 'logs/combined.log',
-			maxsize: 10485760,
-			maxFiles: 5,
-		}),
-		// Elasticsearch
-		esTransport,
-		// Development environment output to console
-		...(process.env.NODE_ENV !== 'production'
-			? [
-					new winston.transports.Console({
-						format: winston.format.simple(),
-					}),
-				]
-			: []),
-	],
+  level: process.env.LOG_LEVEL || 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json(), // JSON format for ELK parsing
+  ),
+  defaultMeta: { service: 'my-app' },
+  transports: [
+    // Error log file
+    new winston.transports.File({
+      filename: 'logs/error.log',
+      level: 'error',
+      maxsize: 10485760, // 10MB
+      maxFiles: 10,
+    }),
+    // All logs file
+    new winston.transports.File({
+      filename: 'logs/combined.log',
+      maxsize: 10485760,
+      maxFiles: 5,
+    }),
+    // Elasticsearch
+    esTransport,
+    // Development environment output to console
+    ...(process.env.NODE_ENV !== 'production'
+      ? [
+          new winston.transports.Console({
+            format: winston.format.simple(),
+          }),
+        ]
+      : []),
+  ],
 })
 
 // Request log middleware
 function requestLogger(req, res, next) {
-	const start = Date.now()
+  const start = Date.now()
 
-	res.on('finish', () => {
-		const duration = Date.now() - start
-		const logData = {
-			method: req.method,
-			url: req.originalUrl || req.url,
-			status: res.statusCode,
-			duration: duration,
-			ip: req.ip,
-			userAgent: req.get('User-Agent'),
-			userId: req.user?.id,
-			requestId: req.id,
-		}
+  res.on('finish', () => {
+    const duration = Date.now() - start
+    const logData = {
+      method: req.method,
+      url: req.originalUrl || req.url,
+      status: res.statusCode,
+      duration: duration,
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      userId: req.user?.id,
+      requestId: req.id,
+    }
 
-		// Log based on status code level
-		if (res.statusCode >= 500) {
-			logger.error('Request failed', logData)
-		} else if (res.statusCode >= 400) {
-			logger.warn('Request warning', logData)
-		} else {
-			logger.info('Request completed', logData)
-		}
-	})
+    // Log based on status code level
+    if (res.statusCode >= 500) {
+      logger.error('Request failed', logData)
+    } else if (res.statusCode >= 400) {
+      logger.warn('Request warning', logData)
+    } else {
+      logger.info('Request completed', logData)
+    }
+  })
 
-	next()
+  next()
 }
 
 // Usage example
 app.use(requestLogger)
 
 app.post('/api/orders', async (req, res) => {
-	try {
-		const order = await createOrder(req.body)
+  try {
+    const order = await createOrder(req.body)
 
-		logger.info('Order created successfully', {
-			orderId: order.id,
-			userId: req.user.id,
-			amount: order.amount,
-			items: order.items.length,
-		})
+    logger.info('Order created successfully', {
+      orderId: order.id,
+      userId: req.user.id,
+      amount: order.amount,
+      items: order.items.length,
+    })
 
-		res.json(order)
-	} catch (err) {
-		logger.error('Order creation failed', {
-			error: err.message,
-			stack: err.stack,
-			userId: req.user?.id,
-			body: req.body,
-		})
+    res.json(order)
+  } catch (err) {
+    logger.error('Order creation failed', {
+      error: err.message,
+      stack: err.stack,
+      userId: req.user?.id,
+      body: req.body,
+    })
 
-		res.status(500).json({ error: 'Failed to create order' })
-	}
+    res.status(500).json({ error: 'Failed to create order' })
+  }
 })
 ```
 
