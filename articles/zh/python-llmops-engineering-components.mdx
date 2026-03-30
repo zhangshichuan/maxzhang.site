@@ -1,0 +1,460 @@
+---
+title: '在VSCode下构建基于Python的LLMOps工程'
+summary: '本文详细介绍如何在VSCode中从零构建一个规范化的Python LLMOps工程，涵盖项目结构、环境配置、代码质量工具、VSCode最佳实践以及完整的CI/CD流程。'
+category: 'LLMOps'
+tags: ['Python', 'VSCode', '环境配置', 'Ruff', 'FastAPI']
+author: 'Max Zhang'
+date: '2026-03-30'
+---
+
+当我们谈论 LLMOps 时，环境配置和项目规范往往是工程落地的第一步。一个好的工程起点不仅能提升开发效率，还能为后续的扩展和维护打下坚实基础。这篇文章聚焦于 Python 生态下的 LLMOps 工程，涵盖从项目结构、环境初始化到完整技术架构的方方面面，并针对 VSCode 提供最佳实践配置。
+
+---
+
+# 项目结构
+
+```
+llmops/
+├── .editorconfig            # 编辑器统一配置
+├── .gitignore               # Git 忽略文件
+├── .pre-commit-config.yaml  # pre-commit hooks 配置
+├── .python-version          # Python 版本锁定
+├── .vscode/                 # VS Code 配置
+│   ├── extensions.json      # 推荐插件列表
+│   └── settings.json        # 用户设置（最佳实践）
+├── README.md                # 项目文档
+├── main.py                  # 入口文件
+├── pyproject.toml           # 项目元数据 + 依赖管理
+└── uv.lock                  # 依赖锁定文件
+```
+
+---
+
+# 环境初始化
+
+## 安装 uv
+
+`uv` 是 Rust 编写的超高速 Python 包管理器，兼容 pip 的同时提供虚拟环境管理和依赖锁定功能。
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+## 初始化项目
+
+```bash
+uv init              # 创建 pyproject.toml
+uv sync              # 自动创建 .venv 并安装依赖
+```
+
+## 手动管理虚拟环境（可选）
+
+```bash
+uv venv .venv        # 手动创建虚拟环境
+source .venv/bin/activate   # 激活
+deactivate           # 退出
+```
+
+## 安装依赖
+
+```bash
+uv add <包名>        # 添加生产依赖
+uv add --dev <包名>  # 添加开发依赖
+uv sync              # 同步依赖（根据 pyproject.toml）
+```
+
+## pre-commit hooks
+
+```bash
+uv add --dev pre-commit    # 安装 pre-commit
+pre-commit install         # 启用 git commit 前自动检查
+```
+
+## Ruff 代码检查与格式化
+
+```bash
+uv add --dev ruff    # 安装 Ruff
+ruff check .         # 检查代码
+ruff check --fix .   # 检查并自动修复
+ruff format .        # 格式化代码
+```
+
+## 测试与类型检查
+
+```bash
+uv add --dev pytest mypy    # 安装 pytest 和 mypy
+pytest               # 运行测试
+mypy .               # 类型检查
+```
+
+## Ruff 与 mypy 配置
+
+配置统一写在 `pyproject.toml` 中（手动配置）：
+
+```toml
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C90", "S", "BLE", "T20", "ANN", "PTH", "RUF"]
+ignore = ["S301", "T201"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+```
+
+## pre-commit 配置
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: ruff-format
+      - id: ruff
+        args: [--fix]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.0.0
+    hooks:
+      - id: mypy
+```
+
+## Git 提交规范（Commitizen）
+
+```bash
+uv add --dev commitizen    # 安装 Commitizen
+git add .             # 先 staging
+cz c                  # 交互式生成符合规范的 commit message
+```
+
+## 工具链总览
+
+| 工具               | 作用                  |
+| ------------------ | --------------------- |
+| **uv**             | 包管理 + 虚拟环境     |
+| **pyproject.toml** | 项目元数据 + 依赖管理 |
+| **ruff**           | 代码检查 + 格式化     |
+| **mypy**           | 静态类型检查          |
+| **pytest**         | 单元测试              |
+| **pre-commit**     | commit 前自动检查     |
+| **commitizen**     | 规范化 commit message |
+| **.gitignore**     | 忽略不需要提交的文件  |
+
+---
+
+# VSCode 配置
+
+## 推荐安装插件
+
+- **Pylance** (Microsoft) — Python 语言服务器，智能补全 + 类型检查
+- **Ruff** (charliermarsh) — 代码检查与格式化
+- **Prettier** (esbenp) — JSON / YAML / Markdown 格式化
+- **Python** (Microsoft) — Python 调试 + 测试支持
+
+## settings.json 最佳实践
+
+```json
+{
+  // --- 1. 智能分析与类型推断 (Pylance) ---
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.inlayHints.functionReturnTypes": true,
+  "python.analysis.inlayHints.variableTypes": true,
+  "python.analysis.diagnosticMode": "openFilesOnly",
+
+  // --- 2. 语言服务器 ---
+  "python.languageServer": "Pylance",
+
+  // --- 3. 环境配置 (uv + .venv) ---
+  // 打开项目时自动激活虚拟环境
+  "python.terminal.activateEnvironment": true,
+  "python.terminal.activateEnvInCurrentTerminal": true,
+  // 解释器路径
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+
+  // --- 4. 代码质量与格式化 (Ruff) ---
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    },
+    "editor.rulers": [88]
+  },
+
+  // --- 5. Markdown 格式化 ---
+  "[markdown]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // --- 6. 单元测试 (pytest) ---
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": ["tests", "-v"],
+
+  // --- 7. 编辑器优化 ---
+  "editor.guides.bracketPairs": "active",
+  "editor.parameterHints.enabled": true,
+  "editor.inlineSuggest.enabled": true,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  // --- 8. 文件排除 ---
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.ruff_cache": true,
+    "**/.mypy_cache": true,
+    "**/.pytest_cache": true,
+    "**/*.pyc": true
+  },
+
+  // --- 9. JSON / YAML 格式化 ---
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}
+```
+
+---
+
+# GitHub Actions CI
+
+```yaml
+# .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.12', '3.13']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --all-packages
+
+      - name: Run ruff
+        run: uv run ruff check .
+
+      - name: Run mypy
+        run: uv run mypy .
+
+      - name: Run pytest
+        run: uv run pytest tests -v
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --only-package
+
+      - name: Run ruff format check
+        run: uv run ruff format --check .
+
+      - name: Run ruff check
+        run: uv run ruff check .
+```
+
+---
+
+# 架构
+
+LLMOps 工程的架构设计遵循分层原则，从客户端到后端基础设施，每一层都有其明确的职责。
+
+```
+┌─────────────────────────────────────────┐
+│  客户端层                                │
+│  Web App / 移动App / 小程序 / Open API   │
+└──────────────────┬──────────────────────┘
+                   │ HTTP/gRPC
+┌──────────────────▼──────────────────────┐
+│  接入层  API网关 · CDN · 负载均衡        │
+└──────────────────┬──────────────────────┘
+                   │
+┌──────────────────▼──────────────────────┐
+│  应用层  用户模块 · 权限模块 · 业务逻辑  │
+└──────────────────┬──────────────────────┘
+                   │
+┌──────────────────▼──────────────────────┐
+│  AI能力层  LLM调用 · Agent · RAG · 嵌入  │
+└──────────────────┬──────────────────────┘
+                   │
+┌──────────────────▼──────────────────────┐
+│  数据层  PostgreSQL · Redis · 向量数据库  │
+└──────────────────┬──────────────────────┘
+                   │
+┌──────────────────▼──────────────────────┐
+│  基础设施层  Docker · K8s · Linux        │
+└─────────────────────────────────────────┘
+```
+
+## 1. 客户端层
+
+- **Web应用（Next.js）**：C 端用户使用的 AI 交互界面
+- **管理后台（自研）**：B 端运营管理（API Key、用量、配置、可视化编排）
+- **移动App / 小程序**：移动端 AI 应用
+- **Open API（RESTful + GraphQL）**：对外暴露的标准化接口
+
+## 2. 接入层
+
+- **API网关（Kong/APISIX）**：统一入口，流量治理
+- **CDN加速**：静态内容加速，降低延迟
+- **负载均衡（Envoy/LB）**：请求分发，高可用
+
+## 3. 应用层
+
+- **用户模块**：用户管理，会员体系
+- **权限模块（RBAC + JWT）**：权限控制，安全认证
+- **业务逻辑模块**：具体业务功能实现
+
+## 4. AI能力层
+
+- **多LLM集成（OpenAI/Anthropic/本地模型）**：统一的大模型调用接口
+- **Agent框架（LangChain/LangGraph）**：AI Agent 开发框架
+- **RAG服务**：检索增强生成
+- **文本嵌入服务**：文本向量化
+- **函数调用/工具集成**：Tool Calling，扩展模型能力
+
+## 5. 数据层
+
+- **PostgreSQL 16+**：结构化数据存储
+- **Redis 7+**：缓存，Session 管理
+- **向量数据库（Milvus/Qdrant）**：向量数据存储
+- **对象存储（MinIO/S3）**：文件，对象存储
+
+## 6. 基础设施层
+
+- **Docker容器**：服务容器化
+- **Kubernetes（K8s）**：容器编排，弹性伸缩
+- **Linux服务器**：基础运行环境
+
+---
+
+# 技术栈
+
+## Python 3.12+
+
+作为 LLMOps 工程的主力语言，Python 3.12 提供了更好的性能、类型系统和语法支持。
+
+## FastAPI（异步高性能API框架）
+
+FastAPI 是现代 Python Web 框架的首选，它基于 Starlette 和 Pydantic，提供：
+
+- 原生异步支持，高并发处理能力
+- 自动 OpenAPI 文档生成
+- Pydantic v2 深度集成，强大的数据验证
+- 依赖注入系统，代码模块化
+
+## LangChain/LangGraph（AI应用开发框架）
+
+LangChain 提供了构建 LLM 应用的标准工具链：
+
+- Chain：组合多个 LLM 调用
+- Agent：自主决策的 AI 代理
+- RAG：检索增强生成实现
+- Memory：对话上下文管理
+
+LangGraph 则专注于构建有状态、多步骤的 AI 工作流。
+
+## Pydantic v2（数据验证）
+
+Pydantic 是 Python 类型验证的事实标准：
+
+- 数据模型自动验证
+- JSON Schema 自动生成
+- 序列化与反序列化
+- 与 FastAPI 深度集成
+
+## SQLAlchemy 2.0 + asyncpg（异步ORM）
+
+```python
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import declarative_base
+
+Base = declarative_base()
+
+class User(Base):
+    __tablename__ = "users"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(unique=True)
+```
+
+## Celery + Redis（异步任务队列）
+
+处理长时间运行的 AI 任务：
+
+- 任务队列与异步执行
+- 定时任务调度
+- 任务重试与监控
+- Redis 作为消息 broker
+
+## Docker + K8s（容器化与编排）
+
+- 容器化：服务的一致性交付
+- Kubernetes：弹性伸缩，自愈能力
+- Helm：应用打包与部署
+
+## Prometheus + Grafana（可观测性）
+
+- **Prometheus**：指标收集与存储
+- **Grafana**：可视化仪表盘
+- 关键指标：QPS、延迟、错误率、GPU 利用率
+
+## GitHub Actions / ArgoCD（CICD/CD）
+
+- **CI**：代码检查、测试、构建镜像
+- **CD**：自动部署到测试/生产环境
+- **ArgoCD**：GitOps 持续部署
+
+---
+
+# 总结
+
+一个成熟的 Python LLMOps 工程，需要从环境配置就开始规范。采用 `uv` 作为包管理器、Ruff + mypy 作为代码质量工具、pre-commit 作为提交前检查，配合完整的分层架构设计，能够确保项目的可维护性和可扩展性。
+
+VSCode 配合 Pylance + Ruff + pytest 的组合，能够提供优秀的开发体验。GitHub Actions CI 确保每一次代码提交都经过自动化检查，保证代码质量。
+
+从客户端层到基础设施层，每一层都有其独特的职责和技术选型。Next.js 构建前端交互界面，FastAPI 提供高性能 API，LangChain/LangGraph 封装 AI 能力，PostgreSQL + Redis + 向量数据库提供多样化存储，Docker + K8s 保障系统的高可用和弹性伸缩能力。
+
+这些组件共同构成了一个完整的 LLMOps 工程体系，为 AI 能力的稳定输出提供坚实保障。

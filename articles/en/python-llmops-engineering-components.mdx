@@ -1,0 +1,458 @@
+---
+title: 'Building a Python LLMOps Project in VSCode'
+summary: 'A comprehensive guide to building a production-ready Python LLMOps project in VSCode, covering project structure, environment setup, code quality tools, VSCode best practices, and a complete CI/CD workflow.'
+category: 'LLMOps'
+tags: ['Python', 'VSCode', 'Environment Setup', 'Ruff', 'FastAPI']
+author: 'Max Zhang'
+date: '2026-03-30'
+---
+
+When we talk about LLMOps, environment setup and project conventions are often the first step in engineering implementation. A solid project foundation not only improves development efficiency but also lays a strong groundwork for future expansion and maintenance. This article focuses on the Python ecosystem for LLMOps engineering, covering everything from project structure and environment initialization to the complete technical stack, with VSCode best practices included.
+
+---
+
+# Project Structure
+
+```
+llmops/
+├── .editorconfig            # Unified editor configuration
+├── .gitignore               # Git ignore rules
+├── .pre-commit-config.yaml  # pre-commit hooks configuration
+├── .python-version          # Python version lock
+├── .vscode/                 # VS Code configuration
+│   ├── extensions.json      # Recommended extensions list
+│   └── settings.json        # User settings (best practices)
+├── README.md                # Project documentation
+├── main.py                  # Entry point
+├── pyproject.toml           # Project metadata + dependency management
+└── uv.lock                  # Dependency lock file
+```
+
+---
+
+# Environment Initialization
+
+## Install uv
+
+`uv` is a Rust-written ultra-fast Python package manager, compatible with pip while providing virtual environment management and dependency locking.
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+## Initialize Project
+
+```bash
+uv init              # Create pyproject.toml
+uv sync              # Auto-create .venv and install dependencies
+```
+
+## Manual Virtual Environment Management (Optional)
+
+```bash
+uv venv .venv        # Manually create virtual environment
+source .venv/bin/activate   # Activate
+deactivate           # Deactivate
+```
+
+## Install Dependencies
+
+```bash
+uv add <package>        # Add production dependency
+uv add --dev <package>  # Add dev dependency
+uv sync                 # Sync dependencies (based on pyproject.toml)
+```
+
+## pre-commit Hooks
+
+```bash
+uv add --dev pre-commit    # Install pre-commit
+pre-commit install         # Enable auto-checks before git commit
+```
+
+## Ruff Code Linting and Formatting
+
+```bash
+uv add --dev ruff    # Install Ruff
+ruff check .         # Lint code
+ruff check --fix .   # Lint and auto-fix
+ruff format .        # Format code
+```
+
+## Testing and Type Checking
+
+```bash
+uv add --dev pytest mypy    # Install pytest and mypy
+pytest               # Run tests
+mypy .               # Type checking
+```
+
+## Ruff and mypy Configuration
+
+Configuration is written in `pyproject.toml` (manually):
+
+```toml
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C90", "S", "BLE", "T20", "ANN", "PTH", "RUF"]
+ignore = ["S301", "T201"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+```
+
+## pre-commit Configuration
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: ruff-format
+      - id: ruff
+        args: [--fix]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.0.0
+    hooks:
+      - id: mypy
+```
+
+## Git Commit Convention (Commitizen)
+
+```bash
+uv add --dev commitizen    # Install Commitizen
+git add .                  # Stage changes first
+cz c                        # Interactively generate convention-compliant commit message
+```
+
+## Toolchain Overview
+
+| Tool               | Purpose                                  |
+| ------------------ | ---------------------------------------- |
+| **uv**             | Package management + virtual environment |
+| **pyproject.toml** | Project metadata + dependency management |
+| **ruff**           | Linting + formatting                     |
+| **mypy**           | Static type checking                     |
+| **pytest**         | Unit testing                             |
+| **pre-commit**     | Pre-commit auto-checks                   |
+| **commitizen**     | Convention-compliant commit messages     |
+| **.gitignore**     | Ignore files from version control        |
+
+---
+
+# VSCode Configuration
+
+## Recommended Extensions
+
+- **Pylance** (Microsoft) — Python language server, intelligent completions + type checking
+- **Ruff** (charliermarsh) — Linting and formatting
+- **Prettier** (esbenp) — JSON / YAML / Markdown formatting
+- **Python** (Microsoft) — Python debugging + test support
+
+## settings.json Best Practices
+
+```json
+{
+  // --- 1. Intelligent Analysis and Type Inference (Pylance) ---
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.inlayHints.functionReturnTypes": true,
+  "python.analysis.inlayHints.variableTypes": true,
+  "python.analysis.diagnosticMode": "openFilesOnly",
+
+  // --- 2. Language Server ---
+  "python.languageServer": "Pylance",
+
+  // --- 3. Environment Configuration (uv + .venv) ---
+  "python.terminal.activateEnvironment": true,
+  "python.terminal.activateEnvInCurrentTerminal": true,
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+
+  // --- 4. Code Quality and Formatting (Ruff) ---
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    },
+    "editor.rulers": [88]
+  },
+
+  // --- 5. Markdown Formatting ---
+  "[markdown]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // --- 6. Unit Testing (pytest) ---
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": ["tests", "-v"],
+
+  // --- 7. Editor Optimization ---
+  "editor.guides.bracketPairs": "active",
+  "editor.parameterHints.enabled": true,
+  "editor.inlineSuggest.enabled": true,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  // --- 8. File Exclusions ---
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.ruff_cache": true,
+    "**/.mypy_cache": true,
+    "**/.pytest_cache": true,
+    "**/*.pyc": true
+  },
+
+  // --- 9. JSON / YAML Formatting ---
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}
+```
+
+---
+
+# GitHub Actions CI
+
+```yaml
+# .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.12', '3.13']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --all-packages
+
+      - name: Run ruff
+        run: uv run ruff check .
+
+      - name: Run mypy
+        run: uv run mypy .
+
+      - name: Run pytest
+        run: uv run pytest tests -v
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --only-package
+
+      - name: Run ruff format check
+        run: uv run ruff format --check .
+
+      - name: Run ruff check
+        run: uv run ruff check .
+```
+
+---
+
+# Architecture
+
+LLMOps engineering follows a layered architecture principle, with each layer having its distinct responsibilities from client to backend infrastructure.
+
+```
+┌─────────────────────────────────────────┐
+│  Client Layer                            │
+│  Web App / Mobile App / Mini Program     │
+└──────────────────┬──────────────────────┘
+                   │ HTTP/gRPC
+┌──────────────────▼──────────────────────┐
+│  Access Layer  API Gateway · CDN · LB    │
+└──────────────────┬──────────────────────┘
+                   │
+┌──────────────────▼──────────────────────┐
+│  Application Layer  Users · Auth · Biz   │
+└──────────────────┬──────────────────────┘
+                   │
+┌──────────────────▼──────────────────────┐
+│  AI Capability Layer  LLM · Agent · RAG   │
+└──────────────────┬──────────────────────┘
+                   │
+┌──────────────────▼──────────────────────┐
+│  Data Layer  PostgreSQL · Redis · Vector  │
+└──────────────────┬──────────────────────┘
+                   │
+┌──────────────────▼──────────────────────┐
+│  Infrastructure Layer  Docker · K8s       │
+└─────────────────────────────────────────┘
+```
+
+## 1. Client Layer
+
+- **Web App (Next.js)**: C-end AI interaction interface
+- **Admin Dashboard (In-house)**: B-end operations management (API Keys, usage, config, visual orchestration)
+- **Mobile App / Mini Program**: Mobile AI applications
+- **Open API (RESTful + GraphQL)**: Public API interfaces
+
+## 2. Access Layer
+
+- **API Gateway (Kong/APISIX)**: Unified entry point, traffic governance
+- **CDN Acceleration**: Static content delivery, reduced latency
+- **Load Balancer (Envoy/LB)**: Request distribution, high availability
+
+## 3. Application Layer
+
+- **User Module**: User management, membership system
+- **Auth Module (RBAC + JWT)**: Permission control, security authentication
+- **Business Logic Module**: Specific business functionality
+
+## 4. AI Capability Layer
+
+- **Multi-LLM Integration (OpenAI/Anthropic/Local)**: Unified LLM interface
+- **Agent Framework (LangChain/LangGraph)**: AI Agent development framework
+- **RAG Service**: Retrieval Augmented Generation
+- **Text Embedding Service**: Text vectorization
+- **Function Calling / Tool Integration**: Tool Calling, extended model capabilities
+
+## 5. Data Layer
+
+- **PostgreSQL 16+**: Structured data storage
+- **Redis 7+**: Caching, session management
+- **Vector Database (Milvus/Qdrant)**: Vector data storage
+- **Object Storage (MinIO/S3)**: File and object storage
+
+## 6. Infrastructure Layer
+
+- **Docker Containers**: Service containerization
+- **Kubernetes (K8s)**: Container orchestration, elastic scaling
+- **Linux Servers**: Base runtime environment
+
+---
+
+# Technology Stack
+
+## Python 3.12+
+
+As the primary language for LLMOps engineering, Python 3.12 provides better performance, type systems, and syntax support.
+
+## FastAPI (Async High-Performance API Framework)
+
+FastAPI is the top choice for modern Python web frameworks, built on Starlette and Pydantic:
+
+- Native async support, high concurrency handling
+- Automatic OpenAPI documentation generation
+- Deep Pydantic v2 integration, powerful data validation
+- Dependency injection system, code modularity
+
+## LangChain/LangGraph (AI Application Development Framework)
+
+LangChain provides the standard toolkit for building LLM applications:
+
+- Chain: Combine multiple LLM calls
+- Agent: Self-directed AI agent
+- RAG: Retrieval Augmented Generation implementation
+- Memory: Conversation context management
+
+LangGraph focuses on building stateful, multi-step AI workflows.
+
+## Pydantic v2 (Data Validation)
+
+Pydantic is the de facto standard for Python type validation:
+
+- Automatic data model validation
+- Automatic JSON Schema generation
+- Serialization and deserialization
+- Deep FastAPI integration
+
+## SQLAlchemy 2.0 + asyncpg (Async ORM)
+
+```python
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import declarative_base
+
+Base = declarative_base()
+
+class User(Base):
+    __tablename__ = "users"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(unique=True)
+```
+
+## Celery + Redis (Async Task Queue)
+
+Handle long-running AI tasks:
+
+- Task queuing and async execution
+- Scheduled task scheduling
+- Task retry and monitoring
+- Redis as message broker
+
+## Docker + K8s (Containerization and Orchestration)
+
+- Containerization: Consistent service delivery
+- Kubernetes: Elastic scaling, self-healing
+- Helm: Application packaging and deployment
+
+## Prometheus + Grafana (Observability)
+
+- **Prometheus**: Metrics collection and storage
+- **Grafana**: Visualization dashboards
+- Key metrics: QPS, latency, error rate, GPU utilization
+
+## GitHub Actions / ArgoCD (CICD/CD)
+
+- **CI**: Code checking, testing, image building
+- **CD**: Auto-deploy to staging/production
+- **ArgoCD**: GitOps continuous deployment
+
+---
+
+# Summary
+
+A mature Python LLMOps project requires standardization from the very beginning of environment configuration. Using `uv` as the package manager, Ruff + mypy for code quality, and pre-commit for pre-commit checks, together with a complete layered architecture design, ensures project maintainability and scalability.
+
+VSCode combined with Pylance + Ruff + pytest provides an excellent development experience. GitHub Actions CI ensures every code commit goes through automated checks, guaranteeing code quality.
+
+From the client layer to the infrastructure layer, each layer has its unique responsibilities and technology choices. Next.js builds the frontend interaction interface, FastAPI provides high-performance APIs, LangChain/LangGraph encapsulates AI capabilities, PostgreSQL + Redis + vector databases provide diversified storage, and Docker + K8s ensure high availability and elastic scaling of the system.
+
+These components together form a complete LLMOps engineering system, providing solid guarantees for the stable output of AI capabilities.
