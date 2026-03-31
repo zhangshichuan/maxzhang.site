@@ -13,7 +13,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "lint": "npm run lint:tsc && npm run lint:eslint && npm run lint:prettier && prisma format",
+    "lint": "pnpm lint:tsc && pnpm lint:eslint && pnpm lint:prettier && prisma format",
     "lint:tsc": "tsc --noEmit",
     "lint:eslint": "eslint --fix",
     "lint:prettier": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md,mdx}\"",
