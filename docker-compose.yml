@@ -20,6 +20,8 @@ services:
       - DATABASE_URL
     ports:
       - '3000:3000'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
 
 # 查看真实路径：docker volume inspect maxzhangsite_sqlite_data
 volumes:
