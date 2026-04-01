@@ -20,6 +20,8 @@ export function Navbar() {
     { name: t('home'), path: '/' },
     // Common/nav/posts 文章
     { name: t('posts'), path: '/posts' },
+    // Common/nav/chat 聊天
+    { name: t('chat'), path: '/chat' },
     // Common/nav/about 关于
     { name: t('about'), path: '/about' },
   ]

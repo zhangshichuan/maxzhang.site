@@ -5,6 +5,7 @@
     "nav": {
       "home": "首页",
       "posts": "文章",
+      "chat": "聊天",
       "about": "关于",
       "switchLanguage": "切换至英文"
     },
@@ -26,6 +27,20 @@
     "replyPlaceholder": "写下你的回复...",
     "replySuccess": "回复发表成功！",
     "cancel": "取消"
+  },
+  "Chat": {
+    "title": "聊天",
+    "placeholder": "输入消息...",
+    "emptyState": "开始对话吧...",
+    "send": "发送",
+    "sending": "发送中...",
+    "errors": {
+      "invalidFingerprint": "为了安全起见，您需要先访问任意文章以生成指纹",
+      "rateLimit": "消息发送过于频繁，请稍后再试",
+      "messageTooLong": "消息过长，请控制在 {max} 字符以内",
+      "upstreamError": "上游服务错误，请稍后再试",
+      "networkError": "网络错误，请检查网络连接"
+    }
   },
   "HomePage": {
     "hero": {
