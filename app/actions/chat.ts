@@ -79,7 +79,7 @@ export async function chatStream(
   }
 
   // 请求上游 SSE 流
-  const response = await fetch('http://localhost:8000/api/v1/chat/stream', {
+  const response = await fetch('http://host.docker.internal:8000/api/v1/chat/stream', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message: message.trim() }),
