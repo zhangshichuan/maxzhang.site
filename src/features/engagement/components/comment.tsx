@@ -5,8 +5,8 @@ import {
   getCommentCount,
   getComments,
   getRemainingComments,
-  type CommentWithReplies,
 } from '@/src/features/engagement/server-actions'
+import type { CommentWithReplies } from '@/src/features/engagement/model'
 import { getThumbmark } from '@thumbmarkjs/thumbmarkjs'
 import { AlertCircle, Clock, MessageCircle, Reply, Send, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'

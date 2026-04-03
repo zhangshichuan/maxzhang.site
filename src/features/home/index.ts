@@ -1,1 +1,1 @@
-export * from './components'
+export { HomeHero } from './components'

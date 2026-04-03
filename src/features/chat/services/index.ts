@@ -1,1 +1,1 @@
-export { chatStreamTestUtils, streamChat, type ChatErrorCode } from './chat-stream'
+export { chatStreamTestUtils, streamChat } from './chat-stream'

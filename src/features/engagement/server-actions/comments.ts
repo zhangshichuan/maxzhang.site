@@ -8,8 +8,6 @@ import {
 } from '@/src/features/engagement/queries'
 import { addComment as addCommentService, engagementRules } from '@/src/features/engagement/services'
 
-export type { CommentWithReplies }
-
 export async function getCommentCount(slug: string): Promise<number> {
   return getCommentCountQuery(slug)
 }

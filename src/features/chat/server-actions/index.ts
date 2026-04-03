@@ -1,1 +1,1 @@
-export { chatStream, type ChatErrorCode } from './chat'
+export { chatStream } from './chat'

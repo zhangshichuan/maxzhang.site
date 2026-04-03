@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { chatStream, type ChatErrorCode } from '@/src/features/chat/server-actions'
+import { chatStream } from '@/src/features/chat/server-actions'
+import type { ChatErrorCode } from '@/src/features/chat/services/chat-stream'
 import { getThumbmark } from '@thumbmarkjs/thumbmarkjs'
 import { useTranslations } from 'next-intl'
 

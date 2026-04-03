@@ -1,8 +1,7 @@
 'use server'
 
-import { streamChat, type ChatErrorCode } from '@/src/features/chat/services'
-
-export type { ChatErrorCode }
+import { streamChat } from '@/src/features/chat/services'
+import type { ChatErrorCode } from '@/src/features/chat/services/chat-stream'
 
 export async function chatStream(
   message: string,

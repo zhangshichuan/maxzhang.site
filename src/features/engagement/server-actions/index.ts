@@ -1,2 +1,2 @@
-export { addComment, getCommentCount, getComments, getRemainingComments, type CommentWithReplies } from './comments'
+export { addComment, getCommentCount, getComments, getRemainingComments } from './comments'
 export { incrementView } from './views'

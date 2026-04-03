@@ -1,6 +1,4 @@
-import { getCommentCount } from '@/src/features/engagement/queries'
-import { Comment } from '@/src/features/engagement/components'
-import { ViewCounter } from '@/src/features/engagement/components'
+import { Comment, ViewCounter, getCommentCount } from '@/src/features/engagement'
 import { getPostBySlug, getPostSlugs } from '@/src/features/posts'
 import { BackToTop, Mermaid } from '@/src/shared/components'
 import { Link } from '@/i18n/routing'
