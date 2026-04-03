@@ -48,13 +48,13 @@ tests/
 
 - 在 `page.tsx` 中堆复杂业务编排
 - 在页面里直接查库
-- 在页面里直接实现加密、认证、权限细节
+- 在页面里直接实现认证、权限、校验等复杂细节
 - 在 `app` 下新增可复用业务 Hook
 
 ### `src/features`
 
 `features` 是业务主战场。
-每个 feature 表示一个清晰的业务域，例如 `auth`、`vault`。
+每个 feature 表示一个清晰的业务域，例如 `posts`、`search`、`comments`、`chat`。
 
 一个 feature 内允许同时包含客户端和服务端代码，只要它们都服务于同一个业务目标。
 
@@ -67,7 +67,7 @@ tests/
 - `queries`
 - `services`
 - `server-actions`
-- 其他业务专属目录，例如 `crypto`、`password`
+- 其他业务专属目录，例如 `filters`、`editor`、`analytics`
 
 判断标准：
 
@@ -91,8 +91,8 @@ tests/
 - 允许在 feature 内部继续深层 import 自己的实现文件
 - 不推荐页面层和其他 feature 深层 import `features/<feature>/*`
 
-例如 `src/features/auth/index.ts` 暴露 `login`、`register`、`isAuthenticated`、`logout` 等公共能力；
-而 `decodeJWT`、`setToken`、`setCurrentUser` 这类实现细节继续留在内部模块中。
+例如 `src/features/posts/index.ts` 暴露 `getAllPostsWithViews`、`getPostBySlug`、`PostsClient` 等公共能力；
+而格式转换、排序细节、内部映射函数等实现细节继续留在内部模块中。
 
 ### `src/shared`
 
@@ -125,10 +125,9 @@ tests/
 例如：
 
 - Prisma 客户端
-- JWT 能力
-- 登录密码哈希
 - 缓存与队列客户端
 - 第三方服务端 SDK 封装
+- 邮件、搜索、对象存储等服务端适配层
 
 判断标准：
 
@@ -185,7 +184,7 @@ tests/
 职责：
 
 - 参数解析
-- 鉴权入口
+- 权限校验入口
 - 响应格式控制
 
 复杂读取逻辑优先下沉到 `queries`，复杂写入逻辑优先下沉到 `services`。
@@ -206,7 +205,7 @@ tests/
 
 - 大段表单流程堆在页面里
 - 直接查库
-- 直接写复杂安全逻辑
+- 直接写复杂业务规则或权限逻辑
 
 ### 业务组件
 
@@ -221,8 +220,8 @@ tests/
 不直接承担：
 
 - 数据库访问
-- 底层鉴权
-- 加密算法实现
+- 底层权限判断
+- 与业务无关的底层算法或基础能力实现
 
 ### Hook
 
@@ -239,8 +238,8 @@ Hook 只承载 React 状态逻辑。
 不适合写成 Hook：
 
 - 纯函数工具
-- 密码强度规则
-- 加密算法
+- 纯函数规则
+- 与 React 无关的独立算法
 - 数据库访问
 
 判断标准：
@@ -263,17 +262,17 @@ Hook 只承载 React 状态逻辑。
 
 服务端组件如果要查库，优先调用 `queries`，不要在组件文件里直接内联 Prisma 查询。
 
-## 6. 安全约束
+## 6. 核心能力约束
 
-以下能力必须集中放置、可定位、可审计、可测试：
+以下能力应该集中放置、可定位、可测试：
 
-- 登录密码哈希
-- JWT 签发与校验
-- 主密钥管理
-- 金库加密解密
-- 数据库客户端
+- 数据访问客户端
+- 权限与访问控制
+- 限流、防刷、审计日志
+- 第三方服务调用封装
+- 核心业务规则与状态转换
 
-UI 层只调用明确暴露的能力，不直接实现安全细节。
+UI 层只调用明确暴露的能力，不直接实现底层细节。
 
 ## 7. 新文件放置决策顺序
 
