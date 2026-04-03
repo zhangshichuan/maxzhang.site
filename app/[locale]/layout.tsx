@@ -1,5 +1,5 @@
-import { Footer } from '@/components/footer'
-import { Navbar } from '@/components/navbar'
+import { Footer } from '@/src/shared/components'
+import { Navbar } from '@/src/shared/components'
 import { routing } from '@/i18n/routing'
 import type { Metadata, Viewport } from 'next'
 import { NextIntlClientProvider } from 'next-intl'

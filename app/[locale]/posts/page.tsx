@@ -1,5 +1,4 @@
-import { getAllPostsWithViews } from '@/lib/posts'
-import { PostsClient } from '@/components/posts-client'
+import { getAllPostsWithViews, PostsClient } from '@/src/features/posts'
 import { getTranslations } from 'next-intl/server'
 import { Metadata } from 'next'
 

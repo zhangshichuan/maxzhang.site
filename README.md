@@ -2,7 +2,7 @@
 
 [中文版本](./README.zh.md)
 
-A modern personal blog built with **Next.js 16 (App Router)** and **Tailwind CSS 4**, sharing insights on software development, architecture, and AI. Features **MDX** content management, high-performance client-side search, and a Neo-brutalism-inspired responsive design.
+A modern personal blog built with **Next.js 16 (App Router)** and **Tailwind CSS 4**, sharing insights on software development, architecture, and AI. It uses **MDX** for content, supports bilingual publishing, and follows a layered structure around `app`, `src/features`, `src/shared`, and `src/server`.
 
 ## ✨ Key Features
 
@@ -13,6 +13,8 @@ A modern personal blog built with **Next.js 16 (App Router)** and **Tailwind CSS
 - **Fuzzy Search**: **Fuse.js** for lightning-fast client-side search across titles, content, tags, and categories.
 - **Comment System**: Fingerprint-based anti-spam with daily limits, protecting against malicious submissions.
 - **View Tracking**: Per-article view counts with 24-hour deduplication per visitor.
+- **Layered Codebase**: Route entrypoints stay in `app`, business code lives in `src/features`, shared UI/utilities live in `src/shared`, and server infrastructure is isolated in `src/server`.
+- **Vitest Coverage**: Query, service, and server-action layers are covered by unit tests for core blog, engagement, and chat flows.
 - **High Performance**: Minimal CLS (Cumulative Layout Shift) and stable scroll restoration.
 - **Dark Mode**: Seamless theme switching with system preference detection via `next-themes`.
 
@@ -34,27 +36,40 @@ A modern personal blog built with **Next.js 16 (App Router)** and **Tailwind CSS
 ## 📂 Project Structure
 
 ```bash
-├── app/                    # Next.js App Router
-│   └── [locale]/           # Internationalized routes
-│       ├── posts/          # Article list & detail ([slug])
-│       ├── search/         # Unified search page
-│       └── about/          # About page
-├── articles/               # MDX source files
-│   ├── en/                 # English articles
-│   └── zh/                 # Chinese articles
-├── components/             # Reusable React components
-│   ├── mdx/                # MDX components (e.g., Mermaid)
-│   └── ui/                 # Base UI (Neo-brutalism style)
-├── lib/                    # Utilities
-│   ├── actions/            # Server actions (comments, views)
-│   └── posts.ts           # MDX data fetching
-├── i18n/                   # i18n config (routing & requests)
-├── messages/               # Translation files (en.json, zh.json)
-├── prisma/                 # Prisma ORM database schema
-├── public/                 # Static assets
-├── .github/                # GitHub Actions workflows
-└── proxy.ts                # Next.js proxy (v16 pattern)
+├── app/                         # Next.js route entrypoints only
+│   └── [locale]/                # Localized pages
+├── articles/                    # MDX source files
+│   ├── en/
+│   └── zh/
+├── src/
+│   ├── features/                # Business domains
+│   │   ├── about/
+│   │   ├── chat/
+│   │   ├── engagement/          # comments / views
+│   │   ├── home/
+│   │   └── posts/
+│   ├── shared/                  # Cross-feature components and utils
+│   │   ├── components/
+│   │   └── utils/
+│   └── server/                  # Pure server infrastructure
+│       └── db/
+├── tests/                       # Vitest test suite
+├── i18n/                        # i18n config
+├── messages/                    # Translation files
+├── prisma/                      # Prisma schema and migrations
+├── public/                      # Static assets
+├── .github/                     # GitHub Actions workflows
+└── proxy.ts                     # Next.js proxy (v16 pattern)
 ```
+
+## 🧱 Architecture Notes
+
+- `app` only contains route entrypoints such as `page.tsx`, `layout.tsx`, and other Next.js convention files.
+- `src/features` holds business-specific UI, queries, services, and server-actions.
+- `src/shared` is reserved for stable cross-feature UI and utilities.
+- `src/server` contains server-only infrastructure such as the Prisma client.
+
+For the detailed layering guideline used in this repo, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ## 🚀 Getting Started
 
@@ -92,13 +107,15 @@ Your content here...
 The project enforces code quality via **husky** git hooks:
 
 ```bash
-# Run all checks (tsc + eslint + prettier)
+# Run all checks (tsc + eslint + prettier + prisma format)
 pnpm lint
 
 # Individual checks
-pnpm lint:tsc       # TypeScript type checking
+pnpm lint:tsc        # TypeScript type checking
 pnpm lint:eslint     # ESLint auto-fix
 pnpm lint:prettier   # Prettier formatting
+pnpm test            # Run Vitest once
+pnpm test:watch      # Run Vitest in watch mode
 ```
 
 **Commit Convention** (enforced by commitlint):
@@ -121,6 +138,8 @@ Configured for **Docker** deployment with standalone output mode.
 **Local Build:**
 
 ```bash
+pnpm test
+pnpm lint
 pnpm build
 pnpm start
 ```

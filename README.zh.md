@@ -2,7 +2,7 @@
 
 [English Version](./README.md)
 
-基于 **Next.js 16 (App Router)** 和 **Tailwind CSS 4** 构建的现代个人博客，分享软件开发、架构与 AI 方面的心得。采用 **MDX** 内容管理，拥有高性能客户端搜索和新丑风响应式设计。
+基于 **Next.js 16 (App Router)** 和 **Tailwind CSS 4** 构建的现代个人博客，分享软件开发、架构与 AI 方面的心得。采用 **MDX** 内容管理，支持中英文双语发布，并围绕 `app`、`src/features`、`src/shared`、`src/server` 做了明确分层。
 
 ## ✨ 核心特性
 
@@ -13,6 +13,8 @@
 - **模糊搜索**: **Fuse.js** 实现闪电般的客户端搜索，支持按标题、内容、标签和分类过滤。
 - **评论系统**: 基于指纹的防刷机制，每日评论次数限制，保护免受恶意提交。
 - **阅读量统计**: 每篇文章独立阅读计数，同一访客 24 小时内不重复统计。
+- **分层结构**: 路由入口保留在 `app`，业务代码归档到 `src/features`，共享组件和工具位于 `src/shared`，服务端基础设施收口到 `src/server`。
+- **Vitest 测试**: 已覆盖文章查询、评论/阅读量服务、聊天服务等核心逻辑。
 - **高性能优化**: 极低的 CLS (累积布局偏移)，稳定的滚动恢复。
 - **深色模式**: 无缝主题切换，自动识别系统主题偏好。
 
@@ -34,27 +36,40 @@
 ## 📂 项目结构
 
 ```bash
-├── app/                    # Next.js App Router
-│   └── [locale]/           # 国际化路由
-│       ├── posts/          # 文章列表与详情 ([slug])
-│       ├── search/         # 统一搜索页面
-│       └── about/          # 关于页面
-├── articles/               # MDX 文章源文件
-│   ├── en/                 # 英文文章
-│   └── zh/                 # 中文文章
-├── components/             # 可复用 React 组件
-│   ├── mdx/                # MDX 专用组件 (如 Mermaid)
-│   └── ui/                 # 基础 UI 组件 (新丑风风格)
-├── lib/                    # 工具函数
-│   ├── actions/            # 服务端操作 (评论、阅读量)
-│   └── posts.ts           # MDX 数据获取
-├── i18n/                   # 国际化配置 (路由与请求)
-├── messages/               # 翻译 JSON 文件 (en.json, zh.json)
-├── prisma/                 # Prisma ORM 数据库 schema
-├── public/                 # 静态资源
-├── .github/                # GitHub Actions 工作流
-└── proxy.ts                # Next.js 代理 (v16 推荐模式)
+├── app/                         # 只保留 Next.js 路由入口
+│   └── [locale]/                # 国际化页面
+├── articles/                    # MDX 文章源文件
+│   ├── en/
+│   └── zh/
+├── src/
+│   ├── features/                # 业务功能域
+│   │   ├── about/
+│   │   ├── chat/
+│   │   ├── engagement/          # 评论 / 阅读量
+│   │   ├── home/
+│   │   └── posts/
+│   ├── shared/                  # 跨业务共享组件与工具
+│   │   ├── components/
+│   │   └── utils/
+│   └── server/                  # 纯服务端基础设施
+│       └── db/
+├── tests/                       # Vitest 测试集
+├── i18n/                        # 国际化配置
+├── messages/                    # 翻译文件
+├── prisma/                      # Prisma schema 与迁移
+├── public/                      # 静态资源
+├── .github/                     # GitHub Actions 工作流
+└── proxy.ts                     # Next.js 代理 (v16 推荐模式)
 ```
+
+## 🧱 架构说明
+
+- `app` 仅放 `page.tsx`、`layout.tsx` 等路由入口文件。
+- `src/features` 承载业务域内的组件、查询、服务和 server-actions。
+- `src/shared` 只放跨业务稳定复用的组件和工具。
+- `src/server` 放纯服务端基础设施，例如 Prisma 客户端。
+
+更完整的分层约束见 [ARCHITECTURE.md](./ARCHITECTURE.md)。
 
 ## 🚀 快速开始
 
@@ -92,13 +107,15 @@ author: 'Max Zhang'
 项目通过 **husky** Git hooks 强制代码质量：
 
 ```bash
-# 运行所有检查 (tsc + eslint + prettier)
+# 运行所有检查 (tsc + eslint + prettier + prisma format)
 pnpm lint
 
 # 单独运行
-pnpm lint:tsc       # TypeScript 类型检查
+pnpm lint:tsc        # TypeScript 类型检查
 pnpm lint:eslint     # ESLint 自动修复
 pnpm lint:prettier   # Prettier 格式化
+pnpm test            # 运行 Vitest 测试
+pnpm test:watch      # 监听模式运行 Vitest
 ```
 
 **提交信息规范** (由 commitlint 强制执行)：
@@ -121,6 +138,8 @@ chore: 构建/工具变更
 **本地构建：**
 
 ```bash
+pnpm test
+pnpm lint
 pnpm build
 pnpm start
 ```

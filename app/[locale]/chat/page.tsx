@@ -1,4 +1,4 @@
-import { ChatInterface } from '@/components/chat-interface'
+import { ChatInterface } from '@/src/features/chat'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 

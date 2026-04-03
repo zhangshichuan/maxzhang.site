@@ -1,5 +1,4 @@
-import { SearchClient } from '@/components/search-client'
-import { getAllPostsWithViews } from '@/lib/posts'
+import { getAllPostsWithViews, SearchClient } from '@/src/features/posts'
 import { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import { Suspense } from 'react'

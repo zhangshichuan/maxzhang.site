@@ -1,6 +1,9 @@
-import Mermaid from '@/components/mdx/mermaid'
+import { getCommentCount } from '@/src/features/engagement/queries'
+import { Comment } from '@/src/features/engagement/components'
+import { ViewCounter } from '@/src/features/engagement/components'
+import { getPostBySlug, getPostSlugs } from '@/src/features/posts'
+import { BackToTop, Mermaid } from '@/src/shared/components'
 import { Link } from '@/i18n/routing'
-import { getPostBySlug, getPostSlugs } from '@/lib/posts'
 import { ArrowLeft, Calendar, Clock, Folder, User } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 import { MDXRemote } from 'next-mdx-remote/rsc'
@@ -80,10 +83,6 @@ const components = {
   },
 }
 
-import { BackToTop } from '@/components/back-to-top'
-import { Comment } from '@/components/comment'
-import { ViewCounter } from '@/components/view-counter'
-import { getCommentCount } from '@/lib/actions/comments'
 import { MessageCircle } from 'lucide-react'
 import { redirect } from 'next/navigation'
 

@@ -13,6 +13,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "pnpm lint:tsc && pnpm lint:eslint && pnpm lint:prettier && prisma format",
     "lint:tsc": "tsc --noEmit",
     "lint:eslint": "eslint --fix",
@@ -59,6 +61,7 @@
     "prettier": "^3.8.1",
     "prisma": "^7.5.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.2"
   }
 }
