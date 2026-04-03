@@ -3,6 +3,8 @@ ignoredBuiltDependencies:
   - unrs-resolver
 
 onlyBuiltDependencies:
+  - '@parcel/watcher'
   - '@prisma/engines'
+  - '@swc/core'
   - better-sqlite3
   - prisma

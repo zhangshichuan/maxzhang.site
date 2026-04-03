@@ -5,6 +5,7 @@
     "nav": {
       "home": "Home",
       "posts": "Posts",
+      "chat": "Chat",
       "about": "About",
       "switchLanguage": "Switch to Chinese"
     },
@@ -26,6 +27,20 @@
     "replyPlaceholder": "Write your reply...",
     "replySuccess": "Reply added successfully!",
     "cancel": "Cancel"
+  },
+  "Chat": {
+    "title": "Chat",
+    "placeholder": "Type a message...",
+    "emptyState": "Start a conversation...",
+    "send": "Send",
+    "sending": "Sending...",
+    "errors": {
+      "invalidFingerprint": "For security, please visit any article first to generate your fingerprint",
+      "rateLimit": "Sending too fast. Please wait a moment and try again.",
+      "messageTooLong": "Message too long. Please keep it under {max} characters.",
+      "upstreamError": "Upstream service error. Please try again later.",
+      "networkError": "Network error. Please check your connection."
+    }
   },
   "HomePage": {
     "hero": {
