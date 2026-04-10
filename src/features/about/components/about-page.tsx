@@ -5,9 +5,9 @@ import { Briefcase, Github, GraduationCap, Linkedin, Mail, MapPin } from 'lucide
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 
-import Avatar from '../avatar.jpg'
 import { FadeIn, GlassCard, StaggerContainer, StaggerItem } from '@/src/shared/components'
 import { Button } from '@/src/shared/components/ui'
+import Avatar from '../avatar.jpg'
 
 interface Experience {
   role: string
@@ -162,7 +162,7 @@ export function AboutPage() {
                 {[
                   'TypeScript',
                   'Python',
-                  'Rust',
+                  'Go',
                   'Tailwind CSS',
                   'Framer Motion',
                   'Artillery',
