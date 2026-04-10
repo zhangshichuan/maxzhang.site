@@ -55,9 +55,9 @@
   },
   "AboutPage": {
     "title": "关于我 - Max Zhang",
-    "role": "AI 平台工程师",
+    "role": "AI 全栈工程师",
     "location": "中国 成都",
-    "description": "<primary>AI Platform Engineer</primary>，专注于 <accent>LLMOps</accent> 与 AI 应用的工程化落地——基于 <accent>LangChain</accent>、<accent>Dify</accent> 等框架与平台，围绕 <secondary>RAG</secondary>、<secondary>Agent</secondary>、<secondary>Prompt Engineering</secondary> 构建可生产交付的 AI 能力。后端以 <accent>Python + Go</accent> 构建核心服务，前端以 <accent>TypeScript</accent> + <accent>tRPC</accent> + <accent>Zod</accent> 实现端到端类型安全，跨平台客户端（<accent>Taro</accent>、<accent>Flutter</accent>、<accent>React Native</accent>、<accent>Electron</accent>、<accent>Tauri</accent>），数据层通过 <accent>PostgreSQL</accent> 向量检索与 <accent>Redis</accent> + <accent>MQ</accent> 异步流水线支撑海量调用，结合 <accent>APM</accent> 全链路可观测性与 <accent>DevOps</accent> 自动化，实现从模型到产品的端到端交付。",
+    "description": "<primary>AI 全栈工程师</primary>，主要做 <accent>从模型能力到产品交付的完整工程链路</accent>。我关注的重点不是堆概念，而是把 <secondary>RAG</secondary>、<secondary>Agent</secondary> 这类能力接进真实业务，用 <accent>Python</accent>、<accent>Go</accent> 和 <accent>TypeScript</accent> 把后端服务、前端体验和数据流转真正落到可用、可维护、可持续迭代的产品里。",
     "workExperience": "工作经历",
     "education": "教育经历",
     "techStack": "技术栈",

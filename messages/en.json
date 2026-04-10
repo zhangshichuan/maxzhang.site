@@ -55,9 +55,9 @@
   },
   "AboutPage": {
     "title": "About Me - Max Zhang",
-    "role": "AI Platform Engineer",
+    "role": "AI Full-Stack Engineer",
     "location": "Chengdu, China",
-    "description": "<primary>AI Platform Engineer</primary>，focused on <accent>LLMOps</accent> & AI application engineering—building on <accent>LangChain</accent> & <accent>Dify</accent> frameworks & platforms, delivering <secondary>RAG</secondary>, <secondary>Agent</secondary>, <secondary>Prompt Engineering</secondary> at production scale. Backend: <accent>Python + Go</accent> for core services; Frontend: <accent>TypeScript</accent> + <accent>tRPC</accent> + <accent>Zod</accent> for end-to-end type safety; Cross-platform client: <accent>Taro</accent>, <accent>Flutter</accent>, <accent>React Native</accent>, <accent>Electron</accent>, <accent>Tauri</accent> for mini-programs, apps & desktop; Data layer: <accent>PostgreSQL</accent> vector search with <accent>Redis</accent> + <accent>MQ</accent> async pipelines; Observability & delivery: <accent>APM</accent> + <accent>DevOps</accent> for model-to-product end-to-end.",
+    "description": "<primary>AI Full-Stack Engineer</primary>, focused on <accent>the full engineering path from model capability to product delivery</accent>. I care less about buzzwords and more about bringing <secondary>RAG</secondary> and <secondary>Agent</secondary> workflows into real business systems, using <accent>Python</accent>, <accent>Go</accent>, and <accent>TypeScript</accent> to turn backend services, frontend experience, and data flow into products that are usable, maintainable, and ready to evolve.",
     "workExperience": "Work Experience",
     "education": "Education",
     "techStack": "Tech Stack",
