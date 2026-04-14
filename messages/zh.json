@@ -57,7 +57,7 @@
     "title": "关于我 - Max Zhang",
     "role": "AI 全栈工程师",
     "location": "中国 成都",
-    "description": "<primary>AI 全栈工程师</primary>，主要做 <accent>从模型能力到产品交付的完整工程链路</accent>。我关注的重点不是堆概念，而是把 <secondary>RAG</secondary>、<secondary>Agent</secondary> 这类能力接进真实业务，用 <accent>Python</accent>、<accent>Go</accent> 和 <accent>TypeScript</accent> 把后端服务、前端体验和数据流转真正落到可用、可维护、可持续迭代的产品里。",
+    "description": "<primary>AI 全栈工程师</primary>，主要做 <accent>从模型能力到产品交付的完整工程链路</accent>。我关注的重点不是堆概念，而是把 <secondary>RAG</secondary>、<secondary>Agent</secondary> 这类能力接进真实业务，用 <accent>Python</accent> 和 <accent>TypeScript</accent> 把后端服务、前端体验和数据流转真正落到可用、可维护、可持续迭代的产品里。",
     "workExperience": "工作经历",
     "education": "教育经历",
     "techStack": "技术栈",

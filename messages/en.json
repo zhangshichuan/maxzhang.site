@@ -57,7 +57,7 @@
     "title": "About Me - Max Zhang",
     "role": "AI Full-Stack Engineer",
     "location": "Chengdu, China",
-    "description": "<primary>AI Full-Stack Engineer</primary>, focused on <accent>the full engineering path from model capability to product delivery</accent>. I care less about buzzwords and more about bringing <secondary>RAG</secondary> and <secondary>Agent</secondary> workflows into real business systems, using <accent>Python</accent>, <accent>Go</accent>, and <accent>TypeScript</accent> to turn backend services, frontend experience, and data flow into products that are usable, maintainable, and ready to evolve.",
+    "description": "<primary>AI Full-Stack Engineer</primary>, focused on <accent>the full engineering path from model capability to product delivery</accent>. I care less about buzzwords and more about bringing <secondary>RAG</secondary> and <secondary>Agent</secondary> workflows into real business systems, using <accent>Python</accent> and <accent>TypeScript</accent> to turn backend services, frontend experience, and data flow into products that are usable, maintainable, and ready to evolve.",
     "workExperience": "Work Experience",
     "education": "Education",
     "techStack": "Tech Stack",

@@ -162,7 +162,6 @@ export function AboutPage() {
                 {[
                   'TypeScript',
                   'Python',
-                  'Go',
                   'Tailwind CSS',
                   'Framer Motion',
                   'Artillery',
@@ -181,7 +180,6 @@ export function AboutPage() {
                   'Flutter',
                   'React Native',
                   'Electron',
-                  'Tauri',
                 ].map((skill) => (
                   <span
                     key={skill}
