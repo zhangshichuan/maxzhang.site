@@ -1,0 +1,997 @@
+---
+title: 'From Function Calling to MCP, Skills, and Subagents: A Layered Guide to Agent Capabilities'
+summary: 'When people first get into AI agents, they often encounter function calling, MCP, skills, and subagents all at once. They all seem related to “making the model do things,” but they solve different problems at different layers. This article explains where each idea came from, what problem it solves, how they relate to one another, and when to use each one.'
+category: 'LLMOps'
+tags: ['Function Calling', 'MCP', 'Skills', 'Subagent']
+author: 'Max Zhang'
+date: '2026-04-14'
+---
+
+If you have been reading about AI agents lately, whether through Codex, Claude Code, Cursor, the OpenAI Agents SDK, or other agent frameworks, you have probably seen a few terms over and over:
+
+- `function call`
+- `MCP`
+- `skills`
+- `subagent`
+
+They all relate to the same broad goal: making models do more than chat. But they are not the same kind of thing.
+
+That is where a lot of confusion starts. Some people treat MCP as a more advanced version of function calling. Some treat skills as just another name for tools. Some think subagents are basically multithreading with extra branding. None of those interpretations is quite right.
+
+This article puts all four ideas back into the context where they emerged and explains them as a system: **why each one appeared, what problem it solves, what it does not solve, and how they fit together in real agent architectures.**
+
+---
+
+# The short version: these are not peer concepts
+
+If you want the core idea first, here it is:
+
+> `function calling` answers: how does a model request a concrete external action?  
+> `MCP` answers: how are external capabilities exposed to model systems through a standard protocol?  
+> `skills` answer: how does an agent reuse a stable way of working for a class of tasks?  
+> `subagents` answer: when one agent is not enough, how do you split work across multiple agents?
+
+These ideas sit at different layers:
+
+```text
+User task
+  ↓
+Main agent reasoning and planning
+  ↓
+If the task is complex and needs delegation
+  → subagents
+  ↓
+If execution needs reusable working patterns
+  → skills
+  ↓
+When interacting with the outside world
+  → function calls / tools
+  ↓
+How those external capabilities are exposed
+  → often through MCP
+```
+
+Put differently:
+
+- `function calling` is about the invocation itself
+- `MCP` is about standardized capability integration
+- `skills` are about reusable task expertise
+- `subagents` are about task organization
+
+Once you see that layering clearly, most of the confusion disappears.
+
+---
+
+# 1. Why plain chat-based LLMs were not enough
+
+The earliest LLM products mostly looked like this:
+
+```text
+User asks a question
+  ↓
+Model generates text from context
+  ↓
+Returns an answer
+```
+
+That setup is powerful, but it has three built-in limitations.
+
+## 1. The model knows things, but cannot directly touch the outside world
+
+For example:
+
+- “Check how many orders we processed today.”
+- “Assign this ticket to the backend team.”
+- “Pull this PR and run the tests.”
+
+The model itself cannot access your database, call internal APIs, or execute shell commands. At most, it can describe what should be done.
+
+## 2. It can describe a process without actually performing it
+
+Suppose a user says:
+
+> Analyze this production incident and check the last 24 hours of error logs.
+
+A pure chat model can produce a very confident troubleshooting plan:
+
+1. Inspect the logs
+2. Check alerts
+3. Classify error patterns
+4. Provide a conclusion
+
+The problem is obvious: **it never actually looked at the logs.**
+
+## 3. It can improvise, but it does not naturally execute stable workflows over time
+
+Imagine you want a coding agent to consistently follow team conventions:
+
+- read the code before editing
+- prefer `rg` for search
+- apply edits via patch
+- run the smallest useful verification first
+- in review mode, list findings before summary
+
+If all of that lives only in ad hoc prompting, behavior drifts.
+
+This is why agent systems evolved in layers. Function calling, MCP, skills, and subagents each emerged to solve a different part of that gap.
+
+---
+
+# 2. Function Calling: first solve “how does the model act?”
+
+## 2.1 Where it came from
+
+Before structured tool calling became standard, many teams built “action-taking” systems like this:
+
+1. Ask the model to output some JSON
+2. Parse the JSON in backend code
+3. Decide whether it represents an action
+4. Execute that action
+5. Feed the result back to the model
+
+For example:
+
+```json
+{
+  "action": "get_weather",
+  "city": "Shanghai"
+}
+```
+
+This works, but only up to a point:
+
+- output formats drift
+- field names change unexpectedly
+- argument types become unreliable
+- validation is awkward
+- model-to-model compatibility is weak
+
+Function calling, or tool calling, emerged to solve exactly that. The idea is simple:
+
+> Do not let the model freestyle something that merely looks like a tool invocation. Instead, let it choose from declared tools and produce arguments that conform to a schema.
+
+## 2.2 What it solves
+
+### 1. It gives the model a structured way to request external actions
+
+Suppose you define:
+
+```ts
+getWeather(city: string, date?: string)
+```
+
+When the user says:
+
+> Check tomorrow’s weather in Shanghai.
+
+The model can return something like:
+
+```json
+{
+  "name": "getWeather",
+  "arguments": {
+    "city": "Shanghai",
+    "date": "2026-04-15"
+  }
+}
+```
+
+That is very different from free-form text that your backend has to guess how to interpret.
+
+### 2. It separates reasoning from execution
+
+The model is responsible for:
+
+- deciding whether a tool is needed
+- selecting the right tool
+- filling in the parameters
+
+The host system is responsible for:
+
+- actually executing the function
+- validating arguments
+- enforcing permissions
+- handling retries, timeouts, and auditability
+
+This separation matters. **The model is not the executor. It is the requester.**
+
+### 3. It makes agent loops practical
+
+A typical loop looks like this:
+
+```text
+User request
+  ↓
+Model chooses a function call
+  ↓
+Host executes it
+  ↓
+Result goes back to the model
+  ↓
+Model reasons again
+  ↓
+Final answer or another tool call
+```
+
+Without structured function calling, it is much harder to make the “reason -> act -> observe -> reason again” loop reliable.
+
+## 2.3 What it does not solve
+
+Function calling is foundational, but it is not a complete agent system.
+
+It does not solve:
+
+- how tools are discovered or registered
+- whether tools are local, remote, or shared
+- how different applications reuse the same tool ecosystem
+- long-horizon planning
+- reusable task methodology
+- delegation across multiple agents
+
+So function calling is the starting layer, not the whole architecture.
+
+## 2.4 A minimal example
+
+Imagine an operations assistant with two functions:
+
+```ts
+getServiceStatus(serviceName: string)
+restartService(serviceName: string)
+```
+
+The user says:
+
+> Check whether `payment-service` is down, and restart it if needed.
+
+The system might work like this:
+
+```text
+1. The model calls getServiceStatus("payment-service")
+2. The system returns: status = unhealthy
+3. The model calls restartService("payment-service")
+4. The host executes the restart
+5. The model summarizes the outcome for the user
+```
+
+Function calling solves the “how does the model request these actions?” part.
+
+---
+
+# 3. MCP: then solve “how do tools connect in a standard way?”
+
+## 3.1 Where it came from
+
+Once function calling became common, a new problem showed up:
+
+**Where do these tools come from, how are they described, and how do multiple hosts reuse them?**
+
+Suppose you have capabilities like:
+
+- filesystem access
+- Git operations
+- database queries
+- browser automation
+- internal ticket APIs
+- documentation search
+
+The naive approach is to wire each one manually into every agent application. That quickly becomes messy:
+
+- app A defines the database tools one way, app B does it differently
+- your IDE assistant and your web agent duplicate the same integration logic
+- tool descriptions diverge
+- permission handling is inconsistent
+- moving to a new host means rebuilding the tool layer again
+
+This is the problem space where MCP appeared.
+
+## 3.2 What MCP is
+
+A practical way to think about MCP is:
+
+> a standard protocol between model hosts and external capability providers
+
+It is concerned with questions like:
+
+- how external systems expose capabilities
+- how hosts discover them
+- how inputs and outputs are described
+- how resources, prompts, and tools are surfaced in a unified way
+
+If function calling answers “how does the model express a desire to use a tool?”, MCP answers “how is that tool made available to model systems in the first place?”
+
+## 3.3 What it solves
+
+### 1. Standardized capability integration
+
+Before protocol-level standardization, every host tends to define the same things repeatedly:
+
+- tool name
+- argument schema
+- descriptive metadata
+- execution wiring
+
+MCP shifts that toward a cleaner model:
+
+- an `MCP Server` exposes capabilities
+- an `MCP Client` consumes them
+
+For example, a Git-oriented MCP server might expose:
+
+- `git_status`
+- `git_diff`
+- `git_log`
+- `create_branch`
+
+Any host that speaks MCP can then integrate that same capability surface.
+
+### 2. It decouples tool providers from model hosts
+
+This is one of the most important gains.
+
+Without a standard protocol, architectures often look like this:
+
+```text
+Specific host application
+  ↔ hard-coded tool integration
+```
+
+With MCP, the architecture becomes closer to:
+
+```text
+Agent host
+  ↔ MCP Client
+  ↔ MCP Server
+  ↔ external system
+```
+
+That gives you:
+
+- independently evolving tool servers
+- reuse across multiple hosts
+- easier enterprise standardization
+- more centralized governance for permissions and auditing
+
+### 3. It treats resources as first-class citizens, not just functions
+
+Many people focus only on tools, but real agent systems also need access to:
+
+- files
+- documents
+- tables
+- prompt assets
+- execution context
+
+Part of MCP’s value is that it provides a more unified way to surface those things rather than forcing everything into a “pretend function” shape.
+
+## 3.4 What it does not solve
+
+MCP is infrastructure, not intelligence.
+
+It does not:
+
+- plan tasks for you
+- decide when to call which tool
+- write good prompts automatically
+- split work across multiple agents
+
+It standardizes integration. It does not replace orchestration or reasoning.
+
+## 3.5 A helpful analogy
+
+One simple analogy is:
+
+- `function calling` is like dialing a number
+- `MCP` is like having a standardized telecom network
+
+A phone number by itself does not create an interoperable system. But a communications protocol alone does not decide who to call or why.
+
+## 3.6 Example: an internal enterprise assistant
+
+Suppose your company has three systems:
+
+- Jira
+- Confluence
+- an internal deployment platform
+
+Without standardization, each AI product has to integrate all three separately.
+
+With MCP, a platform team might build:
+
+- `jira-mcp`
+- `confluence-mcp`
+- `deploy-mcp`
+
+Then multiple hosts can reuse them:
+
+- an IDE coding assistant
+- a Slack-based support agent
+- an internal web operations assistant
+
+MCP turns tool integration from repeated app-specific work into a reusable capability layer.
+
+---
+
+# 4. Skills: solve “does the agent know how to work?”
+
+## 4.1 Where they came from
+
+As tool ecosystems got richer, another issue became obvious:
+
+> Having tools is not the same as knowing how to use them well.  
+> Being able to call functions is not the same as reliably completing a task.
+
+Take a bug-fixing workflow. Two agents might have access to the exact same tools:
+
+- one edits code immediately and changes the wrong module
+- another reads logs, traces the call path, inspects tests, and applies the smallest useful fix
+
+The difference is not tool availability. It is working method.
+
+That is what skills address.
+
+## 4.2 What a skill is
+
+A useful mental model is:
+
+> a reusable packet of task-specific operating knowledge
+
+A skill may include:
+
+- task definition
+- when to use it
+- working steps
+- behavioral constraints
+- examples
+- recommended tools
+- common pitfalls
+
+It is not primarily an execution interface. It is a reusable way of doing a kind of work.
+
+If:
+
+- `function calling` is the hand
+- `MCP` is the standardized way the hand reaches tools
+
+Then:
+
+- `skills` are closer to the playbook or craft manual
+
+## 4.3 What skills solve
+
+### 1. They stabilize execution style for recurring tasks
+
+For example, a code review skill might require the agent to:
+
+- look for bugs and regressions first
+- order findings by severity
+- include file references
+- explicitly say when no issues are found
+- keep the summary secondary
+
+That produces much more consistent behavior than relying on ad hoc prompting every time.
+
+### 2. They reduce the repetition cost of complex prompting
+
+Without skills, teams often keep rewriting giant prompts such as:
+
+> You are a senior architect. First do this, then do that, watch out for these cases...
+
+That does not scale well, and it is hard to share across a team.
+
+Skills turn that knowledge into a reusable asset.
+
+### 3. They bind domain knowledge and workflow together
+
+Imagine a skill specifically for giving OpenAI API implementation guidance. It might encode rules like:
+
+- prefer official documentation first
+- avoid outdated parameters
+- recommend models based on latency, cost, and capability tradeoffs
+- favor official SDK-style examples
+
+That is more than a generic prompt. It is a scoped, specialized working pattern.
+
+## 4.4 What skills do not solve
+
+Skills do not directly solve:
+
+- how external systems connect
+- how tools execute
+- how multi-agent orchestration works
+
+So a skill is not a tool, not a protocol, and not a scheduler.
+
+## 4.5 Example: a technical writing skill
+
+Suppose you define a technical writing skill with instructions like:
+
+```text
+Use cases:
+- engineering deep-dives
+- explanatory architecture articles
+
+Requirements:
+- start with the problem context, then explain the solution
+- do not stop at definitions
+- always include concrete examples
+- avoid turning the article into a glossary
+- default to Chinese unless requested otherwise
+```
+
+Now when an agent is asked to write about MCP, it behaves more like a consistent technical writer and less like a generic chatbot improvising on the spot.
+
+---
+
+# 5. Subagents: solve “one agent cannot do everything well”
+
+## 5.1 Where they came from
+
+Once tasks get large enough, even a capable agent with good tools and good skills starts to hit limits.
+
+Consider a task like:
+
+> Refactor this repository’s authentication flow, fix three API bugs, add tests, and write migration notes.
+
+If one agent handles everything sequentially, several problems appear quickly:
+
+- the context gets too large
+- multiple lines of work compete for attention
+- local details crowd out the main plan
+- progress becomes harder to manage
+
+That is where subagents enter the picture.
+
+## 5.2 What a subagent is
+
+A subagent is best understood as:
+
+> a delegated agent that the main agent spins up to handle a scoped subproblem
+
+It is not just a function call or a simple tool. It is closer to:
+
+- an independent reasoning unit
+- an executor with its own context budget
+- a smaller agent that can inspect context, use tools, and return a result
+
+## 5.3 What subagents solve
+
+### 1. Task decomposition
+
+The main agent does not have to do everything itself.
+
+For example:
+
+- the main agent owns the plan
+- subagent A analyzes the authentication module
+- subagent B checks the failing tests
+- subagent C gathers deployment history
+
+### 2. Parallelism
+
+Some work is naturally parallel:
+
+- reading different code areas
+- researching separate sources
+- editing disjoint files
+- running independent verification tasks
+
+Subagents can reduce end-to-end latency significantly.
+
+### 3. Context isolation
+
+This is one of the most underrated benefits.
+
+A single agent can get polluted by too much detail. Subagents let the system isolate local work and bring back only the result that matters.
+
+For instance, the main agent may not need raw test output. It may only need:
+
+- which tests failed
+- why they failed
+- whether the failures block delivery
+
+## 5.4 What subagents do not solve
+
+Subagents are not a substitute for the lower layers.
+
+They do not solve:
+
+- tool standardization
+- tool schema design
+- reusable task methodology
+
+In other words, subagents solve an organizational problem, not a capability-definition problem.
+
+## 5.5 Example: a repository-wide change
+
+Suppose the main agent gets:
+
+> Add idempotency protection to the payment flow and cover it with tests.
+
+A good decomposition might be:
+
+```text
+Main agent:
+- understand overall architecture
+- design the change strategy
+
+Subagent A:
+- inspect API handlers and services
+- identify where idempotency is missing
+
+Subagent B:
+- inspect the existing tests
+- identify coverage gaps
+
+Subagent C:
+- run tests independently
+- summarize failures
+```
+
+The main agent then integrates those results into the final implementation plan.
+
+---
+
+# 6. How these ideas fit together
+
+At this point, the relationship should be clearer.
+
+## 6.1 Function calling is the base execution interface
+
+It answers:
+
+> How does the model express a request to use an external capability?
+
+Without it, the model can talk about actions but cannot request them reliably.
+
+## 6.2 MCP is the integration standard
+
+It answers:
+
+> How are those external capabilities made available to model systems in a reusable, standardized way?
+
+Function calling can invoke a tool. MCP helps make tool ecosystems portable and shareable.
+
+## 6.3 Skills are the task-method layer
+
+They answer:
+
+> Given access to capabilities, how should the agent approach this class of work?
+
+Skills turn agents from “tool-enabled” into “more consistently competent.”
+
+## 6.4 Subagents are the task-organization layer
+
+They answer:
+
+> When the task becomes too large for one reasoning loop, how should the work be split and coordinated?
+
+Subagents do not replace function calling, MCP, or skills. They operate above them.
+
+---
+
+# 7. A complete scenario: an enterprise engineering assistant
+
+Suppose you are building an enterprise engineering assistant that can:
+
+- inspect code
+- search documentation
+- read tickets
+- run tests
+- generate change summaries
+
+Here is how the four layers might work together.
+
+## 7.1 MCP provides the capability bus
+
+You may have servers such as:
+
+- `filesystem-mcp`
+- `git-mcp`
+- `jira-mcp`
+- `ci-mcp`
+- `docs-mcp`
+
+They standardize how external systems are exposed.
+
+## 7.2 Function calling performs concrete invocations
+
+During reasoning, the agent decides to:
+
+- call `search_code`
+- call `get_ticket`
+- call `run_tests`
+
+Each of those actions is, at its core, a function call.
+
+## 7.3 Skills define the way of working
+
+For example, a code-fix skill might say:
+
+- read related files first
+- avoid broad refactors by default
+- prefer the smallest effective fix
+- verify changes after editing
+- if verification cannot run, say so explicitly
+
+That makes execution style much more stable.
+
+## 7.4 Subagents handle decomposition
+
+If the repository is large, the main agent may delegate:
+
+- subagent A to analyze authentication
+- subagent B to inspect failing tests
+- subagent C to gather ticket context
+
+The main agent then integrates those findings.
+
+## 7.5 The end-to-end flow looks something like this
+
+```text
+User: Fix duplicate payment settlement on callback and write a repair summary
+
+Main agent:
+1. Uses a skill to decide to read code first
+2. Uses MCP-connected tooling to search the repository
+3. Invokes concrete tools via function calling
+4. Delegates part of the analysis to subagents
+5. Integrates the results into an implementation plan
+6. Edits code, verifies behavior, and writes the summary
+```
+
+Once you see the system this way, the roles are distinct:
+
+- without MCP, integration becomes fragmented
+- without function calling, execution requests are brittle
+- without skills, behavior drifts
+- without subagents, complex tasks become slow and cognitively overloaded
+
+---
+
+# 8. The most common confusions
+
+## 8.1 “Is MCP a replacement for function calling?”
+
+No.
+
+They solve different problems:
+
+- `function calling` is about expressing the invocation
+- `MCP` is about exposing the capability surface
+
+In many real systems, MCP-exposed tools are still ultimately selected and invoked through function-calling-style mechanisms.
+
+## 8.2 “Is a skill just another word for a prompt?”
+
+Not really.
+
+A skill may include prompts, but it is usually broader than that. It may also include:
+
+- applicability rules
+- working steps
+- tool preferences
+- template references
+- verification expectations
+
+A prompt is often one component of a skill, not the whole thing.
+
+## 8.3 “Is a subagent just a fancy tool?”
+
+Also no.
+
+A tool usually means:
+
+- clear input
+- clear output
+- execution by the host system
+
+A subagent means:
+
+- a delegated task
+- its own reasoning
+- its own tool use
+- a synthesized result
+
+One is an action interface. The other is a secondary decision-making unit.
+
+## 8.4 “If I give the agent many tools, will it automatically become better?”
+
+Not necessarily. Often the opposite happens.
+
+More tools can easily lead to:
+
+- tool selection confusion
+- misuse
+- context clutter
+- security risk
+
+This is why mature systems usually combine:
+
+- MCP for structured integration
+- skills for execution discipline
+- subagents for complexity management
+
+---
+
+# 9. Concrete examples
+
+## 9.1 Example 1: a customer support assistant checking an order
+
+The user says:
+
+> Check why order `A1024` has not shipped yet.
+
+The flow might be:
+
+1. The model issues a `getOrder(orderId)` function call
+2. The tool comes from an internal order MCP server
+3. The result shows an inventory lock problem
+4. The model calls `getInventoryStatus(sku)`
+5. The system returns the data
+6. The model produces a support-friendly explanation
+
+Here:
+
+- function calling handles the invocation
+- MCP handles how order and inventory capabilities are exposed
+
+If the system also has a customer-communication skill, that skill may further constrain the answer:
+
+- lead with the conclusion
+- then explain the cause
+- avoid leaking internal field names
+
+## 9.2 Example 2: modify code and fix tests
+
+The user says:
+
+> Add caching to this endpoint and fix the broken tests.
+
+The system may work like this:
+
+1. The main agent uses a code-modification skill and reads relevant files first
+2. It searches the repository for dependency relationships
+3. It spawns a subagent to analyze the failing tests
+4. It spawns another subagent to inspect existing cache patterns
+5. The main agent integrates the findings and edits the code
+6. It runs verification tools
+
+All four layers appear in this example.
+
+## 9.3 Example 3: a research agent
+
+The user says:
+
+> Compare three vector databases and recommend one for our use case.
+
+If the system supports web research:
+
+1. The main agent spawns three subagents, one per candidate
+2. Each subagent uses search, browser, and extraction tools
+3. Those tools may be exposed via MCP
+4. The main agent aggregates the results and formats the final answer using a technology-evaluation skill
+
+This is where subagents become especially valuable: parallel research and context isolation.
+
+---
+
+# 10. How to design these layers in practice
+
+If you are building your own agent system, this layering is a good starting point.
+
+## 10.1 Treat function calling as the execution entry point
+
+In practice, that means:
+
+- the model requests execution
+- the host performs execution
+- arguments are validated
+- permissions are centralized
+- timeout, idempotency, and auditability are system concerns
+
+Do not let the model directly own business-side execution.
+
+## 10.2 Treat MCP as the capability bus
+
+Any external capability likely to be reused by multiple hosts is a good MCP candidate:
+
+- filesystem
+- Git
+- docs and knowledge bases
+- browser automation
+- enterprise APIs
+
+That keeps the capability layer more stable even when models or hosts change.
+
+## 10.3 Treat skills as team knowledge assets
+
+Do not reduce skills to “prompt templates.”
+
+A stronger approach is to make each skill explicit about:
+
+- name
+- scope
+- working steps
+- examples
+- constraints
+- referenced files or assets
+
+That turns skills into reusable organizational knowledge.
+
+## 10.4 Use subagents only where they truly help
+
+Not every task needs multiple agents.
+
+Subagents are most useful when:
+
+- exploration can happen in parallel
+- information sources are independent
+- write scopes are disjoint
+- verification can be offloaded cleanly
+
+They are less useful when:
+
+- the task is tiny
+- the next step depends immediately on one unresolved result
+- the subproblem is poorly scoped
+- coordination cost exceeds the gain
+
+---
+
+# 11. A simple framework for evaluating new agent products
+
+When you encounter a new framework, SDK, or product claim, ask four questions:
+
+## 1. Is it solving invocation or integration?
+
+- invocation tends to point toward function calling
+- integration tends to point toward MCP
+
+## 2. Is it solving “can the agent do it” or “does the agent know how to do it well?”
+
+- “can it do it” tends to be tools, function calling, and MCP
+- “does it do it well” tends to be skills
+
+## 3. Is it about point capabilities or task organization?
+
+- point capabilities tend to be tools and function calls
+- task organization tends to be subagents
+
+## 4. Is it increasing freedom or increasing stability?
+
+- function calling and MCP usually expand capability access
+- skills usually improve execution consistency
+- subagents usually improve scalability for complex tasks
+
+This lens makes it much easier to avoid getting lost in terminology.
+
+---
+
+# 12. Final takeaway
+
+Compressed to the shortest useful version:
+
+- `function calling` lets a model request external actions in a structured way
+- `MCP` lets external capabilities plug into model systems through a standard interface
+- `skills` give agents reusable ways of working
+- `subagents` let complex tasks be split, parallelized, and coordinated
+
+These are not competing concepts. They are complementary layers.
+
+A mature agent system often uses all four:
+
+1. `function calling` to request actions
+2. `MCP` to integrate capability ecosystems
+3. `skills` to stabilize task execution
+4. `subagents` to manage complexity
+
+If you collapse all of that into the vague idea that “the AI can use tools,” you lose the architectural distinctions that actually matter.
+
+The more useful way to think about them is:
+
+- some solve execution interfaces
+- some solve capability integration
+- some solve reusable expertise
+- some solve collaboration and orchestration
+
+That is how LLM systems evolve from “good at chatting” into agents that can do meaningful work with increasing reliability.

@@ -10,7 +10,7 @@ export const routing = defineRouting({
   locales: ['en', 'zh'],
 
   // 默认语言，当没有匹配的语言时使用
-  defaultLocale: 'en',
+  defaultLocale: 'zh',
 
   // 默认语言不使用前缀
   localePrefix: 'as-needed',
