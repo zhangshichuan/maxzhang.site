@@ -1,3 +1,10 @@
+/**
+ * Mermaid图表组件
+ *
+ * 渲染Mermaid流程图、时序图等图表，支持主题适配、全屏预览和缩放功能
+ * 包含灯箱模式，用户可点击图表放大查看细节
+ */
+
 'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
@@ -7,21 +14,38 @@ import { useTranslations } from 'next-intl'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
 
+/** Mermaid组件属性接口 */
 interface MermaidProps {
-  chart: string
+  chart: string // Mermaid图表定义代码
 }
 
+/**
+ * Mermaid图表主组件
+ *
+ * 渲染Mermaid图表，支持主题适配、错误处理和交互功能
+ *
+ * @param chart - Mermaid图表定义代码
+ * @returns 渲染图表元素，包含缩略图和全屏灯箱
+ */
 export default function Mermaid({ chart }: MermaidProps) {
+  // 国际化翻译
   const t = useTranslations('Mermaid')
+  // 当前主题（明/暗）
   const { resolvedTheme } = useTheme()
+  // 渲染后的SVG内容
   const [svg, setSvg] = useState<string>('')
+  // 渲染错误信息
   const [error, setError] = useState<string | null>(null)
+  // 灯箱（全屏模式）是否打开
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
+  // 缩放比例
   const [zoom, setZoom] = useState(1)
 
+  // 初始化Mermaid并渲染图表，依赖图表代码和主题变化
   useEffect(() => {
     const isDark = resolvedTheme === 'dark'
 
+    // 配置Mermaid初始化参数
     mermaid.initialize({
       startOnLoad: false,
       theme: isDark ? 'dark' : 'default',
@@ -60,7 +84,10 @@ export default function Mermaid({ chart }: MermaidProps) {
     renderChart()
   }, [chart, resolvedTheme])
 
-  // 切换全屏灯箱显示
+  /**
+   * 切换全屏灯箱显示
+   * 打开时禁用页面滚动，关闭时恢复滚动并重置缩放
+   */
   const toggleLightbox = () => {
     if (!isLightboxOpen) {
       setIsLightboxOpen(true)
@@ -72,24 +99,38 @@ export default function Mermaid({ chart }: MermaidProps) {
     }
   }
 
-  // 放大图表
+  /**
+   * 放大图表
+   * @param e - 鼠标事件，阻止事件冒泡
+   */
   const handleZoomIn = (e: React.MouseEvent) => {
     e.stopPropagation()
     setZoom((prev) => Math.min(prev + 0.2, 4))
   }
 
-  // 缩小图表
+  /**
+   * 缩小图表
+   * @param e - 鼠标事件，阻止事件冒泡
+   */
   const handleZoomOut = (e: React.MouseEvent) => {
     e.stopPropagation()
     setZoom((prev) => Math.max(prev - 0.2, 0.3))
   }
 
-  // 重置缩放比例
+  /**
+   * 重置缩放比例到原始大小
+   * @param e - 鼠标事件，阻止事件冒泡
+   */
   const handleReset = (e: React.MouseEvent) => {
     e.stopPropagation()
     setZoom(1)
   }
 
+  /**
+   * 处理鼠标滚轮缩放
+   * 仅在灯箱打开时生效，向上滚动放大，向下滚动缩小
+   * @param e - 滚轮事件
+   */
   const handleWheel = (e: React.WheelEvent) => {
     // 只有在灯箱打开时才处理滚动缩放
     if (isLightboxOpen) {

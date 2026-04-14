@@ -1,3 +1,10 @@
+/**
+ * 聊天界面组件
+ *
+ * 实现流式聊天交互界面，支持打字机动画效果、浏览器指纹验证和错误处理
+ * 使用SSE（Server-Sent Events）接收实时数据流
+ */
+
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'

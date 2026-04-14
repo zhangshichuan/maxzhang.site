@@ -1,12 +1,32 @@
+/**
+ * 按钮组件
+ *
+ * 具有多种样式变体和尺寸的可定制按钮，采用多巴胺设计风格
+ * 支持多种交互状态和动画效果
+ */
+
 import { cn } from '@/src/shared/utils'
 import * as React from 'react'
 
+/** 按钮组件属性接口 */
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  asChild?: boolean
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
-  size?: 'default' | 'sm' | 'lg' | 'xl' | 'icon'
+  asChild?: boolean // 是否作为子元素包装器
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' // 按钮样式变体
+  size?: 'default' | 'sm' | 'lg' | 'xl' | 'icon' // 按钮尺寸
 }
 
+/**
+ * 按钮主组件
+ *
+ * 使用forwardRef支持ref传递，提供丰富的样式变体和尺寸选项
+ *
+ * @param className - 自定义CSS类名
+ * @param variant - 按钮样式变体，默认'default'
+ * @param size - 按钮尺寸，默认'default'
+ * @param props - 其他按钮HTML属性
+ * @param ref - 转发ref到内部button元素
+ * @returns 渲染按钮元素
+ */
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'default', size = 'default', ...props }, ref) => {
     // 多巴胺变体映射

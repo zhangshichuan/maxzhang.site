@@ -1,6 +1,18 @@
+/**
+ * 页脚组件
+ *
+ * 网站底部区域，显示版权信息和构建者信息
+ */
+
 import { useTranslations } from 'next-intl'
 
+/**
+ * 页脚组件
+ *
+ * @returns 渲染网站底部内容，包含版权信息和作者链接
+ */
 export function Footer() {
+  // 国际化翻译
   const t = useTranslations('Common.footer')
   const currentYear = new Date().getFullYear()
 

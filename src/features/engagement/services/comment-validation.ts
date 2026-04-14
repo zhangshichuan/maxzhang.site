@@ -1,6 +1,18 @@
+/**
+ * 评论验证服务
+ *
+ * 提供评论内容验证和互动规则管理
+ */
 const MAX_COMMENT_LENGTH = 1000
 const MAX_COMMENTS_PER_DAY = 5
 
+/**
+ * 验证评论输入
+ *
+ * @param content - 评论内容
+ * @param fingerprint - 用户指纹标识
+ * @returns 验证结果，成功返回修剪后的内容，失败返回错误信息
+ */
 export function validateCommentInput(
   content: string,
   fingerprint: string,
@@ -28,6 +40,11 @@ export function validateCommentInput(
   }
 }
 
+/**
+ * 互动规则配置对象
+ *
+ * 包含评论长度限制和每日评论数量限制等规则
+ */
 export const engagementRules = {
   maxCommentLength: MAX_COMMENT_LENGTH,
   maxCommentsPerDay: MAX_COMMENTS_PER_DAY,

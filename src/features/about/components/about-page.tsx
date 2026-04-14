@@ -1,3 +1,10 @@
+/**
+ * 关于页面组件
+ *
+ * 显示个人简介、工作经历、教育背景、技术栈和兴趣爱好的页面
+ * 使用国际化翻译和动画效果增强用户体验
+ */
+
 'use client'
 
 import { Link } from '@/i18n/routing'
@@ -9,22 +16,30 @@ import { FadeIn, GlassCard, StaggerContainer, StaggerItem } from '@/src/shared/c
 import { Button } from '@/src/shared/components/ui'
 import Avatar from '../avatar.jpg'
 
+/** 工作经历数据接口 */
 interface Experience {
-  role: string
-  company: string
-  department: string
-  period: string
-  tags: string[]
-  points: string[]
+  role: string // 职位名称
+  company: string // 公司名称
+  department: string // 部门名称
+  period: string // 工作期间
+  tags: string[] // 技能标签
+  points: string[] // 工作要点描述
 }
 
+/** 教育背景数据接口 */
 interface Education {
-  school: string
-  period: string
-  degree: string
+  school: string // 学校名称
+  period: string // 在校期间
+  degree: string // 学位/专业
 }
 
+/**
+ * 关于页面主组件
+ *
+ * @returns 渲染关于页面内容，包括个人信息、工作经历、教育背景、技术栈和兴趣爱好
+ */
 export function AboutPage() {
+  // 使用国际化翻译
   const t = useTranslations('AboutPage')
 
   return (

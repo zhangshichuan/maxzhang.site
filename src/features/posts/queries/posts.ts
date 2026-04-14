@@ -8,8 +8,17 @@ import { getViewCounts } from '@/src/features/engagement/queries'
 import type { Post, PostSummary, PostSummaryWithViews } from '@/src/features/posts/model'
 import { routing } from '@/i18n/routing'
 
+/**
+ * 文章查询模块
+ *
+ * 负责从本地 `articles` 目录读取 md/mdx 文章，
+ * 解析 frontmatter，并合并阅读量与评论数等互动指标。
+ */
 const postsDirectory = path.join(process.cwd(), 'articles')
 
+/**
+ * 将文章摘要与互动指标合并，并按发布日期倒序输出。
+ */
 export function composePostsWithMetrics(
   posts: PostSummary[],
   viewCounts: Record<string, number>,
@@ -24,6 +33,10 @@ export function composePostsWithMetrics(
     }))
 }
 
+/**
+ * 获取指定语言下的文章文件名列表。
+ * 如果对应语言目录不存在，则回退到文章根目录，兼容旧的非多语言结构。
+ */
 export function getPostSlugs(locale: string = routing.defaultLocale) {
   const localeDir = path.join(postsDirectory, locale)
 
@@ -37,6 +50,12 @@ export function getPostSlugs(locale: string = routing.defaultLocale) {
 
 export function getPostBySlug(slug: string, locale: string, includeContent: false): PostSummary
 export function getPostBySlug(slug: string, locale?: string, includeContent?: true): Post
+/**
+ * 按 slug 读取单篇文章。
+ *
+ * 读取顺序会优先尝试当前语言目录，再回退到根目录；
+ * 同时兼容 `.mdx` 和 `.md` 两种扩展名。
+ */
 export function getPostBySlug(
   slug: string,
   locale: string = routing.defaultLocale,
@@ -44,11 +63,13 @@ export function getPostBySlug(
 ): Post | PostSummary {
   const realSlug = decodeURIComponent(slug).replace(/\.mdx?$/, '')
 
+  // 先查找当前语言目录中的文章文件。
   let fullPath = path.join(postsDirectory, locale, `${realSlug}.mdx`)
   if (!fs.existsSync(fullPath)) {
     fullPath = path.join(postsDirectory, locale, `${realSlug}.md`)
   }
 
+  // 语言目录下不存在时，回退到根目录，兼容未迁移的旧文章。
   if (!fs.existsSync(fullPath)) {
     fullPath = path.join(postsDirectory, `${realSlug}.mdx`)
     if (!fs.existsSync(fullPath)) {
@@ -64,6 +85,7 @@ export function getPostBySlug(
   const { data, content } = matter(fileContents)
   const stats = readingTime(content)
 
+  // 统一整理 frontmatter，给缺失字段补默认值，方便上层直接消费。
   const postBase = {
     slug: realSlug,
     title: data.title,
@@ -83,6 +105,10 @@ export function getPostBySlug(
   return postBase as PostSummary
 }
 
+/**
+ * 获取文章列表并批量附加阅读量、评论数。
+ * 这里先读取本地文章，再并行查询数据库中的互动数据。
+ */
 export async function getAllPostsWithViews(locale: string = routing.defaultLocale): Promise<PostSummaryWithViews[]> {
   const slugs = getPostSlugs(locale)
 

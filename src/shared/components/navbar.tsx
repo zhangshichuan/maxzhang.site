@@ -1,3 +1,10 @@
+/**
+ * 导航栏组件
+ *
+ * 网站顶部导航栏，包含Logo、导航链接、搜索按钮、语言切换和主题切换功能
+ * 支持响应式设计，在移动端显示汉堡菜单
+ */
+
 'use client'
 
 import { ThemeToggle } from '@/src/shared/components'
@@ -8,7 +15,13 @@ import { Languages, Menu, Search, X } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import * as React from 'react'
 
+/**
+ * 导航栏主组件
+ *
+ * @returns 渲染响应式导航栏，包含桌面和移动端两种布局
+ */
 export function Navbar() {
+  // 国际化翻译
   const t = useTranslations('Common.nav')
   const locale = useLocale()
   const pathname = usePathname()

@@ -1,3 +1,9 @@
+/**
+ * 主题切换组件
+ *
+ * 允许用户在明暗主题之间切换，使用Framer Motion实现平滑动画效果
+ */
+
 'use client'
 
 import { cn } from '@/src/shared/utils'
@@ -6,7 +12,14 @@ import { Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import * as React from 'react'
 
+/**
+ * 主题切换按钮组件
+ *
+ * @param className - 自定义CSS类名
+ * @returns 渲染主题切换按钮，根据当前主题显示太阳或月亮图标
+ */
 export function ThemeToggle({ className }: { className?: string }) {
+  // 使用next-themes获取和设置主题
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
 

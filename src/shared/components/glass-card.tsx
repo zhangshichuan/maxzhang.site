@@ -1,11 +1,19 @@
+/**
+ * 玻璃卡片组件
+ *
+ * 具有毛玻璃效果和动态交互的卡片组件
+ * 使用Framer Motion实现悬停动画效果
+ */
+
 import { cn } from '@/src/shared/utils'
 import { motion } from 'framer-motion'
 import { ReactNode } from 'react'
 
+/** 玻璃卡片组件属性接口 */
 interface GlassCardProps {
-  children: ReactNode
-  className?: string
-  hoverEffect?: boolean
+  children: ReactNode // 卡片内容
+  className?: string // 自定义CSS类名
+  hoverEffect?: boolean // 是否启用悬停效果
 }
 
 /**
