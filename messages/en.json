@@ -55,9 +55,9 @@
   },
   "AboutPage": {
     "title": "About Me - Max Zhang",
-    "role": "AI Full-Stack Engineer",
+    "role": "AI Application Engineer",
     "location": "Chengdu, China",
-    "description": "<primary>AI Full-Stack Engineer</primary>, focused on <accent>the full engineering path from model capability to product delivery</accent>. I care less about buzzwords and more about bringing <secondary>RAG</secondary> and <secondary>Agent</secondary> workflows into real business systems, using <accent>Python</accent> and <accent>TypeScript</accent> to turn backend services, frontend experience, and data flow into products that are usable, maintainable, and ready to evolve.",
+    "description": "<primary>AI Application Engineer</primary>, focused on turning <accent>model capabilities into real product capabilities</accent>. My work centers on <secondary>Agent</secondary>, <secondary>RAG</secondary>, workflow orchestration, and business system integration, using <accent>Python</accent> and <accent>TypeScript</accent> to connect frontend, backend, data, and user experience into AI applications that can ship, iterate, and create lasting value.",
     "workExperience": "Work Experience",
     "education": "Education",
     "techStack": "Tech Stack",
@@ -75,17 +75,6 @@
           "Responsible for the design and development of AI video editing and advertisement batch delivery systems, improving advertisement delivery efficiency and automation level",
           "AI image generation, AI video editing, integration of Meitu AI tools, TTS services, official websites, and mini-programs",
           "Various cross-departmental and cross-company collaborations, from tracking processes to achieving results. Infrastructure construction (monitoring, scaffolding, AI), team building organization, annual meeting programs, lottery programs, etc."
-        ]
-      },
-      {
-        "role": "Frontend Architect",
-        "company": "Chengdu Mofangyuan Technology Co., Ltd.",
-        "department": "Product R&D Department",
-        "period": "Jan 2020 - Jan 2021",
-        "tags": ["TypeScript", "Linux", "Vue", "Node.js", "PHP7", "React"],
-        "points": [
-          "Cross-border communication and collaboration among multiple teams and languages, completing communication from technical requirements to implementation",
-          "Maintenance and iteration of 20+ projects with a cycle of over 10 years, including Frontend (jQuery/Native Hybrid JSBridge/Vue/Chatroom) and Backend (Node.js/PHP)"
         ]
       }
     ],
