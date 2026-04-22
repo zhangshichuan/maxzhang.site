@@ -55,26 +55,63 @@
   },
   "AboutPage": {
     "title": "关于我 - Max Zhang",
-    "role": "AI 应用工程师",
+    "role": "AI 全栈工程师 / AI 应用工程师",
     "location": "中国 成都",
-    "description": "<primary>AI 应用工程师</primary>，专注把 <accent>模型能力转成真实可用的产品能力</accent>。主要围绕 <secondary>Agent</secondary>、<secondary>RAG</secondary>、工作流编排和业务系统集成展开，用 <accent>Python</accent> 与 <accent>TypeScript</accent> 打通前后端、数据层与交互体验，让 AI 应用做到能上线、能迭代、能持续创造价值。",
+    "description": "我是拥有 <primary>10 年前端与全栈研发经验的 AI 全栈工程师</primary>，长期负责复杂业务系统、平台型产品与 AI 应用从 0 到 1 及持续演进。擅长用 <accent>TypeScript</accent>、<accent>Python</accent>、Next.js 和 Node.js，把 <secondary>模型能力落到可交付、可运营的产品链路</secondary> 中，覆盖视频生成、营销自动化、研发协同和平台工程治理。",
     "workExperience": "工作经历",
     "education": "教育经历",
     "techStack": "技术栈",
     "interests": "兴趣点",
     "experience": [
       {
-        "role": "前端主管",
+        "role": "前端负责人 / AI 全栈工程师",
         "company": "成都睿晟天和传媒科技有限公司",
         "department": "产品研发部",
         "period": "2021.02 - 2025.12",
-        "tags": ["React", "Next.js", "Node.js", "Prisma", "PostgreSQL", "Zod"],
+        "tags": ["AI 应用", "Next.js", "Node.js", "Prisma", "PostgreSQL", "BullMQ"],
         "points": [
-          "主导广告业务数字化平台从 0 到 1 的建设与落地，实现（业财法）流程线上化与智能化",
-          "参与跨境电商业务系统搭建与实施，推动业务从无到有的全流程落地",
-          "负责 AI 混剪及广告批量投放系统的设计与开发，提升广告投放效率与自动化水平，打通从 AI 素材制作，素材评级 and 管理，广告搭建，批量投放，数据回溯等全流程循环",
-          "AI 平面素材生成，AI 视频混剪、集成美图 AI 工具，TTS 服务、官网、小程序",
-          "各类跨部门、跨公司协作，从追过程到拿结果。基础设施建设（监控、脚手架、AI），团建组织、年会节目、抽奖程序等"
+          "主导广告业务数字化平台建设，打通素材生产、审批、投放、数据回溯等核心流程，推动业财法流程线上化，跨部门协作效率提升 80% 以上。",
+          "负责 AI 视频混剪与批量投放平台核心架构设计与研发，覆盖素材理解、脚本生成、TTS、海报编辑、任务调度与投放闭环，支撑月均 10 万条视频与 3 万+ 图片生成。",
+          "推动模型路由与生成链路优化，将单条视频生成成本从 2.5-3 元压缩至 0.5-1 元，视频生成成功率提升至 98%。",
+          "探索 AI Native 研发流程，基于 Codex、Claude 与自研 MCP 打通需求文档生成、任务拆解、任务执行、测试验证和 Bug 自动修复闭环。",
+          "主导多个历史中后台系统的工程治理，包括构建体系升级、组件重构、Monorepo 治理与规范沉淀，持续提升交付效率与系统稳定性。"
+        ]
+      },
+      {
+        "role": "全栈工程师",
+        "company": "成都魔方元科技有限公司",
+        "department": "研发团队",
+        "period": "2020.01 - 2021.01",
+        "tags": ["React Native", "Vue", "Nest.js", "MongoDB", "Docker", "gRPC"],
+        "points": [
+          "参与跨国内外团队协作，负责多语言、多业务线前端需求的沟通、拆解与落地，并参与模块化到微服务治理的持续演进。",
+          "维护并迭代 20+ 个历史前后端项目，在高技术债背景下推进渐进式重构，技术栈覆盖 React Native、Vue、React、Nest.js、PHP 与 MongoDB。",
+          "带领 4 人小组重写高频用户端核心业务，并完善 RBAC、JWT、多环境配置、全局异常处理与请求限流等基础能力。",
+          "参与微服务架构与分布式治理实践，建设健康检查、熔断、Consul、Docker、短信、缓存、邮件与定时任务等通用模块。"
+        ]
+      },
+      {
+        "role": "全栈工程师",
+        "company": "成都众人安科技有限责任公司",
+        "department": "产品研发团队",
+        "period": "2018.05 - 2019.12",
+        "tags": ["Python", "Django", "Scrapy", "Redis", "Elasticsearch", "Puppeteer"],
+        "points": [
+          "独立负责 BD 保单管家 PC 端与公众号 H5 从 0 到 1 开发，直接对接客户，将业务需求转化为产品方案与交付结果。",
+          "基于 Python、Scrapy、Redis 与 Django 搭建分布式爬虫体系，完成百万级保险条款抓取与入库，覆盖模拟登录、验证码处理、Cookie 池与增量抓取。",
+          "多次承担产品宣讲与客户演示，累计覆盖约 400 人，并在资源紧张情况下建立新人培养机制，半年内将零经验实习生培养为可独立承担项目的核心开发力量。"
+        ]
+      },
+      {
+        "role": "全栈工程师",
+        "company": "成都数联医信科技有限公司",
+        "department": "医信云服团队",
+        "period": "2016.03 - 2018.02",
+        "tags": ["Vue", "PHP", "C", "AWS", "SaaS", "H5"],
+        "points": [
+          "参与医院设备数据清洗与转发系统建设，负责医信云服资源服务从前端到后端的完整研发链路。",
+          "通过编译 C 模块使 PHP7 支持 SMB 协议，完成医院内网 Windows 日志向 Linux 系统转发的关键能力建设。",
+          "参与 SaaS 平台与公众号 H5 研发，按时交付医信云服 2.0，支撑公司在产品宣讲与融资节点上的关键里程碑。"
         ]
       }
     ],

@@ -55,26 +55,63 @@
   },
   "AboutPage": {
     "title": "About Me - Max Zhang",
-    "role": "AI Application Engineer",
+    "role": "AI Full-Stack Engineer / AI Application Engineer",
     "location": "Chengdu, China",
-    "description": "<primary>AI Application Engineer</primary>, focused on turning <accent>model capabilities into real product capabilities</accent>. My work centers on <secondary>Agent</secondary>, <secondary>RAG</secondary>, workflow orchestration, and business system integration, using <accent>Python</accent> and <accent>TypeScript</accent> to connect frontend, backend, data, and user experience into AI applications that can ship, iterate, and create lasting value.",
+    "description": "I am an <primary>AI full-stack engineer with 10 years of frontend and full-stack experience</primary>, building complex business systems, platform products, and AI applications from 0 to 1 and through continuous evolution. I use <accent>TypeScript</accent>, <accent>Python</accent>, Next.js, and Node.js to turn <secondary>model capability into deliverable, operable product workflows</secondary> across video generation, marketing automation, AI-native engineering, and platform governance.",
     "workExperience": "Work Experience",
     "education": "Education",
     "techStack": "Tech Stack",
     "interests": "Interests",
     "experience": [
       {
-        "role": "Frontend Lead",
+        "role": "Frontend Lead / AI Full-Stack Engineer",
         "company": "Chengdu Ruisheng Tianhe Media Technology Co., Ltd.",
         "department": "Product R&D Department",
         "period": "Feb 2021 - Dec 2025",
-        "tags": ["React", "Next.js", "Node.js", "Prisma", "PostgreSQL", "Zod"],
+        "tags": ["AI Applications", "Next.js", "Node.js", "Prisma", "PostgreSQL", "BullMQ"],
         "points": [
-          "Led the 0-to-1 construction and implementation of a digital platform for advertising business, realizing the online and intelligent process of Business, Finance and Law",
-          "Participated in the construction and implementation of cross-border e-commerce business systems, promoting the full-process implementation of the business from scratch",
-          "Responsible for the design and development of AI video editing and advertisement batch delivery systems, improving advertisement delivery efficiency and automation level",
-          "AI image generation, AI video editing, integration of Meitu AI tools, TTS services, official websites, and mini-programs",
-          "Various cross-departmental and cross-company collaborations, from tracking processes to achieving results. Infrastructure construction (monitoring, scaffolding, AI), team building organization, annual meeting programs, lottery programs, etc."
+          "Led the company's digital advertising platform, connecting asset production, approvals, campaign delivery, and data feedback into an online workflow and improving cross-team collaboration efficiency by more than 80%.",
+          "Designed and built the core architecture for an AI video remixing and batch delivery platform covering asset understanding, script generation, TTS, poster editing, scheduling, and campaign execution, supporting 100,000 videos and 30,000+ images per month.",
+          "Optimized model routing and generation workflows, reducing per-video generation cost from RMB 2.5-3 to RMB 0.5-1 while raising generation success rate to 98%.",
+          "Explored AI-native engineering workflows with Codex, Claude, and in-house MCP integrations to connect requirement drafting, task breakdown, execution, testing, and automated bug fixing.",
+          "Led engineering governance for multiple legacy internal systems, including build upgrades, component refactoring, monorepo restructuring, and team-wide standards."
+        ]
+      },
+      {
+        "role": "Full-Stack Engineer",
+        "company": "Chengdu Mofangyuan Technology Co., Ltd.",
+        "department": "Engineering Team",
+        "period": "Jan 2020 - Jan 2021",
+        "tags": ["React Native", "Vue", "Nest.js", "MongoDB", "Docker", "gRPC"],
+        "points": [
+          "Worked across domestic and international teams on multilingual, multi-line-of-business delivery, spanning requirement analysis, implementation, and gradual evolution toward modular and microservice-based systems.",
+          "Maintained and iterated on more than 20 legacy frontend and backend projects, driving incremental refactors across React Native, Vue, React, Nest.js, PHP, and MongoDB.",
+          "Led a four-person team to rewrite a high-traffic user-facing product area and improved foundational capabilities such as RBAC, JWT auth, environment management, exception handling, and rate limiting.",
+          "Participated in microservice and distributed-systems work covering health checks, circuit breaking, Consul, Docker, SMS, caching, email, and scheduled task modules."
+        ]
+      },
+      {
+        "role": "Full-Stack Engineer",
+        "company": "Chengdu Zhongrenan Technology Co., Ltd.",
+        "department": "Product Engineering",
+        "period": "May 2018 - Dec 2019",
+        "tags": ["Python", "Django", "Scrapy", "Redis", "Elasticsearch", "Puppeteer"],
+        "points": [
+          "Independently delivered the BD Policy Manager web app and WeChat H5 product from 0 to 1, translating client needs into product and engineering solutions.",
+          "Built a distributed crawling system with Python, Scrapy, Redis, and Django to ingest millions of insurance clauses, including login simulation, CAPTCHA handling, cookie pools, and incremental crawling.",
+          "Handled product demos and client presentations for hundreds of participants, and established a training pipeline that turned interns with no experience into independent contributors within six months."
+        ]
+      },
+      {
+        "role": "Full-Stack Engineer",
+        "company": "Chengdu Shulian Yixin Technology Co., Ltd.",
+        "department": "Yixin Cloud Service Team",
+        "period": "Mar 2016 - Feb 2018",
+        "tags": ["Vue", "PHP", "C", "AWS", "SaaS", "H5"],
+        "points": [
+          "Worked on hospital device data cleansing and forwarding systems, owning the end-to-end delivery of Yixin Cloud Service resources from frontend to backend.",
+          "Enabled SMB support in PHP7 by compiling a C module, which made Windows log forwarding from hospital intranets to Linux systems possible.",
+          "Contributed to the SaaS platform and WeChat H5 apps, and helped deliver Yixin Cloud Service 2.0 on schedule for key product and fundraising milestones."
         ]
       }
     ],
