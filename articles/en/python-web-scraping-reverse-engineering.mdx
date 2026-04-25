@@ -1,0 +1,1013 @@
+---
+title: 'Python Web Scraping: Reverse Engineering, Proxy Pools, and Distributed Crawlers'
+summary: 'A practical walkthrough of Python web scraping in the 2018-2019 era — from packet capture and JS decryption to proxy pools, cookie management, browser automation, and distributed architecture. All examples revolve around scraping insurance policy clauses from industry portals.'
+category: 'Backend'
+tags: ['Python', 'Web Scraping', 'Reverse Engineering', 'Proxy', 'Distributed Systems']
+author: 'Max Zhang'
+date: '2026-01-15'
+---
+
+Back in mid-2018, if you wanted to scrape a moderately protected website, you had about three headaches waiting for you:
+
+1. The login form sent encrypted data you couldn't reproduce
+2. The page content was rendered by JavaScript, so `requests.get()` gave you an empty shell
+3. After 20 requests, your IP got blacklisted and you had to go touch grass
+
+This wasn't a theoretical problem. It was the daily reality of scraping insurance policy data — policy clauses, premium tables, coverage details — from insurers' and brokers' online portals. The tools existed — Selenium, Scrapy, Pyppeteer — but the gap between "knowing these tools exist" and "building a crawler that runs for days without getting banned" was enormous.
+
+This article is a write-up of everything I learned from mid-2018 to late 2019 building production-grade insurance policy scrapers. It covers the full pipeline: authentication, decryption, proxy infrastructure, browser automation, cookie management, and distributed task scheduling.
+
+---
+
+## 1. Login Packet Capture and Data Decryption
+
+### 1.1 Common Encryption and Hashing Algorithms
+
+Most login forms in 2018-2019 used one of the following to protect credentials:
+
+| Algorithm              | Typical Use                                                   | Can You Reverse It?                                           |
+| ---------------------- | ------------------------------------------------------------- | ------------------------------------------------------------- |
+| MD5                    | Password hashing (outdated, but everywhere in legacy systems) | Lookup tables / rainbow tables                                |
+| SHA-1 / SHA-256        | Token signing, request signatures                             | No (hash), but you can replay                                 |
+| AES (CBC/ECB/GCM)      | Encrypting form payloads                                      | Yes, if you can extract the key and IV                        |
+| RSA                    | Encrypting password before transmission                       | No (you need the private key), but you can use the public key |
+| Base64                 | Obfuscation, not encryption                                   | Trivially decode                                              |
+| Custom XOR / bit-shift | Homebrew obfuscation                                          | Usually trivial with a few test cases                         |
+
+The pattern was almost always the same: the frontend would take your plaintext password, run it through some combination of the above, and send the result to the server. The server would then decrypt (or compare hashes) before touching a database.
+
+Here's a real example from an insurance policy portal I scraped in late 2018:
+
+```javascript
+// What the frontend actually did:
+const encrypted = CryptoJS.AES.encrypt(
+  JSON.stringify({ username, password }),
+  CryptoJS.enc.Utf8.parse('some-hardcoded-key'),
+  { mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.Pkcs7 },
+).toString()
+```
+
+The key was literally hardcoded in the bundled JavaScript. Once you found it, reproducing the encryption in Python was straightforward:
+
+```python
+from Crypto.Cipher import AES
+import base64, json
+
+key = b'some-hardcoded-key'  # 16 bytes for AES-128
+cipher = AES.new(key, AES.MODE_ECB)
+data = json.dumps({'username': 'user', 'password': 'pass'})
+# Pad to multiple of 16 bytes
+padded = data + chr(16 - len(data) % 16) * (16 - len(data) % 16)
+encrypted = base64.b64encode(cipher.encrypt(padded.encode()))
+```
+
+The hard part wasn't writing the Python. It was finding the key, understanding the encryption mode, and confirming that your reproduction matched byte-for-byte. That required getting comfortable with Chrome DevTools — specifically, the Sources tab and the art of placing breakpoints.
+
+### 1.2 Dealing with Infinite Debugger
+
+Some sites wrapped their code in `debugger` traps. You'd open DevTools, and immediately the browser would pause at a `debugger` statement. Hit continue, and it would hit another one. Endless loop.
+
+The anti-debugging code typically looked like this:
+
+```javascript
+;(function () {
+  setInterval(function () {
+    debugger
+  }, 100)
+})()
+```
+
+Or worse, it was generated dynamically with `Function("debugger")()` to avoid string matching.
+
+**How to break it (2018 techniques):**
+
+1. **Never pause here**: In Chrome DevTools, right-click the line number and select "Never pause here." This works for static `debugger` statements.
+
+2. **Deactivate breakpoints**: Click the deactivate breakpoints button (the pause icon with a slash) in the Sources panel. This silences all breakpoints, including `debugger` statements.
+
+3. **Overriding the function**: If the debugger was called through a function like `setInterval`, you could override it before the page loaded:
+
+```javascript
+// In console, before the anti-debugging code runs:
+var _setInterval = window.setInterval
+window.setInterval = function () {}
+```
+
+4. **Proxy overrides via Chrome extensions**: Tools like ReRes (Requestly) allowed you to intercept and modify JavaScript responses before they executed. You could inject a script that neutralized `debugger` calls at the very top of the page.
+
+5. **Fiddler / mitmproxy with auto-responder**: Intercept the JavaScript file containing the anti-debugging code and serve a modified version that removes `debugger` statements. This was more reliable than browser-level hacks because it modified the code before the browser ever saw it.
+
+The real trick was combining these. A single site might use `debugger` in a setInterval, plus `Function("debugger")()` scattered through the code, plus a timing check that detected DevTools being open. You had to disable each layer.
+
+### 1.3 Breakpoint Debugging
+
+Once you got past the debugger traps, the real work began. Finding the encryption code in a minified JavaScript bundle with 50,000+ lines.
+
+**My workflow in 2018:**
+
+1. **XHR/Fetch Breakpoints**: The fastest way to find encryption logic. In Chrome DevTools → Sources → XHR/fetch breakpoints, add a breakpoint on the URL that contains the login request. When the request fires, the call stack tells you exactly which functions were called before the request was sent.
+
+2. **Event Listener Breakpoints**: Add breakpoints on `click` events on the submit button. The call stack will show you the click handler → form validation → encryption → request chain.
+
+3. **Search all files for keywords**: `Cmd+Shift+F`, search for `encrypt`, `AES`, `CryptoJS`, `encrypt.enc`, `publicKey`, `sign`, or `token`. Even in minified code, these strings usually survived.
+
+4. **Stack trace analysis**: Once you hit a breakpoint, don't just look at the current function. Look at the entire call stack. The function that called the encryption function is often the one that builds the payload — and understanding the payload structure is half the battle.
+
+5. **Console experimentation**: Set a breakpoint right before the encryption call. In the console, you can inspect variables, call the function with test inputs, and see the output. This was invaluable for confirming your understanding before writing any Python.
+
+A concrete example. I was scraping an insurance policy search platform in early 2019. Their login page sent this:
+
+```json
+{
+  "data": "U2FsdGVkX1+...long base64 string...",
+  "timestamp": 1559347200,
+  "sign": "a1b2c3d4e5f6..."
+}
+```
+
+The `sign` field was `md5(timestamp + fixed_secret + encrypted_data)`. If I sent a request without the sign, the server returned 403. If the sign was wrong, same thing. The only way to get through was to:
+
+1. Find where `sign` was computed (search for `md5` in Sources)
+2. Find the fixed secret (it was `btoa` of some string, so I decoded it in the console)
+3. Reproduce the exact string concatenation order in Python
+
+This kind of work was tedious, but it was systematic. Once you'd done it ten times, you started recognizing patterns. Most sites used the same handful of libraries — CryptoJS, JSEncrypt, jsrsasign — and the same handful of tricks.
+
+---
+
+## 2. Setting Up Proxy Services
+
+### 2.1 The Proxy IP Landscape in 2018-2019
+
+Scraping without proxies was scraping on borrowed time. Your datacenter IP would get rate-limited within minutes. Your residential IP would last longer, but you only had one. The solution was a pool of proxy IPs that you could rotate.
+
+The Chinese proxy market in 2018-2019 was fragmented and uneven. Here's what was available:
+
+#### Static IP Providers
+
+These sold individual IPs (or small pools) that were yours for a fixed period:
+
+| Provider           | Type               | Duration        | Quality                      |
+| ------------------ | ------------------ | --------------- | ---------------------------- |
+| 芝麻代理 (Zhima)   | Shared HTTP        | Minutes to days | Decent, but crowded          |
+| 站大爷 (Zhandaye)  | Mixed              | Short-term      | Inconsistent reliability     |
+| 蘑菇代理 (Mogu)    | Shared HTTP        | Pay-per-IP      | Budget option                |
+| 激光代理 (Jiguang) | Dedicated          | Longer          | Better speed, higher cost    |
+| IPIDEA             | Global residential | Flexible        | Higher quality, higher price |
+
+The pricing model was simple: you paid for a set of IPs, and those IPs were yours until they expired (or until the provider recycled them). The typical lifespan of a short-term static IP was 3-5 minutes — just enough to make a burst of requests and move on.
+
+For most scraping projects, **short-term static IPs at 3-5 minute intervals were the sweet spot**. They cost less than residential proxies, rotated fast enough to distribute requests, and usually had decent throughput. The tradeoff was that they were datacenter IPs, which some sites blacklisted aggressively.
+
+#### Dynamic Forwarding Providers
+
+| Provider     | Model                      | Cost      |
+| ------------ | -------------------------- | --------- |
+| 讯代理 (Xun) | Pay-per-request forwarding | Expensive |
+
+These worked differently. Instead of giving you an IP list, they gave you a forwarding endpoint. You sent your request to their server, and they forwarded it through a rotating IP pool. Pricing was per-request. In practice, this was too expensive for high-volume scraping — each page load could cost ¥0.30-0.50, and at thousands of pages per day, the math didn't work.
+
+#### Traffic-Based Providers
+
+流量 (traffic-based) providers like Liuguan charged by data volume rather than by IP or request count. You'd pay for, say, 10GB of traffic, and you could use any number of IPs within that quota. This was more cost-effective for scraping that needed both high concurrency and large payloads.
+
+#### Tunnel Proxies
+
+Tunnel proxy providers (like 阿布云/Abuyun) worked on a subscription model. You'd pay a monthly fee and get access to an API that returned fresh IPs on demand. You could extract IPs whenever you needed them, and the quality was generally higher because the provider maintained the pool infrastructure.
+
+**What mattered when choosing a provider:**
+
+- **Geographic coverage**: Could you pick specific cities or provinces? For insurance policy scraping, regional coverage mattered — different provinces had different policy requirements and offerings from local insurers.
+- **Authentication**: Most providers supported two methods — IP whitelisting (you registered your server's IP) or username/password auth. Whitelisting was simpler; credential auth was more flexible when you had multiple servers.
+- **Extraction method**: Some providers gave you a fixed URL to call that returned a list of IPs. Others had SDKs. The URL-based approach was the most portable.
+- **IP quality**: Shared IPs meant you and other customers used the same IPs. Dedicated IPs were yours alone. Dedicated always performed better but cost 2-3x more.
+- **Discounts**: Bulk purchases and long-term contracts usually came with discounts. Most providers had seasonal promotions.
+
+#### The VPS Trick
+
+If you were scraping on a tight budget, here was a hack that worked in 2018-2019: use a VPS provider (like DigitalOcean, Vultr, or Alibaba Cloud ECS), and programmatically reboot the network interface to get a new IP. Some providers assigned a new IP on reboot; others assigned one when you released and re-attached an elastic IP. It wasn't fast (each IP change took 30-90 seconds), but it was essentially free beyond the VPS cost. For low-frequency scraping, this was a viable backup plan.
+
+### 2.2 Building Your Own Proxy Service with Squid
+
+If you had a pool of IPs (from any provider) and wanted to manage them yourself, the cleanest approach in 2018 was Squid — specifically, the `sameersbn/squid` Docker image.
+
+**Why Squid instead of handling proxying in Python code?**
+
+Because you want the proxy layer to be independent. Your Python scraper shouldn't know or care about IP rotation. It should just make requests through a local proxy, and the proxy layer handles IP assignment and rotation.
+
+**Setup (on a cloud server):**
+
+```bash
+docker run -d --name squid \
+  --restart=always \
+  -p 3128:3128 \
+  -v /data/squid/cache:/var/spool/squid \
+  sameersbn/squid:latest
+```
+
+**Configuration (`/etc/squid/squid.conf`):**
+
+```
+# Don't use port 3128 — it's the default and gets scanned constantly
+http_port 0.0.0.0:9128
+
+# Basic auth
+auth_param basic program /usr/lib/squid/basic_ncsa_auth /etc/squid/passwords
+auth_param basic realm proxy
+acl authenticated proxy_auth REQUIRED
+http_access allow authenticated
+
+# Deny everything else
+http_access deny all
+
+# Cache settings — don't cache for scraping
+cache deny all
+```
+
+**Why these choices:**
+
+- **Non-standard port (9128 instead of 3128)**: Default ports get scanned. Bots look for open 3128, 8080, 1080. If you run on a non-obvious port, you reduce the noise significantly.
+- **Authentication is mandatory**: An open proxy on the internet will be found and abused within hours. Basic auth with a strong random password stops that.
+- **Cloud security groups**: Configure your cloud firewall to only allow inbound connections on the proxy port from your scraper's IP. This creates defense in depth — even if someone cracks the password, they can't connect.
+
+**Rotating upstream IPs:**
+
+Squid itself doesn't rotate upstream IPs natively. You needed a rotation layer. The common approach was:
+
+```python
+import requests
+import random
+
+class ProxyPool:
+    def __init__(self):
+        self.proxies = []
+        self.refresh_proxies()
+
+    def refresh_proxies(self):
+        # Fetch fresh IPs from your provider's API
+        resp = requests.get('https://provider-api.com/get-ips?num=50')
+        self.proxies = resp.json()['data']
+
+    def get_proxy(self):
+        if not self.proxies:
+            self.refresh_proxies()
+        return random.choice(self.proxies)
+
+    def request(self, url, **kwargs):
+        proxy = self.get_proxy()
+        return requests.get(
+            url,
+            proxies={'http': proxy['http'], 'https': proxy['https']},
+            **kwargs
+        )
+```
+
+For higher throughput, you'd run multiple Squid instances, each with a different upstream IP, and your scraper would round-robin across them. A lightweight nginx TCP load balancer in front of the Squid instances made this transparent to the scraper.
+
+---
+
+## 3. JavaScript Reverse Engineering
+
+### 3.1 JS Debugging for Reverse Engineering
+
+The distinction between "debugging my own code" and "debugging a website's compressed JavaScript to steal their encryption logic" was mostly psychological. The tools were the same; the intent was different.
+
+Your goal in JS reverse engineering is to:
+
+1. Find the encryption function
+2. Understand its inputs and outputs
+3. Reproduce the logic in Python (or call it via a subprocess)
+
+**The debugging workflow:**
+
+1. **Open Sources tab, find the relevant bundle**: Most sites in 2018-2019 used webpack or similar bundlers. The main bundle would be something like `app.3f8a2d.js` or `chunk-vendors.js`. Finding the right file was half the work.
+
+2. **Pretty-print**: The `{}` button at the bottom of the Sources panel. Always pretty-print first. Yes, it changes line numbers, but the readability improvement is worth it.
+
+3. **Place a breakpoint in suspicious code**: Look for function calls like `this.encrypt(`, `e.encrypt(`, `n.a.encrypt(`, etc. These are common webpack patterns where `encrypt` is a method on a module object.
+
+4. **Reproduce in console**: Once you find the encrypt function, copy the relevant code into the console and call it with test data. Compare the output with what the page actually sends.
+
+5. **Extract the function**: Sometimes the encryption function is self-contained and easy to copy. More often, it depends on other functions and variables in the closure. You need to extract the entire dependency chain.
+
+### 3.2 Dynamically Modifying JavaScript at Runtime
+
+Sometimes you don't need to fully understand the encryption function. You just need to hook into it and capture its inputs and outputs. This was a common tactic when the encryption logic was too complex to reproduce quickly.
+
+**Method 1: Override via Chrome DevTools overrides**
+
+Chrome DevTools → Sources → Overrides. You can override individual JavaScript files with local versions. Find the function you want to modify, add a `console.log` (or post the data to your own server), and refresh the page.
+
+**Method 2: Inject a script before page load**
+
+Using a tool like mitmproxy, you could inject a `<script>` tag at the top of the HTML:
+
+```python
+# mitmproxy addon
+def response(flow):
+    if flow.request.pretty_url.endswith('.html'):
+        flow.response.text = flow.response.text.replace(
+            '</head>',
+            '<script>/* your hook code */</script></head>'
+        )
+```
+
+**Method 3: Proxy-based modification (recommended)**
+
+The most robust approach: intercept the JavaScript file containing the encryption logic via mitmproxy or Fiddler, modify it, and serve the modified version. This was the only reliable method for sites that used integrity checks on their JavaScript.
+
+```python
+def response(flow):
+    if 'encrypt-module' in flow.request.pretty_url:
+        code = flow.response.text
+        # Hook into the encrypt function
+        code = code.replace(
+            'function encrypt(',
+            'function encrypt(a){console.log("INPUT:",a);var r=originalEncrypt(a);console.log("OUTPUT:",r);return r;}function originalEncrypt('
+        )
+        flow.response.text = code
+```
+
+### 3.3 Reconstructing JS Encryption Functions in Python
+
+The endgame. Once you understood the encryption logic, you'd rewrite it in Python so your scraper was self-contained, with no dependency on a headless browser or Node.js subprocess.
+
+**The process:**
+
+1. **Identify the library**: If the JS uses CryptoJS, find the corresponding Python library (`pycryptodome`). If it uses JSEncrypt (RSA), use `rsa` or `cryptography` in Python.
+
+2. **Extract constants**: Keys, IVs, salts, and magic numbers. These are often hardcoded or derived from simple transformations (like reversing a string or XORing with a constant).
+
+3. **Match the padding and mode**: AES-CBC with PKCS7 padding is the most common. AES-ECB is less secure but still widely used. Make sure your Python library uses the exact same mode and padding scheme.
+
+4. **Verify byte-for-byte**: Write a test that encrypts a known plaintext with both the JS and Python implementations. The outputs must be identical. If they're not, check padding, encoding (UTF-8 vs Latin-1), and key derivation.
+
+5. **Handle the edge cases**: Some JS implementations used non-standard key derivation. For example, some sites derived the key like this: `CryptoJS.MD5(password).toString()` — which gave you a 32-character hex string, not 16 raw bytes. You had to match that exactly.
+
+Here's a real example from a 2019 insurance policy scraper project:
+
+```python
+# JS source (reverse engineered):
+# var encrypted = CryptoJS.AES.encrypt(text, CryptoJS.enc.Utf8.parse(key), {
+#     iv: CryptoJS.enc.Utf8.parse(iv),
+#     mode: CryptoJS.mode.CBC,
+#     padding: CryptoJS.pad.Pkcs7
+# }).toString();
+
+# Python equivalent:
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
+import base64
+
+def encrypt_aes_cbc(text: str, key: str, iv: str) -> str:
+    cipher = AES.new(key.encode('utf-8'), AES.MODE_CBC, iv.encode('utf-8'))
+    padded = pad(text.encode('utf-8'), AES.block_size)
+    encrypted = cipher.encrypt(padded)
+    return base64.b64encode(encrypted).decode('utf-8')
+```
+
+The JS function was 3 lines. The Python version was 6. The real work was the 2-3 hours of debugging to find the key and IV in an 18,000-line webpack bundle.
+
+---
+
+## 4. Browser Automation for Crawling
+
+### 4.1 Scapy (or Scrapy)
+
+Wait — I should clarify. When I say "Python scapy," I'm referring to two things people sometimes confuse:
+
+- **Scapy**: A packet manipulation library. Useful for network-level analysis, but not a web scraper.
+- **Scrapy**: A web scraping framework. This is what you'd actually use for production-grade scraping.
+
+For 99% of projects, Scrapy was the right choice. It handled concurrency, request scheduling, middleware, and data pipelines out of the box. Your job was to write spiders and deal with the anti-crawling measures — which were the actual hard part.
+
+**A minimal Scrapy spider for insurance policy scraping with proxy support:**
+
+```python
+import scrapy
+from scrapy.crawler import CrawlerProcess
+
+class PolicySpider(scrapy.Spider):
+    name = 'policy_spider'
+    start_urls = ['https://www.example-insurance.com/policies']
+
+    def parse(self, response):
+        for policy in response.css('.policy-card'):
+            yield {
+                'product_name': policy.css('.product-name::text').get(),
+                'insurer': policy.css('.insurer::text').get(),
+                'premium': policy.css('.premium::text').get(),
+                'coverage_details': policy.css('.coverage::text').get(),
+                'clause_url': policy.css('a.clause-link::attr(href)').get(),
+            }
+
+        # Follow pagination
+        next_page = response.css('.next::attr(href)').get()
+        if next_page:
+            yield response.follow(next_page, self.parse)
+
+if __name__ == '__main__':
+    process = CrawlerProcess({
+        'USER_AGENT': 'Mozilla/5.0 ...',
+        'DOWNLOADER_MIDDLEWARES': {
+            'rotating_proxies.middlewares.RotatingProxyMiddleware': 543,
+        }
+    })
+    process.crawl(PolicySpider)
+    process.start()
+```
+
+Scrapy's architecture made it easy to plug in custom middleware. You'd write a middleware that picked a random proxy from your pool, attached cookies, and handled retries. The spider code stayed clean.
+
+### 4.2 Chrome Remote Debugging
+
+In 2018, one of the most powerful (and underappreciated) tricks was Chrome remote debugging. You could launch Chrome in debug mode on a remote server, connect to it from your local DevTools, and interact with the page as if it were running on your laptop.
+
+**Launch Chrome on the server:**
+
+```bash
+google-chrome \
+  --headless \
+  --remote-debugging-port=9222 \
+  --no-sandbox \
+  --user-data-dir=/tmp/chrome-profile
+```
+
+**Connect from your local machine:**
+
+1. Set up an SSH tunnel: `ssh -L 9222:localhost:9222 user@server`
+2. Open Chrome on your local machine
+3. Go to `chrome://inspect`
+4. Click "Configure" and add `localhost:9222`
+
+This gave you full DevTools access to a page running on a remote server. You could inspect elements, set breakpoints, and watch network requests — all remotely. For debugging geo-restricted insurance policy portals that returned different offerings depending on the request's origin region, this was a lifesaver.
+
+### 4.3 Puppeteer for Login Flows on Insurance Portals
+
+Some insurance broker platforms had authentication flows that were borderline impossible to reproduce programmatically:
+
+- Multi-step login wizards with CSRF tokens embedded in `<script>` tags
+- CAPTCHA challenges that appeared after the first login attempt
+- SMS/email verification codes for broker accounts
+- Single Sign-On flows that redirected through corporate identity providers
+
+For these, the pragmatic solution was to use Puppeteer (via `pyppeteer` in Python):
+
+```python
+import asyncio
+from pyppeteer import launch
+
+async def login_and_get_cookies():
+    browser = await launch(headless=True, args=['--no-sandbox'])
+    page = await browser.newPage()
+
+    await page.goto('https://broker.example-insurance.com/login')
+
+    # Fill in credentials
+    await page.type('#username', 'broker_account')
+    await page.type('#password', 'broker_pass')
+
+    # Click the login button
+    await page.click('#login-btn')
+
+    # Wait for redirect after login
+    await page.waitForNavigation()
+
+    # Extract cookies
+    cookies = await page.cookies()
+
+    await browser.close()
+    return cookies
+```
+
+The trick was to use Puppeteer only for the login step. Once you had the cookies, you'd pass them to your Scrapy spider or requests session. You weren't running a full browser for every policy page — just for the 30 seconds of authentication.
+
+### 4.4 Bezier Curve Mouse Simulation
+
+In 2018, some insurance portals started using mouse trajectory analysis to detect bots. If your mouse jumped from (0,0) to (500,300) in a straight line, it was clearly not human. The solution was to simulate human-like mouse movement using Bezier curves.
+
+```python
+import random
+import math
+from typing import List, Tuple
+
+def bezier_curve(p0, p1, p2, p3, steps=50):
+    """Generate points along a cubic bezier curve."""
+    points = []
+    for t in [i / steps for i in range(steps + 1)]:
+        x = ((1 - t) ** 3) * p0[0] + 3 * ((1 - t) ** 2) * t * p1[0] + \
+            3 * (1 - t) * (t ** 2) * p2[0] + (t ** 3) * p3[0]
+        y = ((1 - t) ** 3) * p0[1] + 3 * ((1 - t) ** 2) * t * p1[1] + \
+            3 * (1 - t) * (t ** 2) * p2[1] + (t ** 3) * p3[1]
+        points.append((x, y))
+    return points
+
+def generate_mouse_path(start: Tuple[int, int], end: Tuple[int, int],
+                        steps: int = 60) -> List[Tuple[int, int]]:
+    """Generate a human-like mouse movement path."""
+    # Control points with some randomness
+    cp1 = (
+        start[0] + (end[0] - start[0]) * random.uniform(0.2, 0.4),
+        start[1] + random.uniform(-50, 50)
+    )
+    cp2 = (
+        start[0] + (end[0] - start[0]) * random.uniform(0.6, 0.8),
+        end[1] + random.uniform(-50, 50)
+    )
+
+    path = bezier_curve(start, cp1, cp2, end, steps)
+
+    # Add overshoot and correction (common human behavior)
+    overshoot = (
+        end[0] + random.uniform(-5, 10),
+        end[1] + random.uniform(-5, 10)
+    )
+    path.append(overshoot)
+    path.append(end)  # Correct back to target
+
+    return path
+
+async def human_like_move(page, x, y):
+    """Move mouse to target using human-like path."""
+    # Get current position (or assume last known position)
+    start = (random.randint(0, 200), random.randint(0, 200))
+    path = generate_mouse_path(start, (x, y))
+
+    for px, py in path:
+        # Add micro-jitter
+        jx = px + random.gauss(0, 0.5)
+        jy = py + random.gauss(0, 0.5)
+        await page.mouse.move(jx, jy)
+        # Human reaction delay: 5-15ms between micro-movements
+        await asyncio.sleep(random.uniform(0.005, 0.015))
+```
+
+This wasn't perfect — sophisticated anti-bot systems would also check timing patterns, scroll behavior, and UI interaction sequences. But it beat the naive straight-line approach that most scrapers were using.
+
+---
+
+## 5. Reverse Engineering Encrypted Response Data
+
+Some sites didn't just encrypt their requests. They encrypted their responses too. You'd make a request, get back a blob of encrypted data, and need to decrypt it to extract the actual policy content.
+
+This was common on:
+
+- Insurance underwriting and quotation portals
+- Policy comparison and aggregator platforms
+- Claims management systems with internal APIs
+- Any insurance site that exposed structured policy data via internal APIs
+
+**The reverse engineering process:**
+
+### 5.1 Finding the Decryption Function in JS
+
+The approach was similar to finding the encryption function, but in reverse:
+
+1. Set an XHR breakpoint on the API endpoint
+2. Trigger a request
+3. Follow the call stack from the response handler backward
+4. Look for calls to `CryptoJS.AES.decrypt()`, `JSON.parse()`, or any function that took the raw response and returned structured data
+
+Typically you'd find something like:
+
+```javascript
+// In the response interceptor
+axios.interceptors.response.use(function (response) {
+  if (response.data && response.data.encrypted) {
+    var decrypted = CryptoJS.AES.decrypt(response.data.encrypted, CryptoJS.enc.Utf8.parse(KEY), {
+      mode: CryptoJS.mode.CBC,
+      iv: CryptoJS.enc.Utf8.parse(IV),
+    })
+    response.data = JSON.parse(decrypted.toString(CryptoJS.enc.Utf8))
+  }
+  return response
+})
+```
+
+### 5.2 Reconstructing the Decryption in Python
+
+Once you had the algorithm, key, and IV:
+
+```python
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import unpad
+import base64, json
+
+def decrypt_response(encrypted_b64: str, key: str, iv: str) -> dict:
+    cipher = AES.new(key.encode('utf-8'), AES.MODE_CBC, iv.encode('utf-8'))
+    encrypted = base64.b64decode(encrypted_b64)
+    decrypted = cipher.decrypt(encrypted)
+    unpadded = unpad(decrypted, AES.block_size)
+    return json.loads(unpadded.decode('utf-8'))
+```
+
+### 5.3 Restoring Insurance Policy Data
+
+With the decryption function in hand, your scraper pipeline became:
+
+1. Make request → get encrypted response
+2. Decrypt response → get structured JSON
+3. Parse JSON → extract policy clauses, premium tables, and coverage terms
+
+The decrypted data was often richer than what was rendered on the page. The rendered HTML might show 20 policies per page with basic summaries; the decrypted API response might contain the full policy document with all clauses, riders, exclusion lists, and premium breakdowns.
+
+---
+
+## 6. Cookie Pools
+
+### 6.1 Batch Cookie Extraction
+
+Creating broker accounts programmatically was step one. Extracting cookies from those accounts was step two. In 2018, the typical approach was:
+
+1. **Automated registration**: Puppeteer or Selenium scripts that filled registration forms on insurance broker platforms. Email verification was handled through temporary email services like Guerrilla Mail or 10 Minute Mail. Phone verification was the hard one — you needed access to SMS receiving services, which were getting expensive.
+
+2. **Login and cookie export**: After registration, log in through Puppeteer, extract cookies, and save them to a database.
+
+3. **Cookie in JSON format**:
+
+```json
+{
+  "account_id": "broker_1234",
+  "cookies": [
+    { "name": "sessionid", "value": "abc123...", "domain": ".example-insurance.com" },
+    { "name": "csrftoken", "value": "xyz789...", "domain": ".example-insurance.com" }
+  ],
+  "created_at": "2019-06-15T10:30:00Z",
+  "last_used": "2019-06-15T10:30:00Z",
+  "status": "active"
+}
+```
+
+### 6.2 Maintaining Login State
+
+Cookies expire. Sessions time out. The server might invalidate a session after 30 minutes of inactivity, or after a fixed lifetime (e.g., 24 hours). Maintaining a pool of valid cookies required constant monitoring.
+
+**The maintenance loop:**
+
+```python
+import time
+import redis
+import json
+
+class CookiePool:
+    def __init__(self, redis_client, min_pool_size=20):
+        self.redis = redis_client
+        self.min_pool_size = min_pool_size
+
+    def get_cookie(self) -> dict:
+        """Get a random active cookie from the pool."""
+        cookie_ids = self.redis.smembers('cookie_pool:active')
+        if len(cookie_ids) < self.min_pool_size:
+            self.trigger_refill()
+
+        cookie_id = random.choice(list(cookie_ids))
+        cookie_data = json.loads(self.redis.get(f'cookie:{cookie_id}'))
+
+        # Update last_used
+        cookie_data['last_used'] = time.time()
+        self.redis.set(f'cookie:{cookie_data["account_id"]}',
+                        json.dumps(cookie_data))
+        return cookie_data
+
+    def validate_cookie(self, account_id: str) -> bool:
+        """Check if a cookie is still valid by making a test request."""
+        cookie_data = json.loads(
+            self.redis.get(f'cookie:{account_id}')
+        )
+        try:
+            resp = requests.get(
+                'https://www.example-insurance.com/api/account',
+                cookies={c['name']: c['value'] for c in cookie_data['cookies']},
+                timeout=5
+            )
+            return resp.status_code == 200
+        except Exception:
+            return False
+
+    def trigger_refill(self):
+        """Trigger account creation/login to refill the pool."""
+        # This would call your Puppeteer-based login script
+        pass
+```
+
+### 6.3 Cookie Attributes and Expiration
+
+Each cookie had attributes that mattered:
+
+- **domain**: Which domains the cookie would be sent to. `.example-insurance.com` meant subdomains too; `example-insurance.com` meant only the exact domain.
+- **path**: Which URL paths the cookie applied to.
+- **httpOnly**: If `True`, the cookie couldn't be accessed by JavaScript — but Python's `requests` library could still send it.
+- **secure**: If `True`, the cookie would only be sent over HTTPS.
+- **expires**: Absolute expiration date. Most servers also set shorter session timeouts at the application level, so this wasn't always reliable.
+
+The practical rule: treat every cookie as potentially expired after 15 minutes of inactivity. Set up a health check that tested cookies regularly and removed dead ones.
+
+### 6.4 Batch Cookie Maintenance
+
+For a pool of 50-100 broker accounts, the maintenance workflow was:
+
+1. **Health check every 5 minutes**: Pick 5 random cookies and test them. If the failure rate exceeds 20%, run a full check.
+2. **Full check every 30 minutes**: Test all cookies. Remove invalid ones.
+3. **Refill**: If the pool drops below `min_pool_size`, trigger the account creation and login pipeline.
+4. **Rotation**: Each request should use a different cookie. A simple round-robin or random selection prevented any single session from looking suspiciously active.
+
+Storing cookies in Redis made this fast and atomic. The Redis `SPOP` and `SADD` commands were perfect for cookie rotation.
+
+---
+
+## 7. Distributed Crawler Architecture
+
+### 7.1 System Overview
+
+By late 2019, I had settled on a layered architecture for production insurance policy scraping:
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    Scheduler                        │
+│  (Cron jobs, manual triggers, event-driven)         │
+└─────────────────┬───────────────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────────────────┐
+│               Redis Task Queue                      │
+│  (URL lists, with priority and retry counts)        │
+└──────┬─────────────┬─────────────┬──────────────────┘
+       │             │             │
+┌──────▼──────┐ ┌────▼──────┐ ┌───▼─────────┐
+│  Worker 1   │ │ Worker 2  │ │  Worker N   │
+│  (Scrapy)   │ │ (Scrapy)  │ │  (Scrapy)   │
+└──────┬──────┘ └────┬──────┘ └───┬─────────┘
+       │             │             │
+┌──────▼─────────────▼─────────────▼──────────────────┐
+│              Proxy Pool Manager                      │
+│  (Squid instances with rotating upstream IPs)       │
+└─────────────────────┬────────────────────────────────┘
+                      │
+┌─────────────────────▼────────────────────────────────┐
+│              Cookie Pool Manager                      │
+│  (Redis-based, with health checks and auto-refill)   │
+└─────────────────────┬────────────────────────────────┘
+                      │
+┌─────────────────────▼────────────────────────────────┐
+│              Target Insurance Portals                 │
+└─────────────────────────────────────────────────────┘
+                      │
+┌─────────────────────▼────────────────────────────────┐
+│              Data Pipeline                            │
+│  (Deduplication → Validation → Storage → Index)      │
+└─────────────────────────────────────────────────────┘
+```
+
+### 7.2 IP Proxy Pool Management
+
+The proxy pool was a standalone service:
+
+```python
+# proxy_pool.py
+import redis
+import requests
+import time
+import threading
+
+class ProxyPoolManager:
+    def __init__(self, redis_client):
+        self.redis = redis_client
+        self.refresh_interval = 180  # 3 minutes
+
+    def refresh_proxies(self):
+        """Fetch new IPs from provider and store in Redis."""
+        resp = requests.get('https://proxy-api.com/get?num=50&format=json')
+        proxies = resp.json()['proxies']
+
+        pipe = self.redis.pipeline()
+        for proxy in proxies:
+            key = f"proxy:{proxy['ip']}:{proxy['port']}"
+            pipe.setex(key, self.refresh_interval * 2,
+                        json.dumps(proxy))
+        pipe.execute()
+
+    def run(self):
+        while True:
+            try:
+                self.refresh_proxies()
+            except Exception as e:
+                print(f"Proxy refresh failed: {e}")
+            time.sleep(self.refresh_interval)
+```
+
+Workers would pull proxies from Redis:
+
+```python
+def get_random_proxy(redis_client) -> dict:
+    keys = redis_client.keys('proxy:*')
+    if not keys:
+        return None
+    key = random.choice(keys)
+    return json.loads(redis_client.get(key))
+```
+
+### 7.3 Cookie Pool Management
+
+Same pattern. A separate process maintained the cookie pool, and workers pulled cookies on demand. The key insight was that proxies and cookies should be managed independently. A worker shouldn't need to know where proxies or cookies came from — it should just ask the pool for each.
+
+### 7.4 Distributed Crawling with Scrapy and Redis
+
+Scrapy didn't have native distributed support, but `scrapy-redis` filled the gap:
+
+```python
+# settings.py
+SCHEDULER = "scrapy_redis.scheduler.Scheduler"
+DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
+
+REDIS_URL = 'redis://localhost:6379/0'
+
+# The spider reads start URLs from Redis
+REDIS_START_URLS_KEY = 'spider:start_urls'
+```
+
+With this config, multiple Scrapy instances could share the same request queue. You'd push URLs into Redis:
+
+```bash
+redis-cli lpush spider:start_urls "https://www.example-insurance.com/policies/page/1"
+```
+
+And any available worker would pick it up. This was simple, robust, and scaled horizontally. Each worker ran on a separate server or container, pulling tasks from the same Redis instance.
+
+### 7.5 Data Storage and Filtering
+
+The data pipeline had two concerns: deduplication and storage.
+
+**Deduplication:**
+
+At the Redis level, `scrapy-redis` handled URL deduplication via a Redis set. At the item level, you needed your own dedup logic:
+
+```python
+# pipeline.py
+class DedupPipeline:
+    def __init__(self, redis_client):
+        self.redis = redis_client
+
+    def process_item(self, item, spider):
+        # Create a unique key from the item's natural key
+        key = f"seen:{item['insurer']}:{item['policy_id']}"
+        if self.redis.exists(key):
+            raise DropItem(f"Duplicate: {item['policy_id']}")
+        self.redis.setex(key, 86400 * 7, '1')  # 7-day TTL
+        return item
+```
+
+**Storage:**
+
+In 2018-2019, MongoDB was the default choice for scraped data. It handled unstructured data well, had good write throughput, and the document model matched the nested structure of insurance policy documents with their multi-layered clauses and riders.
+
+```python
+# pipeline.py
+from pymongo import MongoClient
+
+class MongoPipeline:
+    def __init__(self):
+        self.client = MongoClient('mongodb://localhost:27017/')
+        self.db = self.client['insurance_data']
+
+    def process_item(self, item, spider):
+        collection = self.db[spider.name]
+        collection.update_one(
+            {'_id': item['policy_id']},
+            {'$set': dict(item)},
+            upsert=True
+        )
+        return item
+```
+
+For larger datasets (millions of policy records), the pipeline would batch inserts:
+
+```python
+class BatchMongoPipeline:
+    def __init__(self):
+        self.buffer = []
+        self.batch_size = 100
+
+    def process_item(self, item, spider):
+        self.buffer.append(dict(item))
+        if len(self.buffer) >= self.batch_size:
+            self.flush(spider)
+        return item
+
+    def flush(self, spider):
+        self.db[spider.name].insert_many(self.buffer)
+        self.buffer.clear()
+
+    def close_spider(self, spider):
+        if self.buffer:
+            self.flush(spider)
+```
+
+### 7.6 Reading and Querying Massive Data
+
+Once you had 10 million policy records in MongoDB, querying them was a different problem. The naive approach — `db.policies.find({'premium': {'$gt': 1000}})` — would scan the entire collection without an index.
+
+**Indexing strategy:**
+
+```javascript
+// Create indexes on commonly queried fields
+db.policies.createIndex({ insurance_type: 1, premium: -1 })
+db.policies.createIndex({ effective_date: -1 })
+db.policies.createIndex({ insurer: 1, policy_id: 1 }, { unique: true })
+```
+
+**Time-range partitioning:**
+
+For time-series data (premium changes over time, coverage updates, new policy launches), I'd use collection-per-day partitioning:
+
+```
+policies_2019_08_01
+policies_2019_08_02
+policies_2019_08_03
+```
+
+This made it easy to drop old data and kept individual collections at a manageable size.
+
+For ad-hoc analysis, I'd export data from MongoDB to CSV and load it into pandas:
+
+```python
+import pandas as pd
+from pymongo import MongoClient
+
+client = MongoClient()
+cursor = client.insurance_data.policies.find(
+    {'insurance_type': 'medical'},
+    {'_id': 0, 'product_name': 1, 'premium': 1, 'coverage_amount': 1, 'effective_date': 1}
+)
+df = pd.DataFrame(list(cursor))
+df['premium'] = pd.to_numeric(df['premium'])
+print(df.describe())
+```
+
+For real-time dashboards, Elasticsearch was the go-to choice. You'd pipe scraped policy data into Elasticsearch as it arrived, giving you instant search and aggregation over the full dataset.
+
+---
+
+## 8. 2026: Where Things Stand Now
+
+It's been several years since the techniques above were cutting edge. The fundamentals haven't changed much — encryption is still encryption, cookies are still cookies — but the landscape has shifted in a few important ways.
+
+### What Has Gotten Harder
+
+**Bot detection.** Cloudflare, Akamai, and DataDome have gotten much better. They now analyze TLS fingerprints (JA3/JA4), HTTP/2 frame patterns, Canvas/WebGL fingerprints, and even keyboard timing. A plain `requests.get()` with a spoofed User-Agent is detected almost instantly on protected sites.
+
+**CAPTCHA.** reCAPTCHA v3 and hCaptcha now score every page visit invisibly. You don't even see a challenge — the site just returns garbage data if your score is too low. Solving this requires browser-level emulation that passes all the fingerprinting checks.
+
+**Mobile-first and app-only APIs.** Many insurance services have moved their data to mobile apps with certificate pinning and obfuscated API protocols. Scraping these requires either reverse engineering the mobile app (Frida, objection, APK decompilation) or intercepting API traffic at the network level (mitmproxy with certificate unpinning).
+
+**Legal pressure.** GDPR, CCPA, and various data protection laws have made scraping legally riskier. Several high-profile cases (hiQ v. LinkedIn, Van Buren v. US) have clarified parts of the legal landscape, but it's still a gray area.
+
+### What Has Gotten Easier
+
+**AI-assisted reverse engineering.** In 2026, you can paste obfuscated JavaScript into an LLM and get a reasonably accurate decompiled version in seconds. It won't always be correct, but it gets you 80% of the way there — which, for most scraping projects, is enough. Tools like ChatGPT, Claude, and various Copilot integrations can identify encryption patterns, suggest Python equivalents, and help reconstruct function logic.
+
+**Headless browser reliability.** Playwright has largely replaced Puppeteer as the go-to browser automation tool. It supports multiple browsers (Chromium, Firefox, WebKit), has better auto-waiting, and is actively maintained by Microsoft. For scraping that requires JavaScript rendering, Playwright with stealth plugins is the current best practice.
+
+```python
+# 2026-style browser scraping
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True)
+    context = browser.new_context(
+        user_agent='Mozilla/5.0 ...',
+        viewport={'width': 1920, 'height': 1080},
+        locale='en-US',
+    )
+    page = context.new_page()
+    page.goto('https://www.example-insurance.com')
+    content = page.content()
+    browser.close()
+```
+
+**Proxy infrastructure.** Residential proxy networks have matured. Bright Data, Oxylabs, and Smartproxy now offer massive pools of residential IPs with good throughput. The cost has come down significantly since 2018 — residential proxy bandwidth is now a fraction of what it used to cost. But for high-volume scraping, datacenter proxies with careful rotation are still the economic choice.
+
+**Scraping frameworks.** Scrapy is still the gold standard, but new entrants have filled gaps:
+
+- **Crawlee** (by Apify): A modern Python framework that supports both HTTP and headless browser crawling, with built-in autoscaling and proxy rotation.
+- **ScrapeGraphAI**: LLM-based scraping that extracts structured data from HTML using natural language descriptions of the target schema. Useful for prototypes and one-off jobs, but too slow and expensive for production pipelines.
+- **Browserbase / Rebrowser**: Headless browser-as-a-service platforms that handle fingerprinting, proxy rotation, and CAPTCHA solving. You pay a premium, but you skip the infrastructure work.
+
+### What Has Stayed the Same
+
+**The fundamental workflow.** You still need to understand encryption, manage proxies, handle cookies, and distribute work across workers. The tools change, but the problems don't.
+
+**The economics of scraping at scale.** Building your own proxy pool, cookie pool, and distributed architecture is still cheaper than paying a scraping-as-a-service provider — if you're scraping millions of pages per month. For smaller projects, the SaaS tools have become good enough that rolling your own isn't worth it.
+
+**JavaScript reverse engineering as a core skill.** Even with AI assistance, you still need to understand what you're looking at. LLMs hallucinate. They suggest plausible-sounding decryption that produces garbage. The skill of verifying byte-for-byte that your Python decryption matches the browser's output — that hasn't been automated.
+
+**The cat-and-mouse dynamic.** Websites add new anti-bot measures. Scrapers develop countermeasures. The cycle continues. The specific techniques evolve, but the underlying dynamic is the same as it was in 2018.
+
+### One Final Thought
+
+If you're starting web scraping today (2026), you have two paths:
+
+1. **Use a managed service** (Apify, Bright Data, ScrapingBee) — faster to get started, more expensive at scale, limited control.
+2. **Build your own infrastructure** — slower setup, cheaper at scale, full control over every aspect.
+
+The techniques in this article (from 2018-2019) are closer to path 2. Most of them still work. You'll need to add modern TLS fingerprinting evasion and probably use Playwright instead of raw HTTP for heavily protected insurance portals. But the core principles — understand what the browser sends, reproduce it faithfully, rotate identities, distribute the workload — haven't changed.
+
+And honestly? That's the part that makes this work interesting. The day web scraping becomes a solved problem is the day it stops being fun.

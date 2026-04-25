@@ -79,11 +79,11 @@ A classic dilemma in tech selection: too new means unstable, weak ecosystem, can
 
 Recommended strategy:
 
-| Project Type | Recommended Maturity | Example |
-|-------------|---------------------|---------|
-| Core business path | Widely proven for 2+ years | PostgreSQL, Redis, Nginx |
-| Non-critical auxiliary tools | Can try newer tech | Logging, monitoring, CI tools |
-| Experimental features | Can chase new | Internal tools, tech spikes |
+| Project Type                 | Recommended Maturity       | Example                       |
+| ---------------------------- | -------------------------- | ----------------------------- |
+| Core business path           | Widely proven for 2+ years | PostgreSQL, Redis, Nginx      |
+| Non-critical auxiliary tools | Can try newer tech         | Logging, monitoring, CI tools |
+| Experimental features        | Can chase new              | Internal tools, tech spikes   |
 
 The core principle: **Don't put new things on the critical path.** Your payment pipeline, user authentication, database — if these break, it's an incident. Use the most stable options. Want to try Vitest over Jest? Fine — put it in your toolchain, run it in test environments, and if it breaks, just switch back. But don't plug a message queue that was released two months ago into your "user places an order" flow.
 
@@ -149,14 +149,14 @@ Software architecture sits one level below system architecture. It's concerned w
 
 Common decision dimensions in software architecture:
 
-| Dimension | Question | Example |
-|-----------|----------|---------|
-| Layering | How is code organized into layers? | Controller → Service → Repository |
-| Module division | Split by business or by function? | User module vs Auth module |
-| Communication | Synchronous calls or async events? | HTTP/gRPC vs Kafka/Redis Pub |
-| Dependency direction | Who can depend on whom? | Upper layers depend on lower, never reverse |
-| Shared code | Where does common logic live? | libs/common vs copying code |
-| Extension points | Where do we allow custom behavior? | Strategy pattern, plugin mechanism |
+| Dimension            | Question                           | Example                                     |
+| -------------------- | ---------------------------------- | ------------------------------------------- |
+| Layering             | How is code organized into layers? | Controller → Service → Repository           |
+| Module division      | Split by business or by function?  | User module vs Auth module                  |
+| Communication        | Synchronous calls or async events? | HTTP/gRPC vs Kafka/Redis Pub                |
+| Dependency direction | Who can depend on whom?            | Upper layers depend on lower, never reverse |
+| Shared code          | Where does common logic live?      | libs/common vs copying code                 |
+| Extension points     | Where do we allow custom behavior? | Strategy pattern, plugin mechanism          |
 
 Take the classic layered architecture as an example:
 
@@ -242,13 +242,13 @@ Security architecture isn't "adding a firewall" or "using HTTPS" — it's a thre
 
 Core dimensions of security architecture:
 
-| Layer | Focus | Typical Solutions |
-|-------|-------|-------------------|
-| Network | Who can access what | VPC isolation, security groups, WAF, DDoS protection |
-| Application | Who is operating, what did they do | Authentication (JWT/OAuth2), Authorization (RBAC/CASL), Audit logs |
-| Data | Where is data, who can see it | Encryption at rest, masking, encrypted backups, TLS |
-| Operations | Who changed what config | Bastion hosts, operation auditing, least privilege |
-| Supply chain | Any dependency issues | SCA scanning, image signing, SBOM |
+| Layer        | Focus                              | Typical Solutions                                                  |
+| ------------ | ---------------------------------- | ------------------------------------------------------------------ |
+| Network      | Who can access what                | VPC isolation, security groups, WAF, DDoS protection               |
+| Application  | Who is operating, what did they do | Authentication (JWT/OAuth2), Authorization (RBAC/CASL), Audit logs |
+| Data         | Where is data, who can see it      | Encryption at rest, masking, encrypted backups, TLS                |
+| Operations   | Who changed what config            | Bastion hosts, operation auditing, least privilege                 |
+| Supply chain | Any dependency issues              | SCA scanning, image signing, SBOM                                  |
 
 Key design principles:
 
@@ -272,11 +272,13 @@ Already discussed earlier, this is the most classic and widely used pattern. The
 Best for: Nearly all business systems. When you're building a new system where the functionality is uncertain and the business is changing fast, layered architecture is the safest starting point.
 
 Strengths:
+
 - Clear structure, quick onboarding for new team members
 - Each layer can be independently replaced (e.g., swapping databases only touches the Repository layer)
 - Easy to test — layers can be mocked independently
 
 Weaknesses:
+
 - Performance overhead with too many layers (data transformations at every boundary)
 - Strict unidirectional dependencies sometimes force "bypass code" (skipping the Service layer to query the database directly)
 - Inflexible — struggles when business logic needs to cross multiple layers
@@ -288,11 +290,11 @@ The data flow pattern focuses on **the path data takes through the system**. The
 ```typescript
 // Data flow pattern: each stage is independent, connected by pipes
 const processOrder = pipe(
-  validateOrder,        // 1. Validate order data
-  calculateDiscount,    // 2. Calculate discounts
-  checkInventory,       // 3. Check inventory
-  createPayment,        // 4. Create payment
-  sendNotification,     // 5. Send notification
+  validateOrder, // 1. Validate order data
+  calculateDiscount, // 2. Calculate discounts
+  checkInventory, // 3. Check inventory
+  createPayment, // 4. Create payment
+  sendNotification, // 5. Send notification
 )
 ```
 
@@ -345,11 +347,13 @@ flowchart TD
 ```
 
 Strengths:
+
 - Read-write separation. Read capacity scales linearly.
 - If the leader fails, a follower can be elected as the new leader (requires Sentinel or similar).
 - Data has natural redundancy.
 
 Weaknesses:
+
 - Replication lag is inevitable between leader and followers. Reading from followers may return stale data.
 - The leader is a write bottleneck — write capacity cannot scale by adding nodes.
 - Split-brain — if the leader and follower lose connectivity, both may think they are the leader.
@@ -358,10 +362,10 @@ Weaknesses:
 
 MVC and MVVM are the two patterns frontend developers know best, but they serve different scenarios at the architecture level:
 
-| Pattern | Core Idea | Data Flow | Typical Frameworks |
-|---------|-----------|-----------|-------------------|
-| MVC | Controller coordinates Model and View | View ← Controller → Model | Ruby on Rails, Spring MVC |
-| MVVM | View and Model bound via ViewModel | View ↔ ViewModel → Model | Vue, React (unidirectional but conceptually aligned) |
+| Pattern | Core Idea                             | Data Flow                 | Typical Frameworks                                   |
+| ------- | ------------------------------------- | ------------------------- | ---------------------------------------------------- |
+| MVC     | Controller coordinates Model and View | View ← Controller → Model | Ruby on Rails, Spring MVC                            |
+| MVVM    | View and Model bound via ViewModel    | View ↔ ViewModel → Model  | Vue, React (unidirectional but conceptually aligned) |
 
 The key difference: In MVC, the Controller is a "coordinator" — it fetches data from the Model and passes it to the View. In MVVM, the ViewModel is a "translator" — it transforms the Model's data into a format the View can directly consume, and View changes automatically sync back to the Model.
 
@@ -377,13 +381,13 @@ Architecture design can't happen entirely in your head. The purpose of tools isn
 
 UML is the most classic standardized modeling language. Though many now consider it "too heavy," its core diagram types remain valuable today:
 
-| Diagram Type | Purpose | When to Use |
-|-------------|---------|-------------|
-| Use Case | Describe system functions and external actors | Requirements analysis |
-| Class | Show classes and their relationships | Designing data models, domain models |
-| Sequence | Show interaction sequences between objects | Tracing complex API call chains |
-| Activity | Describe business processes | Aligning with stakeholders on process understanding |
-| Deployment | Show physical deployment structure | System architecture reviews |
+| Diagram Type | Purpose                                       | When to Use                                         |
+| ------------ | --------------------------------------------- | --------------------------------------------------- |
+| Use Case     | Describe system functions and external actors | Requirements analysis                               |
+| Class        | Show classes and their relationships          | Designing data models, domain models                |
+| Sequence     | Show interaction sequences between objects    | Tracing complex API call chains                     |
+| Activity     | Describe business processes                   | Aligning with stakeholders on process understanding |
+| Deployment   | Show physical deployment structure            | System architecture reviews                         |
 
 You don't need to learn every UML diagram. The three most practical day-to-day are: **Sequence diagrams** for tracing call chains (especially cross-service), **Class diagrams** for aligning on data models, and **Deployment diagrams** for communicating system architecture.
 
@@ -412,6 +416,7 @@ You might wonder what project management tools have to do with architecture desi
 **Architecture Decision Records (ADRs)** need a place to live. Today you decide "User Service caching uses Redis, not local memory" — three months later, a new teammate will inevitably ask "Why Redis?" If you didn't record it, no one can answer.
 
 Recommendation: Store every significant architecture decision as an ADR in a Jira/Feishu doc, containing:
+
 1. Decision title
 2. Context and problem
 3. Considered alternatives with pros and cons
@@ -468,6 +473,7 @@ Architecture Design → Code Implementation → Unit Tests (verify component cor
 But there's a perspective that's often missed: **testing is itself an architecture verification tool**. If a module is "hard to write tests for," that signals a design problem — too many dependencies, unclear boundaries, too many side effects. **Testability is a key indicator of architecture quality.**
 
 In practical terms:
+
 - If a Service's unit test needs to mock 10 dependencies, that Service probably needs to be split
 - If two modules' integration tests always need to be updated together, those modules probably shouldn't be separate
 - If a critical business scenario has zero test coverage, either your testing strategy is wrong, or you don't think the scenario matters — either way, it's worth reassessing
@@ -492,13 +498,13 @@ In practical terms:
 
 ### 11.3 The Relationship Between Five Architecture Domains
 
-| Domain | Focus Level | Core Question |
-|--------|------------|---------------|
-| System Architecture | Physical | How are services deployed? What happens when something fails? |
-| Software Architecture | Code | How are modules split? How do they communicate? |
-| Data Architecture | Storage | Where does data live? How is consistency guaranteed? |
-| Network Architecture | Communication | How does data flow? How to handle latency and partitions? |
-| Security Architecture | Cross-cutting | Who can do what? How to prevent attacks? |
+| Domain                | Focus Level   | Core Question                                                 |
+| --------------------- | ------------- | ------------------------------------------------------------- |
+| System Architecture   | Physical      | How are services deployed? What happens when something fails? |
+| Software Architecture | Code          | How are modules split? How do they communicate?               |
+| Data Architecture     | Storage       | Where does data live? How is consistency guaranteed?          |
+| Network Architecture  | Communication | How does data flow? How to handle latency and partitions?     |
+| Security Architecture | Cross-cutting | Who can do what? How to prevent attacks?                      |
 
 ### 11.4 Choosing Design Patterns
 

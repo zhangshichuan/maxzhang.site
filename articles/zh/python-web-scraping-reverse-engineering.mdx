@@ -1,0 +1,1012 @@
+---
+title: 'Python 爬虫实战：从 JS 逆向到分布式架构的完整攻防'
+summary: '2018 年中到 2019 年底保险行业爬虫工程的一线记录——登录抓包与数据解密、代理 IP 池搭建、浏览器自动化调度、Cookie 池维护、分布式爬虫架构。所有示例围绕抓取保险条款展开，不讲虚的，只记录真正在线上跑通的东西。'
+category: 'Backend'
+tags: ['Python', '爬虫', '逆向工程', '代理', '分布式']
+author: 'Max Zhang'
+date: '2026-01-15'
+---
+
+2018 年中那会儿，想爬一个稍微带点防护的网站，基本三座大山等着你：
+
+1. 登录接口发的数据是加密的，你拼不出来
+2. 页面内容是 JS 渲染的，`requests.get()` 拉下来就一个空壳
+3. 跑了 20 个请求之后 IP 被拉黑，只能出门晒太阳
+
+这不是什么高深的理论难题，就是每天实际的工程痛苦。爬保险公司的产品条款、保费表、保障细则——各家保险网站和经纪平台的安全机制五花八门。工具都有，Selenium、Scrapy、Pyppeteer，但从「知道这些工具存在」到「写一个能稳定跑几天的爬虫」之间，隔着一整条护城河。
+
+这篇文章记录的是我 2018 年中到 2019 年底搭建保险条款爬虫系统踩过的坑。覆盖完整链路：身份认证、数据解密、代理基础设施、浏览器自动化、Cookie 管理、分布式任务调度。
+
+---
+
+## 一、登录抓包与数据解密
+
+### 1.1 常见加解密算法
+
+2018-2019 年，大多数网站的登录表单用了以下某一种或几种组合来保护凭证：
+
+| 算法               | 典型用途                                 | 能逆向吗                       |
+| ------------------ | ---------------------------------------- | ------------------------------ |
+| MD5                | 密码哈希（虽然过时，但遗留系统到处都是） | 查表 / 彩虹表                  |
+| SHA-1 / SHA-256    | Token 签名、请求签名                     | 不能（哈希），但可以重放       |
+| AES（CBC/ECB/GCM） | 加密表单载荷                             | 能，只要你能拿到 key 和 IV     |
+| RSA                | 传输前加密密码                           | 不能（需要私钥），但可以用公钥 |
+| Base64             | 混淆而非加密                             | 直接解码                       |
+| 自定义 XOR / 位移  | 自己搓的混淆                             | 通常几组测试数据就能看出规律   |
+
+套路几乎总是这样：前端拿到你输入的明文密码，过一遍上面的组合，把结果发给服务端。服务端解密（或者比对哈希）之后再走数据库逻辑。
+
+2018 年底我爬一个保险产品查询平台时遇到的真实例子：
+
+```javascript
+// 前端实际干了什么：
+const encrypted = CryptoJS.AES.encrypt(
+  JSON.stringify({ username, password }),
+  CryptoJS.enc.Utf8.parse('some-hardcoded-key'),
+  { mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.Pkcs7 },
+).toString()
+```
+
+key 就是硬编码在 webpack 打包后的 JS 里的。找到它之后，用 Python 复现就很简单了：
+
+```python
+from Crypto.Cipher import AES
+import base64, json
+
+key = b'some-hardcoded-key'  # AES-128 需要 16 字节
+cipher = AES.new(key, AES.MODE_ECB)
+data = json.dumps({'username': 'user', 'password': 'pass'})
+# 补齐到 16 字节倍数
+padded = data + chr(16 - len(data) % 16) * (16 - len(data) % 16)
+encrypted = base64.b64encode(cipher.encrypt(padded.encode()))
+```
+
+真正难的不是写这几行 Python。难的是在五万行压缩过的 JS 里找到 key、搞清楚用的是 ECB 还是 CBC、再确认你自己复现的结果跟浏览器发出的字节完全一致。这一切都需要你对 Chrome DevTools 的 Sources 面板和断点调试相当熟练。
+
+### 1.2 无限 debugger 的处理
+
+有些网站在代码里埋了 `debugger` 陷阱。你一打开 DevTools，浏览器立刻停在 `debugger` 语句上。你点继续执行，马上又触发下一个。无限循环。
+
+反调试代码长这样：
+
+```javascript
+;(function () {
+  setInterval(function () {
+    debugger
+  }, 100)
+})()
+```
+
+更狠的会用 `Function("debugger")()` 动态生成，避免字符串匹配。
+
+**2018 年的破解方法：**
+
+1. **"Never pause here"**：在 Chrome DevTools 里右键行号，选 "Never pause here"。适用于静态的 `debugger` 语句。
+
+2. **禁用所有断点**：在 Sources 面板点那个带斜杠的暂停图标。这会静默所有断点，包括 `debugger` 语句。
+
+3. **覆盖函数**：如果调试陷阱是通过 `setInterval` 之类调用的，你可以在反调试代码执行前重写它：
+
+```javascript
+// 在反调试代码运行之前在 console 中执行：
+var _setInterval = window.setInterval
+window.setInterval = function () {}
+```
+
+4. **Chrome 插件代理覆盖**：用 ReRes（即 Requestly）之类的工具拦截 JS 响应，在页面最顶部注入一段中和 `debugger` 的代码。
+
+5. **Fiddler / mitmproxy 自动响应**：直接拦截包含反调试代码的 JS 文件，替换成去掉 `debugger` 的版本。这比浏览器层面的 hack 更可靠，因为代码在浏览器看到之前就被改了。
+
+实战中一个保险平台可能同时用 `setInterval` 里丢一个 `debugger`、代码里散落几个 `Function("debugger")()`、再加一个持续检测 DevTools 是否打开的计时器。你得一层一层关掉。
+
+### 1.3 Breakpoint 断点调试
+
+过了反调试陷阱，真正的活才开始——在几万行压缩混淆的 JS 里找加密代码。
+
+**我在 2018 年的调试流程：**
+
+1. **XHR/Fetch 断点**：最快定位加密逻辑的方式。在 Chrome DevTools → Sources → XHR/fetch breakpoints 里，给登录请求的 URL 加断点。请求发出时，调用栈直接告诉你发送前经过了哪些函数。
+
+2. **事件监听断点**：给提交按钮的 `click` 事件加断点。调用栈会展示点击处理 → 表单校验 → 加密 → 请求发送的完整链。
+
+3. **全局搜索关键字**：`Cmd+Shift+F`，搜 `encrypt`、`AES`、`CryptoJS`、`encrypt.enc`、`publicKey`、`sign`、`token`。即使是压缩过的代码，这些字符串通常不会消失。
+
+4. **调用栈分析**：断点命中以后，不要只看当前函数。沿着调用栈往上追。调用加密函数的那个函数往往就是构造 payload 的——理解 payload 结构理解了一半的活。
+
+5. **Console 实验**：在加密调用前设断点。在 console 里你可以查看变量、用测试输入直接调函数、看输出结果。这个阶段是确认你理解是否正确、值不值得出手写 Python 的关键。
+
+说个具体的例子。2019 年初我在爬一个保险条款查询平台，登录接口发的是这样的数据：
+
+```json
+{
+  "data": "U2FsdGVkX1+...很长的 base64...",
+  "timestamp": 1559347200,
+  "sign": "a1b2c3d4e5f6..."
+}
+```
+
+`sign` 字段是 `md5(timestamp + 固定secret + 加密后的data)` 得来的。不带 sign 发请求，服务端返回 403。sign 不对，也是一样。要穿过这道门，你必须：
+
+1. 在 Sources 里找到 sign 是在哪算的（全局搜 `md5`）
+2. 找到那个固定 secret（它是某段字符串的 `btoa` 结果，在 console 里解码就行）
+3. 在 Python 里精确复现字符串拼接的顺序
+
+这种活很枯燥，但实际上非常套路。干了十次以后，你就会发现规律了——大部分网站用的加密库就那几个：CryptoJS、JSEncrypt、jsrsasign。手法也差不多。
+
+---
+
+## 二、搭建代理服务
+
+### 2.1 2018-2019 年代的代理 IP 市场
+
+没有代理的爬虫是在裸奔。机房 IP 几分钟就被限频。家宽 IP 能撑久一点，但你就一个。解法是搞一个可以轮换的代理 IP 池。
+
+2018-2019 年国内代理市场极其碎片化，各家差别很大。以下是当时的格局：
+
+#### 静态 IP 服务商
+
+这类是按个卖 IP 的（或者小批量卖），固定时间段内归你使用：
+
+| 服务商   | 类型      | 时效       | 实际体验           |
+| -------- | --------- | ---------- | ------------------ |
+| 芝麻代理 | 共享 HTTP | 几分钟到天 | 还行，但有时候很挤 |
+| 站大爷   | 混合      | 短效       | 稳定性看运气       |
+| 蘑菇代理 | 共享 HTTP | 按个计费   | 预算有限的选择     |
+| 激光代理 | 独享      | 较长       | 速度快，价格高     |
+| IPIDEA   | 全球家宽  | 灵活       | 质量好，价格更高   |
+
+定价模式很简单：你给一笔钱买一组 IP，在过期前（或服务商回收前）这些 IP 都是你的。短效静态 IP 的典型寿命是 3-5 分钟——刚好够你爆发一波请求然后换下一个。
+
+对于绝大多数爬虫项目，**3-5 分钟的短效静态 IP 是性价比最高的选择**。比家宽代理便宜，轮换够快能分散请求，带宽也还行。代价是它们是机房 IP，有些网站对机房 IP 的封禁非常激进。
+
+#### 动态转发服务商
+
+| 服务商 | 模式         | 成本 |
+| ------ | ------------ | ---- |
+| 讯代理 | 按次计费转发 | 贵   |
+
+这类不直接给你 IP 列表，而是给一个转发端口。你把请求发给他们的服务器，他们通过自己轮换的 IP 池帮你发出去。按次计费。实战中这种方案对高并发爬虫太贵了——每个页面请求 0.3-0.5 元，一天几千页，账根本算不过来。不推荐。
+
+#### 按流量计费
+
+像 liuguan（流光）这类按流量计费的服务商，不按 IP 数量或请求次数收费，而是按数据流量算。你买 10GB 流量，在这个额度内想用多少 IP 都行。对于既要高并发又要拉大 payload 的场景，比按次计费划算得多。
+
+#### 隧道代理
+
+隧道代理（比如阿布云）走的是订阅制。按月付费，拿到一个 API，需要的时候自取 IP。IP 质量普遍较高，因为服务商自己维护了池子基础设施。调用方式也灵活——同一个 API，想什么时候取、取多少都行。
+
+**选服务商时的考量：**
+
+- **地理覆盖**：能不能选城市、省份？爬保险条款时，地域覆盖很重要——不同省份的保险产品要求不同，当地保险公司提供的产品也不一样。
+- **认证方式**：大部分服务商支持两种——IP 白名单（注册你的服务器 IP）或者用户名密码认证。白名单更省事；密码认证在多服务器场景下更灵活。
+- **提取方式**：有些给一个固定 URL 返回 IP 列表，有些给 SDK。URL 方式可移植性最好。
+- **IP 质量**：共享 IP 意味着你和其他客户共用。独享 IP 只归你。独享效果一直更好，但贵 2-3 倍。
+- **优惠力度**：批量买和长周期合同一般有折扣。各家的节日促销可以蹲一下。
+
+#### VPS 换 IP 的土办法
+
+预算特别紧的话，2018-2019 年有一个 hack：用 VPS（DigitalOcean、Vultr、阿里云 ECS 都行），程序化重启网络接口获得新 IP。有些服务商重启就分配新 IP，有些需要释放再绑定弹性 IP。速度不快（每次换 IP 要 30-90 秒），但除 VPS 本身费用外几乎零成本。低频爬虫的备选方案。
+
+### 2.2 用 Squid 自建代理服务
+
+如果你手里已经有一批 IP（从任一服务商拿到的），想自己管起来，2018 年最简洁的方案是 Squid——具体来说，`sameersbn/squid` 这个 Docker 镜像。
+
+**为什么用 Squid，而不是在 Python 代码里直接切代理？**
+
+因为你希望代理层是独立的。你的 Python 爬虫不应该知道也不应该关心 IP 是怎么轮的。它只需要往本地代理发请求，轮换的事由代理层处理。
+
+**部署（在云服务器上）：**
+
+```bash
+docker run -d --name squid \
+  --restart=always \
+  -p 3128:3128 \
+  -v /data/squid/cache:/var/spool/squid \
+  sameersbn/squid:latest
+```
+
+**配置（`/etc/squid/squid.conf`）：**
+
+```
+# 不要用 3128 端口——默认端口会被扫
+http_port 0.0.0.0:9128
+
+# 基础认证
+auth_param basic program /usr/lib/squid/basic_ncsa_auth /etc/squid/passwords
+auth_param basic realm proxy
+acl authenticated proxy_auth REQUIRED
+http_access allow authenticated
+
+# 其他全部拒绝
+http_access deny all
+
+# 缓存设置——爬虫不需要缓存
+cache deny all
+```
+
+**为什么这样配：**
+
+- **非标准端口（9128 而非 3128）**：默认端口会被扫。自动化扫描器在公网上找开着的 3128、8080、1080。用非标准端口可以减少大量噪音。
+- **必须认证**：互联网上的开放代理几个小时之内就会被发现并被滥用。basic auth 加上随机强密码可以阻止大部分扫描器。
+- **云安全组**：在云防火墙层面只允许来自你爬虫服务器 IP 的入站连接。这样就算有人猜到了密码，连都连不上。深度防御。
+
+**上游 IP 轮换：**
+
+Squid 本身不支持自动轮换上游 IP。你需要一个轮换层。通用做法是：
+
+```python
+import requests
+import random
+
+class ProxyPool:
+    def __init__(self):
+        self.proxies = []
+        self.refresh_proxies()
+
+    def refresh_proxies(self):
+        # 从服务商 API 拉一批新 IP
+        resp = requests.get('https://provider-api.com/get-ips?num=50')
+        self.proxies = resp.json()['data']
+
+    def get_proxy(self):
+        if not self.proxies:
+            self.refresh_proxies()
+        return random.choice(self.proxies)
+
+    def request(self, url, **kwargs):
+        proxy = self.get_proxy()
+        return requests.get(
+            url,
+            proxies={'http': proxy['http'], 'https': proxy['https']},
+            **kwargs
+        )
+```
+
+吞吐量要求高的话，可以跑多个 Squid 实例，每个绑定不同的上游 IP，爬虫端做一个轮询。前面挂一层 nginx TCP 负载均衡，对爬虫侧就是透明的。
+
+---
+
+## 三、JS 逆向工程
+
+### 3.1 JS 逆向调试
+
+「调试自己写的代码」和「调试别人网站的压缩 JS 来偷人家的加密逻辑」——这俩在心理感受上完全不同，但工具是同一套。
+
+JS 逆向的目标：
+
+1. 找到加密函数
+2. 理解它的输入和输出
+3. 用 Python 复现逻辑（或者通过子进程调用它）
+
+**调试流程：**
+
+1. **打开 Sources 面板，定位目标 bundle**：2018-2019 年大部分网站用的是 webpack 打包。主 bundle 名字大概是 `app.3f8a2d.js` 或者 `chunk-vendors.js`。找到正确的文件占了活的一半。
+
+2. **格式化代码**：Sources 面板底部那个 `{}` 按钮。永远先格式化再看。会改行号，但可读性的提升值得这个代价。
+
+3. **在可疑代码处设断点**：找函数的调用模式。比如 `this.encrypt(`、`e.encrypt(`、`n.a.encrypt(`——webpack 里加密函数通常是模块对象上的一个方法。
+
+4. **在 Console 中复现**：找到加密函数后，把相关代码复制到 console 里，用测试数据调用。对比输出是不是跟页面实际发出的数据一致。
+
+5. **提取函数**：有时候加密函数是自包含的，直接复制就能用。更多时候它依赖闭包里的其他函数和变量。你需要提取完整的依赖链。
+
+### 3.2 动态修改 JS 代码
+
+有时候你不需要完全理解加密函数。你只需要 hook 它的输入和输出。加密逻辑太复杂的时候，这是常用策略。
+
+**方法一：Chrome DevTools Overrides**
+
+Chrome DevTools → Sources → Overrides。你可以用本地文件覆盖网站上加载的 JS 文件。找到你想改的函数，加一行 `console.log`（或者把数据 POST 到你的服务器），刷新页面即可。
+
+**方法二：页面加载前注入脚本**
+
+通过 mitmproxy 在 HTML 顶部注入一个 `<script>` 标签：
+
+```python
+# mitmproxy addon
+def response(flow):
+    if flow.request.pretty_url.endswith('.html'):
+        flow.response.text = flow.response.text.replace(
+            '</head>',
+            '<script>/* 你的 hook 代码 */</script></head>'
+        )
+```
+
+**方法三：代理层面修改（推荐）**
+
+最稳的做法：通过 mitmproxy 或 Fiddler 拦截包含加密逻辑的 JS 文件，改了之后再发回去。对于那些做了完整性校验的网站，这是唯一可靠的方式。
+
+```python
+def response(flow):
+    if 'encrypt-module' in flow.request.pretty_url:
+        code = flow.response.text
+        # Hook 加密函数
+        code = code.replace(
+            'function encrypt(',
+            'function encrypt(a){console.log("INPUT:",a);var r=originalEncrypt(a);console.log("OUTPUT:",r);return r;}function originalEncrypt('
+        )
+        flow.response.text = code
+```
+
+### 3.3 JS 加密函数的 Python 重构
+
+最终形态。你完全理解了加密逻辑，用 Python 重写一遍，这样你的爬虫就是自包含的——不依赖 headless 浏览器，不依赖 Node.js 子进程。
+
+**重构流程：**
+
+1. **识别加密库**：如果 JS 用的是 CryptoJS，找 Python 对应的库（`pycryptodome`）。如果是 JSEncrypt（RSA），用 `rsa` 或 `cryptography`。
+
+2. **提取常量**：Key、IV、salt、魔数。这些通常是硬编码的，或者经过简单的变换（比如字符串反转、与常量异或）。
+
+3. **匹配填充和模式**：AES-CBC + PKCS7 填充是最常见的。AES-ECB 安全性更差但还在被广泛使用。确保你的 Python 库用的是完全一样的模式和填充。
+
+4. **逐字节验证**：写一个测试，用相同的明文分别跑 JS 版本和 Python 版本的加密。输出必须完全一致。不一致的话，检查填充、编码（UTF-8 vs Latin-1）、以及密钥派生过程。
+
+5. **处理边界情况**：有些 JS 实现用了非标准的密钥派生。比如有些网站这样派生密钥：`CryptoJS.MD5(password).toString()`——这给你的是一个 32 字符的十六进制字符串，不是 16 字节的原始数据。你得完全匹配。
+
+2019 年一个保险条款爬虫项目里的真实例子：
+
+```python
+# JS 源码（逆向出来的）：
+# var encrypted = CryptoJS.AES.encrypt(text, CryptoJS.enc.Utf8.parse(key), {
+#     iv: CryptoJS.enc.Utf8.parse(iv),
+#     mode: CryptoJS.mode.CBC,
+#     padding: CryptoJS.pad.Pkcs7
+# }).toString();
+
+# Python 等价：
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
+import base64
+
+def encrypt_aes_cbc(text: str, key: str, iv: str) -> str:
+    cipher = AES.new(key.encode('utf-8'), AES.MODE_CBC, iv.encode('utf-8'))
+    padded = pad(text.encode('utf-8'), AES.block_size)
+    encrypted = cipher.encrypt(padded)
+    return base64.b64encode(encrypted).decode('utf-8')
+```
+
+JS 那边是 3 行。Python 这边是 6 行。真正耗时的是那两三个小时——在一个 18000 行的 webpack bundle 里翻 key 和 IV。
+
+---
+
+## 四、爬虫调度浏览器
+
+### 4.1 Scrapy 框架
+
+先说句题外话。有时候大家会把两个名字搞混：
+
+- **Scapy**：网络包操控库，做协议层分析的，不是爬虫工具。
+- **Scrapy**：爬虫框架。做生产级爬虫该用的东西。
+
+99% 的项目，Scrapy 是对的。它内置了并发、请求调度、中间件、数据管道这些你迟早要手写的东西。你的任务就是写 Spider 然后搞定反爬——反爬才是真正难的那部分。
+
+**一个带代理支持的保险条款 Scrapy Spider 示例：**
+
+```python
+import scrapy
+from scrapy.crawler import CrawlerProcess
+
+class PolicySpider(scrapy.Spider):
+    name = 'policy_spider'
+    start_urls = ['https://www.example-insurance.com/policies']
+
+    def parse(self, response):
+        for policy in response.css('.policy-card'):
+            yield {
+                'product_name': policy.css('.product-name::text').get(),
+                'insurer': policy.css('.insurer::text').get(),
+                'premium': policy.css('.premium::text').get(),
+                'coverage_details': policy.css('.coverage::text').get(),
+                'clause_url': policy.css('a.clause-link::attr(href)').get(),
+            }
+
+        # 跟踪分页
+        next_page = response.css('.next::attr(href)').get()
+        if next_page:
+            yield response.follow(next_page, self.parse)
+
+if __name__ == '__main__':
+    process = CrawlerProcess({
+        'USER_AGENT': 'Mozilla/5.0 ...',
+        'DOWNLOADER_MIDDLEWARES': {
+            'rotating_proxies.middlewares.RotatingProxyMiddleware': 543,
+        }
+    })
+    process.crawl(PolicySpider)
+    process.start()
+```
+
+Scrapy 的架构让你很容易插自定义中间件。你写一个中间件从代理池里随机取 IP、附加 Cookie、处理重试。Spider 代码本身保持干净。
+
+### 4.2 Chrome 远程调试
+
+2018 年最实用但被低估的技巧之一：Chrome 远程调试。你可以在远程服务器上以调试模式启动 Chrome，然后从本地 DevTools 连上去，交互体验就像页面运行在本机一样。
+
+**服务器端启动 Chrome：**
+
+```bash
+google-chrome \
+  --headless \
+  --remote-debugging-port=9222 \
+  --no-sandbox \
+  --user-data-dir=/tmp/chrome-profile
+```
+
+**本地连接：**
+
+1. 先建 SSH 隧道：`ssh -L 9222:localhost:9222 user@server`
+2. 本地打开 Chrome
+3. 访问 `chrome://inspect`
+4. 点 "Configure" 添加 `localhost:9222`
+
+这样你就能用完整的 DevTools 能力去操作远程服务器上正在跑的页面——检查元素、设断点、看网络请求，全是远程的。调试有地域限制的保险门户网站——不同请求来源地返回不同的产品和条款——这东西是大救星。
+
+### 4.3 Puppeteer 处理保险平台的复杂登录
+
+有些保险经纪平台的登录流程几乎不可能程序化复现：
+
+- 多步骤登录向导，CSRF token 嵌在 `<script>` 标签里
+- 第一次登录后弹出验证码
+- 经纪人账号需要短信/邮件验证码
+- 通过企业身份提供商跳转的单点登录流程
+
+对这种场景，务实方案是用 Puppeteer（Python 端是 `pyppeteer`）：
+
+```python
+import asyncio
+from pyppeteer import launch
+
+async def login_and_get_cookies():
+    browser = await launch(headless=True, args=['--no-sandbox'])
+    page = await browser.newPage()
+
+    await page.goto('https://broker.example-insurance.com/login')
+
+    # 填表单
+    await page.type('#username', 'broker_account')
+    await page.type('#password', 'broker_pass')
+
+    # 点登录
+    await page.click('#login-btn')
+
+    # 等重定向
+    await page.waitForNavigation()
+
+    # 提取 Cookie
+    cookies = await page.cookies()
+
+    await browser.close()
+    return cookies
+```
+
+技巧在于，Puppeteer 只用在登录这一步。拿到 Cookie 之后，你把它交给 Scrapy Spider 或者 requests 会话。你不需要为每个条款页面都拉起一个完整浏览器——只为那 30 秒的登录流程。
+
+### 4.4 贝塞尔曲线拟真滑动鼠标
+
+2018 年有些保险平台开始用鼠标轨迹分析来检测机器人。如果你的鼠标从 (0,0) 直线跳到 (500,300)，那显然不是人。解法是用贝塞尔曲线模拟类人的鼠标运动。
+
+```python
+import random
+import math
+from typing import List, Tuple
+
+def bezier_curve(p0, p1, p2, p3, steps=50):
+    """生成三次贝塞尔曲线上的点。"""
+    points = []
+    for t in [i / steps for i in range(steps + 1)]:
+        x = ((1 - t) ** 3) * p0[0] + 3 * ((1 - t) ** 2) * t * p1[0] + \
+            3 * (1 - t) * (t ** 2) * p2[0] + (t ** 3) * p3[0]
+        y = ((1 - t) ** 3) * p0[1] + 3 * ((1 - t) ** 2) * t * p1[1] + \
+            3 * (1 - t) * (t ** 2) * p2[1] + (t ** 3) * p3[1]
+        points.append((x, y))
+    return points
+
+def generate_mouse_path(start: Tuple[int, int], end: Tuple[int, int],
+                        steps: int = 60) -> List[Tuple[int, int]]:
+    """生成类人的鼠标移动轨迹。"""
+    # 控制点加入一些随机偏移
+    cp1 = (
+        start[0] + (end[0] - start[0]) * random.uniform(0.2, 0.4),
+        start[1] + random.uniform(-50, 50)
+    )
+    cp2 = (
+        start[0] + (end[0] - start[0]) * random.uniform(0.6, 0.8),
+        end[1] + random.uniform(-50, 50)
+    )
+
+    path = bezier_curve(start, cp1, cp2, end, steps)
+
+    # 加 overshoot 再修正（人类常见行为）
+    overshoot = (
+        end[0] + random.uniform(-5, 10),
+        end[1] + random.uniform(-5, 10)
+    )
+    path.append(overshoot)
+    path.append(end)  # 修正回目标
+
+    return path
+
+async def human_like_move(page, x, y):
+    """用类人轨迹移动鼠标到目标位置。"""
+    start = (random.randint(0, 200), random.randint(0, 200))
+    path = generate_mouse_path(start, (x, y))
+
+    for px, py in path:
+        # 加微幅抖动
+        jx = px + random.gauss(0, 0.5)
+        jy = py + random.gauss(0, 0.5)
+        await page.mouse.move(jx, jy)
+        # 人类反应延迟：微小移动之间 5-15ms
+        await asyncio.sleep(random.uniform(0.005, 0.015))
+```
+
+这当然不够完美——高级反爬系统还会分析时间模式、滚动行为、UI 交互序列。但它比当时大多数爬虫用的直线方案强太多了。
+
+---
+
+## 五、逆向破解加密的响应数据
+
+有些网站不仅加密请求，还加密响应。你发出请求，拿回来一坨加密数据，需要解密后才能提取真正的保险条款信息。
+
+这种手法常见于：
+
+- 保险核保和报价平台
+- 保险产品比对和聚合网站
+- 带内部 API 的理赔管理系统
+- 任何通过内部 API 暴露结构化保单数据的保险网站
+
+**逆向过程：**
+
+### 5.1 在 JS 中找到解密函数
+
+方式和找加密函数类似，只是方向反过来：
+
+1. 在 API 端点上设 XHR 断点
+2. 触发一个请求
+3. 从响应处理器往上追调用栈
+4. 找 `CryptoJS.AES.decrypt()`、`JSON.parse()` 的调用，或者任何把原始响应转成结构化数据的函数
+
+通常会看到这样的代码：
+
+```javascript
+// 响应拦截器
+axios.interceptors.response.use(function (response) {
+  if (response.data && response.data.encrypted) {
+    var decrypted = CryptoJS.AES.decrypt(response.data.encrypted, CryptoJS.enc.Utf8.parse(KEY), {
+      mode: CryptoJS.mode.CBC,
+      iv: CryptoJS.enc.Utf8.parse(IV),
+    })
+    response.data = JSON.parse(decrypted.toString(CryptoJS.enc.Utf8))
+  }
+  return response
+})
+```
+
+### 5.2 用 Python 重构解密函数
+
+拿到了算法、key 和 IV 之后：
+
+```python
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import unpad
+import base64, json
+
+def decrypt_response(encrypted_b64: str, key: str, iv: str) -> dict:
+    cipher = AES.new(key.encode('utf-8'), AES.MODE_CBC, iv.encode('utf-8'))
+    encrypted = base64.b64decode(encrypted_b64)
+    decrypted = cipher.decrypt(encrypted)
+    unpadded = unpad(decrypted, AES.block_size)
+    return json.loads(unpadded.decode('utf-8'))
+```
+
+### 5.3 还原保险条款数据
+
+有了解密函数，你的爬虫数据流就变成：
+
+1. 发请求 → 拿到加密响应
+2. 解密响应 → 拿到结构化 JSON
+3. 解析 JSON → 提取保险条款、保费表和保障细则
+
+解密后的数据往往比页面上渲染出来的丰富得多。渲染后的 HTML 可能每页展示 20 个产品的基本摘要；解密后的 API 响应可能包含完整保单文档——所有条款、附加险、免责清单、保费明细。
+
+---
+
+## 六、Cookie 池
+
+### 6.1 Cookie 批量提取
+
+批量注册经纪人账号是第一步。从这些账号提取 Cookie 是第二步。2018 年的典型做法：
+
+1. **自动化注册**：Puppeteer 或 Selenium 脚本填保险经纪平台的注册表单。邮箱验证通过临时邮箱服务（Guerrilla Mail、10 分钟邮箱）解决。手机验证是真正的难点——你需要接码平台，那个越来越贵了。
+
+2. **登录并导出 Cookie**：注册后用 Puppeteer 登录，提取 Cookie，入库。
+
+3. **Cookie JSON 格式**：
+
+```json
+{
+  "account_id": "broker_1234",
+  "cookies": [
+    { "name": "sessionid", "value": "abc123...", "domain": ".example-insurance.com" },
+    { "name": "csrftoken", "value": "xyz789...", "domain": ".example-insurance.com" }
+  ],
+  "created_at": "2019-06-15T10:30:00Z",
+  "last_used": "2019-06-15T10:30:00Z",
+  "status": "active"
+}
+```
+
+### 6.2 Cookie 保持登录状态
+
+Cookie 会过期。会话会超时。服务端可能在 30 分钟不活动后让会话失效，或者设一个固定的生命周期（比如 24 小时）。维持一个可用 Cookie 池需要持续监控。
+
+**维护循环：**
+
+```python
+import time
+import redis
+import json
+
+class CookiePool:
+    def __init__(self, redis_client, min_pool_size=20):
+        self.redis = redis_client
+        self.min_pool_size = min_pool_size
+
+    def get_cookie(self) -> dict:
+        """从池子里随机取一个活跃 Cookie。"""
+        cookie_ids = self.redis.smembers('cookie_pool:active')
+        if len(cookie_ids) < self.min_pool_size:
+            self.trigger_refill()
+
+        cookie_id = random.choice(list(cookie_ids))
+        cookie_data = json.loads(self.redis.get(f'cookie:{cookie_id}'))
+
+        # 更新 last_used
+        cookie_data['last_used'] = time.time()
+        self.redis.set(f'cookie:{cookie_data["account_id"]}',
+                        json.dumps(cookie_data))
+        return cookie_data
+
+    def validate_cookie(self, account_id: str) -> bool:
+        """测试 Cookie 是否还有效。"""
+        cookie_data = json.loads(
+            self.redis.get(f'cookie:{account_id}')
+        )
+        try:
+            resp = requests.get(
+                'https://www.example-insurance.com/api/account',
+                cookies={c['name']: c['value'] for c in cookie_data['cookies']},
+                timeout=5
+            )
+            return resp.status_code == 200
+        except Exception:
+            return False
+
+    def trigger_refill(self):
+        """触发账号创建/登录来补充池子。"""
+        # 这里会调你 Puppeteer 写的登录脚本
+        pass
+```
+
+### 6.3 Cookie 的属性和时效性
+
+每个 Cookie 有关键属性：
+
+- **domain**：Cookie 会被发到哪些域名。`.example-insurance.com` 包含子域名；`example-insurance.com` 只匹配精确域名。
+- **path**：Cookie 适用于哪些 URL 路径。
+- **httpOnly**：设为 `True` 时，JavaScript 访问不到这个 Cookie——但 Python 的 `requests` 库照样能发。
+- **secure**：设为 `True` 时，只在 HTTPS 连接下发。
+- **expires**：绝对过期时间。大部分服务端还会在应用层设置更短的会话超时，所以这个值不完全可靠。
+
+实践中记住一条：**把每个 Cookie 当作 15 分钟不活动就可能过期来处理**。设一个健康检查定期测 Cookie，把死掉的干掉。
+
+### 6.4 批量维护 Cookie 可用性
+
+50-100 个经纪人账号的池子，维护工作流是这样的：
+
+1. **每 5 分钟抽查**：随机挑 5 个 Cookie 测试。如果失败率超过 20%，跑一轮全量检查。
+2. **每 30 分钟全量检查**：测试所有 Cookie。移除无效的。
+3. **补充**：池子低于 `min_pool_size`，触发账号创建和登录流水线。
+4. **轮换**：每次请求用不同 Cookie。简单的轮询或随机选择都没问题——关键是不要给单个会话制造异常活跃的嫌疑。
+
+Cookie 放 Redis 里让这些操作变得快且原子化。Redis 的 `SPOP` 和 `SADD` 指令做轮换简直完美。
+
+---
+
+## 七、分布式爬虫架构
+
+### 7.1 总览
+
+到 2019 年底，我最终确立了一套分层架构来做保险条款爬虫：
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    调度器                           │
+│  (Cron 任务、手动触发、事件驱动)                      │
+└─────────────────┬───────────────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────────────────┐
+│               Redis 任务队列                         │
+│  (URL 列表，带优先级和重试次数)                        │
+└──────┬─────────────┬─────────────┬──────────────────┘
+       │             │             │
+┌──────▼──────┐ ┌────▼──────┐ ┌───▼─────────┐
+│  Worker 1   │ │ Worker 2  │ │  Worker N   │
+│  (Scrapy)   │ │ (Scrapy)  │ │  (Scrapy)   │
+└──────┬──────┘ └────┬──────┘ └───┬─────────┘
+       │             │             │
+┌──────▼─────────────▼─────────────▼──────────────────┐
+│              代理 IP 池管理                          │
+│  (Squid 实例 + 上游 IP 轮换)                         │
+└─────────────────────┬────────────────────────────────┘
+                      │
+┌─────────────────────▼────────────────────────────────┐
+│              Cookie 池管理                            │
+│  (基于 Redis，带健康检查和自动补充)                   │
+└─────────────────────┬────────────────────────────────┘
+                      │
+┌─────────────────────▼────────────────────────────────┐
+│              目标保险网站                             │
+└─────────────────────────────────────────────────────┘
+                      │
+┌─────────────────────▼────────────────────────────────┐
+│              数据管道                                 │
+│  (去重 → 校验 → 存储 → 索引)                          │
+└─────────────────────────────────────────────────────┘
+```
+
+### 7.2 IP 代理池管理系统
+
+代理池是一个独立服务：
+
+```python
+# proxy_pool.py
+import redis
+import requests
+import time
+import threading
+
+class ProxyPoolManager:
+    def __init__(self, redis_client):
+        self.redis = redis_client
+        self.refresh_interval = 180  # 3 分钟一轮
+
+    def refresh_proxies(self):
+        """从服务商拉新 IP，存进 Redis。"""
+        resp = requests.get('https://proxy-api.com/get?num=50&format=json')
+        proxies = resp.json()['proxies']
+
+        pipe = self.redis.pipeline()
+        for proxy in proxies:
+            key = f"proxy:{proxy['ip']}:{proxy['port']}"
+            pipe.setex(key, self.refresh_interval * 2,
+                        json.dumps(proxy))
+        pipe.execute()
+
+    def run(self):
+        while True:
+            try:
+                self.refresh_proxies()
+            except Exception as e:
+                print(f"代理刷新失败: {e}")
+            time.sleep(self.refresh_interval)
+```
+
+Worker 端从 Redis 取代理：
+
+```python
+def get_random_proxy(redis_client) -> dict:
+    keys = redis_client.keys('proxy:*')
+    if not keys:
+        return None
+    key = random.choice(keys)
+    return json.loads(redis_client.get(key))
+```
+
+### 7.3 Cookie 池管理系统
+
+一样的套路。独立进程维护 Cookie 池，Worker 按需取用。关键认识：代理和 Cookie 应该独立管理。Worker 不需要知道代理或 Cookie 从哪来的——它只需要向各自的池子请求。
+
+### 7.4 分布式爬虫与 Redis 任务存储
+
+Scrapy 本身不支持分布式调度，但 `scrapy-redis` 填了这个坑：
+
+```python
+# settings.py
+SCHEDULER = "scrapy_redis.scheduler.Scheduler"
+DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
+
+REDIS_URL = 'redis://localhost:6379/0'
+
+# Spider 从 Redis 读取起始 URL
+REDIS_START_URLS_KEY = 'spider:start_urls'
+```
+
+有了这个配置，多个 Scrapy 实例就能共享同一个请求队列。你往 Redis 里推 URL：
+
+```bash
+redis-cli lpush spider:start_urls "https://www.example-insurance.com/policies/page/1"
+```
+
+任何空闲 Worker 都会取走。简单、稳定、水平扩展。每个 Worker 跑在独立服务器或容器上，从同一个 Redis 实例取任务。
+
+### 7.5 数据入库与过滤
+
+数据管道关心的两件事：去重和存储。
+
+**去重：**
+
+Redis 层面，`scrapy-redis` 通过 Redis set 处理了 URL 去重。Item 层面，需要自己写去重逻辑：
+
+```python
+# pipeline.py
+class DedupPipeline:
+    def __init__(self, redis_client):
+        self.redis = redis_client
+
+    def process_item(self, item, spider):
+        # 用保险条款的自然键构建唯一标识
+        key = f"seen:{item['insurer']}:{item['policy_id']}"
+        if self.redis.exists(key):
+            raise DropItem(f"重复数据: {item['policy_id']}")
+        self.redis.setex(key, 86400 * 7, '1')  # 7 天 TTL
+        return item
+```
+
+**存储：**
+
+2018-2019 年 MongoDB 是爬虫数据的默认选择。它对非结构化数据友好，写入吞吐好，文档模型天然匹配保险条款那种多层嵌套结构——主条款下面有附加险、除外责任、现金价值表。
+
+```python
+# pipeline.py
+from pymongo import MongoClient
+
+class MongoPipeline:
+    def __init__(self):
+        self.client = MongoClient('mongodb://localhost:27017/')
+        self.db = self.client['insurance_data']
+
+    def process_item(self, item, spider):
+        collection = self.db[spider.name]
+        collection.update_one(
+            {'_id': item['policy_id']},
+            {'$set': dict(item)},
+            upsert=True
+        )
+        return item
+```
+
+数据量到百万级，就要做批量写入：
+
+```python
+class BatchMongoPipeline:
+    def __init__(self):
+        self.buffer = []
+        self.batch_size = 100
+
+    def process_item(self, item, spider):
+        self.buffer.append(dict(item))
+        if len(self.buffer) >= self.batch_size:
+            self.flush(spider)
+        return item
+
+    def flush(self, spider):
+        self.db[spider.name].insert_many(self.buffer)
+        self.buffer.clear()
+
+    def close_spider(self, spider):
+        if self.buffer:
+            self.flush(spider)
+```
+
+### 7.6 海量数据的读取查询
+
+当 MongoDB 里有了上千万条保单记录，要查数据就是另一回事了。写 `db.policies.find({'premium': {'$gt': 1000}})` 不加索引就会扫全表。
+
+**索引策略：**
+
+```javascript
+// 给常用查询字段建索引
+db.policies.createIndex({ insurance_type: 1, premium: -1 })
+db.policies.createIndex({ effective_date: -1 })
+db.policies.createIndex({ insurer: 1, policy_id: 1 }, { unique: true })
+```
+
+**时间范围分区：**
+
+对于时序数据（保费变化、保障更新、新产品上线），我用按天分集合的思路：
+
+```
+policies_2019_08_01
+policies_2019_08_02
+policies_2019_08_03
+```
+
+这样做的好处是删旧数据方便，单个集合也能控制在可控大小。
+
+做临时分析的时候，我会从 MongoDB 导数据到 CSV 然后用 pandas 加载：
+
+```python
+import pandas as pd
+from pymongo import MongoClient
+
+client = MongoClient()
+cursor = client.insurance_data.policies.find(
+    {'insurance_type': 'medical'},
+    {'_id': 0, 'product_name': 1, 'premium': 1, 'coverage_amount': 1, 'effective_date': 1}
+)
+df = pd.DataFrame(list(cursor))
+df['premium'] = pd.to_numeric(df['premium'])
+print(df.describe())
+```
+
+实时报表的需求用 Elasticsearch。爬取到的保单数据一边入库一边往 ES 里灌，立刻就能在全量数据上搜索和聚合。
+
+---
+
+## 八、2026 年：六年之后
+
+从上面的技术记录到现在，好几年过去了。底层原理并没有太大变化——加密还是加密，Cookie 还是 Cookie——但格局在几个重要方向上有变化。
+
+### 哪些东西变得更难了
+
+**Bot 检测。** Cloudflare、Akamai、DataDome 的能力大幅提升。现在它们会分析 TLS 指纹（JA3/JA4）、HTTP/2 帧模式、Canvas/WebGL 指纹、甚至键盘输入的时间模式。一个裸的 `requests.get()` 加个假 User-Agent 在受保护网站上几乎秒识别。
+
+**验证码。** reCAPTCHA v3 和 hCaptcha 对每个页面访问都进行隐形评分。你甚至看不到挑战——如果你的分数太低，网站直接返回垃圾数据。解决这个需要能通过所有指纹检测的浏览器级别模拟。
+
+**Mobile-first 和 App-only API。** 很多保险服务把数据移到了移动 App 里，加上证书固定和混淆的 API 协议。爬这些要么逆向移动 App（Frida、objection、APK 反编译），要么在网络层拦截 API 流量（mitmproxy + 证书解固定）。
+
+**法律风险。** GDPR、CCPA 和各种数据保护法让爬虫的法律风险更高。几个典型判例（hiQ v. LinkedIn、Van Buren v. US）明晰了部分法律边界，但整体上依然是灰色地带。
+
+### 哪些东西变简单了
+
+**AI 辅助逆向。** 2026 年，你可以把一段混淆 JS 扔给 LLM，几秒内拿到一份基本准确的解混淆版本。不一定 100% 正确，但能省掉 80% 的工作——对于大多数爬虫项目，这已经够了。ChatGPT、Claude 和各种 Copilot 集成能识别加密模式、建议 Python 等价写法、协助重构函数逻辑。
+
+**Headless 浏览器的可靠性。** Playwright 已经基本取代了 Puppeteer，成为浏览器自动化的首选。它支持多浏览器（Chromium、Firefox、WebKit），自动等待做得更好，而且有微软持续维护。对于需要 JS 渲染的抓取，Playwright 加 stealth 插件是当前的最佳实践。
+
+```python
+# 2026 风格的浏览器爬虫
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True)
+    context = browser.new_context(
+        user_agent='Mozilla/5.0 ...',
+        viewport={'width': 1920, 'height': 1080},
+        locale='en-US',
+    )
+    page = context.new_page()
+    page.goto('https://www.example-insurance.com')
+    content = page.content()
+    browser.close()
+```
+
+**代理基础设施。** 家宽代理网络成熟了很多。Bright Data、Oxylabs、Smartproxy 现在提供海量家宽 IP 池，质量稳定。价格相比 2018 年大幅下降——家宽代理带宽成本已经降到了当初的几分之一。但对于高并发爬虫，机房代理配合精心轮换仍然是经济上的优选。
+
+**爬虫框架。** Scrapy 依然是金标准，但新玩家在填补空白：
+
+- **Crawlee**（Apify 出品）：一个现代化的 Python 框架，同时支持 HTTP 抓取和 headless 浏览器爬取，内置自动扩缩容和代理轮换。
+- **ScrapeGraphAI**：基于 LLM 的爬虫，用自然语言描述目标数据 schema 就能从 HTML 提取结构化数据。做原型和一次性任务不错，但太慢太贵，不适合生产链路。
+- **Browserbase / Rebrowser**：Headless 浏览器即服务平台，帮你搞定指纹、代理轮换、验证码处理。付溢价，但省掉了基础设施建设。
+
+### 哪些东西没变
+
+**核心工作流。** 你仍然需要理解加密、管理代理、处理 Cookie、把工作分配到多个 Worker。工具在变，问题不变。
+
+**大规模爬虫的经济学。** 如果你每个月爬几百万页，自己搭代理池、Cookie 池、分布式架构仍然比付给爬虫 SaaS 便宜。对于小项目，SaaS 工具已经好到不值得自己折腾了。
+
+**JS 逆向作为核心技能。** 即使有 AI 辅助，你仍然需要理解你在看什么。LLM 会幻觉。它会建议一个听起来很像的解密方案，但输出是垃圾。那个「逐字节验证 Python 解密和浏览器输出是否一致」的能力——目前没有被自动化。
+
+**猫鼠游戏。** 网站加新的反爬措施，爬虫方开发新的对策。循环继续。具体技术在进化，但底层博弈和 2018 年一模一样。
+
+### 最后说两句
+
+如果你今天（2026 年）开始搞爬虫，有两条路：
+
+1. **用托管服务**（Apify、Bright Data、ScrapingBee）——起步快，量大之后贵，控制力有限。
+2. **自己搭基础设施**——初始投入高，量大了便宜，完全控制每个环节。
+
+这篇文章里的技术（2018-2019 年的东西）更接近第二条路。绝大部分现在还能用。你需要加上现代的 TLS 指纹规避，对强防护的保险网站大概率要用 Playwright 而不是裸 HTTP。但核心原则没变——**搞清楚浏览器到底发了什么、忠实复现它、轮换身份、分散负载**。
+
+而且说真的，这正是这件事有意思的地方。爬虫变成完完全全的「已解决问题」的那天，也是它不再有趣的那天。
