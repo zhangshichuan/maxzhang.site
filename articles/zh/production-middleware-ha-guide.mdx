@@ -1,0 +1,721 @@
+---
+title: '生产环境中间件高可用全景指南'
+summary: '深入解析 PostgreSQL、Redis、BullMQ、K3s、Consul、Kafka 等核心中间件在生产环境中的高可用实现机制，覆盖主从复制、自动故障切换、数据持久化、分布式共识、负载均衡和跨可用区部署。'
+category: 'Backend'
+tags: ['高可用', 'PostgreSQL', 'Redis', 'K3s', '中间件', '分布式系统', 'DevOps']
+author: 'Max Zhang'
+date: '2026-04-27'
+---
+
+> 核心视角：每个中间件自己挂了怎么办？它的数据怎么不丢？故障怎么自动恢复？
+
+---
+
+## 1. PostgreSQL 高可用
+
+### 1.1 主从复制（基础）
+
+```
+┌──────────┐   WAL 日志流    ┌──────────┐
+│  Master  │ ──────────────→ │  Slave   │
+│  读写    │   异步/同步复制   │  只读    │
+└──────────┘                 └──────────┘
+```
+
+**核心机制：WAL（Write-Ahead Log）**
+
+- 任何写操作先记日志再改数据文件
+- Master 把 WAL 持续发给 Slave
+- Slave 重放 WAL 达到数据同步
+
+**同步 vs 异步复制：**
+
+| 模式 | 配置 | 数据安全 | 写入延迟 | 故障时 |
+|------|------|---------|---------|--------|
+| 异步 | 默认 | Master 宕机可能丢最近几秒数据 | 低 | 切到 Slave 有数据窗口丢失 |
+| 同步 | `synchronous_commit = on` | Slave 确认后才返回客户端 | 高 | 数据零丢失，但 Slave 挂了 Master 写不了 |
+
+**实际折中方案：** 通常配 1 同步 + N 异步，兼顾安全性和可用性。
+
+### 1.1.1 WAL 复制与重放——Slave 到底怎么跟上的
+
+这个问题拆成三步：Master 怎么产生日志 → 怎么传给 Slave → Slave 怎么"重放"。
+
+#### 第一步：Master 产生 WAL 记录
+
+```
+客户端执行 UPDATE users SET name = '张三' WHERE id = 1;
+
+Master 内部执行路径（简化）：
+1. 解析 SQL → 生成执行计划
+2. 执行器去 buffer pool 找 id=1 的页面
+3. 修改内存中的页面（脏页，还没写到磁盘）
+4. 同时生成 WAL 记录，写入 WAL Buffer（内存里 16MB 的环形缓冲区）
+5. 事务 COMMIT → WAL 记录从 buffer 刷到磁盘（pg_wal/ 目录）
+
+WAL 记录长这样（概念，非真实二进制）：
+┌────────────────────────────────────────────┐
+│ LSN: 0/1A2B3C90     ← 全局唯一日志序列号    │
+│ 事务ID: 15678                                │
+│ 操作类型: HEAP_UPDATE                        │
+│ 表: users, 行: (0, 6)  ← (表空间, 页面号)   │
+│ 旧值: name='李四'                            │
+│ 新值: name='张三'                            │
+│ 校验和: 0xABCD                               │
+└────────────────────────────────────────────┘
+
+每条 WAL 记录都记录了"把哪个页面的哪一行从 A 状态改到 B 状态"，
+重放时不需要重新解析 SQL，直接应用页面变更即可。
+```
+
+关键概念——**LSN（Log Sequence Number）**：全局单调递增的 64 位指针，标识 WAL 流中的一个字节位置。类似 Kafka 的 offset。`pg_current_wal_lsn()` 可以查看当前写到哪里了。
+
+#### 第二步：WAL 从 Master 传到 Slave
+
+```
+Master                                    Slave
+┌──────────────┐                        ┌──────────────┐
+│  WAL Sender  │  ←── 流复制协议 ──→    │  WAL Receiver │
+│  (进程)      │     TCP 连接           │  (进程)       │
+└──────┬───────┘                        └──────┬───────┘
+       │                                       │
+  pg_wal/                                 pg_wal/
+┌──────────┐                            ┌──────────┐
+│0001...00AF│                            │0001...00AE│  ← 已接收到的 WAL 段
+│0001...00B0│                            │0001...00AF│
+│0001...00B1│← 正在写                    └──────────┘
+└──────────┘
+```
+
+**传输的两个阶段：**
+
+| 阶段 | 触发时机 | 传什么 |
+|------|---------|--------|
+| 文件级复制（catch-up） | Slave 首次连接或断开太久 | 把 Master 已完成的 WAL 文件（16MB 一个段）整体拷贝 |
+| 流式复制（streaming） | 文件追平后 | 实时：Master 刚生成的 WAL 记录，不等攒够 16MB，来了就发 |
+
+```sql
+-- 查看复制状态
+SELECT pid, state, sync_state, 
+       write_lag, flush_lag, replay_lag  -- 延迟时间
+FROM pg_stat_replication;
+
+-- 结果示例：
+-- state: streaming        ← 进入流式复制阶段
+-- write_lag: 00:00:00.01  ← WAL 写到 Slave 磁盘的延迟
+-- flush_lag: 00:00:00.02  ← fsync 落盘的延迟
+-- replay_lag: 00:00:00.05 ← 应用到数据文件的延迟（最关键）
+```
+
+**流复制协议内部：**
+
+```
+1. Slave 连接 Master，发送 START_REPLICATION 0/1A000000（从哪个 LSN 开始）
+2. Master fork 一个 WAL Sender 进程
+3. WAL Sender 读取 pg_wal 目录里的 WAL 段，找到 LSN 0/1A000000
+4. 从该位置开始，把 WAL 记录打包成复制消息，通过 TCP 流式发送
+5. 每发一条，附带 Keepalive 消息（Status Update）告诉 Slave 当前 LSN
+6. Slave 的 WAL Receiver 接收，写入本地 pg_wal/ 目录
+```
+
+#### 第三步：Slave 重放 WAL——真正"把数据同步过来"
+
+Slave 上有**两个进程**分工完成：
+
+```
+Master 的 WAL Sender 发来的流
+              │
+              ▼
+    ┌─────────────────┐
+    │  WAL Receiver   │  职责：接收 + 写盘
+    │  (walreceiver)  │  把收到的 WAL 记录写入 Slave 的 pg_wal/
+    └────────┬────────┘
+             │ 写到本地 WAL 文件
+             ▼
+    ┌─────────────────┐
+    │  Startup 进程   │  职责：重放（Apply）
+    │  (startup)      │  读取本地 WAL 文件，逐条应用到数据文件
+    └────────┬────────┘
+             │ 应用变更
+             ▼
+    ┌─────────────────┐
+    │  数据文件        │  base/ 目录下的表文件被修改
+    │  (base/)        │
+    └─────────────────┘
+```
+
+**Startup 进程重放的底层逻辑（简化版）：**
+
+```
+1. 读 WAL 记录：LSN 0/1A2B3C90 → 操作类型 HEAP_UPDATE, 表空间 0, 页面 6
+
+2. 去 buffer pool 找页面 (0, 6)：
+   - 如果在内存 → 直接修改 buffer pool 中的页面
+   - 如果不在 → 从磁盘读入 buffer pool，再修改
+
+3. 把那条记录的 name 从 '李四' 改成 '张三'
+
+4. 修改后的页面标记为脏页（dirty page）
+   后台 Checkpointer 会异步刷盘
+
+5. 更新 Slave 本地的 replay LSN 指针，移到下一条记录
+
+6. 重复 1-5，逐条重放所有未应用的 WAL 记录
+```
+
+**关键：WAL 重放不是重新执行 SQL**
+
+WAL 记录的是**页面级别的物理变更**，不是逻辑 SQL。所以重放效率极高——不需要重新解析 SQL、不需要重新走索引查找、不需要重新计算约束。直接告诉 Startup 进程"把第 6 页的第 3 行改成 XXX"，CPU 开销极低。
+
+这也是为什么 Slave 的 replay 速度通常**远快于** Master 上的原始写入速度——写的时候要做 constraint check、触发器、索引维护；重放时直接改页面，跳过这些。
+
+#### 三种延迟指标的含义
+
+```
+时间线：
+  Master 执行 COMMIT(写 WAL)
+      │
+      ▼  write_lag  ──── WAL 流已经到达 Slave 的内存缓冲区
+      │
+      ▼  flush_lag  ──── WAL Receiver 已 fsync 到 Slave 磁盘
+      │
+      ▼  replay_lag ──── Startup 已应用到数据文件，数据真正可见
+      │
+      ▼  现在 Slave 上的查询能读到这条数据了
+```
+
+| 指标 | 含义 | 正常值 | 关注点 |
+|------|------|--------|--------|
+| `write_lag` | WAL 到达 Slave 到写入 Slave 磁盘的延迟 | < 1ms | 网络延迟 |
+| `flush_lag` | 写入磁盘到 fsync 落盘的延迟 | < 1ms | 磁盘 IO |
+| `replay_lag` | fsync 到 Startup 应用完成的延迟 | < 5ms | **这个最重要**，Slave 追不上就用不了同步复制 |
+
+#### 什么时候会追不上
+
+```
+Slave 重放跟不上 Master 写入的典型场景：
+- Master 上跑大事务（一次性改 1000 万行，产生海量 WAL）
+- Master 的磁盘 IO 比 Slave 好（SSD vs HDD）
+- Slave 上跑了大量只读查询，占用了 CPU/IO
+- 网络抖动导致 WAL 到达不及时
+
+对策：
+- pg_stat_replication.replay_lag 设告警
+- 大事务拆成小批量
+- Slave 专用（不接查询流量），或至少限制查询资源
+- wal_keep_size 设大点，Slave 断开重连后可以从已有的 WAL 文件补，不必全量重做
+```
+
+#### 文件级 vs 流式复制的开关
+
+```ini
+# postgresql.conf on Master
+wal_level = replica          # 产生足够 Slave 重放的 WAL
+max_wal_senders = 5          # 最多同时 5 个 Slave 连接
+wal_keep_size = 1GB          # 保留 1GB WAL 文件供 Slave 追进度
+
+# postgresql.conf on Slave（或通过 pg_basebackup 初始化时自动配置）
+primary_conninfo = 'host=master-ip port=5432 user=replicator password=xxx'
+# 连上 Master 后自动启动 WAL Receiver，先文件追平再切流式
+```
+
+**pg_basebackup 做了什么（重建 Slave 的全过程）：**
+
+```
+1. 连上 Master，创建一个 replication slot（标记"从此刻开始保留 WAL"）
+2. 对 Master 的数据文件通过复制协议做一个物理备份（tar 包）
+3. Slaves 用这个 tar 包恢复出自己的数据目录
+4. 启动时读取 backup_label 文件，知道从哪个 LSN 开始重放
+5. 启动 WAL Receiver，从该 LSN 开始追 WAL
+6. 追平后进入 streaming 模式，持续同步
+```
+
+### 1.2 自动故障切换：Patroni + etcd
+
+光有主从不够——Master 挂了需要**自动**把 Slave 提成 Master。
+
+```
+┌──────────┐    ┌──────────┐    ┌──────────┐
+│  Patroni  │    │  Patroni  │    │  Patroni  │
+│ (Master) │    │ (Slave)  │    │ (Slave)  │
+└────┬─────┘    └────┬─────┘    └────┬─────┘
+     │               │               │
+     └───────────────┼───────────────┘
+                     │ 锁竞争 / 心跳
+               ┌─────┴─────┐
+               │    etcd    │  分布式共识（谁是 Master）
+               └───────────┘
+```
+
+**故障切换流程：**
+
+```
+1. Patroni 持续向 etcd 发心跳 + 更新自己的 LSN 位置
+2. Master 挂了 → etcd 里的 key 过期（TTL 超时）
+3. 所有 Slave 上的 Patroni 检测到锁释放 → 竞选
+4. 数据最新的 Slave 抢到锁 → 执行 pg_ctl promote 把自己升为 Master
+5. 其他 Slave 自动 follow 新 Master
+6. 整个过程 10-30 秒
+```
+
+**etcd 自身怎么高可用的？**
+
+- 3 或 5 节点 Raft 集群
+- 写请求必须半数以上节点确认
+- 挂掉少于半数节点，集群继续工作
+- 3 节点允许挂 1 个，5 节点允许挂 2 个
+
+### 1.3 连接池中间件：PgBouncer
+
+PostgreSQL 每个连接 fork 一个进程（约 5-10MB），几千连接直接撑爆。
+
+```
+应用 Pod × N           PgBouncer × 2           PostgreSQL
+┌─────┐ ┌─────┐        ┌──────────┐           ┌──────────┐
+│ App │ │ App │ ...    │ PgBouncer │──10 连接─→│  Master  │
+└──┬──┘ └──┬──┘        └────┬─────┘           └──────────┘
+   │ 短连接  │              │ 长连接复用
+   └────────┼──────────────┘
+            │  几百个客户端连接复用成十几个 PG 连接
+```
+
+PgBouncer 自身高可用：**部署 2 个实例 + 应用侧连接串配多个地址**（或前置一个 HAProxy）。
+
+### 1.4 备份与恢复
+
+```
+策略：全量备份 + 持续 WAL 归档
+
+pg_basebackup（每周全量）+ WAL 持续归档到 S3/MinIO
+→ 可以恢复到任意时间点（PITR，Point-in-Time Recovery）
+→ RPO 取决于 WAL 归档频率，通常几十秒
+```
+
+---
+
+## 2. Redis 高可用
+
+### 2.1 三种模式对比
+
+| 模式 | 数据分片 | 故障转移 | 适用场景 | 备注 |
+|------|---------|---------|---------|------|
+| 单机 | 无 | 无 | 开发环境 | ❌ 生产禁用 |
+| 主从 | 无，全量复制 | 手动切 | 读多写少，数据量小 | 早期阶段 |
+| Sentinel | 无，全量复制 | **自动** | 中等数据量（< 几十 GB） | 生产常用 |
+| Cluster | 16384 槽分片 | 自动 | 大数据量 + 高吞吐 | 大规模场景 |
+
+### 2.2 Sentinel 模式（核心）
+
+```
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│  Sentinel 1 │  │  Sentinel 2 │  │  Sentinel 3 │  最少 3 个，独立部署
+└──────┬──────┘  └──────┬──────┘  └──────┬──────┘
+       │                │                │
+       └────────┬───────┴────────┬───────┘
+                │  监控 + 投票    │
+        ┌───────┴───┐       ┌───┴───────┐
+        │   Master  │ ────→ │   Slave   │
+        │   Redis   │ 复制   │   Redis   │
+        └───────────┘       └───────────┘
+```
+
+**Sentinel 的核心职责（3 件事）：**
+
+1. **监控**：Sentinel 每秒 Ping Master 和 Slave，`down-after-milliseconds` 超时就判主观下线
+2. **投票**：一个 Sentinel 觉得 Master 挂了不算，需过半 Sentinel 同意才算客观下线（防止网络分区误判）
+3. **切换**：选出新 Master → 所有 Slave 改跟新 Master → 通知客户端新地址
+
+**切换流程时间线：**
+
+```
+T+0s:   Master 宕机
+T+30s:  Sentinel 判定主观下线（down-after-milliseconds）
+T+30s:  过半 Sentinel 同意 → 客观下线
+T+31s:  选数据最全的 Slave 做新 Master
+T+32s:  其他 Slave 切换复制目标
+T+32s:  Sentinel 通知所有客户端新 Master 地址
+```
+
+**客户端怎么知道新地址？** 应用不直连 Redis，连 Sentinel：
+
+```typescript
+// ioredis 自动处理 Sentinel 切换
+const redis = new Redis({
+  sentinels: [
+    { host: 'sentinel-1', port: 26379 },
+    { host: 'sentinel-2', port: 26379 },
+    { host: 'sentinel-3', port: 26379 },
+  ],
+  name: 'mymaster', // Sentinel 监控的集群名
+});
+// Master 切走后，客户端短暂失败后自动连新 Master
+```
+
+### 2.3 Redis Cluster 模式
+
+当数据量超过单机内存，Sentinel 模式不够用——所有节点存全量数据是对内存的浪费。Cluster 模式把数据打散：
+
+```
+16384 个哈希槽（slot），均匀分给多个节点：
+
+Master 1 (0-5460)      Master 2 (5461-10922)    Master 3 (10923-16383)
+     │                        │                        │
+     ├── Slave 1               ├── Slave 2               ├── Slave 3
+     │   (备份 M1)             │   (备份 M2)             │   (备份 M3)
+```
+
+**特点：**
+- 每个 Master 只存一部分数据，不是全量
+- 写入时 `CRC16(key) % 16384` 决定去哪个节点
+- Master 挂了，它的 Slave 自动顶上来（和 Sentinel 类似，但通过 Gossip 协议投票，不需要额外 Sentinel 进程）
+- 扩容时 slot 自动迁移（`redis-cli --cluster reshard`）
+
+**Cluster 自身的高可用保障：**
+
+```
+Gossip 协议：
+- 每个节点定时随机选几个节点交换信息（谁在线、谁负责哪些 slot）
+- 不用中心节点，消息最终会传到全集群
+- 优点：去中心化，没有单点
+- 缺点：故障检测比 Sentinel 慢（秒级 vs 毫秒级）
+```
+
+### 2.4 Redis 持久化
+
+Redis 持久化有两条路：
+
+| 机制 | 做法 | RPO | 性能影响 | 推荐 |
+|------|------|-----|---------|------|
+| RDB | 定时快照（如每 5 分钟 dump 一次全量内存） | 最多丢 5 分钟 | 低 | 作为冷备 |
+| AOF | 每条写命令追加到日志文件 | 可配每秒 fsync，最多丢 1 秒 | 中 | **生产必开** |
+| 混合 | RDB 做底盘 + AOF 做增量 | 同上 | 中 | **Redis 4.0+ 推荐** |
+
+```conf
+# redis.conf 关键配置
+save 900 1          # 15 分钟内至少有 1 个 key 变化，触发 RDB
+save 300 10         # 5 分钟内 10 个变化
+save 60 10000       # 1 分钟内 10000 个变化
+
+appendonly yes      # 开启 AOF
+appendfsync everysec # 每秒刷一次盘（性能与安全的平衡）
+
+aof-use-rdb-preamble yes  # 开启混合持久化
+```
+
+---
+
+## 3. BullMQ 的可靠性（基于 Redis）
+
+BullMQ 依赖 Redis，所以它的高可用本质上 = **Redis 高可用 + 自身容错设计**。
+
+### 3.1 数据存在哪
+
+```
+BullMQ 的数据结构（全存在 Redis 里）：
+- wait (list)：等待执行的任务
+- active (list)：正在执行的任务
+- completed (set)：已完成的任务
+- failed (set)：失败的任务
+- delayed (zset)：延迟任务（按时间排序）
+- stalled (set)：卡住没心跳的任务
+```
+
+如果 Redis 丢了这些 key，队列就空了 → 依赖 Redis AOF + RDB 持久化保底。
+
+### 3.2 Stalled 任务检测（防止 Worker 挂了丢任务）
+
+```
+正常流程：
+Worker 取到任务 → 任务从 wait 移到 active → 执行中定时发心跳
+
+Worker 崩了：
+心跳中断 → BullMQ 检测到任务卡住超过 lockDuration → 移回 wait → 其他 Worker 接手
+
+关键配置：
+  lockDuration: 30000,   // 30 秒没心跳就算 stalled
+  stalledInterval: 30000, // 每 30 秒扫一次 stalled 队列
+```
+
+### 3.3 BullMQ 生产架构可靠程度
+
+```
+             BullMQ (基于 Redis Sentinel)
+                    │
+        ┌───────────┼───────────┐
+   Worker-1      Worker-2      Worker-3
+   (K3s Pod)     (K3s Pod)     (K3s Pod)
+   node-A        node-B        node-C
+```
+
+- Redis 侧：Sentinel 保证 Redis Master 挂了自动切
+- Worker 侧：K3s Deployment 多副本，Pod 挂了自动重建，新 Pod 继续消费
+- 任务保护：stalled 检测兜底，Worker 崩溃的任务其他人接手
+
+**缺陷：** 如果 Redis 整个集群同时崩了（比如 3 个 Sentinel 节点全挂），BullMQ 全线瘫痪——但这属于极端情况，Redis Cluster + 跨 AZ 部署可以进一步降低概率。
+
+---
+
+## 4. K3s 自身高可用
+
+### 4.1 架构
+
+```
+┌────────────────────────────────────────────────────┐
+│                   K3s 集群                          │
+│                                                    │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐        │
+│  │ Server 1 │  │ Server 2 │  │ Server 3 │        │
+│  │ (master) │  │ (master) │  │ (master) │  HA     │
+│  │          │  │          │  │          │        │
+│  │  etcd    │  │  etcd    │  │  etcd    │  3节点  │
+│  │  API     │  │  API     │  │  API     │        │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘        │
+│       │             │             │               │
+│       └──────┬──────┴──────┬──────┘               │
+│              │   内嵌 etcd 集群（Raft）              │
+│              │                                      │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐        │
+│  │ Agent 1  │  │ Agent 2  │  │ Agent N  │        │
+│  │ (worker) │  │ (worker) │  │ (worker) │  工作负载│
+│  └──────────┘  └──────────┘  └──────────┘        │
+└────────────────────────────────────────────────────┘
+```
+
+K3s 自带内嵌 etcd（或者也可以接外部 etcd 集群）。内嵌版的 Server 节点自带 etcd，最少 3 台 Server。
+
+### 4.2 K3s 控制面挂了会怎样
+
+```
+挂了 1 台 Server（etcd 还满足半数以上 → 3 节点剩 2）：
+  ✅ 集群正常，API Server 的另一台继续服务
+  ✅ 已有的 Pod 完全不受影响，继续运行
+  ✅ 可以正常创建/更新/删除资源
+
+挂了 2 台 Server（etcd 不满足半数 → 3 节点剩 1）：
+  ❌ etcd 不可写 → 不能创建/更新/删除 Pod、Service 等
+  ✅ 已有 Pod 继续运行（因为 kubelet 在 agent 上独立工作）
+  ✅ 已有 Service 继续转发流量（iptables 规则不依赖 API Server）
+```
+
+**关键结论：所有东西都挂在控制面也不影响已经跑着的 Pod 和流量转发。** 这就是 K8s 设计最精妙的地方——数据面和控制面解耦。
+
+### 4.3 高可用部署的细节
+
+```bash
+# 第一个 Server（初始化 etcd 集群）
+curl -sfL https://get.k3s.io | sh -s - server \
+  --cluster-init \                      # 初始化 etcd 集群
+  --tls-san loadbalancer.example.com    # 证书包含 LB 的域名
+
+# 第二个和第三个 Server（加入 etcd 集群）
+curl -sfL https://get.k3s.io | sh -s - server \
+  --server https://server-1-ip:6443 \
+  --token <token>
+
+# Agent 节点（不参与 etcd）
+curl -sfL https://get.k3s.io | K3S_URL=https://loadbalancer.example.com:6443 K3S_TOKEN=<token> sh -
+```
+
+**API Server 的负载均衡：** Server 节点前加一个 TCP 负载均衡（HAProxy/Nginx 或云厂商 LB），agent 节点通过 LB 连 API Server。任意一台 Server 挂了，LB 自动切到健康的。
+
+### 4.4 生产环境多层高可用保障
+
+```
+层面          │  保障方式
+──────────────┼─────────────────────────────
+K3s 控制面    │  3 Server + 内嵌 etcd + 前置 LB
+Worker 节点   │  多节点 + DaemonSet/PodAffinity 控制调度
+Pod           │  Deployment replicas + liveness/readiness 探针
+Service       │  自动负载均衡 + Endpoint 健康检查
+Ingress       │  Nginx Ingress + 多副本
+存储          │  PVC + Longhorn（分布式块存储，K3s 原生支持）
+中间件        │  各自独立的 HA 机制（见上面各节）
+```
+
+---
+
+## 5. 负载均衡自身高可用
+
+### 5.1 两层负载均衡
+
+```
+                     DNS 或云 LB
+                          │
+              ┌───────────┼───────────┐
+              ▼           ▼           ▼
+         ┌─────────┐ ┌─────────┐ ┌─────────┐
+         │Ingress 1│ │Ingress 2│ │Ingress 3│  L7 层（Nginx Ingress）
+         │ Pod     │ │ Pod     │ │ Pod     │  K3s Deployment 保活
+         └────┬────┘ └────┬────┘ └────┬────┘
+              │           │           │
+              └───────────┼───────────┘
+                          │
+              ┌───────────┼───────────┐
+              ▼           ▼           ▼
+         ┌─────────┐ ┌─────────┐ ┌─────────┐
+         │ App Pod │ │ App Pod │ │ App Pod │  业务 Pod
+         └─────────┘ └─────────┘ └─────────┘
+                   ↑ 这一层是 K3s Service
+                     iptables/ipvs 自动负载均衡
+```
+
+**两层的区别：**
+
+- **L7 Ingress**：基于域名/路径路由，能终止 TLS，做限流重写等。自身用 Deployment 多副本保活。
+- **L4 Service**：TCP/UDP 层直通 Pod，由 kube-proxy 维护 iptables 规则。**这层根本没有进程可以挂**——就是几条 iptables 规则，由内核执行。K3s Service 比任何用户态 LB 都稳。
+
+### 5.2 Keepalived + 浮动 IP（自建机房方案）
+
+如果不在 K8s 里，传统自建 LB 怎么保证 LB 本身不挂：
+
+```
+         VIP (虚拟 IP: 10.0.0.100)
+              │
+    ┌─────────┴─────────┐
+    │                   │
+┌───┴────┐         ┌───┴────┐
+│ LB-1   │         │ LB-2   │
+│ 主 (抢占│ ← VRRP → │ 备     │
+│ VIP的)  │   心跳   │        │
+└────────┘         └────────┘
+
+VRRP 协议：
+- 两台 LB 通过 VRRP 心跳互相监控
+- 主 LB 持有 VIP，由它来响应 ARP 请求
+- 主挂了 → 备检测不到心跳 → 抢过 VIP
+- 客户端始终访问 VIP，不知道后端切了
+- 切换时间通常 1-3 秒
+```
+
+**云厂商方案：** 云厂商的 LoadBalancer Service 自动创建云 LB（阿里云 SLB、AWS ELB 等），由云厂商保证 LB 自身高可用。
+
+---
+
+## 6. Consul 自身高可用
+
+### 6.1 集群架构
+
+```
+         ┌──────────┐  ┌──────────┐  ┌──────────┐
+         │ Consul-1 │  │ Consul-2 │  │ Consul-3 │   3-5 节点
+         │ (Leader) │  │(Follower)│  │(Follower)│
+         └────┬─────┘  └────┬─────┘  └────┬─────┘
+              │             │             │
+              └─────────────┼─────────────┘
+                      Raft 共识协议
+```
+
+**和 etcd 几乎一样的原理：**
+- Raft 算法选 Leader
+- 写请求由 Leader 处理并复制到 Follower
+- 半数以上节点确认后才返回成功
+- Leader 挂了自动选举新 Leader
+- 3 节点挂 1 还能正常工作
+
+### 6.2 健康检查粒度
+
+```
+Consul 健康检查支撑的失败驱逐链路：
+
+Consul → 每个微服务实例注册 + 健康检查 → 不健康 → 从 DNS 列表移除
+
+客户端走 Consul DNS 解析请求，自动拿到健康实例列表
+
+整个链路（每个环节都有超时 + 重试 + 熔断，熔断状态也在 Consul 里共享）：
+服务 A 调服务 B → B 有多个实例 → Consul 只返回健康的 → A 侧负载均衡
+```
+
+---
+
+## 7. 消息队列高可用（Kafka 对比）
+
+BullMQ 基于 Redis Sentinel 做高可用，对比传统消息队列 Kafka：
+
+### 7.1 Kafka 高可用
+
+```
+Topic: ad-events (3 分区, 副本数 3)
+
+Partition 0                    Partition 1                    Partition 2
+┌──────────────┐              ┌──────────────┐              ┌──────────────┐
+│ Leader (B-1) │              │ Leader (B-2) │              │ Leader (B-3) │
+│ Follower(B-2)│              │ Follower(B-3)│              │ Follower(B-1)│
+│ Follower(B-3)│              │ Follower(B-1)│              │ Follower(B-2)│
+└──────────────┘              └──────────────┘              └──────────────┘
+
+各 Partition 的 Leader 均匀分布在 3 台 Broker 上
+每台 Broker 挂了，ISR（In-Sync Replicas）里有 Follower 能接替
+```
+
+**关键概念——ISR（In-Sync Replicas）：**
+- 不是所有 Follower 都有资格当 Leader
+- 只有跟 Leader 的同步延迟在阈值内的 Follower 才在 ISR 集合里
+- Leader 挂了，新 Leader 只能从 ISR 中选——保证数据不丢
+
+**acks 参数决定数据安全级别：**
+
+| acks | 含义 | 可靠性 | 延迟 |
+|------|------|--------|------|
+| 0 | 发了就不管 | 可能丢 | 最低 |
+| 1 | Leader 写成功就返回 | Leader 挂了可能丢 | 中等 |
+| all（-1） | 所有 ISR 都写成功才返回 | 最高 | 最高 |
+
+---
+
+## 8. 跨可用区高可用
+
+**拓扑结构：**
+
+```
+              用户
+               │
+          DNS / GSLB
+      ┌───────┴───────┐
+      │               │
+   可用区 A          可用区 B
+   ┌────────────────┐ ┌────────────────┐
+   │  K3s 集群       │ │  K3s 集群       │
+   │  3 Server      │ │  3 Server      │
+   │                │ │                │
+   │  应用 Pod × N   │ │  应用 Pod × N   │
+   │  Redis Cluster │ │  Redis Cluster │
+   │  PG (Master)   │ │  PG (Slave)    │
+   │  PgBouncer     │ │  PgBouncer     │
+   └────────────────┘ └────────────────┘
+```
+
+**关键：可用区之间物理隔离**（不同机房/不同城市），但同时依赖同一个故障域的概念。
+
+**三种部署层级：**
+
+| 层级 | 定义 | 能防什么 | 典型实现 |
+|------|------|---------|---------|
+| 同 AZ 多副本 | 同机房多机器 | 单台机器故障 | K3s 多节点 + Pod 多副本 |
+| 跨 AZ 部署 | 同城多机房 | 单个机房断电/网络故障 | K3s 节点分布在不同机房 |
+| 异地多活 | 跨城市 | 整个城市灾难 | 深圳 + 上海互相备份 |
+
+**数据库跨 AZ 的关键问题——延迟：**
+- 同城跨 AZ 延迟通常 1-3ms，主从同步可行
+- 跨城延迟 20-50ms，主从同步严重影响写入性能 → 只能异步复制
+- 数据一致性 vs 写入延迟的矛盾是异地多活的核心难点
+
+**实际部署情况：**
+
+单 AZ 部署（K3s 集群多节点 + 所有中间件 HA），Redis Sentinel + PostgreSQL Patroni 做自动故障切换。跨 AZ 暂未实施——当前业务 P99 延迟要求 200ms，跨 AZ 部署成本高且增加的延迟对 AI 视频生成场景不敏感。后续优先做 PostgreSQL 跨 AZ 异步只读副本做灾备。
+
+---
+
+## 总结：各中间件 HA 速查表
+
+| 中间件 | 自身 HA 机制 | 故障检测 | 自动切换 | 数据安全依赖 |
+|--------|------------|---------|---------|------------|
+| PostgreSQL | Patroni + etcd Raft | etcd TTL 超时 | ✅ 10-30s | 同步复制 → 零丢失 |
+| Redis Sentinel | 多 Sentinel 投票 | 每秒 PING + 主观/客观下线 | ✅ 秒级 | AOF + 混合持久化 |
+| Redis Cluster | Gossip 协议 | 节点间互相探测 | ✅ | AOF + RDB |
+| BullMQ | 依赖 Redis HA + Stalled 检测 | 心跳超时 | ✅ Worker 级 | Redis 持久化 |
+| K3s Server | 内嵌 etcd Raft | etcd 心跳 | ✅ Leader 选举 | etcd 持久化（快照 + WAL） |
+| K3s Agent | kubelet 心跳 | Node NotReady | Pod 漂移到健康节点 | 节点本地无状态 |
+| Consul | Raft 共识 | Serf 成员探测 | ✅ Leader 选举 | Raft 日志持久化 |
+| Nginx Ingress | K3s Deployment 多副本 | readiness 探针 | ✅ Pod 重建 | 无状态 |
+| K3s Service | iptables 规则 | Endpoint 健康检查 | ✅ 自动摘除 | 内核态，无进程可挂 |
+| Kafka | ISR + ZK/Raft | 副本同步监控 | ✅ 分区 Leader 重选 | acks=all + ISR |

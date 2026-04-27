@@ -1,0 +1,721 @@
+---
+title: 'Production Middleware High Availability: A Comprehensive Guide'
+summary: 'Deep dive into HA implementation mechanisms of PostgreSQL, Redis, BullMQ, K3s, Consul, and Kafka in production environments, covering replication, automatic failover, persistence, distributed consensus, load balancing, and multi-AZ deployment.'
+category: 'Backend'
+tags: ['High Availability', 'PostgreSQL', 'Redis', 'Kubernetes', 'Middleware', 'Distributed Systems', 'DevOps']
+author: 'Max Zhang'
+date: '2026-04-27'
+---
+
+> Core perspective: What happens when each middleware component itself goes down? How do we prevent data loss? How does failure recovery happen automatically?
+
+---
+
+## 1. PostgreSQL High Availability
+
+### 1.1 Primary-Replica Replication (Foundation)
+
+```
+┌──────────┐   WAL Log Stream   ┌──────────┐
+│  Master  │ ──────────────→ │  Slave   │
+│  Read/Write │   Async/Sync Replication   │ Read-Only │
+└──────────┘                 └──────────┘
+```
+
+**Core mechanism: WAL (Write-Ahead Log)**
+
+- Every write operation is logged first before modifying data files
+- Master continuously sends WAL to Slave
+- Slave replays WAL to achieve data synchronization
+
+**Synchronous vs. Asynchronous Replication:**
+
+| Mode | Configuration | Data Safety | Write Latency | On Failure |
+|------|------|---------|---------|--------|
+| Async | Default | May lose the last few seconds of data on Master crash | Low | Data window loss on failover to Slave |
+| Sync | `synchronous_commit = on` | Acknowledged only after Slave confirms | High | Zero data loss, but Master cannot write if Slave is down |
+
+**Practical compromise:** Typically deploy 1 synchronous replica + N asynchronous replicas to balance safety and availability.
+
+### 1.1.1 WAL Replication and Replay — How Does the Slave Actually Keep Up
+
+This breaks down into three steps: how the Master generates logs → how they are transmitted to the Slave → how the Slave "replays" them.
+
+#### Step 1: The Master Generates WAL Records
+
+```
+Client executes: UPDATE users SET name = 'John' WHERE id = 1;
+
+Master internal execution path (simplified):
+1. Parse SQL → generate execution plan
+2. Executor looks up page (0, 6) for id=1 in buffer pool
+3. Modify the in-memory page (dirty page, not yet written to disk)
+4. Simultaneously generate WAL record, write to WAL Buffer (16MB ring buffer in memory)
+5. Transaction COMMIT → WAL record flushed from buffer to disk (pg_wal/ directory)
+
+WAL record conceptually looks like this (not actual binary):
+┌────────────────────────────────────────────┐
+│ LSN: 0/1A2B3C90          ← globally unique log sequence number │
+│ Transaction ID: 15678                                            │
+│ Operation Type: HEAP_UPDATE                                      │
+│ Table: users, Row: (0, 6)    ← (tablespace, page number)        │
+│ Old value: name='Jane'                                           │
+│ New value: name='John'                                           │
+│ Checksum: 0xABCD                                                 │
+└────────────────────────────────────────────┘
+
+Each WAL record captures "which page's which row changed from state A to state B."
+Replay does not need to re-parse SQL — it directly applies the page-level change.
+```
+
+Key concept — **LSN (Log Sequence Number)** : A globally monotonic 64-bit pointer identifying a byte position in the WAL stream, akin to a Kafka offset. Use `pg_current_wal_lsn()` to check the current write position.
+
+#### Step 2: WAL Transmission from Master to Slave
+
+```
+Master                                    Slave
+┌──────────────┐                        ┌──────────────┐
+│  WAL Sender  │  ←── streaming protocol ──→  │  WAL Receiver │
+│  (process)   │     TCP connection            │  (process)   │
+└──────┬───────┘                        └──────┬───────┘
+       │                                       │
+   pg_wal/                                 pg_wal/
+┌──────────┐                            ┌──────────┐
+│0001...00AF│                            │0001...00AE│  ← WAL segments received so far
+│0001...00B0│                            │0001...00AF│
+│0001...00B1│← writing now                └──────────┘
+└──────────┘
+```
+
+**Two phases of transmission:**
+
+| Phase | Trigger | What is sent |
+|------|---------|--------|
+| File-based replication (catch-up) | Slave first connects or has been disconnected too long | Copy entire completed WAL files (16MB per segment) from Master |
+| Streaming replication | After files are caught up | Real-time: WAL records as soon as Master generates them, without waiting for a full 16MB segment |
+
+```sql
+-- Check replication status
+SELECT pid, state, sync_state, 
+       write_lag, flush_lag, replay_lag  -- latency metrics
+FROM pg_stat_replication;
+
+-- Sample result:
+-- state: streaming        ← entered streaming replication phase
+-- write_lag: 00:00:00.01  ← latency for WAL to be written to Slave disk
+-- flush_lag: 00:00:00.02  ← latency for fsync to durable storage
+-- replay_lag: 00:00:00.05 ← latency for applying to data files (most critical)
+```
+
+**Streaming replication protocol internals:**
+
+```
+1. Slave connects to Master, sends START_REPLICATION 0/1A000000 (which LSN to start from)
+2. Master forks a WAL Sender process
+3. WAL Sender reads WAL segments in pg_wal, locates LSN 0/1A000000
+4. Starting from that position, packages WAL records into replication messages, streams via TCP
+5. With each message, sends Keepalive messages (Status Update) indicating current LSN
+6. Slave's WAL Receiver receives and writes to local pg_wal/ directory
+```
+
+#### Step 3: Slave Replays WAL — Actually "Syncing the Data"
+
+Two processes on the Slave divide the work:
+
+```
+WAL stream from Master's WAL Sender
+              │
+              ▼
+     ┌─────────────────┐
+     │  WAL Receiver   │  Responsibility: receive + write to disk
+     │  (walreceiver)  │  Writes received WAL records to Slave's pg_wal/
+     └────────┬────────┘
+              │ writes to local WAL files
+              ▼
+     ┌─────────────────┐
+     │  Startup Process│  Responsibility: replay (apply)
+     │  (startup)      │  Reads local WAL files, applies records one by one to data files
+     └────────┬────────┘
+              │ applies changes
+              ▼
+     ┌─────────────────┐
+     │  Data Files     │  Table files under base/ directory are modified
+     │  (base/)        │
+     └─────────────────┘
+```
+
+**Underlying replay logic of the Startup process (simplified):**
+
+```
+1. Read WAL record: LSN 0/1A2B3C90 → operation type HEAP_UPDATE, tablespace 0, page 6
+
+2. Look up page (0, 6) in buffer pool:
+   - If in memory → directly modify the page in buffer pool
+   - If not → read from disk into buffer pool, then modify
+
+3. Change that row's name from 'Jane' to 'John'
+
+4. Mark the modified page as dirty
+   Background Checkpointer will asynchronously flush to disk
+
+5. Update Slave's local replay LSN pointer, advance to next record
+
+6. Repeat 1-5, replaying all unapplied WAL records one by one
+```
+
+**Key insight: WAL replay is NOT re-executing SQL**
+
+WAL records are **page-level physical changes**, not logical SQL statements. This makes replay extremely efficient — no need to re-parse SQL, re-traverse indexes, or re-evaluate constraints. The Startup process is simply told "modify row 3 on page 6 to XXX," incurring minimal CPU overhead.
+
+This is also why Slave replay speed is typically **much faster** than the original write speed on the Master — writes involve constraint checks, triggers, and index maintenance; replay applies page changes directly, skipping all of that.
+
+#### The Meaning of the Three Latency Metrics
+
+```
+Timeline:
+   Master executes COMMIT (writes WAL)
+       │
+       ▼  write_lag  ──── WAL stream has reached Slave's memory buffer
+       │
+       ▼  flush_lag  ──── WAL Receiver has fsynced to Slave disk
+       │
+       ▼  replay_lag ──── Startup has applied to data files, data is now visible
+       │
+       ▼  Queries on Slave can now read this data
+```
+
+| Metric | Meaning | Normal Range | What to Watch |
+|------|------|--------|--------|
+| `write_lag` | Delay from WAL arriving at Slave to being written to Slave disk | < 1ms | Network latency |
+| `flush_lag` | Delay from disk write to fsync completion | < 1ms | Disk I/O |
+| `replay_lag` | Delay from fsync to Startup completing application | < 5ms | **Most critical** — if Slave can't keep up, synchronous replication is unusable |
+
+#### When the Slave Falls Behind
+
+```
+Typical scenarios where Slave replay cannot keep up with Master writes:
+- Master runs large transactions (modifying 10 million rows at once, generating massive WAL)
+- Master's disk I/O is superior to Slave's (SSD vs HDD)
+- Slave is serving a heavy read query workload, consuming CPU/I/O
+- Network jitter causing delayed WAL delivery
+
+Mitigations:
+- Set alerts on pg_stat_replication.replay_lag
+- Break large transactions into small batches
+- Dedicate Slave to replication only (no query traffic), or at least limit query resources
+- Increase wal_keep_size so a reconnecting Slave can catch up from retained WAL files without a full re-sync
+```
+
+#### File-Based vs. Streaming Replication Configuration
+
+```ini
+# postgresql.conf on Master
+wal_level = replica          # generate sufficient WAL for Slave replay
+max_wal_senders = 5          # at most 5 simultaneous Slave connections
+wal_keep_size = 1GB          # retain 1GB of WAL files for Slave catch-up
+
+# postgresql.conf on Slave (or auto-configured during pg_basebackup initialization)
+primary_conninfo = 'host=master-ip port=5432 user=replicator password=xxx'
+# After connecting to Master, WAL Receiver automatically starts: file catch-up first, then streaming
+```
+
+**What pg_basebackup does (the full process of rebuilding a Slave):**
+
+```
+1. Connects to Master, creates a replication slot (marks "retain WAL from this point onward")
+2. Takes a physical backup of Master's data files via the replication protocol (tar archive)
+3. Slave uses this tar archive to restore its own data directory
+4. On startup, reads the backup_label file to know which LSN to start replaying from
+5. Starts WAL Receiver, begins catching up WAL from that LSN
+6. Once caught up, enters streaming mode for continuous synchronization
+```
+
+### 1.2 Automatic Failover: Patroni + etcd
+
+Having replication alone is insufficient — when the Master fails, we need **automatic** promotion of a Slave to Master.
+
+```
+┌──────────┐    ┌──────────┐    ┌──────────┐
+│  Patroni  │    │  Patroni  │    │  Patroni  │
+│ (Master) │    │ (Slave)  │    │ (Slave)  │
+└────┬─────┘    └────┬─────┘    └────┬─────┘
+     │               │               │
+     └───────────────┼───────────────┘
+                     │ Lock contention / Heartbeat
+                ┌─────┴─────┐
+                │    etcd    │  Distributed consensus (who is Master)
+                └───────────┘
+```
+
+**Failover flow:**
+
+```
+1. Patroni continuously sends heartbeats to etcd + updates its LSN position
+2. Master fails → etcd key expires (TTL timeout)
+3. All Patroni instances on Slaves detect lock release → leader election
+4. The Slave with the most up-to-date data acquires the lock → executes pg_ctl promote to become Master
+5. Other Slaves automatically follow the new Master
+6. Entire process takes 10-30 seconds
+```
+
+**How is etcd itself highly available?**
+
+- 3 or 5-node Raft cluster
+- Write requests must be acknowledged by a majority of nodes
+- Cluster continues operating if fewer than half the nodes fail
+- 3 nodes tolerate 1 failure, 5 nodes tolerate 2 failures
+
+### 1.3 Connection Pooling Middleware: PgBouncer
+
+PostgreSQL forks a process per connection (~5-10MB each). Thousands of connections will exhaust resources.
+
+```
+App Pods × N                  PgBouncer × 2                 PostgreSQL
+┌─────┐ ┌─────┐              ┌──────────┐           ┌──────────┐
+│ App │ │ App │ ...          │ PgBouncer │──10 conns─→│  Master  │
+└──┬──┘ └──┬──┘              └────┬─────┘           └──────────┘
+   │ Short-lived│                  │ Long-lived connection reuse
+   └────────┼──────────────────────┘
+            │  Hundreds of client connections multiplexed into a dozen PG connections
+```
+
+PgBouncer's own HA: **deploy 2 instances + configure multiple addresses in the application connection string** (or front with HAProxy).
+
+### 1.4 Backup and Recovery
+
+```
+Strategy: Full backup + continuous WAL archiving
+
+pg_basebackup (weekly full) + WAL continuously archived to S3/MinIO
+→ Can restore to any point in time (PITR, Point-in-Time Recovery)
+→ RPO depends on WAL archiving frequency, typically tens of seconds
+```
+
+---
+
+## 2. Redis High Availability
+
+### 2.1 Comparison of Three Modes
+
+| Mode | Data Sharding | Failover | Use Case | Notes |
+|------|---------|---------|---------|------|
+| Standalone | None | None | Development | ❌ Do not use in production |
+| Master-Replica | None, full replication | Manual | Read-heavy, small dataset | Early stage |
+| Sentinel | None, full replication | **Automatic** | Moderate data volume (< tens of GB) | Common in production |
+| Cluster | 16384 slot sharding | Automatic | Large data volume + high throughput | Large-scale scenarios |
+
+### 2.2 Sentinel Mode (Core)
+
+```
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│  Sentinel 1 │  │  Sentinel 2 │  │  Sentinel 3 │  Minimum 3, independently deployed
+└──────┬──────┘  └──────┬──────┘  └──────┬──────┘
+       │                │                │
+       └────────┬───────┴────────┬───────┘
+                │  Monitoring + Voting  │
+        ┌───────┴───┐       ┌───┴───────┐
+        │   Master  │ ────→ │   Slave   │
+        │   Redis   │  Replication  │   Redis   │
+        └───────────┘       └───────────┘
+```
+
+**Sentinel's core responsibilities (3 duties):**
+
+1. **Monitoring**: Sentinel pings Master and Slaves every second; if `down-after-milliseconds` is exceeded, it marks the node as subjectively down
+2. **Voting**: One Sentinel deeming the Master down is insufficient; a majority must agree for an objective-down determination (prevents network partition false positives)
+3. **Failover**: Elect a new Master → all Slaves switch to replicate from the new Master → notify clients of the new address
+
+**Failover timeline:**
+
+```
+T+0s:   Master fails
+T+30s:  Sentinel determines subjective-down (down-after-milliseconds)
+T+30s:  Majority of Sentinels agree → objective-down
+T+31s:  Elect the Slave with the most complete data as new Master
+T+32s:  Other Slaves switch replication target
+T+32s:  Sentinel notifies all clients of the new Master address
+```
+
+**How do clients discover the new address?** Applications do not connect directly to Redis; they connect to Sentinel:
+
+```typescript
+// ioredis handles Sentinel failover automatically
+const redis = new Redis({
+  sentinels: [
+    { host: 'sentinel-1', port: 26379 },
+    { host: 'sentinel-2', port: 26379 },
+    { host: 'sentinel-3', port: 26379 },
+  ],
+  name: 'mymaster', // Sentinel-monitored cluster name
+});
+// On Master failover, client briefly fails and then automatically connects to the new Master
+```
+
+### 2.3 Redis Cluster Mode
+
+When data exceeds a single node's memory, Sentinel mode is no longer sufficient — all nodes storing the full dataset wastes memory. Cluster mode distributes the data:
+
+```
+16,384 hash slots evenly distributed across multiple nodes:
+
+Master 1 (0-5460)      Master 2 (5461-10922)    Master 3 (10923-16383)
+     │                        │                        │
+     ├── Slave 1               ├── Slave 2               ├── Slave 3
+     │   (backup for M1)       │   (backup for M2)       │   (backup for M3)
+```
+
+**Characteristics:**
+- Each Master stores only a portion of the data, not the full dataset
+- Writes are routed by `CRC16(key) % 16384` to the appropriate node
+- When a Master fails, its Slave automatically takes over (similar to Sentinel, but via Gossip protocol voting, no separate Sentinel processes required)
+- Slot migration on scaling (`redis-cli --cluster reshard`)
+
+**How Cluster itself ensures high availability:**
+
+```
+Gossip protocol:
+- Each node periodically randomly selects a few nodes to exchange information (who is online, which slots they manage)
+- No central node; messages eventually propagate across the entire cluster
+- Advantage: decentralized, no single point of failure
+- Disadvantage: failure detection is slower than Sentinel (seconds vs. milliseconds)
+```
+
+### 2.4 Redis Persistence
+
+Redis offers two persistence paths:
+
+| Mechanism | How It Works | RPO | Performance Impact | Recommendation |
+|------|------|-----|---------|------|
+| RDB | Periodic snapshots (e.g., dump full memory every 5 minutes) | Up to 5 minutes of data loss | Low | Use as cold backup |
+| AOF | Append every write command to a log file | Configurable fsync every second, at most 1 second of data loss | Medium | **Must enable in production** |
+| Hybrid | RDB as base + AOF as incremental | Same as above | Medium | **Recommended since Redis 4.0+** |
+
+```conf
+# redis.conf key configurations
+save 900 1          # At least 1 key changed within 15 minutes → trigger RDB
+save 300 10         # 10 changes within 5 minutes
+save 60 10000       # 10000 changes within 1 minute
+
+appendonly yes      # Enable AOF
+appendfsync everysec # fsync once per second (balance of performance and safety)
+
+aof-use-rdb-preamble yes  # Enable hybrid persistence
+```
+
+---
+
+## 3. BullMQ Reliability (Redis-Based)
+
+BullMQ depends on Redis, so its high availability is essentially = **Redis HA + its own fault-tolerant design**.
+
+### 3.1 Where Data Lives
+
+```
+BullMQ data structures (all stored in Redis):
+- wait (list): Tasks waiting to be executed
+- active (list): Tasks currently being executed
+- completed (set): Completed tasks
+- failed (set): Failed tasks
+- delayed (zset): Delayed tasks (sorted by time)
+- stalled (set): Tasks whose heartbeats have stalled
+```
+
+If Redis loses these keys, the queue is empty → rely on Redis AOF + RDB persistence as a safety net.
+
+### 3.2 Stalled Task Detection (Prevents Losing Tasks When Workers Crash)
+
+```
+Normal flow:
+Worker picks up task → task moves from wait to active → periodic heartbeats during execution
+
+Worker crashes:
+Heartbeat stops → BullMQ detects task stalled beyond lockDuration → moved back to wait → another Worker picks it up
+
+Key configuration:
+  lockDuration: 30000,   // No heartbeat for 30s is considered stalled
+  stalledInterval: 30000, // Scan the stalled queue every 30s
+```
+
+### 3.3 Reliability of a BullMQ Production Architecture
+
+```
+              BullMQ (backed by Redis Sentinel)
+                     │
+         ┌───────────┼───────────┐
+    Worker-1      Worker-2      Worker-3
+    (K3s Pod)     (K3s Pod)     (K3s Pod)
+    node-A        node-B        node-C
+```
+
+- Redis side: Sentinel ensures automatic failover when Redis Master goes down
+- Worker side: K3s Deployment with multiple replicas — if a Pod fails, it is automatically recreated; new Pods continue consuming
+- Task protection: stalled detection as a safety net — tasks from crashed Workers are picked up by others
+
+**Limitation:** If the entire Redis cluster crashes simultaneously (e.g., all 3 Sentinel nodes fail), BullMQ is completely paralyzed — but this is an edge case. Redis Cluster + cross-AZ deployment can further reduce the probability.
+
+---
+
+## 4. K3s Itself: High Availability
+
+### 4.1 Architecture
+
+```
+┌────────────────────────────────────────────────────┐
+│                   K3s Cluster                       │
+│                                                    │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐        │
+│  │ Server 1 │  │ Server 2 │  │ Server 3 │        │
+│  │ (master) │  │ (master) │  │ (master) │  HA    │
+│  │          │  │          │  │          │        │
+│  │  etcd    │  │  etcd    │  │  etcd    │  3-node│
+│  │  API     │  │  API     │  │  API     │        │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘        │
+│       │             │             │               │
+│       └──────┬──────┴──────┬──────┘               │
+│              │   Embedded etcd cluster (Raft)      │
+│              │                                      │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐        │
+│  │ Agent 1  │  │ Agent 2  │  │ Agent N  │        │
+│  │ (worker) │  │ (worker) │  │ (worker) │  Workloads│
+│  └──────────┘  └──────────┘  └──────────┘        │
+└────────────────────────────────────────────────────┘
+```
+
+K3s comes with embedded etcd (or can connect to an external etcd cluster). The embedded version requires Server nodes to host etcd, with at least 3 Servers.
+
+### 4.2 What Happens When the K3s Control Plane Fails
+
+```
+1 Server down (etcd still has quorum → 2 out of 3 remain):
+  ✅ Cluster is normal; another API Server continues serving
+  ✅ Existing Pods are completely unaffected and continue running
+  ✅ Resources can still be created/updated/deleted normally
+
+2 Servers down (etcd loses quorum → 1 out of 3 remain):
+  ❌ etcd is unwritable → cannot create/update/delete Pods, Services, etc.
+  ✅ Existing Pods continue running (kubelet operates independently on agents)
+  ✅ Existing Services continue forwarding traffic (iptables rules do not depend on API Server)
+```
+
+**Key takeaway: Even if the entire control plane goes down, already-running Pods and traffic forwarding remain unaffected.** This is the most elegant aspect of Kubernetes design — the decoupling of data plane from control plane.
+
+### 4.3 HA Deployment Details
+
+```bash
+# First Server (initialize etcd cluster)
+curl -sfL https://get.k3s.io | sh -s - server \
+  --cluster-init \                      # Initialize etcd cluster
+  --tls-san loadbalancer.example.com    # Include LB domain in TLS certificate
+
+# Second and third Servers (join etcd cluster)
+curl -sfL https://get.k3s.io | sh -s - server \
+  --server https://server-1-ip:6443 \
+  --token <token>
+
+# Agent nodes (do not participate in etcd)
+curl -sfL https://get.k3s.io | K3S_URL=https://loadbalancer.example.com:6443 K3S_TOKEN=<token> sh -
+```
+
+**API Server load balancing:** Place a TCP load balancer (HAProxy/Nginx or cloud provider LB) in front of Server nodes; agent nodes connect to the API Server through the LB. If any Server goes down, the LB automatically routes to a healthy one.
+
+### 4.4 Multi-Layer HA in Production
+
+```
+Layer                │  Guarantee
+──────────────────────┼─────────────────────────────
+K3s Control Plane    │  3 Servers + embedded etcd + front LB
+Worker Nodes         │  Multiple nodes + DaemonSet/PodAffinity scheduling
+Pod                  │  Deployment replicas + liveness/readiness probes
+Service              │  Automatic load balancing + Endpoint health checks
+Ingress              │  Nginx Ingress + multiple replicas
+Storage              │  PVC + Longhorn (distributed block storage, native K3s support)
+Middleware           │  Independent HA mechanisms per component (see sections above)
+```
+
+---
+
+## 5. Load Balancer High Availability
+
+### 5.1 Two-Tier Load Balancing
+
+```
+                      DNS or Cloud LB
+                           │
+               ┌───────────┼───────────┐
+               ▼           ▼           ▼
+          ┌─────────┐ ┌─────────┐ ┌─────────┐
+          │Ingress 1│ │Ingress 2│ │Ingress 3│  L7 (Nginx Ingress)
+          │ Pod     │ │ Pod     │ │ Pod     │  K3s Deployment keeps alive
+          └────┬────┘ └────┬────┘ └────┬────┘
+               │           │           │
+               └───────────┼───────────┘
+                           │
+               ┌───────────┼───────────┐
+               ▼           ▼           ▼
+          ┌─────────┐ ┌─────────┐ ┌─────────┐
+          │ App Pod │ │ App Pod │ │ App Pod │  Application Pods
+          └─────────┘ └─────────┘ └─────────┘
+                    ↑ This tier is K3s Service
+                      iptables/ipvs automatic load balancing
+```
+
+**Difference between the two tiers:**
+
+- **L7 Ingress**: Routes by domain/path, can terminate TLS, do rate limiting, rewrites, etc. Itself kept alive via Deployment with multiple replicas.
+- **L4 Service**: TCP/UDP layer direct-to-Pod, maintained by kube-proxy's iptables rules. **This tier has no process that can crash** — it is just a few iptables rules executed by the kernel. K3s Service is more stable than any user-space load balancer.
+
+### 5.2 Keepalived + Floating IP (On-Premises Solution)
+
+Outside of Kubernetes, how does a traditional self-managed LB guarantee it does not go down:
+
+```
+          VIP (Virtual IP: 10.0.0.100)
+               │
+     ┌─────────┴─────────┐
+     │                   │
+┌───┴────┐         ┌───┴────┐
+│ LB-1   │         │ LB-2   │
+│ Primary│ ← VRRP → │ Backup │
+│ (holds VIP)│    Heartbeat │        │
+└────────┘         └────────┘
+
+VRRP protocol:
+- Two LBs monitor each other via VRRP heartbeats
+- Primary LB holds the VIP and responds to ARP requests
+- Primary fails → Backup detects heartbeat loss → seizes the VIP
+- Clients always access the VIP, unaware of the backend switch
+- Failover typically takes 1-3 seconds
+```
+
+**Cloud provider solution:** Cloud provider LoadBalancer Service automatically creates a cloud LB (Alibaba Cloud SLB, AWS ELB, etc.); the cloud provider guarantees the LB's own high availability.
+
+---
+
+## 6. Consul High Availability
+
+### 6.1 Cluster Architecture
+
+```
+         ┌──────────┐  ┌──────────┐  ┌──────────┐
+         │ Consul-1 │  │ Consul-2 │  │ Consul-3 │   3-5 nodes
+         │ (Leader) │  │(Follower)│  │(Follower)│
+         └────┬─────┘  └────┬─────┘  └────┬─────┘
+              │             │             │
+              └─────────────┼─────────────┘
+                      Raft Consensus Protocol
+```
+
+**Almost identical principles to etcd:**
+- Raft algorithm elects a Leader
+- Write requests handled by Leader and replicated to Followers
+- Majority of nodes must acknowledge before success is returned
+- Leader failure triggers automatic election of a new Leader
+- 3-node cluster tolerates 1 failure and remains operational
+
+### 6.2 Health Check Granularity
+
+```
+Failure eviction chain powered by Consul health checks:
+
+Consul → each microservice instance registers + health checks → unhealthy → removed from DNS list
+
+Clients use Consul DNS to resolve requests, automatically obtaining the list of healthy instances
+
+The entire chain (each link has timeout + retry + circuit breaker, with circuit state shared in Consul):
+Service A calls Service B → B has multiple instances → Consul returns only healthy ones → client-side load balancing at A
+```
+
+---
+
+## 7. Message Queue High Availability (Kafka Comparison)
+
+BullMQ relies on Redis Sentinel for high availability. Here is a comparison with the traditional message queue, Kafka:
+
+### 7.1 Kafka High Availability
+
+```
+Topic: ad-events (3 partitions, replication factor 3)
+
+Partition 0                    Partition 1                    Partition 2
+┌──────────────┐              ┌──────────────┐              ┌──────────────┐
+│ Leader (B-1) │              │ Leader (B-2) │              │ Leader (B-3) │
+│ Follower(B-2)│              │ Follower(B-3)│              │ Follower(B-1)│
+│ Follower(B-3)│              │ Follower(B-1)│              │ Follower(B-2)│
+└──────────────┘              └──────────────┘              └──────────────┘
+
+Each partition's Leader is evenly distributed across 3 Brokers
+If any Broker fails, a Follower in the ISR (In-Sync Replicas) can take over
+```
+
+**Key concept — ISR (In-Sync Replicas):**
+- Not all Followers are eligible to become Leader
+- Only Followers whose replication lag against the Leader is within the threshold are in the ISR set
+- When the Leader fails, the new Leader must be chosen from the ISR — guaranteeing no data loss
+
+**The `acks` parameter determines data safety level:**
+
+| acks | Meaning | Reliability | Latency |
+|------|------|--------|------|
+| 0 | Fire and forget | Possible data loss | Lowest |
+| 1 | Leader write acknowledged | Leader failure may cause loss | Medium |
+| all (-1) | All ISR members acknowledge | Highest | Highest |
+
+---
+
+## 8. Cross-Availability-Zone High Availability
+
+**Topology:**
+
+```
+               Users
+                │
+           DNS / GSLB
+       ┌───────┴───────┐
+       │               │
+  Availability Zone A      Availability Zone B
+   ┌────────────────┐ ┌────────────────┐
+   │  K3s Cluster   │ │  K3s Cluster   │
+   │  3 Servers     │ │  3 Servers     │
+   │                │ │                │
+   │  App Pods × N  │ │  App Pods × N  │
+   │  Redis Cluster │ │  Redis Cluster │
+   │  PG (Master)   │ │  PG (Slave)    │
+   │  PgBouncer     │ │  PgBouncer     │
+   └────────────────┘ └────────────────┘
+```
+
+**Key point: Physical isolation across availability zones** (different data centers / different cities), while depending on the same concept of a failure domain.
+
+**Three deployment tiers:**
+
+| Tier | Definition | Protects Against | Typical Implementation |
+|------|------|---------|---------|
+| Same AZ, Multi-Replica | Multiple machines in one data center | Single machine failure | K3s multi-node + Pod replicas |
+| Cross-AZ | Multiple data centers in one city | Single data center outage / network failure | K3s nodes distributed across data centers |
+| Multi-Region Active-Active | Across cities | Entire city disaster | Shenzhen + Shanghai mutual backup |
+
+**The critical challenge of cross-AZ databases — latency:**
+- Intra-city cross-AZ latency is typically 1-3ms; primary-replica synchronization is viable
+- Cross-city latency is 20-50ms; synchronous replication severely impacts write performance → only asynchronous replication is feasible
+- The tension between data consistency and write latency is the core challenge of multi-region active-active architectures
+
+**Actual deployment status:**
+
+Single-AZ deployment (K3s cluster with multiple nodes + all middleware HA), with Redis Sentinel + PostgreSQL Patroni for automatic failover. Cross-AZ has not yet been implemented — the current business P99 latency requirement is 200ms; cross-AZ deployment is costly, and the added latency is not critical for AI video generation workloads. The next priority is deploying PostgreSQL cross-AZ asynchronous read-only replicas for disaster recovery.
+
+---
+
+## Summary: Middleware HA Quick Reference
+
+| Middleware | HA Mechanism | Failure Detection | Automatic Failover | Data Safety Depends On |
+|--------|------------|---------|---------|------------|
+| PostgreSQL | Patroni + etcd Raft | etcd TTL timeout | ✅ 10-30s | Synchronous replication → zero data loss |
+| Redis Sentinel | Multi-Sentinel voting | Per-second PING + subjective/objective down | ✅ Sub-second | AOF + hybrid persistence |
+| Redis Cluster | Gossip protocol | Mutual node probing | ✅ | AOF + RDB |
+| BullMQ | Depends on Redis HA + Stalled detection | Heartbeat timeout | ✅ Worker-level | Redis persistence |
+| K3s Server | Embedded etcd Raft | etcd heartbeat | ✅ Leader election | etcd persistence (snapshot + WAL) |
+| K3s Agent | kubelet heartbeat | Node NotReady | Pod rescheduled to healthy node | Node-local, stateless |
+| Consul | Raft consensus | Serf membership probing | ✅ Leader election | Raft log persistence |
+| Nginx Ingress | K3s Deployment replicas | Readiness probe | ✅ Pod recreation | Stateless |
+| K3s Service | iptables rules | Endpoint health checks | ✅ Automatic removal | Kernel-level, no process to crash |
+| Kafka | ISR + ZK/Raft | Replica synchronization monitoring | ✅ Partition Leader re-election | acks=all + ISR |
