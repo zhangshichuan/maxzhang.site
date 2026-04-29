@@ -98,6 +98,32 @@ First, **Embedding**. Take a pretrained deep model (a BERT variant works fine). 
 
 These vectors have a useful property: semantically similar texts land near each other in high-dimensional space. Unrelated texts land far apart.
 
+Let's pause on a question that's easy to skip: **what does "768 dimensions" actually mean?**
+
+It's simply a one-dimensional array of length 768, each slot holding a float. For example, "The cat eats fish" through BERT might become:
+
+```
+[0.52, -0.13, 0.89, 0.01, ..., -0.32]   ← 768 numbers total
+```
+
+Think of it as a coordinate in 768-dimensional space — a 2D coordinate is `(x, y)`, a 768D one is `(v₁, v₂, ..., v₇₆₈)`. Semantically close texts land at nearby coordinates; unrelated ones land far apart. This is why vector recall works when the words differ but the meaning doesn't.
+
+A single text's vector is always one-dimensional. Encode multiple sentences at once and you get a `(3, 768)` two-dimensional array — n one-dimensional vectors stacked together.
+
+In deep learning, this kind of multi-dimensional data structure is called a **tensor**. The hierarchy:
+
+| Dims | Name   | Example                                                                         |
+| ---- | ------ | ------------------------------------------------------------------------------- |
+| 0D   | Scalar | `5` (a single number)                                                           |
+| 1D   | Vector | `[1, 2, 3, 4]`, shape `(4,)` — the 768-dim text vector you just saw lives here  |
+| 2D   | Matrix | `[[1, 2], [3, 4]]`, shape `(2, 2)` — encoding 3 sentences at once is `(3, 768)` |
+| 3D   | Tensor | A color image is `(224, 224, 3)`                                                |
+| 4D   | Tensor | A video clip is `(300, 224, 224, 3)`: 300 frames × height × width × RGB         |
+
+Back to search: even though an image is a 3D tensor inside the model and a video is a 4D tensor, what ends up in the vector database is always a compressed one-dimensional vector (e.g., ResNet squeezes an image into `(2048,)`, VideoBERT squeezes a video into `(4096,)`). Once compressed, you retrieve with it the same way you retrieve text — searching "a cat" can pull up cat photos, because the text vector and image vector are mapped into the same semantic space.
+
+The key distinction: **during model processing**, high-dimensional structure (spatial, temporal, channel) is preserved to capture the richest features. **During storage and retrieval**, it's flattened to one dimension — because vector databases only know fixed-length one-dimensional arrays. They don't care whether the vector came from text, an image, or a video.
+
 Second, **Approximate Nearest Neighbor (ANN) search**. Now that you have a vector database, searching means "find the K document vectors closest to the query vector." Problem: computing the distance to each of millions of documents one by one is not practical.
 
 ANN solves this. The most common algorithm today is **HNSW (Hierarchical Navigable Small World)**. Think of it like a road network: highways let you cross large regions quickly, provincial roads take you into neighborhoods, and local streets get you to the exact house. Coarser layers are faster; finer layers are more precise.
