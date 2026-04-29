@@ -30,10 +30,10 @@ date: '2026-04-27'
 
 **Synchronous vs. Asynchronous Replication:**
 
-| Mode | Configuration | Data Safety | Write Latency | On Failure |
-|------|------|---------|---------|--------|
-| Async | Default | May lose the last few seconds of data on Master crash | Low | Data window loss on failover to Slave |
-| Sync | `synchronous_commit = on` | Acknowledged only after Slave confirms | High | Zero data loss, but Master cannot write if Slave is down |
+| Mode  | Configuration             | Data Safety                                           | Write Latency | On Failure                                               |
+| ----- | ------------------------- | ----------------------------------------------------- | ------------- | -------------------------------------------------------- |
+| Async | Default                   | May lose the last few seconds of data on Master crash | Low           | Data window loss on failover to Slave                    |
+| Sync  | `synchronous_commit = on` | Acknowledged only after Slave confirms                | High          | Zero data loss, but Master cannot write if Slave is down |
 
 **Practical compromise:** Typically deploy 1 synchronous replica + N asynchronous replicas to balance safety and availability.
 
@@ -89,14 +89,14 @@ Master                                    Slave
 
 **Two phases of transmission:**
 
-| Phase | Trigger | What is sent |
-|------|---------|--------|
-| File-based replication (catch-up) | Slave first connects or has been disconnected too long | Copy entire completed WAL files (16MB per segment) from Master |
-| Streaming replication | After files are caught up | Real-time: WAL records as soon as Master generates them, without waiting for a full 16MB segment |
+| Phase                             | Trigger                                                | What is sent                                                                                     |
+| --------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| File-based replication (catch-up) | Slave first connects or has been disconnected too long | Copy entire completed WAL files (16MB per segment) from Master                                   |
+| Streaming replication             | After files are caught up                              | Real-time: WAL records as soon as Master generates them, without waiting for a full 16MB segment |
 
 ```sql
 -- Check replication status
-SELECT pid, state, sync_state, 
+SELECT pid, state, sync_state,
        write_lag, flush_lag, replay_lag  -- latency metrics
 FROM pg_stat_replication;
 
@@ -184,11 +184,11 @@ Timeline:
        ▼  Queries on Slave can now read this data
 ```
 
-| Metric | Meaning | Normal Range | What to Watch |
-|------|------|--------|--------|
-| `write_lag` | Delay from WAL arriving at Slave to being written to Slave disk | < 1ms | Network latency |
-| `flush_lag` | Delay from disk write to fsync completion | < 1ms | Disk I/O |
-| `replay_lag` | Delay from fsync to Startup completing application | < 5ms | **Most critical** — if Slave can't keep up, synchronous replication is unusable |
+| Metric       | Meaning                                                         | Normal Range | What to Watch                                                                   |
+| ------------ | --------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------- |
+| `write_lag`  | Delay from WAL arriving at Slave to being written to Slave disk | < 1ms        | Network latency                                                                 |
+| `flush_lag`  | Delay from disk write to fsync completion                       | < 1ms        | Disk I/O                                                                        |
+| `replay_lag` | Delay from fsync to Startup completing application              | < 5ms        | **Most critical** — if Slave can't keep up, synchronous replication is unusable |
 
 #### When the Slave Falls Behind
 
@@ -297,12 +297,12 @@ pg_basebackup (weekly full) + WAL continuously archived to S3/MinIO
 
 ### 2.1 Comparison of Three Modes
 
-| Mode | Data Sharding | Failover | Use Case | Notes |
-|------|---------|---------|---------|------|
-| Standalone | None | None | Development | ❌ Do not use in production |
-| Master-Replica | None, full replication | Manual | Read-heavy, small dataset | Early stage |
-| Sentinel | None, full replication | **Automatic** | Moderate data volume (< tens of GB) | Common in production |
-| Cluster | 16384 slot sharding | Automatic | Large data volume + high throughput | Large-scale scenarios |
+| Mode           | Data Sharding          | Failover      | Use Case                            | Notes                       |
+| -------------- | ---------------------- | ------------- | ----------------------------------- | --------------------------- |
+| Standalone     | None                   | None          | Development                         | ❌ Do not use in production |
+| Master-Replica | None, full replication | Manual        | Read-heavy, small dataset           | Early stage                 |
+| Sentinel       | None, full replication | **Automatic** | Moderate data volume (< tens of GB) | Common in production        |
+| Cluster        | 16384 slot sharding    | Automatic     | Large data volume + high throughput | Large-scale scenarios       |
 
 ### 2.2 Sentinel Mode (Core)
 
@@ -347,7 +347,7 @@ const redis = new Redis({
     { host: 'sentinel-3', port: 26379 },
   ],
   name: 'mymaster', // Sentinel-monitored cluster name
-});
+})
 // On Master failover, client briefly fails and then automatically connects to the new Master
 ```
 
@@ -365,6 +365,7 @@ Master 1 (0-5460)      Master 2 (5461-10922)    Master 3 (10923-16383)
 ```
 
 **Characteristics:**
+
 - Each Master stores only a portion of the data, not the full dataset
 - Writes are routed by `CRC16(key) % 16384` to the appropriate node
 - When a Master fails, its Slave automatically takes over (similar to Sentinel, but via Gossip protocol voting, no separate Sentinel processes required)
@@ -384,11 +385,11 @@ Gossip protocol:
 
 Redis offers two persistence paths:
 
-| Mechanism | How It Works | RPO | Performance Impact | Recommendation |
-|------|------|-----|---------|------|
-| RDB | Periodic snapshots (e.g., dump full memory every 5 minutes) | Up to 5 minutes of data loss | Low | Use as cold backup |
-| AOF | Append every write command to a log file | Configurable fsync every second, at most 1 second of data loss | Medium | **Must enable in production** |
-| Hybrid | RDB as base + AOF as incremental | Same as above | Medium | **Recommended since Redis 4.0+** |
+| Mechanism | How It Works                                                | RPO                                                            | Performance Impact | Recommendation                   |
+| --------- | ----------------------------------------------------------- | -------------------------------------------------------------- | ------------------ | -------------------------------- |
+| RDB       | Periodic snapshots (e.g., dump full memory every 5 minutes) | Up to 5 minutes of data loss                                   | Low                | Use as cold backup               |
+| AOF       | Append every write command to a log file                    | Configurable fsync every second, at most 1 second of data loss | Medium             | **Must enable in production**    |
+| Hybrid    | RDB as base + AOF as incremental                            | Same as above                                                  | Medium             | **Recommended since Redis 4.0+** |
 
 ```conf
 # redis.conf key configurations
@@ -606,6 +607,7 @@ VRRP protocol:
 ```
 
 **Almost identical principles to etcd:**
+
 - Raft algorithm elects a Leader
 - Write requests handled by Leader and replicated to Followers
 - Majority of nodes must acknowledge before success is returned
@@ -648,17 +650,18 @@ If any Broker fails, a Follower in the ISR (In-Sync Replicas) can take over
 ```
 
 **Key concept — ISR (In-Sync Replicas):**
+
 - Not all Followers are eligible to become Leader
 - Only Followers whose replication lag against the Leader is within the threshold are in the ISR set
 - When the Leader fails, the new Leader must be chosen from the ISR — guaranteeing no data loss
 
 **The `acks` parameter determines data safety level:**
 
-| acks | Meaning | Reliability | Latency |
-|------|------|--------|------|
-| 0 | Fire and forget | Possible data loss | Lowest |
-| 1 | Leader write acknowledged | Leader failure may cause loss | Medium |
-| all (-1) | All ISR members acknowledge | Highest | Highest |
+| acks     | Meaning                     | Reliability                   | Latency |
+| -------- | --------------------------- | ----------------------------- | ------- |
+| 0        | Fire and forget             | Possible data loss            | Lowest  |
+| 1        | Leader write acknowledged   | Leader failure may cause loss | Medium  |
+| all (-1) | All ISR members acknowledge | Highest                       | Highest |
 
 ---
 
@@ -688,13 +691,14 @@ If any Broker fails, a Follower in the ISR (In-Sync Replicas) can take over
 
 **Three deployment tiers:**
 
-| Tier | Definition | Protects Against | Typical Implementation |
-|------|------|---------|---------|
-| Same AZ, Multi-Replica | Multiple machines in one data center | Single machine failure | K3s multi-node + Pod replicas |
-| Cross-AZ | Multiple data centers in one city | Single data center outage / network failure | K3s nodes distributed across data centers |
-| Multi-Region Active-Active | Across cities | Entire city disaster | Shenzhen + Shanghai mutual backup |
+| Tier                       | Definition                           | Protects Against                            | Typical Implementation                    |
+| -------------------------- | ------------------------------------ | ------------------------------------------- | ----------------------------------------- |
+| Same AZ, Multi-Replica     | Multiple machines in one data center | Single machine failure                      | K3s multi-node + Pod replicas             |
+| Cross-AZ                   | Multiple data centers in one city    | Single data center outage / network failure | K3s nodes distributed across data centers |
+| Multi-Region Active-Active | Across cities                        | Entire city disaster                        | Shenzhen + Shanghai mutual backup         |
 
 **The critical challenge of cross-AZ databases — latency:**
+
 - Intra-city cross-AZ latency is typically 1-3ms; primary-replica synchronization is viable
 - Cross-city latency is 20-50ms; synchronous replication severely impacts write performance → only asynchronous replication is feasible
 - The tension between data consistency and write latency is the core challenge of multi-region active-active architectures
@@ -707,15 +711,15 @@ Single-AZ deployment (K3s cluster with multiple nodes + all middleware HA), with
 
 ## Summary: Middleware HA Quick Reference
 
-| Middleware | HA Mechanism | Failure Detection | Automatic Failover | Data Safety Depends On |
-|--------|------------|---------|---------|------------|
-| PostgreSQL | Patroni + etcd Raft | etcd TTL timeout | ✅ 10-30s | Synchronous replication → zero data loss |
-| Redis Sentinel | Multi-Sentinel voting | Per-second PING + subjective/objective down | ✅ Sub-second | AOF + hybrid persistence |
-| Redis Cluster | Gossip protocol | Mutual node probing | ✅ | AOF + RDB |
-| BullMQ | Depends on Redis HA + Stalled detection | Heartbeat timeout | ✅ Worker-level | Redis persistence |
-| K3s Server | Embedded etcd Raft | etcd heartbeat | ✅ Leader election | etcd persistence (snapshot + WAL) |
-| K3s Agent | kubelet heartbeat | Node NotReady | Pod rescheduled to healthy node | Node-local, stateless |
-| Consul | Raft consensus | Serf membership probing | ✅ Leader election | Raft log persistence |
-| Nginx Ingress | K3s Deployment replicas | Readiness probe | ✅ Pod recreation | Stateless |
-| K3s Service | iptables rules | Endpoint health checks | ✅ Automatic removal | Kernel-level, no process to crash |
-| Kafka | ISR + ZK/Raft | Replica synchronization monitoring | ✅ Partition Leader re-election | acks=all + ISR |
+| Middleware     | HA Mechanism                            | Failure Detection                           | Automatic Failover              | Data Safety Depends On                   |
+| -------------- | --------------------------------------- | ------------------------------------------- | ------------------------------- | ---------------------------------------- |
+| PostgreSQL     | Patroni + etcd Raft                     | etcd TTL timeout                            | ✅ 10-30s                       | Synchronous replication → zero data loss |
+| Redis Sentinel | Multi-Sentinel voting                   | Per-second PING + subjective/objective down | ✅ Sub-second                   | AOF + hybrid persistence                 |
+| Redis Cluster  | Gossip protocol                         | Mutual node probing                         | ✅                              | AOF + RDB                                |
+| BullMQ         | Depends on Redis HA + Stalled detection | Heartbeat timeout                           | ✅ Worker-level                 | Redis persistence                        |
+| K3s Server     | Embedded etcd Raft                      | etcd heartbeat                              | ✅ Leader election              | etcd persistence (snapshot + WAL)        |
+| K3s Agent      | kubelet heartbeat                       | Node NotReady                               | Pod rescheduled to healthy node | Node-local, stateless                    |
+| Consul         | Raft consensus                          | Serf membership probing                     | ✅ Leader election              | Raft log persistence                     |
+| Nginx Ingress  | K3s Deployment replicas                 | Readiness probe                             | ✅ Pod recreation               | Stateless                                |
+| K3s Service    | iptables rules                          | Endpoint health checks                      | ✅ Automatic removal            | Kernel-level, no process to crash        |
+| Kafka          | ISR + ZK/Raft                           | Replica synchronization monitoring          | ✅ Partition Leader re-election | acks=all + ISR                           |

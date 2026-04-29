@@ -1,0 +1,407 @@
+---
+title: 'From Vector Recall to BM25 Fallback: A Deep Dive into Modern Search Engine Design'
+summary: 'When building a search engine or RAG system, the classic combination of vector recall + BM25 fallback is unavoidable. This article unpacks the motivations behind this strategy layer by layer — from document chunking, embedding, and recall to reranking — and takes a close look at the inverted index under the hood, giving you a complete mental model of modern search technology.'
+category: 'LLMOps'
+tags: ['Search Engine', 'RAG', 'BM25', 'Vector Search', 'Embedding', 'Inverted Index', 'Rerank']
+author: 'Max Zhang'
+date: '2026-04-29'
+---
+
+## Preface
+
+Anyone who has built a search engine or wired up RAG for an LLM has inevitably run into this phrase: **vector recall + BM25 fallback**.
+
+The first time you hear it, it sounds like a lot — vectors, algorithms, fallbacks. But each word stands for its own thing, and none of them are that complicated.
+
+This article goes through each piece one by one. No formulas, no F1 scores from some paper — just the engineering reality: what you use, why you use it, and what happens if you don't.
+
+---
+
+## 1. What a Search Request Actually Goes Through
+
+After you press Enter, a search roughly follows four steps:
+
+```
+User enters a Query
+    │
+    ▼
+┌─────────────────────────────┐
+│  1. Query Vectorization     │
+│  Convert query into a       │
+│  768-dim embedding vector   │
+└─────────────┬───────────────┘
+              │
+              ▼
+┌─────────────────────────────┐
+│  2. Vector Recall (Primary) │
+│  Find Top-K candidates in   │
+│  the vector index via HNSW  │
+│  (milliseconds)             │
+└─────────────┬───────────────┘
+              │
+              ▼
+       Top score < threshold?
+      ├── Yes ──▶ BM25 Fallback
+      │          (inverted index + keyword match)
+      │
+      └── No ──▶ Use vector results directly
+              │
+              ▼
+┌─────────────────────────────┐
+│  3. Merge + Deduplicate     │
+│  Combine both result sets,  │
+│  remove duplicates          │
+└─────────────┬───────────────┘
+              │
+              ▼
+┌─────────────────────────────┐
+│  4. Rerank                  │
+│  A heavier model re-scores  │
+│  candidates, picks Top 10   │
+└─────────────┬───────────────┘
+              │
+              ▼
+        Return results
+```
+
+Three design decisions here are worth unpacking:
+
+**Recall and rerank are separate stages.** Recall handles speed. Rerank handles precision. If you make recall chase precision, latency explodes. If you make rerank process millions of documents, users have time to get coffee.
+
+**Two recall mechanisms, complementary.** Vector recall catches semantic matches. BM25 catches exact keyword matches. Run both and you almost never return nothing.
+
+**The threshold is tuned, not derived.** It doesn't come from a formula — you eyeball the distribution on labeled data, launch, watch real user behavior, and iterate. More on this later.
+
+---
+
+## 2. Vector Recall: Turning Words into Distances
+
+### 2.1 What It Does
+
+Vector recall maps text to a bunch of floats, then measures "semantic distance" between two texts by the distance between their vectors.
+
+Take this pair:
+
+> "How to lose weight fast" and "The most effective weight-loss methods"
+
+They share almost zero keywords. A traditional keyword engine would call them unrelated — no overlapping words, nothing.
+
+But a vector model encodes each sentence and finds the two vectors sitting close together in 768-dimensional space. It "feels" that they mean the same thing.
+
+That's the one thing vector recall does really well: **surfacing documents whose wording is different but whose meaning is close**.
+
+### 2.2 How It Works
+
+Two steps.
+
+First, **Embedding**. Take a pretrained deep model (a BERT variant works fine). Encode every document and every query into a fixed-length vector — 768 or 1024 dimensions is typical.
+
+These vectors have a useful property: semantically similar texts land near each other in high-dimensional space. Unrelated texts land far apart.
+
+Second, **Approximate Nearest Neighbor (ANN) search**. Now that you have a vector database, searching means "find the K document vectors closest to the query vector." Problem: computing the distance to each of millions of documents one by one is not practical.
+
+ANN solves this. The most common algorithm today is **HNSW (Hierarchical Navigable Small World)**. Think of it like a road network: highways let you cross large regions quickly, provincial roads take you into neighborhoods, and local streets get you to the exact house. Coarser layers are faster; finer layers are more precise.
+
+Latency: single-digit to low-double-digit milliseconds. That's online-ready.
+
+### 2.3 Where Vector Recall Falls Short
+
+Vector recall's biggest weakness is a direct consequence of its strength: **it's too sensitive to meaning**.
+
+Search "RTX 4090 graphics card" and the vector model might return "NVIDIA flagship GPU" and "high-end gaming cards." Semantically, those are relevant. But the user just wants documents that literally contain "RTX 4090." Here, semantic generalization becomes noise.
+
+That's when you reach for BM25.
+
+---
+
+## 3. BM25: Keywords Only, No Semantics
+
+### 3.1 What It Is
+
+BM25 is a keyword-based scoring algorithm with a crude but effective logic: **the more a query's words show up in a document, and the rarer those words are across the whole collection, the higher the score**.
+
+"RTX4090" is rare — a single hit carries enormous weight. "The," "is," "of" are everywhere — a hundred hits add nothing. This is TF-IDF thinking. BM25 improves on it by adding two corrections: document length normalization (long documents don't get an unfair advantage) and term frequency saturation (50 occurrences vs. 100 barely changes the score).
+
+### 3.2 Why Exact Matching Matters
+
+Here's a concrete scenario:
+
+You search a technical doc base for **`OOM Killer`**.
+
+A vector model will likely return:
+
+- "Out of memory error"
+- "Process terminated by the system"
+- "Resource exhaustion handling"
+
+Semantically, these brush against OOM. But you're looking for the specific Linux kernel mechanism called `OOM Killer`. Those results are all noise.
+
+BM25 doesn't have this problem. It strictly matches the tokens "OOM" and "Killer," and boosts documents that contain both. If a document contains the full phrase "OOM Killer," even better.
+
+Short version: **for rare terms and proper nouns that need exact matching, BM25 is far more reliable than vector recall**.
+
+### 3.3 BM25 vs. Elasticsearch
+
+People constantly mix these up.
+
+**BM25 is an algorithm** — a specific ranking function with a well-defined formula. Stephen Robertson proposed it in 1994. It belongs to the probabilistic retrieval model family. It's math.
+
+**Elasticsearch is a product** — a distributed search engine built on Apache Lucene. From version 5.0, ES switched its default relevance scoring from the old TF-IDF to BM25. But under the hood, ES runs far more than just that formula: tokenization, inverted index traversal, distributed query routing, and so on.
+
+So when someone says "we use BM25," 99% of the time they mean "we use Elasticsearch / Solr / Lucene, which implements BM25 scoring internally." You can also use BM25 standalone — `pip install rank-bm25` and you're done.
+
+One more common confusion: "the inverted index is part of BM25." No. The inverted index is a data structure that lets you look up which documents contain a keyword instantly. BM25 is the scoring formula that runs on top of that structure. They're related the way a hammer and a swing are related — not the way a hammer and a toolbox are.
+
+---
+
+## 4. Fallback: It's Not a Spare Tire
+
+### 4.1 What the Fallback Actually Guards Against
+
+Vector recall gets shaky in two scenarios:
+
+1. **The query is too short or vague.** The user types "bug." Which bug? A code defect? An insect? A listening device? The vector model guesses, and similarity scores are low across the board.
+
+2. **The query contains extremely specific proper nouns.** "nginx 1.27.3 stream module proxy_bind configuration" — the vector model has almost certainly never seen this combination during training. Recall quality tanks.
+
+The fallback logic is a single conditional:
+
+```python
+def search(query):
+    vector_results = vector_search(query)
+    if vector_results.top_score < THRESHOLD or len(vector_results) == 0:
+        return bm25_search(query)
+    return vector_results
+```
+
+Top vector score below threshold → switch to BM25. That's it.
+
+### 4.2 How to Pick the Threshold
+
+A lot of people get stuck here, expecting some formula. The real answer: **you find this number by iterating**.
+
+Here's the process:
+
+1. **Build labeled data.** Gather real user queries, manually label which documents are relevant for each. This step is the most painful, and also the one that makes or breaks everything that follows.
+
+2. **Plot the distribution.** Run vector recall on all queries. For each query, record the similarity score of the relevant documents. Plot a histogram.
+
+   You'll see something like this (numbers are made up for illustration):
+
+   ```
+   Similarity range    % of relevant docs
+   ─────────────────────────────────────
+   0.8 - 1.0           ████████████████  40%
+   0.7 - 0.8           ██████████████    35%
+   0.6 - 0.7           ████████          15%
+   0.5 - 0.6           ████              7%
+   0.4 - 0.5           ██                3%
+   ```
+
+3. **Pick a quantile.** If 90% of relevant documents score above 0.55, set the threshold somewhere around 0.5–0.55. In practice, cosine similarity thresholds tend to land between 0.4 and 0.6.
+
+4. **Launch, then keep tuning.** Offline distributions don't capture real user behavior. Once live, watch the fallback trigger rate, click-through rate, and zero-result rate. Adjust.
+
+One more thing: **different products need different thresholds.** E-commerce can afford a lower threshold — showing too many results beats showing none. Medical literature search needs a higher one — showing irrelevant results is more dangerous than showing fewer.
+
+### 4.3 Fallback ≠ Backup
+
+Many people assume fallback means "only used when vector recall fails." But in plenty of real systems, BM25 and vector recall run **in parallel** on every query. Both result sets are merged and fed together into the reranker. Exact-match signals and semantic-match signals both enter the final decision — no ordering, no subordination.
+
+---
+
+## 5. Reranking: The Final Filter
+
+### 5.1 Why Precision Waits Until This Stage
+
+Scale.
+
+Ten million documents, scored one by one with a Cross-Encoder — a single search could take minutes. So the architecture splits into two tiers:
+
+|                 | Recall                                   | Rerank                       |
+| --------------- | ---------------------------------------- | ---------------------------- |
+| Candidate count | Millions to billions                     | Dozens to hundreds           |
+| Latency budget  | Milliseconds                             | Hundreds of milliseconds     |
+| Model           | Simple (dual encoder dot product / BM25) | Heavy (Cross-Encoder / GBDT) |
+| Goal            | Don't miss                               | Get the top ones right       |
+
+Recall is a screening round. Rerank is the final interview. You can't screen everyone with final-round rigor — you'd never finish. But once you're down to dozens of candidates, you can afford to be thorough.
+
+### 5.2 Types of Rerank Models
+
+**Cross-Encoder.** Best quality, slowest speed. Concatenate the query and document into one input, feed through a deep Transformer like BERT, let them interact at every layer. Output is a single relevance score.
+
+It captures subtle stuff — negations, conditionals, word order. The downside: every candidate needs a full forward pass. You cannot precompute document vectors like you do with dual encoders. So it only works on a few hundred candidates.
+
+**ColBERT and other late-interaction models.** Compromise. Encode documents and queries independently first (cheap), then add a light interaction step at the end (accurate). On many benchmarks, these get close to Cross-Encoder quality while being much faster.
+
+**GBDT / LambdaMART.** Not deep learning. Inputs can include vector similarity scores, BM25 scores, document publish date, historical CTR, author authority — whatever features make sense. Interpretable, easy to tune manually. Good when humans need to understand and tweak the ranking logic.
+
+In practice, **you almost never need to train a rerank model from scratch**. Grab `cross-encoder/ms-marco-MiniLM-L-6-v2` off HuggingFace, fine-tune on your labeled data. That covers most use cases.
+
+---
+
+## 6. Document Chunking: If the Foundation Is Crooked, Nothing Above It Stands Straight
+
+### 6.1 Chunking Quality Sets the Ceiling
+
+Too many people obsess over embedding models and rerankers while ignoring chunking. But one bad case makes the point:
+
+> Original text: `The system uses PostgreSQL as the primary database because of its excellent concurrency control.`
+
+Hard split by character count:
+
+- Chunk A: "The system uses PostgreSQL as the primary database because"
+- Chunk B: "of its excellent concurrency control."
+
+Chunk A's meaning is "we chose PostgreSQL" but the sentence is cut off halfway. Chunk B only has an evaluation with no subject. Both chunks produce half-baked vectors that no downstream model can fix.
+
+Split by full sentence instead — this one sentence is one chunk, meaning intact, vector accurate.
+
+### 6.2 A Few Rules of Thumb
+
+**Split on semantic boundaries, not fixed lengths.** At minimum, respect periods and paragraph breaks. Semantic splitters from libraries like `text-splitter` are better. Fixed-length chunking (e.g., 512 tokens) can be a safety cap, but it shouldn't be your only strategy.
+
+**Add overlap between chunks.** 10%–20% overlap on adjacent chunks prevents splitting right through critical information.
+
+**Keep contextual metadata.** Which document a chunk came from, the document title, the section it belongs to — this data matters enormously during reranking. Two chunks with similar scores? The one from a more authoritative document should rank higher.
+
+---
+
+## 7. Embedding: Picking a Model Is Picking a Cost-Performance Ratio
+
+### 7.1 General vs. Domain-Specific Models
+
+If your documents are broad — news, Wikipedia, general Q&A — a general-purpose model like `text-embedding-3-large` or `bge-large-en` works out of the box. Done.
+
+If your documents are specialized — medical papers, legal contracts, internal code docs — a general model's semantic space probably doesn't align well. Either fine-tune on your domain data or use a domain-specific model.
+
+### 7.2 Bigger Isn't Always Better
+
+A 1024-dim model might beat a 768-dim one by 1–2% on precision. But it adds 30%+ to storage and compute costs. At millions of documents, that 30% is real money. Pick dimensions with a cost spreadsheet open, not just a paper's accuracy table.
+
+### 7.3 Maintenance Is Real
+
+Vectors aren't fire-and-forget. Documents get updated — vectors get re-generated. New documents arrive — indexes get incrementally built. Consistency across these updates is the most overlooked engineering cost in embedding pipelines.
+
+---
+
+## 8. The Inverted Index: Why It's So Fast
+
+Millisecond-level BM25 retrieval is possible because of the inverted index underneath.
+
+### 8.1 The Forward Index Problem
+
+You have a thousand books. Find every one that mentions "quantum mechanics."
+
+The forward-index approach: start at page 1 of book 1, scan line by line, through all thousand books. Then tell the user the answer. Obviously unusable.
+
+### 8.2 The Inverted Index Flips It
+
+An inverted index doesn't record "what words are in each book." It records "which books contain each word."
+
+Two parts:
+
+**Term Dictionary:** Every unique word that appears in the collection, sorted in order. Finding a word is binary search — O(log N).
+
+**Posting List:** Under each word, a list recording which documents it appears in, at which positions, and how many times.
+
+Like this:
+
+```
+"cat" → [(doc_id=5, tf=2, positions=[10, 205]),
+         (doc_id=23, tf=1, positions=[67]),
+         (doc_id=108, tf=3, positions=[...])]
+
+"dog" → [(doc_id=3, tf=1, positions=[89]),
+         (doc_id=5, tf=1, positions=[150])]
+```
+
+### 8.3 Where the Speed Comes From
+
+Searching for "cat dog":
+
+1. Find "cat" in the dictionary → get its posting list (the list of all documents containing "cat")
+2. Same for "dog" → another posting list
+3. AND logic → compute the **intersection** of both lists. OR logic → compute the **union**
+4. Score the results using BM25, sort, return
+
+At no point does the system "scan every document." It's like going to a library and, instead of flipping through shelves, opening the index at the back of a book, finding your keyword, and jumping to the right page.
+
+### 8.4 There's More to Squeeze
+
+Lucene further optimizes posting lists with **skip lists** and **compression encodings** like Frame-of-Reference. Skip lists speed up intersection of two large lists (think accelerated merge-sort). Compression shrinks memory footprint. Lucene / Elasticsearch push these to the industrial limit — even at hundreds of billions of documents, a single keyword lookup stays in the low tens of milliseconds.
+
+---
+
+## 9. Offline Does the Heavy Lifting. Online Stays Lean.
+
+A search engine runs on two independent timelines:
+
+**Offline (invisible to users, always running in the background):**
+
+1. Documents arrive → split into chunks
+2. Each chunk goes through the embedding model → vectors generated
+3. Vectors written to the vector database, HNSW or IVF indexes built
+4. Inverted index built in parallel for BM25
+5. Document updates → incremental sync across all indexes
+
+This is compute-heavy, usually batch-processed on GPU clusters. No user requests touch this path, so latency doesn't matter. Focus is on throughput and consistency.
+
+**Online (what users experience in real time):**
+
+1. Receive query → vectorize it
+2. Vector recall (primary) + optional BM25 fallback
+3. Merge, deduplicate
+4. Rerank model scores the candidates
+5. Return Top N
+
+This path is brutally latency-sensitive. Search responses over 200ms feel sluggish. Over 1 second feels broken.
+
+The two-tier principle, stated simply: **everything that can be precomputed goes offline. The online path is stripped to its lightest form.**
+
+---
+
+## 10. What Happens If You Merge Stages
+
+Combining two stages sounds like it might save a step. Do the math:
+
+**Embedding + Recall merged.** "Vectorize as you search." A single BERT forward pass takes tens of milliseconds. Multiply by millions of documents. You'll be waiting until sunrise. Embedding must stay offline.
+
+**Recall + Rerank merged.** Cross-Encoder takes 10–50ms per document. One million documents = 10,000+ seconds. Search once, wait three hours.
+
+**Chunking + Embedding merged.** Chunking is mostly rule-based (CPU). Embedding is neural network inference (GPU). Merge them and both sides lose efficiency. Run them separately on their preferred hardware and both go faster.
+
+The separation isn't architectural aesthetics. It's just that **at this scale and latency budget, you can't avoid splitting them**.
+
+---
+
+## Conclusion
+
+The whole search architecture, parsed down, is a single funnel:
+
+```
+All documents (millions / billions)
+    │
+    ▼ Recall (milliseconds, high recall)
+Hundreds of candidates
+    │
+    ▼ Rerank (hundreds of milliseconds, high precision)
+Top 10
+```
+
+Every layer answers the same question: **given the time I have, how do I make results as useful as possible**.
+
+Vector recall and BM25 aren't competing. One understands meaning. One understands keywords. They complement. The fallback threshold isn't the output of some formula — it's the number you arrive at by staring at a distribution plot and factoring in what your business can tolerate.
+
+Think of it like flipping through a giant card catalog:
+
+- **Document chunking** — tearing a whole book into individually searchable index cards
+- **Embedding** — stamping each card with a set of machine-readable "understanding scores"
+- **Vector recall** — "find the cards that feel most like what I described" (semantic match)
+- **BM25** — "find the cards that literally contain the words I said" (exact match)
+- **Rerank** — you spread both stacks on the table, read each card carefully, and pick the best 10
+
+A search engine isn't good because it tops some benchmark. It's good because **under your data, your users, and your latency budget, it doesn't fall over**.
+
+One last note on RAG. RAG is essentially taking the document list from "recall + rerank" and handing it to an LLM for summarization and generation. If you understand search, you already understand most of RAG. The remainder is the LLM's business.
