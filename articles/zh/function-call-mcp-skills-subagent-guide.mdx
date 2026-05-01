@@ -1045,6 +1045,7 @@ subagent 在单个系统内部组织任务，而 A2A 在跨系统层面组织协
 - `docs-mcp`
 
 它们负责把外部能力标准化暴露出来。如果用的是 MCP 2.0，这些 server 可以：
+
 - 通过 Streamable HTTP 部署在生产环境
 - 用 OAuth 统一认证
 - 工具带上 annotations 让 agent 框架做细粒度权限控制
@@ -1271,6 +1272,7 @@ prompt 是"一段提示文本"，而 skill 是"一套完整的任务执行系统
 - 企业 API
 
 建议尽量使用支持 Streamable HTTP 的 MCP 2.0 server，原因很简单：
+
 - 你的 MCP Server 迟早需要支持远程访问（团队不一定都在本机跑）
 - Tool annotations 让你能做更精细的权限控制
 - OAuth 标准化减少了安全性方面的重复投入

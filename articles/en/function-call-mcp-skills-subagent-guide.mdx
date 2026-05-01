@@ -559,8 +559,8 @@ After loading "code-fix" skill (subclass override):
 
 From this angle, skill and RAG have a key distinction:
 
-- **RAG** injects *knowledge* — it tells the model "what the facts are"
-- **Skill** injects *methodology* — it tells the model "how you should think and act right now"
+- **RAG** injects _knowledge_ — it tells the model "what the facts are"
+- **Skill** injects _methodology_ — it tells the model "how you should think and act right now"
 
 Here is a concrete example. Suppose you create a code review skill:
 
@@ -706,7 +706,7 @@ A2A (Agent-to-Agent Protocol) is an open protocol originally proposed by Google 
 
 > An open protocol enabling communication and interoperability between AI agents built on different frameworks, by different vendors, running on different servers — without requiring them to expose their internal state.
 
-If MCP solves the *vertical* problem of agents connecting downward to tools, A2A solves the *horizontal* problem of agents collaborating with one another.
+If MCP solves the _vertical_ problem of agents connecting downward to tools, A2A solves the _horizontal_ problem of agents collaborating with one another.
 
 ## 5.3 Core concepts
 
@@ -1045,6 +1045,7 @@ You may have servers such as:
 - `docs-mcp`
 
 They standardize how external systems are exposed. With MCP 2.0, these servers can:
+
 - deploy in production over Streamable HTTP
 - use unified OAuth authentication
 - annotate tools for fine-grained permission control
@@ -1274,6 +1275,7 @@ Any external capability likely to be reused by multiple hosts is a good MCP cand
 - enterprise APIs
 
 Prefer MCP 2.0 servers with Streamable HTTP support. The reasons are simple:
+
 - your MCP servers will eventually need to support remote access (not everyone runs locally)
 - Tool annotations enable fine-grained permission control
 - OAuth standardization reduces duplicated security investment
