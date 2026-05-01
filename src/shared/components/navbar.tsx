@@ -7,8 +7,8 @@
 
 'use client'
 
-import { ThemeToggle } from '@/src/shared/components'
 import { Link, usePathname, useRouter } from '@/i18n/routing'
+import { ThemeToggle } from '@/src/shared/components'
 import { cn } from '@/src/shared/utils'
 import { motion } from 'framer-motion'
 import { Languages, Menu, Search, X } from 'lucide-react'
@@ -34,7 +34,7 @@ export function Navbar() {
     // Common/nav/posts 文章
     { name: t('posts'), path: '/posts' },
     // Common/nav/chat 聊天
-    { name: t('chat'), path: '/chat' },
+    // { name: t('chat'), path: '/chat' },
     // Common/nav/about 关于
     { name: t('about'), path: '/about' },
   ]

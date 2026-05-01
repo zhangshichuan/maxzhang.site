@@ -1,27 +1,41 @@
 ---
-title: '深入解析 Tailwind CSS v4 黑夜模式与变体机制'
-summary: '从一个真实的 GlassCard 组件失效案例出发，深入探讨 Tailwind CSS v4 的黑夜模式机制、CSS 变量覆盖原理以及 @variant、@layer 等核心概念。'
+title: '当你的组件死在你面前：Tailwind CSS v4 黑夜模式的真相'
+summary: '从凌晨一点一个失败的 GlassCard 组件开始，搞清楚 Tailwind v3 和 v4 在黑暗模式上的根本区别，CSS 变量那套隐藏的切换机制，以及 @custom-variant、@variant、@layer 到底各自在干什么。'
 category: 'Frontend'
-tags: ['Vue', 'React']
+tags: ['Tailwind CSS', 'Dark Mode', 'CSS', 'Frontend']
 author: 'Max Zhang'
-date: '2026-02-10'
+date: '2024-08-10'
 ---
 
-## 从一个真实的 GlassCard 组件失效案例说起
+## 凌晨一点的那声"卧槽"
 
-最近把项目从 Tailwind CSS v3 升级到 v4 后，碰上一个让人头疼的问题：页面上一个叫 `GlassCard` 的组件死活不肯跟随主题切换。
+你肯定有过这种时刻。
 
-页面背景确实变黑了，但这个毛玻璃卡片就像被焊死了一样，永远保持浅色背景。在深色背景上，白色半透明的卡片显得格外刺眼，严重影响用户体验。
+深夜，刚把项目从 Tailwind v3 升到 v4，build 过了，lint 没报错，心想这波迁移真他妈丝滑。你倒了杯水，顺手点了一下页面右上角的主题切换按钮。
 
-这篇文章记录了我排查和解决这个问题的完整过程。过程中踩了不少坑，也借此机会把 Tailwind CSS v4 的黑暗模式机制、CSS 变量覆盖原理，以及几个容易混淆的 CSS 概念彻底搞清楚了。
+页面背景乖乖地黑了。
+
+但角落里那个毛玻璃卡片——你管它叫 `GlassCard` 的东西——纹丝不动。白底白框，在一片深色背景上亮得刺眼，像大白天穿了个夜行衣去偷东西。
+
+你盯着它看了五秒。
+
+然后你骂了一声。
+
+你打开 DevTools，`<html>` 标签上明明已经有 `class="dark"` 了。`bg-white/40 dark:bg-black/40` 这句话你也写了，Tailwind 语法一点毛病没有。但浏览器里，那个 `.dark\:bg-black\/40` 的样式就是没生效。
+
+操，这到底是什么鬼？
+
+你对着屏幕愣了半分钟。你试着重启 dev server——不行。清缓存——不行。把 `dark:` 类改成内联 style——能行，但你不可能把整个项目全改成内联 style。
+
+你翻出 Tailwind v4 的 changelog，开始一篇一篇地读。然后你发现，变的东西比你想象的多得多。
+
+这篇文章就是我那一夜全部排查过程的记录。我不给你讲"最佳实践"和"推荐方案"——那些东西官网文档里都有。我要给你讲的是：**为什么**，以及**怎么自己判断**。
 
 ---
 
-## 1. 问题现场：GlassCard 为何"装死"？
+## 第一章：先把你面前的尸体检查一遍
 
-### 1.1 组件代码
-
-先看看这个出问题的 `GlassCard` 组件长什么样：
+### 这个要死不活的组件长什么样
 
 ```tsx
 // GlassCard.tsx
@@ -36,11 +50,11 @@ export function GlassCard({ children, className = '' }) {
 }
 ```
 
-代码看起来很正常，使用了 Tailwind 标准的 `dark:` 前缀语法，理论上应该能自动切换。
+没什么毛病吧？白底半透明，暗黑模式下换黑底。v3 时代跑得好好的。
 
-### 1.2 主题配置
+### 主题切换怎么配的
 
-项目用了 `next-themes` 来管理主题切换，这是 Next.js 项目中管理黑暗模式的标配方案：
+你大概率用了 `next-themes`，Next.js 生态里搞黑暗模式的标准答案：
 
 ```tsx
 // app/providers.tsx
@@ -72,27 +86,36 @@ export default function RootLayout({ children }) {
 }
 ```
 
-### 1.3 症状表现
+`attribute="class"` 的意思是：`next-themes` 会在 `<html>` 标签上加上 `class="light"` 或者 `class="dark"`。v3 时代你只要在 `tailwind.config.js` 里写一句 `darkMode: 'class'`，Tailwind 就知道"哦，看 class 就行"。一切正常。
 
-当我点击切换按钮时：
+### 但有一个细节你注意到了没有
 
-- ✅ 页面背景（由 `body` 控制）成功变黑
-- ❌ `GlassCard` 的背景依然是 `bg-white/40`，没有变化
+你仔细看——页面背景确实切了。黑的变黑，白的变白。
 
-这就奇怪了。`next-themes` 明明给 `<html>` 标签加上了 `class="dark"`，为什么 Tailwind 的 `dark:` 样式就是不起作用？
+所以问题不是"主题完全没切换"，而是"**一部分东西切了，一部分没切**"。
+
+这就很奇怪了。如果 Tailwind 的 `dark:` 变体完全废了，那应该所有 `dark:` 开头的样式都失效才对。但你要说它没废吧，`GlassCard` 又死给你看。
+
+别急，下面我们把这两条路拆开看。
+
+你可能会想：是不是我哪个 class 写错了？是不是 `next-themes` 的配置有问题？是不是版本不兼容？
+
+你打开 Tailwind 的官网，搜"dark mode"，看到 v4 的文档说了一堆新概念。你翻了几页，越看越懵。
+
+别慌。要搞懂"为什么坏了"，得先搞懂"原来是怎么好的"。
 
 ---
 
-## 2. 追根溯源：v3 和 v4 的黑暗模式机制完全不同
+## 第二章：v3 那会儿，Tailwind 到底怎么干的
 
-### 2.1 v3 时代的做法
+### 一句 darkMode: 'class' 背后的东西
 
-在 Tailwind CSS v3 时代，如果你想用基于类的黑暗模式，需要在 `tailwind.config.js` 里显式声明：
+v3 时代，你的 `tailwind.config.js` 大概长这样：
 
 ```js
 // tailwind.config.js
 module.exports = {
-  darkMode: 'class', // 关键配置
+  darkMode: 'class',
   content: ['./src/**/*.{js,jsx,ts,tsx}'],
   theme: {
     extend: {},
@@ -101,29 +124,45 @@ module.exports = {
 }
 ```
 
-这个配置的作用是告诉 Tailwind：**"只要 HTML 标签上有 `.dark` 类，就激活所有 `dark:` 开头的样式。"**
+就这一句 `darkMode: 'class'`，干了一件很简单的事：**告诉 Tailwind 的编译器，当你扫描模板发现 `dark:xxx` 时，生成的选择器里用 `.dark` 类做条件。**
 
-生成的 CSS 大概长这样：
+生成的 CSS 是这样的：
 
 ```css
-/* v3 生成的 dark: 样式 */
+/* v3 生成的东西 */
 .dark\:bg-black\/40 {
   background-color: rgb(0 0 0 / 0.4);
 }
 ```
 
-选择器是 `.dark\:bg-black\/40`，它依赖于 HTML 元素上有 `.dark` 类。
+就一个类选择器。没有任何花活。
 
-### 2.2 v4 时代的改变
+只要你某个祖先元素上出现了 `class="dark"`，这个选择器就能命中。
 
-升级到 v4 后，很多人（包括我）发现直接沿用 v3 的配置不起作用了。
+### 用一个类比帮你记住
 
-这是因为 **Tailwind CSS v4 默认采用媒体查询（Media Query）策略**，彻底改变了黑暗模式的触发机制。
+把 Tailwind v3 想象成一个看门的保安。
 
-#### v4 默认生成的 CSS
+你告诉他："如果有人戴了 dark 的帽子进来，你就把灯关掉。"
+
+`darkMode: 'class'` 就是你给他的指令："盯着帽子看。"
+
+`next-themes` 负责给 `<html>` 戴帽子。
+
+保安看到帽子，关灯。一切正常。
+
+---
+
+## 第三章：然后 v4 来了，保安换了
+
+### 它不再看帽子，它看天气预报
+
+Tailwind CSS v4 把默认行为改了。它不再生成 `.dark\:bg-black\/40` 这种类选择器了。
+
+**它默认用媒体查询。**
 
 ```css
-/* v4 默认生成的 dark: 样式 */
+/* v4 默认生成的东西 */
 @media (prefers-color-scheme: dark) {
   .dark\:bg-black\/40 {
     background-color: rgb(0 0 0 / 0.4);
@@ -131,30 +170,55 @@ module.exports = {
 }
 ```
 
-看到了吗？这里用的是 `@media (prefers-color-scheme: dark)`，而不是类选择器。
+你看出区别了吗？触发的条件不再是 HTML 上的 `.dark` 类了。触发条件是**操作系统的主题设置**。
 
-这意味着：
+用刚才那个类比：保安不看帽子了。他开始看外面的天色。
 
-- **Tailwind 只听从操作系统的指挥**
-- 即使你的网页 HTML 已经被 `next-themes` 加上了 `.dark` 类
-- 只要你的操作系统是浅色模式，Tailwind 就视而不见
+你的网页上 class 有没有 dark 他不管。他只管："操作系统现在是浅色还是暗色？"
 
-#### 为什么页面背景能变，但组件不行？
+如果你在 macOS 上用浅色模式开发——或者你系统是浅色的，浏览器 DevTools 里切了暗色——保安不为所动。外面的天还是亮的，他不关灯。
 
-你可能会问："既然 `dark:` 失效了，为什么页面背景却能正常变黑？"
+### 什么叫"系统是浅色的但网页是暗色的"
 
-这就要说到 CSS 变量了。页面背景的切换完全不依赖 Tailwind 的 `dark:` 变体，而是靠 CSS 自定义属性：
+这是一个很多人第一次遇到时想不明白的场景：
+
+- 你的 macOS 系统主题是浅色
+- 但你在网页上手动切了暗色模式（因为你点了那个切换按钮）
+- `next-themes` 老老实实给 `<html>` 加上了 `class="dark"`
+- 页面背景切了（等一下，为什么？等下讲）
+- 但 `GlassCard` 的 `dark:bg-black/40` 没生效
+
+为什么？因为 Tailwind 的媒体查询判断的是系统，不是网页。系统浅色 → 媒体查询不满足 → 所有在 `@media (prefers-color-scheme: dark)` 里的样式不生效。
+
+**页面背景能切，不是因为 Tailwind 的 dark: 变体。是因为另一套机制。**
+
+---
+
+## 第四章：CSS 变量——那条你一直没注意的路
+
+### 两套并行的切换机制
+
+很多人（包括当时的我）会下意识地以为黑暗模式就是 Tailwind 的 `dark:` 变体。
+
+但其实你的项目里跑着**两套完全独立的主题切换系统**：
+
+**系统一：Tailwind 的 dark: 变体** → 靠 `@media` 或类选择器触发 → 目前废了
+
+**系统二：CSS 自定义属性** → 靠选择器作用域和变量覆盖 → 一直好好的
+
+### 系统二是怎么干的
+
+看看你的 `globals.css`：
 
 ```css
-/* globals.css */
 :root {
   --background: 255 255 255; /* 白色 */
   --foreground: 0 0 0; /* 黑色 */
 }
 
 .dark {
-  --background: 9 10 11; /* 黑色 */
-  --foreground: 255 255 255; /* 白色 */
+  --background: 9 10 11; /* 深色 */
+  --foreground: 255 255 255; /* 浅色 */
 }
 
 body {
@@ -163,82 +227,97 @@ body {
 }
 ```
 
-这个机制的原理是：
+这套机制跟 Tailwind 没有任何关系。它是纯 CSS：
 
-1. `next-themes` 给 `<html>` 标签加上 `.dark` 类
-2. CSS 变量 `--background` 在 `.dark` 规则块下被重新赋值
-3. `body` 使用 `rgb(var(--background))` 自动引用新值
+1. `next-themes` 给 `<html>` 加上 `class="dark"`
+2. `.dark` 选择器命中，`--background` 被重写
+3. `body` 的 `background-color` 引用 `var(--background)`，自动拿到新值
 
-这完全是原生 CSS 的作用域覆盖机制，跟 Tailwind 的 `dark:` 变体没有半点关系，所以 Tailwind 版本升级影响不到它。
+为什么新值能自动拿到？因为 CSS 变量的解析是**动态的**——浏览器每次渲染时都会重新计算 `var()` 的值。变量变了，引用它的地方全都会变。
+
+这就是为什么页面背景能切——它走的是系统二，不是系统一。
+
+### 打个比方
+
+你有一个水桶，标记为 `--background`，里面装的是白色油漆。`body` 说："我身上涂什么颜色取决于这个桶里的东西。"
+
+`next-themes` 切换时做的事情不是用黑油漆去涂 `body`。它做的是**把水桶里的油漆换成黑色的**。
+
+`body` 不需要知道发生了什么。它只是说："桶里是啥我就是啥。"
+
+Tailwind 的 `dark:` 变体是另一种思路。它不是你换桶里的油漆。它在说："当 HTML 上有 dark 类时，我要另外写一条规则，给这个元素单独涂黑漆。"
+
+这两条路，一条是你主动刷漆（Tailwind），一条是你换桶里的颜色让别人跟着变（CSS 变量）。
+
+**它们谁都不依赖谁。版本升级能搞死 Tailwind 那条路，但 CSS 变量那条路，Tailwind 管不着。**
+
+你可能会有一个很实际的疑问：那我到底该用哪条路？
+
+答案是：两条都用。Tailwind 的 `dark:` 变体适合**单个元素的属性切换**——"这个 div 在 dark 模式下背景变黑，边框变暗"。一个按钮的背景色，一个卡片的边框颜色，用 `dark:` 前缀最顺手。CSS 变量适合**全局或大范围的属性切换**——"整个页面的背景色、文字色、主题色统一变"。你把 `--background` 定义一次，全站几百个组件自动跟着走，零心智负担。
+
+一个细化单个元素的样式，一个管理全局的色彩基调。它们互补，不是互斥。
 
 ---
 
-## 3. 解决方案：让 v4 重新认识 `.dark` 类
+## 第五章：修车——一行代码让保安重新看帽子
 
-### 3.1 核心：使用 @custom-variant
+### 答案就是 @custom-variant
 
-要让 Tailwind v4 使用类选择器而不是媒体查询，需要在 CSS 中明确定义黑暗模式变体。
-
-在 `app/globals.css`（或你的主 CSS 文件）中添加：
+想让 Tailwind v4 重新关注 HTML 上的 `class` 而不是操作系统的设置，你只需要在 CSS 里加一行：
 
 ```css
 @import 'tailwindcss';
 
-/* 在这里添加黑暗模式变体定义 */
 @custom-variant dark (&:where(.dark, .dark *));
 ```
 
-这就是解决方案的核心！添加这一行后，Tailwind 会重新生成基于类的 CSS 选择器。
+就是这一行。加上去，重编译，你的 `GlassCard` 就活了。
 
-### 3.2 解释 @custom-variant 语法
-
-让我拆解一下这行代码：
+### 拆开来看这一行咒语
 
 ```css
 @custom-variant dark (&:where(.dark, .dark *));
 ```
 
-- `@custom-variant` 是 Tailwind v4 的新指令，用来定义自定义变体
-- `dark` 是变体的名字，使用时就是 `dark:` 前缀
-- `(&:where(.dark, .dark *))` 是选择器条件，意思是：
-  - `.dark` — 当前元素自己有 `.dark` 类
-  - `.dark *` — 或者是 `.dark` 类的后代元素
-  - `:where()` 是 CSS 函数，用来写选择器但不影响优先级
+让我一个词一个词拆开：
 
-用大白话说就是：**"当元素或其祖先有 `.dark` 类时，激活这个变体的样式。"**
+**`@custom-variant`**：Tailwind v4 的新指令，用来定义一个新的变体。你可以理解成"我想造一个新的条件开关"。
 
-### 3.3 修复后的效果
+**`dark`**：这个变体的名字。定义了之后，你就可以在 HTML 里写 `dark:bg-black/40` 了。
 
-加上 `@custom-variant` 后，重新编译，生成的 CSS 变成了：
+**`(&:where(.dark, .dark *))`**：这是触发条件，用选择器语法写。
+
+- `&` 在这个语境里代表"当前使用这个变体的元素"
+- `.dark` 意思是"当前元素自己身上有 .dark 类"
+- `.dark *` 意思是"当前元素是 .dark 元素的后代"（`*` 是通配符）
+- `:where()` 包裹这两条——`:where()` 是 CSS 的一个函数，它的特殊之处在于**不贡献选择器优先级**
+
+为什么用 `:where()`？想一想：如果直接写 `.dark .dark\:bg-black\/40` 或 `.dark * .dark\:bg-black\/40`，这些选择器都有 0-1-0 以上的优先级。当你的用户想用更具体的选择器覆盖这些样式时，就会因为优先级不够而翻车。`:where()` 保证了你定义的变体永远是 0 优先级，可以被任何正常选择器覆盖。
+
+### 修复后生成的 CSS
+
+加了上面那一行后，Tailwind 重新生成的 CSS 会变成这样：
 
 ```css
-/* 修复后生成的 dark: 样式 */
 .dark\:bg-black\/40,
 :where(.dark, .dark *) .dark\:bg-black\/40 {
   background-color: rgb(0 0 0 / 0.4);
 }
 ```
 
-这样，无论操作系统是什么主题，只要网页的 `<html>` 标签上有 `.dark` 类，所有 `dark:` 开头的 Tailwind 工具类都会生效。
+第一个选择器 `.dark\:bg-black\/40` 是给**元素自己身上有 .dark 类**的情况用的。第二个是给**祖先有 .dark 类**的情况。
 
-### 3.4 完整的 globals.css 配置
+现在无论你操作系统是什么主题，只要 `<html>` 上出现了 `class="dark"`，所有的 `dark:` 工具类就会复活。
 
-为了确保万无一失，这里给出完整的 CSS 配置示例：
+### 完整的 globals.css 长这样
 
 ```css
-/* app/globals.css */
 @import 'tailwindcss';
 
-/* 定义黑暗模式变体 - 核心修复 */
+/* 核心修复 */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* CSS 变量定义（可选，用于非 Tailwind 工具类） */
-@theme {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-}
-
-/* 全局样式 */
+/* 以下和你之前的一样 */
 :root {
   --background: 255 255 255;
   --foreground: 0 0 0;
@@ -257,25 +336,21 @@ body {
 
 ---
 
-## 4. 概念详解：variant、@variant、@custom-variant 到底啥区别？
+## 第六章：别搞混了——variant 这个词有三个完全不同的意思
 
-### 4.1 variant 在前端世界的三种含义
+这是前端领域最常见的一个坑。"变体"这个词在不同的上下文里指的是三种毫不相干的东西。
 
-"变体"这个词在前端领域出现频率很高，但不同场景下意思完全不同：
-
-#### 4.1.1 Tailwind 工具类变体（使用视角）
-
-这是我们最熟悉的用法，比如 `hover:bg-blue-500`、`dark:text-white`：
+### 意思一：Tailwind 工具类变体（你敲键盘的时候）
 
 ```html
-<button class="hover:bg-blue-500 dark:bg-gray-800">按钮</button>
+<button class="hover:bg-blue-500 dark:bg-gray-800 focus:ring-2">点我</button>
 ```
 
-这里的 `hover:`、`dark:` 就是**状态变体**，用来描述"在什么情况下"应用样式。
+这里的 `hover:`、`dark:`、`focus:` 就是变体。它们在告诉你："正常情况下用一套样式，特殊情况下用另一套。"
 
-#### 4.1.2 组件库的样式变体（设计视角）
+你每一次写 `dark:xxx` 就是一次变体的使用。
 
-这是 UI 组件库常用的概念，比如 Ant Design 的按钮：
+### 意思二：组件库的样式变体（UI 设计师跟你聊天的时候）
 
 ```tsx
 <Button type="primary">主要按钮</Button>
@@ -283,339 +358,270 @@ body {
 <Button type="text">文本按钮</Button>
 ```
 
-这里的 `primary`、`dashed`、`text` 是**样式变体**，用来区分同一个组件的不同外观。
+这里的 `primary`、`dashed`、`text` 是组件库说的"变体"，指的是一个组件可以有多种视觉风格。这跟 Tailwind 的变体八竿子打不着。
 
-#### 4.1.3 CSS 指令变体（定义视角）
-
-这是 Tailwind v4 引入的新概念：
+### 意思三：CSS 指令变体（你定义一个变体的时候）
 
 ```css
-/* @variant：内联使用变体 */
+@custom-variant dark (&:where(.dark, .dark *));
+```
+
+这是 Tailwind v4 里**定义新的触发条件**的方式。你不是在"使用"一个变体，你是在"制造"一个新的变体。你告诉 Tailwind："以后有人写 `dark:xxx`，在哪些条件下要激活这些样式。"
+
+### 为什么一定要分清楚
+
+因为你搜资料的时候，这三种东西经常混在一起出现。你看到一个文章说"variants 用法详解"，可能是讲第一个意思的。看到一个文档说"组件的 variants 属性"，是第二个意思。看到 Tailwind 的官方文档在讲 `@custom-variant`，那是第三个意思。
+
+不分清楚，你他妈连证都看不懂。
+
+---
+
+## 第七章：@variant 和 @custom-variant——一把刀的两个方向
+
+这是两个不同的 CSS 指令，名字又长得像，很多人第一次看到直接晕了。
+
+### @custom-variant：造一把刀
+
+```css
+@custom-variant dark (&:where(.dark, .dark *));
+```
+
+这是"造"一个变体。你在定义一个新的条件开关叫 `dark`，并告诉 Tailwind 什么情况下触发它。
+
+### @variant：用这把刀
+
+```css
 .my-element {
   background: white;
+
   @variant dark {
     background: black;
   }
 }
-
-/* @custom-variant：定义新变体 */
-@custom-variant theme-midnight (&:where([data-theme="midnight"] *));
 ```
 
-这两种都是**定义变体条件**，告诉 Tailwind："什么情况下激活这个变体"。
+这是"用"一个变体。你在一个 CSS 规则里面，给某个变体写专属样式。
 
-### 4.2 @variant vs @custom-variant
+这两者的关系，就像"注册一个事件"和"在事件回调里写逻辑"的关系。
 
-这是两个不同的指令：
+`@custom-variant` 注册了一个叫 `dark` 的条件。`@variant dark { ... }` 是在这个条件里写样式。
 
-| 指令              | 用途                    | 示例                                                            |
-| ----------------- | ----------------------- | --------------------------------------------------------------- |
-| `@variant`        | 在 CSS 块内直接使用变体 | `background: white; @variant dark { background: black; }`       |
-| `@custom-variant` | 定义全新的变体          | `@custom-variant midnight (&:where([data-theme="midnight"] *))` |
+### 什么时候用哪个
 
-简单记忆：
+**如果你想让整个项目都能用 `dark:` 前缀**：用 `@custom-variant`。这是全局的，定义了之后你所有组件的 `dark:xxx` 都能用。
 
-- `@variant` 是"用"变体
-- `@custom-variant` 是"造"变体
+**如果你有一小段 CSS 代码想针对 dark 模式写样式，但你不想散落到一堆 class 里去**：用 `@variant`。它让你在一段 CSS 里内联处理多状态。
+
+`@custom-variant` 影响全局的 Tailwind 工具类生成。`@variant` 只影响当前 CSS 规则。
 
 ---
 
-## 5. @layer 三层架构详解
+## 第八章：@layer——Tailwind 的三层大楼
 
-Tailwind CSS 把样式分成三层，这是 CSS 史上的一次创新。这种设计解决了样式优先级冲突的老大难问题。
+这是 Tailwind CSS 整个设计里最他妈聪明的一个东西。不是说技术有多复杂——是思路。它在解决一个前端开发每天都在踩的坑：**样式被莫名其妙覆盖了，你完全不知道为什么。**
 
-### 5.1 三层结构图解
+### 问题场景
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Tailwind CSS 层结构                       │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  Layer 3: Utilities (工具类层)                        │   │
-│  │                                                      │   │
-│  │  .p-4 { padding: 1rem; }                            │   │
-│  │  .flex { display: flex; }                           │   │
-│  │  .text-center { text-align: center; }               │   │
-│  │                                                      │   │
-│  │  优先级最高，会覆盖 components 和 base 的同名样式     │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                           ▲                                  │
-│                           │                                  │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  Layer 2: Components (组件层)                        │   │
-│  │                                                      │   │
-│  │  .btn { @apply ... }                                │   │
-│  │  .card { @apply ... }                               │   │
-│  │  .modal { @apply ... }                              │   │
-│  │                                                      │   │
-│  │  优先级中等，用来定义可复用的组件样式                 │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                           ▲                                  │
-│                           │                                  │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  Layer 1: Base (基础层)                              │   │
-│  │                                                      │   │
-│  │  h1 { font-size: 2em; }                             │   │
-│  │  a { text-decoration: underline; }                  │   │
-│  │  * { box-sizing: border-box; }                      │   │
-│  │                                                      │   │
-│  │  优先级最低，用来重置浏览器默认样式                   │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+你定义了一个 `.card` 组件：
+
+```css
+.card {
+  padding: 16px;
+  background: white;
+}
 ```
 
-### 5.2 各层详解
+后来你引入了一个第三方 UI 库。这个库也定义了一个 `.card`：
 
-#### Base 层：打底用的
+```css
+.card {
+  padding: 24px;
+}
+```
+
+你的 `.card` 后面加载，优先级一样的情况下，你的样式应该覆盖第三方的。但如果加载顺序反过来呢？如果你的样式文件先加载，第三方的后加载，第三方的就覆盖了你的。
+
+你没法控制加载顺序。尤其是现代打包工具，文件怎么打包进去基本是个黑盒。
+
+### Tailwind 的解法：分层
+
+Tailwind 把所有的样式分成三层。每层的优先级是固定的：
+
+```
+Utilities（工具类层） > Components（组件层） > Base（基础层）
+```
+
+无论加载顺序是什么，**同一层内后加载的覆盖先加载的，但低层的样式永远打不过高层的**。
+
+### Base 层：地基
 
 ```css
 @layer base {
-  /* 重置浏览器默认样式 */
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
-  }
-
-  /* 设置基础排版 */
   h1 {
     font-size: 2.5rem;
-    font-weight: 700;
   }
-
-  h2 {
-    font-size: 2rem;
-    font-weight: 600;
-  }
-
-  /* 设置链接默认样式 */
   a {
-    color: inherit;
     text-decoration: none;
+  }
+  * {
+    box-sizing: border-box;
   }
 }
 ```
 
-**什么时候用**：重置浏览器默认样式，设置全站统一的排版基准。
+这一层用来重置浏览器默认样式。给全站打一个统一的排版底线。
 
-#### Components 层：组件用的
+你可以把它想象成毛坯房的水泥地面。后面的装修都盖在这上面。
+
+### Components 层：隔断墙
 
 ```css
 @layer components {
   .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-colors;
+    @apply px-4 py-2 rounded-lg;
   }
-
-  .btn-primary {
-    @apply bg-blue-500 text-white hover:bg-blue-600;
-  }
-
-  .btn-secondary {
-    @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
-  }
-
   .card {
-    @apply bg-white rounded-xl shadow-lg p-6;
+    @apply bg-white rounded-xl p-6;
   }
 }
 ```
 
-**什么时候用**：把常用的 Tailwind 类组合打包成语义化的类名，方便复用。
+这一层用来封装可复用的组件样式。把一串 Tailwind 类打包成有意义的类名。
 
-#### Utilities 层：工具类
+这是装修阶段的墙体。它们盖在地基上面，但可以被家具覆盖。
+
+### Utilities 层：家具
 
 ```css
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
-
   .scrollbar-hide {
-    -ms-overflow-style: none;
     scrollbar-width: none;
   }
-
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
 }
 ```
 
-**什么时候用**：添加 Tailwind 默认没有的工具类。
+这一层是具体的工具类。Tailwind 默认的所有工具类都在这一层。
 
-### 5.3 为什么优先级这样设计？
+家具可以随时换。你想把沙发挪到另一个位置，你不需要拆墙。
 
-想象一下，如果没有分层，可能会遇到这样的问题：
+### 为什么这很重要
 
-```css
-/* 你定义的 card 样式 */
-.card {
-  padding: 16px;
-}
+因为你现在知道的优先级规则是绝对可预测的：**不论加载顺序，任何在 Utilities 层的东西都会覆盖 Components 和 Base 层的东西。**
 
-/* 某个第三方插件 */
-.card {
-  padding: 24px; /* 覆盖了你的！ */
-}
-```
+你再也不用担心第三方库的 `.card` 会覆盖你的 `.p-4` 了。因为 `.card` 在 Components 层，`.p-4` 在 Utilities 层。Utilities 赢。
 
-有了分层后，优先级是固定的：
+这就是 Tailwind 设计里最妙的地方：它不跟你较劲加载顺序。它用层的概念把"你想做的三件事"分开——重置基础、定义组件、使用工具——然后告诉你："不管它们按什么顺序加载，工具的优先级永远高于组件，组件的优先级永远高于基础。"你真的可以忘了 CSS 优先级战争这件事。
 
-- Utilities > Components > Base
+### v4 里的变化
 
-所以即使第三方库用了 Components 层，你的 Utilities 层样式也会优先。
-
-### 5.4 v4 中的 @layer 注意事项
-
-在 Tailwind CSS v4 中，`@layer` 指令的语法略有变化：
+v4 还引入了一个新的 `@utility` 指令，用来替代在 `@layer utilities` 里手写工具类：
 
 ```css
-/* v4 推荐写法 */
-@layer utilities {
-  .my-utility {
-    /* 工具类样式 */
-  }
-}
-
-/* v4 新增的 @utility 指令 */
-@utility my-utility {
-  /* 新的工具类语法 */
-  --tw-bg-opacity: 1;
+/* v4 新写法 */
+@utility my-custom-bg {
   background-color: rgb(255 255 255 / var(--tw-bg-opacity));
 }
 ```
 
+这个 `@utility` 跟你之前在 `@layer utilities` 里写的东西功能一样，但它更明确语义：**你在定义一个新的工具类**，不是别的什么。
+
 ---
 
-## 6. next-themes 配置详解
+## 第九章：next-themes——你可能配错了但一直能用
 
-### 6.1 attribute 属性：切换方式的选择
+### attribute 的两个选择
 
-`next-themes` 的 `attribute` 属性决定了主题信息存储在哪里。
-
-#### 方案一：class 属性（最常用）
+`next-themes` 的核心配置就是这个 `attribute`：
 
 ```tsx
 <ThemeProvider attribute="class" defaultTheme="system">
-  {children}
-</ThemeProvider>
 ```
 
-生成的 HTML：
+`attribute="class"` 的意思是：把主题信息存到 `<html>` 的 class 属性里。切换后你会看到：
 
 ```html
-<!-- 浅色模式 -->
-<html class="light">
-  <!-- 深色模式 -->
-  <html class="dark"></html>
-</html>
+<html class="dark"></html>
 ```
 
-**优点**：
-
-- 兼容性好，几乎所有框架都支持
-- 容易调试，直接看类名就知道当前主题
-
-**缺点**：
-
-- 类名可能与某些 CSS 框架冲突
-
-#### 方案二：data-theme 属性（组件库常用）
-
-```tsx
-<ThemeProvider attribute="data-theme" defaultTheme="system">
-  {children}
-</ThemeProvider>
-```
-
-生成的 HTML：
+`attribute="data-theme"` 的意思是：存到 data 属性里。切换后你会看到：
 
 ```html
-<!-- 浅色模式 -->
-<html data-theme="light">
-  <!-- 深色模式 -->
-  <html data-theme="dark"></html>
-</html>
+<html data-theme="dark"></html>
 ```
 
-**优点**：
+### 这两种有什么区别
 
-- 不会与常规类名冲突
-- 某些组件库（如 DaisyUI、TDesign）使用这种方案
+对 `next-themes` 来说没区别。对你来说有区别。
 
-**缺点**：
+如果你用 `attribute="class"`：
 
-- Tailwind 默认不支持 data 属性变体，需要额外配置
+- Tailwind 的 `@custom-variant dark (&:where(.dark, .dark *))` 直接就能用
+- 兼容性最好
+- 但你没法同时用 `class` 做别的事情（虽然也没啥人会冲突）
 
-#### 适配 data-theme 属性的 Tailwind 配置
+如果你用 `attribute="data-theme"`：
 
-如果你用 `attribute="data-theme"`，需要修改 Tailwind 配置：
-
-```js
-// tailwind.config.js
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  darkMode: ['class', "[data-theme='dark']"],
-  // ...其他配置
-}
-```
-
-或者在 v4 中这样定义：
+- 你需要改 Tailwind 的变体定义
 
 ```css
-@import 'tailwindcss';
-
+/* 注意这里是 data-theme 而不是 .dark */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 ```
 
-### 6.2 defaultTheme 和 enableSystem
+- 某些组件库（DaisyUI、TDesign 之类的）默认用这种方案
+- 好处是不会跟 class 命名污染
 
-```tsx
-<ThemeProvider
-  attribute="class"
-  defaultTheme="system" /* 默认跟随系统 */
-  enableSystem={true} /* 允许系统主题 */
-  disableTransitionOnChange /* 切换时禁用动画（可选） */
->
-  {children}
-</ThemeProvider>
+### defaultTheme 和 enableSystem
+
+- `defaultTheme="system"`：用户第一次访问时不做选择，跟着系统走
+- `defaultTheme="light"`：用户第一次访问时永远是浅色
+- `enableSystem={true}`：用户可以手动切换，也可以选"跟随系统"
+
+### FOUC 闪烁问题
+
+"FOUC" 是 Flash of Unstyled Content 的缩写，但这里更多是指"Flash of Wrong Theme"——页面加载的一瞬间，主题还没被 JS 设置好，你会看到一瞬间的白屏。
+
+为什么会有这个闪现？因为 `<script>` 标签里的 JavaScript 需要时间执行。在这之前，浏览器已经开始渲染 HTML 了——它不知道应该用什么颜色，只能先用默认值。
+
+`next-themes` 用 `suppressHydrationWarning` 来掩盖这个问题，但如果你对闪烁特别敏感，可以在 `<head>` 里加一个内联脚本，在 HTML 渲染之前就设置好 class：
+
+```html
+<script>
+  ;(function () {
+    var theme = localStorage.getItem('theme')
+    if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark')
+    }
+  })()
+</script>
 ```
 
-- `defaultTheme="system"`：默认跟随操作系统主题
-- `defaultTheme="light"`：默认使用浅色主题
-- `enableSystem={true}`：用户可以选择跟随系统，也可以在设置里手动切换
+这段代码在页面任何 CSS 加载之前就执行了。HTML 渲染出来的第一帧就已经是正确主题。
 
 ---
 
-## 7. 实战案例：完整修复 GlassCard 组件
+## 第十章：完整的修复步骤
 
-### 7.1 问题回顾
+下面是照着做就能修好的完整步骤。每一步都在前面解释过为什么，所以你不会只是无脑复制。不过如果你赶时间，直接抄也行。但回头你还是得读前面那几章，不然下次碰到类似问题你还得再排一次。
 
-我们的 `GlassCard` 组件使用了 `bg-white/40 dark:bg-black/40`，但升级到 v4 后，黑暗模式下不会切换。
-
-### 7.2 修复步骤
-
-#### 步骤 1：确认 Tailwind 版本
+### 步骤 1：确认版本
 
 ```bash
 npm list tailwindcss
 ```
 
-确保是 v4.x：
+确保是 `v4.x.x`。
 
-```
-tailwindcss@4.x.x
-```
-
-#### 步骤 2：安装必要依赖
+### 步骤 2：装齐依赖
 
 ```bash
 npm install tailwindcss @tailwindcss/postcss next-themes
 ```
 
-#### 步骤 3：配置 PostCSS（如果你用 Vite 或纯 CSS）
+### 步骤 3：配置 PostCSS（如果用 Vite）
 
 ```js
 // postcss.config.js
@@ -626,23 +632,12 @@ export default {
 }
 ```
 
-#### 步骤 4：配置 globals.css
+### 步骤 4：编辑 globals.css
 
 ```css
-/* app/globals.css */
 @import 'tailwindcss';
 
-/* 核心修复：定义黑暗模式变体 */
 @custom-variant dark (&:where(.dark, .dark *));
-
-/* 如果你还需要其他自定义变体，可以继续添加 */
-@custom-variant midnight (&:where([data-theme="midnight"] *));
-
-/* CSS 变量定义 */
-@theme {
-  --color-primary: #3b82f6;
-  --color-secondary: #64748b;
-}
 
 :root {
   --background: 255 255 255;
@@ -660,249 +655,148 @@ body {
 }
 ```
 
-#### 步骤 5：验证效果
-
-重启开发服务器：
+### 步骤 5：重启开发服务器
 
 ```bash
 npm run dev
 ```
 
-现在点击切换按钮，`GlassCard` 应该能正确跟随主题切换了。
-
-### 7.3 如果还不行？检查清单
-
-1. **检查 HTML 是否有 .dark 类**
-   打开浏览器开发者工具，看看 `<html>` 标签上有没有 `class="dark"`。
-
-2. **检查 CSS 是否正确生成**
-   在开发者工具的 Elements 面板里搜索 `.dark\:bg`，看看有没有对应的样式规则。
-
-3. **检查样式优先级**
-   可能其他样式覆盖了你的设置，试试用 `!important` 临时验证：
-
-   ```tsx
-   <div className="!bg-black/40">
-   ```
-
-4. **清除缓存**
-   有时候构建缓存会导致新配置不生效：
-   ```bash
-   rm -rf .next node_modules/.cache
-   npm run dev
-   ```
+现在点那个按钮，你的 `GlassCard` 该活了。
 
 ---
 
-## 8. 常见问题与排查
+## 第十一章：如果还不行——排查清单
 
-### 8.1 为什么我的 dark: 样式不生效？
+### 1. 浏览器里检查 HTML 有没有 dark 类
 
-可能的原因：
+打开 DevTools → Elements → 看 `<html>` 标签。如果没有 `class="dark"`，那是 `next-themes` 的问题，不是 Tailwind 的问题。
 
-1. **没有定义 dark 变体**
-   → 添加 `@custom-variant dark (&:where(.dark, .dark *));`
+### 2. 检查生成的 CSS
 
-2. **变体定义位置不对**
-   → 确保 `@custom-variant` 在 `@import "tailwindcss"` 之后
+在 DevTools 里搜索 `.dark\:bg`。如果搜不到任何规则，说明 Tailwind 没有扫描到你的 `dark:` 类，或者 `@custom-variant` 定义没生效。
 
-3. **选择器写错了**
-   → 检查括号里的选择器是否正确
+### 3. 检查 @custom-variant 的位置
 
-### 8.2 浅色模式下有闪烁（FOUC）？
+它必须在 `@import 'tailwindcss'` **之后**。如果放在 import 前面，Tailwind 还没加载，它不认识这个指令。
 
-这是因为页面加载时主题样式还没应用。
+### 4. 检查样式是否被覆盖了
 
-解决方案：
-
-1. 在 `<head>` 中添加内联脚本：
+临时在你的 class 上加 `!` 前缀来强制优先级：
 
 ```tsx
-// app/layout.tsx
-import { Html, Head, Body, Main, NextScript } from 'next/document'
-
-export default function Document() {
-  return (
-    <Html>
-      <Head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                const theme = localStorage.getItem('theme');
-                if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.documentElement.classList.add('dark');
-                }
-              })();
-            `,
-          }}
-        />
-      </Head>
-      <Body>
-        <Main />
-        <NextScript />
-      </Body>
-    </Html>
-  )
-}
+<div className="!bg-black/40">
 ```
 
-2. 或者使用 `suppressHydrationWarning`：
+如果 `!` 能生效，说明是优先级问题。
 
-```tsx
-<html lang="zh-CN" suppressHydrationWarning>
+### 5. 清缓存
+
+有时候是构建缓存吃了旧配置：
+
+```bash
+rm -rf .next node_modules/.cache
+npm run dev
 ```
 
-### 8.3 多个变体怎么叠加使用？
+### 6. 如果你用的是 data-theme 而不是 class
 
-Tailwind 支持叠加多个变体：
-
-```html
-<button class="hover:bg-blue-500 dark:hover:bg-blue-600 focus:ring-2 dark:focus:ring-blue-400">按钮</button>
-```
-
-从外到内的顺序是：变体 > 伪类
-
-### 8.4 自定义变体怎么用？
-
-定义好 `@custom-variant` 后，可以像内置变体一样使用：
+确认你的 `@custom-variant` 里的选择器是属性选择器而不是类选择器：
 
 ```css
-@custom-variant midnight (&:where([data-theme="midnight"] *));
-```
+/* 正确 */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-```html
-<div class="midnight:bg-purple-900 midnight:text-white">午夜主题卡片</div>
-```
-
----
-
-## 9. 最佳实践总结
-
-### 9.1 黑暗模式设计原则
-
-1. **不要只是反色**
-   深色模式不是简单地把颜色反过来。深色背景要用深灰色（不是纯黑），文字要用柔和的白色（不是 #fff）。
-
-2. **保持对比度适中**
-   WCAG 标准要求文字与背景的对比度至少达到 4.5:1。
-
-3. **减少饱和度**
-   深色模式下，高饱和度的颜色往往刺眼，适当降低饱和度。
-
-4. **考虑阴影**
-   深色模式下，阴影效果不明显，可以改用边框或半透明背景。
-
-### 9.2 Tailwind v4 黑暗模式配置模板
-
-```css
-/* globals.css */
-@import 'tailwindcss';
-
-/* 必要的黑暗模式变体 */
+/* 错误——如果你用 data-theme 这个就是错的 */
 @custom-variant dark (&:where(.dark, .dark *));
-
-/* 可选：其他自定义变体 */
-@custom-variant midnight (&:where([data-theme="midnight"] *));
-@custom-variant contrast (&:where([data-contrast="high"] *));
-
-/* CSS 变量定义 */
-:root {
-  --background: 255 255 255;
-  --foreground: 0 0 0;
-  --card: 255 255 255;
-  --card-foreground: 0 0 0;
-  --primary: 59 130 246;
-  --primary-foreground: 255 255 255;
-  --secondary: 241 245 249;
-  --secondary-foreground: 0 0 0;
-}
-
-.dark {
-  --background: 9 10 11;
-  --foreground: 255 255 255;
-  --card: 15 23 42;
-  --card-foreground: 255 255 255;
-  --primary: 96 165 250;
-  --primary-foreground: 0 0 0;
-  --secondary: 30 41 59;
-  --secondary-foreground: 255 255 255;
-}
-
-/* 使用 CSS 变量 */
-body {
-  background-color: rgb(var(--background));
-  color: rgb(var(--foreground));
-}
-
-.card {
-  background-color: rgb(var(--card));
-  color: rgb(var(--card-foreground));
-}
-
-.btn-primary {
-  background-color: rgb(var(--primary));
-  color: rgb(var(--primary-foreground));
-}
 ```
 
-### 9.3 组件设计建议
+### 这两个问题很多人都遇到过
 
-1. **优先使用 CSS 变量而不是 dark: 类**
-   这样可以用一套变量同时控制多个样式属性。
+除了上面列的六条，还有两个情况值得单独提一下：
 
-2. **封装主题感知组件**
+**情况 A：用了 `@custom-variant`，但 Tailwind 4 的某些内置变体（比如 `hover:`、`focus:`）跟 `dark:` 叠加时行为异常。**
 
-   ```tsx
-   function Card({ className, children }) {
-     const cardClass = 'bg-white dark:bg-slate-800 rounded-xl p-6'
-     return <div className={`${cardClass} ${className}`}>{children}</div>
-   }
-   ```
+这是 v4 的一个已知行为：当你自定义了 `dark` 变体后，`dark:hover:xxx` 这种叠加变体的生成规则可能会和默认行为不一致。解决办法是确保你的 `@custom-variant` 定义在所有 `@import` 之后、所有 `@theme` 之前。
 
-3. **测试所有状态**
-   确保组件在浅色模式、深色模式、系统跟随模式下都正常显示。
+**情况 B：本地开发正常，但部署到生产环境后 dark 模式又坏了。**
+
+几乎一定是构建缓存的问题。Vercel、Netlify 这些平台有自己的缓存策略。如果你部署后发现问题，先检查生产环境的 CSS 文件里有没有 `:where(.dark, .dark *)` 这个选择器。没有就是构建没吃进去你的配置。
 
 ---
 
-## 10. 总结
+## 结尾：给你一套自己判断的框架
 
-### 10.1 核心知识点
+别把前面这些东西当知识点背。记不住的。你应该记的是这几个问题。
 
-1. **Tailwind CSS v4 默认使用媒体查询**
-   想用类切换必须添加 `@custom-variant dark (&:where(.dark, .dark *));`
+下一次，当你碰到"黑暗模式有点不对劲"的时候，别急着搜答案。先问自己这七个问题：
 
-2. **CSS 变量是另一条路**
-   CSS 变量不依赖 Tailwind 的 dark: 变体，所以版本升级影响不到它。
+**1. 问题出在哪个系统？**
+是 Tailwind 的 `dark:` 变体没生效，还是 CSS 变量没切换？
+→ 在 DevTools 里搜 `dark:text-` 之类的类，看对应的 CSS 规则存不存在。
 
-3. **搞清楚 @variant 和 @custom-variant 的区别**
-   - `@variant` 是"用"变体
-   - `@custom-variant` 是"造"变体
+**2. v4 的默认行为是什么？**
+用的是媒体查询还是类选择器？
+→ 看生成的 CSS。如果规则在 `@media (prefers-color-scheme: dark)` 里面，那就是媒体查询。
 
-4. **@layer 三层架构**
-   - Base（基础层）：重置浏览器默认样式
-   - Components（组件层）：封装可复用组件
-   - Utilities（工具层）：添加自定义工具类
+**3. 我需要什么触发方式？**
+用户手动切换还是跟随系统？
+→ 如果需要手动切换，必须用 `@custom-variant`。
 
-5. **next-themes 的 attribute**
-   - `class`：最常用，在 html 标签上加 class
-   - `data-theme`：某些组件库使用，在 html 标签上加 data 属性
+**4. 我的 `@custom-variant` 写对了吗？**
+在正确的位置？选择器匹配我的 HTML 结构？
+→ `@import 'tailwindcss'` 之后；选择器里是类还是属性，取决于你 `next-themes` 的 `attribute` 配置。
 
-### 10.2 迁移检查清单
+**5. 我那些不依赖 Tailwind 的东西用的是 CSS 变量吗？**
+如果是，它们是不是碰巧在用，所以一直没事？
+→ 这就是为什么"一部分东西能切，一部分不能"——两套系统在同时跑。
 
-如果你是从 v3 迁移到 v4 的项目：
+**6. 有没有优先级冲突？**
+有没有第三方样式或者你手写的 CSS 在覆盖 Tailwind 的工具类？
+→ 用 `!` 临时测试；了解 `@layer` 的优先级规则。
 
-- [ ] 确认 `tailwind.config.js` 中没有 `darkMode: "class"` 配置（v4 不需要）
-- [ ] 在 CSS 中添加 `@custom-variant dark` 定义
-- [ ] 移除旧的 `@tailwind base/components/utilities` 指令（改用 `@import`）
-- [ ] 检查是否有自定义变体需要迁移
-- [ ] 测试浅色/深色/系统主题三种模式
+**7. 我知道 variant 这个词在上下文里到底指哪个吗？**
+Tailwind 工具类变体？组件库样式变体？CSS 指令定义变体？
+→ 说话之前先问自己"你说的 variant 是哪个意思"。
 
-### 10.3 展望
+**8. 我是不是在用两套系统互相打架？**
+有时候出问题不是某一套坏了，而是两套系统同时作用于同一个属性，产生了意外的叠加。
+→ 如果一个元素同时有 `dark:text-white`（Tailwind 变体）和 `color: var(--foreground)`（CSS 变量），搞清楚谁最后赢。
 
-Tailwind CSS v4 的这套新架构其实更接近 CSS 原生的思维方式。变体本质上就是"带条件的样式规则"，这与 CSS 的 `@media` 和伪类一脉相承。
+---
 
-理解了这个底层逻辑，你不仅能解决黑暗模式的问题，还能举一反三，创造出更灵活的主题系统。
+这七个问题不是万能药方。但它们能让你在排查的时候少迷路 80% 的时间。
+
+你可以把它们抄到你的笔记里。下次黑暗模式出问题，别搜 StackOverflow。先对着这七个问题走一遍。大部分时候，走到第五个你就已经知道问题在哪了。
+
+Tailwind CSS v4 的这套变体机制，本质上就是"帮你在 CSS 里表达条件"。以前你用 `@media`、用伪类、用属性选择器来表达条件，Tailwind 给这些条件取了个名字叫"变体"，让你在 HTML 里用一个 `dark:` 前缀就能搞定。
+
+这跟 CSS 原生思路没有任何冲突。它只是换了一种表达方式。
+
+一旦你把这个底层逻辑吃透了——条件是条件，样式是样式，变体是连接条件和样式的绳子——你就可以举一反三了。
+
+想定义一个"打印模式"的变体？
+
+```css
+@custom-variant print (&:where(@media print));
+```
+
+想定义一个"高对比度"的变体？
+
+```css
+@custom-variant high-contrast (&:where(@media (prefers-contrast: high)));
+```
+
+想定义一个"午夜主题"的变体？
+
+```css
+@custom-variant midnight (&:where([data-theme="midnight"] *));
+```
+
+这些全是一个套路。变体只是"条件"的别名。
+
+去吧。你的 `GlassCard` 现在应该活了。
+
+如果它还没活——回到上面那八个问题里找答案。
 
 ---
 

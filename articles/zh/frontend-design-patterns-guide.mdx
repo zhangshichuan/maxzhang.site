@@ -2,115 +2,144 @@
 title: '前端工程化中的设计模式实战全指南'
 summary: '本文解析 SOLID 原则及 GoF 23 种设计模式在前端的应用。涵盖创建型（工厂、单例、原型）、结构型（装饰器、代理、适配器、外观）及行为型（观察者、发布订阅、迭代器、策略）模式，并附带大量 Vue/React 实战代码与 Mermaid 架构图。'
 category: 'Frontend'
-tags: ['Vue', 'React']
+tags: ['设计模式', 'SOLID', 'Vue', 'React', 'TypeScript']
 author: 'Max Zhang'
-date: '2026-03-23'
+date: '2022-12-18'
 ---
 
-> 写给普通开发者的设计模式入门与实战手册
+那段时间我每天上班第一件事，就是打开那个八百多行的 `user-profile.tsx`。
 
-你是不是有过这样的经历：看了一堆设计模式的文章，当时觉得懂了，过两天又忘了怎么用？或者写代码时隐约感觉这个地方可以用某种模式，但又说不上来是什么？
+八百行。一个组件。里面塞了请求、状态管理、表单验证、埋点、权限判断、日期格式化、头像裁剪——你能想到的东西，它全干了。每次产品经理走过来，说"加个最近浏览记录"，或者设计师说"头像那块改成圆角"，我的胃就往下沉一沉。因为我知道，又要把这坨东西从头捏到尾。
 
-别担心，这篇文章就是写给你的。我们不追求"把23种模式全部背下来"这种目标，而是让你真正理解：**什么时候该用什么模式，什么时候不该用，以及怎么在自己的项目里用起来**。
+我看过很多设计模式的文章。说实话，看完就忘。那些 UML 图画得很漂亮，C++ 的例子写得很标准，但我他妈的根本不知道回到自己的 React 项目里该怎么用。工厂模式跟我有什么关系？单例模式不就是全局变量吗？观察者模式和发布订阅到底差在哪？
 
----
+直到某个周五晚上。
 
-## 先搞清楚：什么是设计模式？
+那天我在重构这个八百行的组件，边写边骂。写到第三小时的时候，我突然停下来了。我盯着屏幕看了很久——我正在做的事情，不就是单一职责原则吗？拆出来的那个请求 hook，不就是工厂模式的思路？那套验证逻辑，换个写法不就是策略模式？
 
-打个比方。假设你要装修一套房子，厨房怎么布局、卫生间的管道怎么走、客厅的插座放哪里——这些事情前人早就总结出一套经验了，你不需要从零发明，直接借鉴就行。
+操。
 
-设计模式就是这个意思。它是**程序员在长期实践中总结出来的套路**，专门用来解决软件开发中反复出现的共性问题。
+那些设计模式说的就是我现在写的这坨屎。
 
-为什么学设计模式？
+只是他们用了一堆我压根记不住的名字。
 
-- **代码更容易维护**：别人接手你的代码时，不会一脸问号
-- **应对需求变化**：加新功能时不用改旧代码，直接扩展就行
-- **少走弯路**：很多坑前人已经踩过了，直接用成熟的方案
-
-但要记住一句话：**设计模式是手段，不是目的。** 为了用模式而用模式，只会让简单问题变复杂。
+那一刻我突然明白了：设计模式不是让你背的。是让你在屎山面前，突然认出来的。
 
 ---
 
-## 1. 软件设计的基石：SOLID 五大原则
+## 先退回去一步
 
-在具体聊各种模式之前，有几个基本原则你必须了解。这些原则就像是武功的"内功心法"，掌握了它们，你理解设计模式会快很多。
+做個比喻吧。你去装修房子，厨房怎么布局、水电管线怎么走、插座的间距留多少——这些东西根本不需要你从零设计。前人已经总结出了一套经验，你照着做就行。
+
+设计模式就是这个意思。
+
+它是程序员在几十年的实践中，踩了无数坑之后总结出来的一套"你照着做，大概率不会出事"的套路。
+
+**但它不是规则。**
+
+这是最要命的一个区别。规则是你必须遵守的，不遵守就出错。设计模式不是。你不按工厂模式写，代码也能跑。你不用单例，天不会塌。设计模式只是在说——哥们，这事儿我遇到过，这么干最顺手，你要不要试试？
+
+理解了这一点，后面的事情就好说了。
+
+---
+
+## SOLID：五个你可能听过、但一直没搞明白的原则
+
+在聊具体模式之前，这几个东西绕不过去。你可以把它们理解为"内功"——招式各有不同，但心法是通的。
 
 ### OCP：开放封闭原则
 
-**对扩展开放，对修改封闭。**
+我最早接触这个原则，是一个 button 组件。
 
-听起来有点绕，我给你讲个故事。
-
-你开了家汉堡店，最初只卖牛肉汉堡。后来顾客说想要鸡肉汉堡、猪肉汉堡，你怎么办？
-
-**错误做法**：直接去改做汉堡的机器，让它能做鸡肉的、猪肉的。这样做的问题是：每次加新品种都要改机器，万一把牛肉汉堡的功能改坏了怎么办？
-
-**正确做法**：机器预留一个"换肉"的接口，加新品种时换不同的肉饼就行，不用动机器本身。
-
-在前端代码里，这个原则体现为：
+在鬼哭狼嚎的阶段，我是这么写按钮的：
 
 ```typescript
-// ❌ 错误：直接在组件里写死判断逻辑
 function Button({ type, children }) {
   if (type === 'primary') {
-    return <button className="bg-blue-500">{children}</button>
+    return <button className="bg-blue-500 rounded px-4">{children}</button>
   } else if (type === 'danger') {
-    return <button className="bg-red-500">{children}</button>
+    return <button className="bg-red-500 rounded px-4">{children}</button>
+  } else if (type === 'ghost') {
+    return <button className="bg-transparent border rounded px-4">{children}</button>
   }
-  // 每加一种类型都要改这里...
+  return <button className="bg-gray-500 rounded px-4">{children}</button>
 }
+```
 
-// ✅ 正确：预留扩展接口
-function Button({ variant = 'default', children, ...props }) {
+每加一种颜色类型，就要加一个 `else if`。设计师有天抽风，说按钮要支持 `success` 绿色，你就得打开这个函数，往里塞新代码。括号套括号，越写越长。而且你改 primary 样式的时候，万一手滑，danger 也跟着坏了。
+
+这他妈的叫"对修改开放"。
+
+OCP 说的是反过来的：**对扩展开放，对修改关闭**。翻译成人话——加新功能的时候，只加新代码，不改旧代码。
+
+这是改完的样子：
+
+```typescript
+function Button({ variant = 'default', className = '', children, ...props }) {
+  const base = 'px-4 py-2 rounded font-medium'
+  const variants = {
+    primary: 'bg-blue-500 text-white',
+    danger: 'bg-red-500 text-white',
+    ghost: 'bg-transparent border border-gray-300',
+    default: 'bg-gray-100 text-gray-800',
+  }
   return (
-    <button
-      className={`btn btn-${variant}`}
-      {...props}
-    >
+    <button className={`${base} ${variants[variant] || variants.default} ${className}`} {...props}>
       {children}
     </button>
   )
 }
 ```
 
-Vue 的 `slot` 机制就是很好的例子：你不需要改组件代码，往 slot 里塞什么内容都行。
+现在设计师要加 `success` 绿色按钮，你只需要在 `variants` 对象里加一行 `success: 'bg-green-500 text-white'`。旧代码碰都不碰。
+
+**类比：** 一个汉堡店的师傅。老板说菜单上要加鸡肉汉堡，他怎么办？傻逼做法是拆开做牛肉汉堡的机器，加一根"鸡肉专用管"，动完骨头下次做猪肉汉堡又要拆。聪明做法是——机器留一个"换肉饼"的槽，加新品的时候换一块肉饼就行，不用动机器本身。
+
+Vue 的 `slot` 机制就是典型的 OCP 思维。你往组件里塞什么内容都行，组件自己不用改。
+
+**什么时候不该用：** 如果你的按钮只有两种颜色，并且未来三年产品都没有加第三种颜色的计划——那 if-else 就够了。为了"以后可能会扩展"而抽象，这是 YAGNI 教我们要避免的。
+
+---
 
 ### SRP：单一职责原则
 
-**一个东西只做一件事。**
+这个原则最好理解，但最难做到。
 
-这个很好理解，就像你不会让一个人同时做厨师、服务员、收银员一样，代码也应该各司其职。
+简单说：**一个东西只做一件事。**
 
-在前端项目里的实际应用：
+你走进一家小面馆。老板一个人又揉面又炒菜又收钱又擦桌子，这种馆子一个人撑不住，味道也不稳定。正经餐馆什么样？厨师管后厨，服务员管点菜，收银管账——各司其职。
+
+回到前面那个八百行的 `user-profile.tsx`：
 
 ```typescript
-// ❌ 错误：一个组件干了三件事
+// 这他妈的是一个函数在干三件事
 function UserProfile({ userId }) {
   const [user, setUser] = useState(null)
   const [posts, setPosts] = useState([])
 
   useEffect(() => {
-    // 发请求获取用户
     fetchUser(userId).then(setUser)
-    // 发请求获取帖子
     fetchPosts(userId).then(setPosts)
-    // 发送埋点
-    trackView('profile', userId)
+    trackPageView('profile', userId)  // 埋点也混进来了
   }, [userId])
 
   return (
     <div>
-      {/* 渲染用户信息 */}
-      <UserInfo user={user} />
-      {/* 渲染帖子列表 */}
+      <Avatar src={user?.avatar} />
+      <h1>{user?.name}</h1>
       <PostList posts={posts} />
     </div>
   )
 }
+```
 
-// ✅ 正确：拆分成三个各司其职的部分
-// 1. 获取数据的 hook
-function useUser(userId) {
+在一个人眼里是"获取用户数据然后渲染页面"，在 SRP 眼里是三个人的活：获取用户、获取帖子、展示 UI。你在改埋点逻辑的时候不小心改错了请求参数——这就是单一职责缺失带来的连带伤害。
+
+拆完之后：
+
+```typescript
+// hook 只负责获取数据
+function useFetchUser(userId: string) {
   const [user, setUser] = useState(null)
   useEffect(() => {
     fetchUser(userId).then(setUser)
@@ -118,799 +147,888 @@ function useUser(userId) {
   return user
 }
 
-// 2. 发送埋点的 hook
-function useTrackView(pageName, id) {
+// 另一个 hook 只负责埋点
+function useTrackPageView(event: string, userId: string) {
   useEffect(() => {
-    trackView(pageName, id)
-  }, [pageName, id])
+    trackPageView(event, userId)
+  }, [event, userId])
 }
 
-// 3. 纯粹的 UI 组件
-function UserProfile({ userId }) {
-  const user = useUser(userId)
-  useTrackView('profile', userId)
-
-  return <UserInfo user={user} />
+// 组件只负责渲染
+function UserProfile({ userId }: { userId: string }) {
+  const user = useFetchUser(userId)
+  useTrackPageView('profile', userId)
+  return <UserProfileUI user={user} />
 }
 ```
 
-拆分之后，每个部分都很容易单独测试和复用。
+每个东西只操心自己的事。改埋点就去改 hook，不用担心把数据请求搞挂。
+
+**什么时候不该用：** 如果你的组件只有 30 行，拆成三个文件反而增加了心智负担——别拆。SRP 是防止混乱的工具，不是强迫你把所有东西都原子化的戒律。
+
+---
 
 ### LSP：里氏替换原则
 
-**子类可以扩展父类的功能，但不能改变父类原有的功能。**
+这个名字最他妈的唬人。我最开始听到"里氏替换"的时候，以为是个什么数学定理。
 
-简单说就是：**儿子可以比父亲更厉害，但不能不听话。**
+但其实它说的是一个很朴素的事情：**儿子可以替代爸爸干活，但不能把活干错了。**
 
-用前端的例子来讲：
+经典例子：
 
 ```typescript
-// 父类：鸟
 class Bird {
-  fly() {
-    return '鸟在天上飞'
+  fly(): string {
+    return '我飞走了'
   }
 }
 
-// ✅ 正确的子类：企鹅（虽然不会飞，但它有自己的方式）
-class Penguin extends Bird {
-  swim() {
-    return '企鹅在水里游'
-  }
-}
-
-// ❌ 错误的子类：直接改变了父类的行为
-class DeadBird extends Bird {
-  fly() {
-    throw new Error('我死了，飞不了') // 这就违反了里氏替换原则
+class Duck extends Bird {
+  fly(): string {
+    return '呱呱叫着飞走了' // 扩展了 fly，但没改变 fly 本身的语义
   }
 }
 ```
 
-在 TypeScript 里，这个原则提醒我们：用继承时，子类必须能完全替代父类使用，不能出现"用了子类反而出错"的情况。
+鸭子是鸟，会飞——没问题。那企鹅呢？
+
+```typescript
+class Penguin extends Bird {
+  fly(): string {
+    throw new Error('我他妈不会飞啊！') // 破坏了父类的约定
+  }
+}
+```
+
+这里的问题不是"企鹅不会飞"，而是**你把一个不会飞的东西扔进了一个"应该会飞"的继承链里**。调用方拿了 `Bird` 的子类，理所当然地调 `.fly()`，结果炸了。
+
+怎么办？把不会飞的单独抽出来。
+
+```typescript
+interface Animal {
+  move(): string
+}
+
+class Duck implements Animal {
+  move(): string {
+    return '飞走了'
+  }
+}
+
+class Penguin implements Animal {
+  move(): string {
+    return '溜冰走了'
+  }
+}
+```
+
+LSP 真正的意思是：**子类在继承父类的时候，可以扩展能力，但不能改变父类已经承诺的行为。** 你爸承诺了"我儿子能开车"，结果你是个盲人——这不是你的错，是你爸不该做这个承诺。谁继承错了链，谁就违反了 LSP。
+
+在前端框架里，Vue 和 React 的组件继承很少用（大家都用 composition 了），但类型系统里这个原则无处不在。比如你定义了一个 `FormField` 接口，说每个字段必须有 `validate()` 方法——那所有实现了 `FormField` 的类，`validate()` 必须返回一个有意义的结果，不能抛异常。
+
+**什么时候不该用：** 前端很少用类继承。如果你不用继承，这个原则几乎影响不到你。不要因为学了 LSP 就强行用类。
+
+---
 
 ### ISP：接口隔离原则
 
-**不要强迫别人用不需要的东西。**
+"不要强迫用户依赖他们不需要的东西。"
 
-打个比方：你去餐厅点餐，菜单上写着"必须点套餐，不接受单点"——这就是接口隔离原则的反面教材。
+你点外卖，有没有碰过这种套餐：一份盖饭，强制搭配一碗汤、一道凉菜、一杯奶茶——你只想吃那碗盖饭，别的都不想要。
 
-在前端代码里常见的问题是 props 过于臃肿：
+UserCard 组件就是这样：
 
 ```typescript
-// ❌ 错误：把不需要的 props 也传给组件
-function UserCard({ name, age, email, phone, address, avatar, bio, ...extras }) {
-  return <div>{name}</div>
+interface UserCardProps {
+  name: string
+  avatar: string
+  email: string
+  phone: string
+  address: string // 列表页根本不需要这个
+  bio: string // 列表页也不需要
+  lastLoginAt: string // 列表页不需要
+  permissions: string[] // 列表页不需要
+}
+```
+
+就一个简单的用户列表页，只需要 `name` 和 `avatar`，但你不能不用这个臃肿的 Props 接口——除非你另写一个。
+
+ISP 说：**拆成几个小接口，各取所需。**
+
+```typescript
+interface UserBasic {
+  name: string
+  avatar: string
 }
 
-// 调用时
-<UserCard
-  name="张三"
-  age={25}
-  email="zhangsan@example.com" // 这个组件根本用不到这些
-  phone="13800138000"
-  address="北京市"
-  avatar="xxx.jpg"
-  bio="这是个人简介"
-/>
+interface UserContact {
+  email: string
+  phone: string
+  address: string
+}
 
-// ✅ 正确：按需拆分接口
-function BasicInfo({ name, avatar }) { return <div>{name}</div> }
-function ContactInfo({ email, phone }) { return <div>{email}</div> }
-function FullProfile({ name, email, phone, ... }) { /* ... */ }
+interface UserProfile extends UserBasic, UserContact {
+  bio: string
+  lastLoginAt: string
+  permissions: string[]
+}
 ```
+
+列表页用 `UserBasic`，详情页用 `UserProfile`，谁都不会被迫接受多余的东西。
+
+**类比：** 你买工具套装。好套装是每个工具独立成型，你缺什么买什么。烂套装是一个塑料壳里面硬塞了十五个螺丝刀头，你为了用一个还得买整套。
+
+GraphQL 的按需查询就是这个原则的数据库版本——客户端说我要什么字段，服务器就返什么，不多不少。
+
+**什么时候不该用：** 如果你的组件只有一个场景用到，拆 Props 接口纯粹是自嗨。ISP 是你有三个以上消费者时才会感受到的好——一个消费者，不需要隔离。
+
+---
 
 ### DIP：依赖倒置原则
 
-**面向接口编程，依赖于抽象而不是具体实现。**
+这个原则我想了很久才想通。
 
-这句话听起来很玄乎，我给你举个例子。
-
-你要组装一台电脑，CPU、内存、硬盘的接口是固定的（抽象的），不管你买Intel还是AMD的CPU，只要接口对就能用。
-
-在前端项目里，这个原则体现为依赖注入：
+名字叫"依赖倒置"，但你把它读成"依赖抽象，别依赖具体"就通了。
 
 ```typescript
-// ❌ 错误：直接依赖具体实现
+// 硬写死了 MySQL
 class UserService {
-  private db = new MySQLDatabase() // 写死了
+  private db = new MySQLDatabase()
 
-  getUser(id) {
-    return this.db.query(...)
+  getUser(id: string) {
+    return this.db.query(`SELECT * FROM users WHERE id = ${id}`)
   }
 }
+```
 
-// ✅ 正确：依赖抽象接口
+这段代码的问题在哪？`UserService` 和 `MySQLDatabase` 焊死了。哪天你想换 PostgreSQL，或者测试时想用内存数据库——对不起，得翻开 `UserService` 改代码。
+
+DIP 说：**`UserService` 不应该依赖具体的 `MySQLDatabase`，它俩都应该依赖一个抽象的 `Database` 接口。**
+
+```typescript
 interface Database {
   query(sql: string): any
 }
 
-class UserService {
-  constructor(private db: Database) {} // 哪个数据库都行
+class MySQLDatabase implements Database {
+  query(sql: string) {
+    /* MySQL 实现 */
+  }
+}
 
-  getUser(id) {
+class PostgresDatabase implements Database {
+  query(sql: string) {
+    /* PostgreSQL 实现 */
+  }
+}
+
+class UserService {
+  constructor(private db: Database) {} // 依赖接口，不依赖实现
+
+  getUser(id: string) {
     return this.db.query(`SELECT * FROM users WHERE id = ${id}`)
   }
 }
 
-// 换数据库时，不用改 UserService
-const mysqlDb = new MySQLDatabase()
-const userService = new UserService(mysqlDb)
-
-// 或者
-const postgresDb = new PostgreSQLDatabase()
-const userService2 = new UserService(postgresDb)
+// 测试时用 mock，线上用 MySQL，换个数据库就像换插座
+const service = new UserService(new MySQLDatabase())
 ```
 
-Angular 的服务注入就大量使用了这个原则。
+**类比：** 你家的插座。电器不关心插座后面走的是火电还是水电，它只关心"能给我 220V"。`Database` 接口就是这个插座规范，`MySQLDatabase` 和 `PostgresDatabase` 是火力发电站和水力发电站。电器（`UserService`）依赖的是插座规范（`Database` 接口），而不是发电站的类型。
 
-### 补充：Unix 设计哲学
+在前端里，DIP 最常见的使用场景是：你的业务逻辑 Hook 不直接依赖 axios，而是依赖一个抽象的 `HttpClient` 接口。换 fetch、换 axios、换内置请求方法——都只改注入的地方，不改业务逻辑。
 
-写前端代码时，可以借鉴 Unix 的设计哲学：
-
-1. **小即是美**：一个函数、一个组件，只做一件事
-2. **每个工具只做一件事**：不要让一个函数承担太多职责
-3. **管道思想**：函数式编程中的 `compose` 和 `pipe` 就体现了这个思想
-
-```typescript
-// 管道式组合函数
-const pipe =
-  (...fns) =>
-  (x) =>
-    fns.reduce((v, f) => f(v), x)
-
-const processUser = pipe(
-  validateInput, // 第一步：验证输入
-  normalizeData, // 第二步：标准化数据
-  saveToDatabase, // 第三步：保存
-  sendNotification, // 第四步：发送通知
-)
-
-processUser(rawData)
-```
+**什么时候不该用：** 你的后端三年没换过数据库，也没有换的计划。抽象不是免费的——每一层抽象都在增加复杂度。只有当你真的面临"可能要换"的时候，抽象才开始值回票价。
 
 ---
 
-## 2. 创建型模式：对象的诞生地
+## 创建型：谁在创建，怎么创建
 
-创建型模式解决的是"**对象怎么创建出来**"的问题。为什么要关心这个？因为对象的创建方式会影响代码的灵活性和可维护性。
+创建型模式解决的中心问题是：**对象怎么生产出来，怎么保证生产过程是可控的。**
 
-### 2.1 工厂模式 (Factory Pattern)
+### 工厂模式
 
-**什么时候用**：当创建对象的过程比较复杂，或者需要根据不同条件创建不同类型的对象时。
+你去麦当劳点餐。你说"一个巨无霸套餐"，服务员给你一个完整的套餐——汉堡、薯条、可乐，都装好了。你不用关心汉堡的肉饼是哪块、薯条炸了几分钟、可乐的糖浆浓度怎么调的。
 
-**生活类比**：你去麦当劳点餐，不用自己动手做汉堡，告诉服务员你要什么，服务员帮你做好。服务员就是一个"工厂"。
+工厂模式就是这个意思。
 
-#### 实战 A：jQuery 的 `$`
+**`new` 操作符就是你自己进后厨炸薯条。工厂是你对前台说一句话，成品端到你面前。**
 
-用过 jQuery 吗？`$('div')` 这种写法背后就是工厂模式：
+在 React 里，`React.createElement` 就是一个典型的工厂：
 
 ```typescript
-class jQuery {
-  constructor(selector: string) {
-    // 复杂的 DOM 查询逻辑
-    const dom = Array.from(document.querySelectorAll(selector))
-    for (let i = 0; i < dom.length; i++) {
-      this[i] = dom[i]
+// 不用工厂——你自己 new，关心各种参数
+const button = new VNode('button', { className: 'btn' }, ['Click me'])
+
+// 用工厂——一句调用完事
+const button = React.createElement('button', { className: 'btn' }, 'Click me')
+```
+
+jQuery 的 `$()` 也是工厂模式。你传一个选择器字符串，它回你一个 jQuery 对象——创建过程全封装在 `$()` 里面。
+
+实际项目里最常见的使用场景：根据类型创建不同的表单字段。
+
+```typescript
+interface FormField {
+  type: 'text' | 'select' | 'datepicker'
+  label: string
+  value: any
+}
+
+class FormFieldFactory {
+  static create(field: FormField) {
+    switch (field.type) {
+      case 'text':
+        return new TextField(field)
+      case 'select':
+        return new SelectField(field)
+      case 'datepicker':
+        return new DatePickerField(field)
+      default:
+        throw new Error(`Unknown field type: ${field.type}`)
     }
-    this.length = dom.length
   }
-
-  addClass(name: string) {
-    // 添加类的逻辑
-  }
-
-  // ... 还有很多方法
 }
-
-// 工厂函数：用户不需要知道 jQuery 类的存在
-window.$ = function (selector: string) {
-  return new jQuery(selector)
-}
-
-// 使用时
-$('div').addClass('active')
 ```
 
-用户只需要知道 `$()` 能帮你查 DOM，不需要知道背后的 `jQuery` 类是怎么工作的。
+后端返回一个 JSON，告诉你要渲染哪些字段，前端工厂统一处理。加新字段类型，工厂里加一行，其他地方不改。
 
-#### 实战 B：React 的 `createElement`
-
-React 为什么能用 JSX 写 UI？因为有 `createElement` 这个工厂函数：
-
-```typescript
-// React 内部就是这样把 JSX 转成对象的
-function createElement(type, props, ...children) {
-  return {
-    type, // 标签名，如 'button'，或者组件
-    props: {
-      ...props,
-      children: children.map((c) => (typeof c === 'object' ? c : { type: 'TEXT_ELEMENT', props: { nodeValue: c } })),
-    },
-  }
-}
-
-// <button className="btn">点我</button>
-// 编译后变成：
-createElement('button', { className: 'btn' }, '点我')
-```
-
-#### 什么时候不用
-
-如果你的对象创建很简单，比如只是 `new Something()`，那就别折腾了，工厂模式是来解决复杂问题的。
-
-### 2.2 单例模式 (Singleton Pattern)
-
-**什么时候用**：某个东西只需要一个实例，比如全局状态管理、弹窗容器、全局配置。
-
-**生活类比**：一个国家只能有一个总统（正常情况下），一个公司只能有一个 CEO。
-
-#### 实战：全局 Modal 容器
-
-页面上的 Modal 弹窗，不需要每次都创建一个新容器：
-
-```typescript
-class Modal {
-  // 关键：静态属性，类级别只有一个
-  private static instance: Modal
-  private container: HTMLElement
-
-  // 关键：构造函数私有化，不能用 new Modal()
-  private constructor() {
-    this.container = document.createElement('div')
-    this.container.id = 'global-modal'
-    document.body.appendChild(this.container)
-  }
-
-  // 关键：通过 getInstance 获取唯一实例
-  public static getInstance(): Modal {
-    if (!Modal.instance) {
-      Modal.instance = new Modal()
-    }
-    return Modal.instance
-  }
-
-  show(content: string) {
-    this.container.innerHTML = content
-    this.container.style.display = 'block'
-  }
-
-  hide() {
-    this.container.style.display = 'none'
-  }
-}
-
-// 使用时，不管调用多少次，拿到的都是同一个实例
-const modal1 = Modal.getInstance()
-const modal2 = Modal.getInstance()
-console.log(modal1 === modal2) // true
-```
-
-Vuex/Pinia 的 store 就是单例模式的应用，确保全局状态只有一个来源。
-
-#### 什么时候不用
-
-- 需要创建多个实例的时候
-- 实例之间需要相互独立的时候
-- 单例会导致测试困难的地方
-
-### 2.3 原型模式 (Prototype Pattern)
-
-**什么时候用**：需要创建大量相似的对象，但每个对象只有少量属性不同时。
-
-**生活类比**：盖楼用的图纸，原型是一样的，但可以根据需要改颜色、材料等。
-
-#### 实战：`Object.create` 与属性描述符
-
-JavaScript 的原型链本身就是原型模式的应用：
-
-```typescript
-// 定义基础模板
-const baseUser = {
-  getRole() {
-    return this.role
-  },
-  introduce() {
-    return `我是${this.name}`
-  },
-}
-
-// 以 baseUser 为原型创建新对象
-const admin = Object.create(baseUser, {
-  role: {
-    value: 'ADMIN',
-    writable: false, // 不可修改
-  },
-  permissions: {
-    value: ['READ', 'WRITE', 'DELETE'],
-    writable: false,
-  },
-  name: { value: '管理员' },
-})
-
-const normalUser = Object.create(baseUser, {
-  role: { value: 'USER' },
-  name: { value: '普通用户' },
-})
-
-console.log(admin.getRole()) // ADMIN
-console.log(admin.introduce()) // 我是管理员
-console.log(normalUser.getRole()) // USER
-```
-
-Vue 的 `data` 选项就是基于原型模式的：所有实例共享一份原型方法，但各自拥有不同的数据属性。
+**什么时候不该用：** 如果只有两种字段类型，`switch` 写两行就行，不用单独抽一个工厂类。工厂模式的价值在于"创建逻辑足够复杂，值得被封装"。
 
 ---
 
-## 3. 结构型模式：对象的组织艺术
+### 单例模式
 
-结构型模式关注的是"**怎么把东西组装起来**"，就像搭积木，怎么组合决定了最终的样子。
+一个国家同一时间只有一个总统。
 
-### 3.1 代理模式 (Proxy Pattern)
+这不是说总统不能换，是说"这个职位同一时刻只能有一个人坐着"。
 
-**什么时候用**：需要在访问某个对象之前或之后做一些额外的事情，比如权限校验、缓存、日志记录。
-
-**生活类比**：你去公司找 CEO，前台会先拦下你问"你有预约吗？"，这就是前台在扮演代理的角色。
-
-#### 实战：Vue3 响应式原理
-
-Vue3 的响应式系统就是基于 Proxy 实现的：
+单例就是程序里的总统。
 
 ```typescript
-function reactive<T extends object>(target: T): T {
-  return new Proxy(target, {
-    get(target, key, receiver) {
-      const res = Reflect.get(target, key, receiver)
+class ModalManager {
+  private static instance: ModalManager
+  private modalStack: string[] = []
 
-      // 访问属性时，自动打印日志
-      console.log(`读取 ${String(key)}`)
+  private constructor() {} // 注意：private constructor
 
-      // 如果是函数，绑定回原对象
-      if (typeof res === 'function') {
-        return res.bind(target)
-      }
+  static getInstance(): ModalManager {
+    if (!ModalManager.instance) {
+      ModalManager.instance = new ModalManager()
+    }
+    return ModalManager.instance
+  }
 
-      // 如果是对象，继续递归代理（深度响应式）
-      return typeof res === 'object' && res !== null ? reactive(res) : res
-    },
+  open(id: string) {
+    this.modalStack.push(id)
+  }
 
-    set(target, key, value, receiver) {
-      console.log(`设置 ${String(key)} = ${value}`)
-      return Reflect.set(target, key, value, receiver)
-    },
-  })
+  close() {
+    this.modalStack.pop()
+  }
+
+  get top(): string | undefined {
+    return this.modalStack[this.modalStack.length - 1]
+  }
 }
 
-// 使用
-const state = reactive({ count: 0 })
-state.count++ // 自动打印日志："读取 count"，"设置 count = 1"
+// 全局任何地方拿到的都是同一个实例
+const manager = ModalManager.getInstance()
+manager.open('confirm-dialog')
 ```
 
-这就是为什么 Vue3 里修改数据就能自动更新视图——Proxy 替你做了"拦截"的工作。
+场景很明确：全局状态管理、弹窗管理器、日志收集器——这些东西同一个程序里只需要一个。
 
-#### 实战：图片懒加载
+很多人听到"单例"第一反应是"全局变量"。区别在哪？单例有一个 `getInstance` 的门禁，你什么时候取，它保证只有一个人。全局变量是个公共广场，谁都能放东西，谁也都能踩一脚。
+
+**什么时候不该用：** 单例让你方便，但也让你的代码全耦合在同一个状态上。测试特别吃亏——你没法在测试里重置单例的状态。如果你的"全局需求"实际上可以用 Context 或 provide/inject 解决，就别用单例。
+
+---
+
+### 原型模式
+
+你有一个精准的建筑蓝图。你想造 100 栋一模一样的房子——不是重新画 100 次蓝图，而是拿这 1 张蓝图，克隆 100 次。
 
 ```typescript
-function lazyLoadImage(img: HTMLImageElement, realSrc: string) {
-  return new Proxy(img, {
-    get(target, prop) {
-      if (prop === 'src' && !target.dataset.loaded) {
-        // 用占位图
-        return target.dataset.placeholder || ''
+const baseConfig = {
+  api: {
+    baseURL: 'https://api.example.com',
+    timeout: 5000,
+    headers: { 'Content-Type': 'application/json' },
+  },
+  auth: {
+    tokenKey: 'access_token',
+    refreshEndpoint: '/auth/refresh',
+  },
+}
+
+// 克隆并微调
+function createAppConfig(overrides: Partial<typeof baseConfig> = {}) {
+  return deepMerge(baseConfig, overrides)
+}
+
+const testConfig = createAppConfig({
+  api: { baseURL: 'https://test-api.example.com' },
+})
+```
+
+JavaScript 的 `Object.create()` 是原型模式的原生支持——新对象直接拿老对象当原型链。
+
+```typescript
+const animal = {
+  speak() {
+    return `${this.name} makes a sound`
+  },
+}
+
+const dog = Object.create(animal)
+dog.name = '狗'
+dog.speak() // "狗 makes a sound"
+```
+
+`Object.create` 不调用构造函数，不复制属性——它只是在两个对象之间搭了一座原型链的桥。
+
+**什么时候不该用：** 原型模式的好处是快（不用走构造函数），但代价是你的对象之间有了隐式的继承关系。当你需要清晰地知道一个对象有哪些属性的时候，原型链会让调试变得痛苦。大多数情况下，`Object.assign` 或展开运算符的浅拷贝就够了。
+
+---
+
+## 结构型：怎么把零件拼成一台能跑的机器
+
+创建型管"生产零件"，结构型管"把零件装起来"。
+
+### 代理模式
+
+你去一家大公司找技术总监谈合作。你不会直接推开他办公室的门——你会先经过前台。前台确认你的身份，登记来访目的，然后打电话帮他问一下"现在方便吗"，最后才放你进去。
+
+代理就是代码里的前台。
+
+Vue 3 的 `reactive()` 系统是代理模式最精彩的例子：
+
+```typescript
+const raw = { count: 0 }
+const state = new Proxy(raw, {
+  get(target, key) {
+    console.log(`有人在读 ${String(key)}`)
+    track(target, key) // 收集依赖
+    return target[key]
+  },
+  set(target, key, value) {
+    console.log(`有人在改 ${String(key)}：${value}`)
+    target[key] = value
+    trigger(target, key) // 通知依赖更新
+    return true
+  },
+})
+
+state.count // 控制台：有人在读 count
+state.count = 1 // 控制台：有人在改 count：1
+```
+
+你在用 `state.count`，你以为你在直接读写一个对象。实际上每一次读写都经过了 Proxy 这个前台——它在你"进门"的时候自动登记（track），在"离开"的时候自动通知（trigger）。你完全感觉不到它的存在，但它的工作一刻都没停。
+
+图片懒加载也是代理模式的典型场景：
+
+```typescript
+function lazyLoadImage(src: string): HTMLImageElement {
+  const img = new Image()
+
+  const proxy = new Proxy(img, {
+    set(target, key, value) {
+      if (key === 'src') {
+        const observer = new IntersectionObserver((entries) => {
+          if (entries[0].isIntersecting) {
+            target.src = value // 真正进入视口才加载
+            observer.disconnect()
+          }
+        })
+        observer.observe(target)
+        return true
       }
-      return target[prop as keyof HTMLImageElement]
-    },
-    set(target, prop, value) {
-      if (prop === 'src' && value === realSrc) {
-        target.dataset.loaded = 'true'
-      }
-      target[prop as keyof HTMLImageElement] = value
+      target[key] = value
+      return true
     },
   })
+
+  return proxy
 }
 ```
 
-### 3.2 装饰器模式 (Decorator Pattern)
+**什么时候不该用：** Proxy 有性能损耗。如果只是简单的值读写，没有必要包一层。代理增加了间接性——调试时你会发现调用栈里多了一层 Proxy handler，排查起来更费劲。
 
-**什么时候用**：需要在不修改原有代码的情况下，给对象添加新功能。AOP（面向切面编程）就是装饰器模式的典型应用。
+---
 
-**生活类比**：手机壳，手机还是那个手机，但多了保护壳的功能。
+### 装饰器模式
 
-#### 实战：TypeScript 装饰器
+你有台新买的手机。你嫌它光着太滑，给它套了个壳。手机还是那个手机，功能一个不少，但多了一层——防摔。
+
+装饰器就是这个逻辑：**不改动原始对象，在它外面包一层新能力。**
+
+TypeScript 的实验性装饰器语法：
 
 ```typescript
-// 计时器装饰器：自动记录函数执行时间
-function timeTrack(target: any, name: string, descriptor: PropertyDescriptor) {
+function timeTrack(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
   const original = descriptor.value
-
   descriptor.value = function (...args: any[]) {
     const start = performance.now()
     const result = original.apply(this, args)
-    const duration = performance.now() - start
-    console.log(`${name} 执行耗时: ${duration.toFixed(2)}ms`)
+    const end = performance.now()
+    console.log(`[${propertyKey}] 执行耗时: ${(end - start).toFixed(2)}ms`)
     return result
   }
-
   return descriptor
 }
 
-class ApiService {
+class ApiClient {
   @timeTrack
-  fetchUserList() {
-    // 模拟 API 请求
-    return new Promise((resolve) => setTimeout(() => resolve([1, 2, 3]), 500))
-  }
-
-  @timeTrack
-  fetchDetail(id: number) {
-    return new Promise((resolve) => setTimeout(() => resolve({ id }), 200))
+  async fetchUserData(userId: string) {
+    return fetch(`/api/users/${userId}`).then((r) => r.json())
   }
 }
 
-const api = new ApiService()
-api.fetchUserList() // 输出：fetchUserList 执行耗时: 502.34ms
+const client = new ApiClient()
+client.fetchUserData('123') // 控制台：[fetchUserData] 执行耗时: 234.56ms
 ```
 
-#### 实战：Redux `connect` 的原理
+你没有改 `fetchUserData` 的源代码，但你给它加了一个"计时"的能力。就像手机壳——手机还是那个手机，但现在多了一层安全感。
 
-Redux 的 `connect` 函数本质上就是装饰器模式——它"装饰"组件，给组件添加 Redux 状态和 dispatch 能力。
-
-### 3.3 适配器模式 (Adapter Pattern)
-
-**什么时候用**：当两个不兼容的接口需要一起工作的时候。
-
-**生活类比**：手机充电头转换器，插座是三孔的，充电器是两孔的，转换器让它们能一起工作。
-
-#### 实战：适配新旧 API 接口
+在 React 里，高阶组件（HOC）就是装饰器的 React 版本：
 
 ```typescript
-// 旧接口返回的数据格式
-interface OldUser {
-  name: string
-  age: number
-  job_detail: string  // 下划线格式
-}
-
-// 新接口期望的数据格式
-interface NewUser {
-  fullName: string
-  years: number
-  jobDetail: string   // 驼峰格式
-}
-
-// 适配器：把旧格式转成新格式
-class UserAdapter {
-  static adapt(oldUser: OldUser): NewUser {
-    return {
-      fullName: oldUser.name,
-      years: oldUser.age,
-      jobDetail: oldUser.job_detail,
-    }
+function withLoading<P>(Component: React.ComponentType<P>) {
+  return function LoadingWrapper(props: P & { loading: boolean }) {
+    if (props.loading) return <Spinner />
+    return <Component {...props} />
   }
 }
 
-// 使用：在调用新组件之前先适配
-async function loadUserProfile(userId: string) {
-  const oldData = await oldApi.getUser(userId)  // 旧接口
-  const user = UserAdapter.adapt(oldData)       // 转成新格式
-  return <UserProfile user={user} />            // 喂给新组件
-}
+const UserListWithLoading = withLoading(UserList)
 ```
 
-这个模式在前端对接后端 API 时特别有用——后端返回的数据格式和你前端期望的格式往往不一致。
+`UserList` 不知道 loading 状态这回事。我们包了一层 HOC 给它加了 loading 能力。不污染原始组件。
 
-### 3.4 外观模式 (Facade Pattern)
-
-**什么时候用**：当某个功能需要调用很多底层 API，但使用者只想简单调用时。
-
-**生活类比**：电视遥控器，你按一个"开机"按钮，背后电视在做的事情（打开屏幕、连接信号、调节音量）你不需要知道。
-
-#### 实战：Vue `computed` 的封装
-
-Vue 的 `computed` 就是典型的外观模式——它把依赖收集、脏值检查、缓存管理等复杂逻辑都藏在".value"这个简单的接口后面。
-
-```typescript
-// 你的代码：写起来很简单
-const fullName = computed(() => firstName.value + ' ' + lastName.value)
-
-// Vue 背后做的事：
-// 1. 记录依赖关系（firstName, lastName）
-// 2. 检测数据变化
-// 3. 重新计算值
-// 4. 缓存结果避免重复计算
-// 5. 通知依赖方更新
-```
+**什么时候不该用：** 装饰器套多了就变成了洋葱——一层一层剥开，全是包装壳。如果一个组件同时装了 auth、loading、error、tracking 四个 HOC，调试的时候你得记住"当前这层是谁包进来的"。装饰器超过三层，就该考虑重构了。
 
 ---
 
-## 4. 行为型模式：对象的交互逻辑
+### 适配器模式
 
-行为型模式关注的是"**对象之间怎么通信**"，就像人与人之间的沟通方式。
+你去日本旅游，带了国产的插头。到酒店傻眼了——人家的插座是两孔扁的，你的充电头是三孔的，插不进去。你不是把充电头拆了重焊，而是买一个转换头。
 
-### 4.1 观察者模式 (Observer Pattern)
+适配器就是这个转换头。
 
-**什么时候用**：当某个对象的状态变化需要通知其他对象时。
-
-**生活类比**：微信公众号。你关注了一个号，作者发文章时，所有订阅者都会收到通知。
+前端最常见的场景——后端 API 返回 `snake_case`，前端用的变量名是 `camelCase`：
 
 ```typescript
-// 简单实现
-class Subject {
-  private observers: Function[] = []
-
-  // 订阅
-  subscribe(observer: Function) {
-    this.observers.push(observer)
-  }
-
-  // 取消订阅
-  unsubscribe(observer: Function) {
-    this.observers = this.observers.filter((o) => o !== observer)
-  }
-
-  // 发布：状态变化时通知所有订阅者
-  notify(data: any) {
-    this.observers.forEach((observer) => observer(data))
-  }
+// 后端返回
+const apiResponse = {
+  user_id: 123,
+  first_name: 'Max',
+  last_name: 'Zhang',
+  created_at: '2026-03-23',
 }
 
-// 使用
-const news = new Subject()
+// 适配器
+interface User {
+  userId: number
+  firstName: string
+  lastName: string
+  createdAt: string
+}
 
-news.subscribe((content) => console.log('用户A收到了：' + content))
-news.subscribe((content) => console.log('用户B收到了：' + content))
-
-news.notify('新产品发布啦！')
-// 输出：
-// 用户A收到了：新产品发布啦！
-// 用户B收到了：新产品发布啦！
-```
-
-Vue 的响应式系统本质上就是观察者模式：`data` 是 Subject，`watcher` 是 Observer，当 `data` 变化时自动通知 `watcher` 更新。
-
-### 4.2 发布订阅模式 (Pub-Sub Pattern)
-
-观察者模式的升级版，多了一个"调度中心"，发布者和订阅者不需要直接认识对方。
-
-```mermaid
-graph LR
-    Publisher --> EventCenter
-    EventCenter --> Subscriber1
-    EventCenter --> Subscriber2
-    EventCenter --> Subscriber3
-```
-
-```typescript
-type Handler = (data?: any) => void
-
-class EventEmitter {
-  private events: Map<string, Handler[]> = new Map()
-
-  // 订阅
-  on(name: string, fn: Handler) {
-    const handlers = this.events.get(name) || []
-    handlers.push(fn)
-    this.events.set(name, handlers)
-  }
-
-  // 发布
-  emit(name: string, data?: any) {
-    this.events.get(name)?.forEach((fn) => fn(data))
-  }
-
-  // 取消订阅
-  off(name: string, fn: Handler) {
-    const handlers = this.events.get(name)
-    if (handlers) {
-      this.events.set(
-        name,
-        handlers.filter((h) => h !== fn),
-      )
+class UserAdapter {
+  static adapt(raw: typeof apiResponse): User {
+    return {
+      userId: raw.user_id,
+      firstName: raw.first_name,
+      lastName: raw.last_name,
+      createdAt: raw.created_at,
     }
   }
 }
 
-// 使用
-const bus = new EventEmitter()
+const user: User = UserAdapter.adapt(apiResponse)
+```
 
-// A 组件订阅事件
-bus.on('user-login', (user) => {
-  console.log('收到了用户登录信息：', user)
+好处很明显——前端代码里永远用 `firstName`，后端格式变了只改适配器，不碰业务代码。
+
+另一个典型场景：第三方库的接口跟你项目里的约定不一致。你用了一个旧版的图表库，它的 `setData` 接受 `{x: number, y: number}[]`，但你项目里全用的是 `{label: string, value: number}[]`。写个适配器，就不用在每个调用点都转格式。
+
+**什么时候不该用：** 如果后端格式稳定，并且你们的项目约定就是跟后端字段名保持一致——那就直接用，别写适配器。适配器加了一层间接引用，增加代码量。只有当"不匹配"这个痛点是真实存在的，适配器才有价值。
+
+---
+
+### 外观模式
+
+你拿起电视遥控器，按一下红色按钮，电视开了。你不用关心遥控器内部怎么发射红外信号、电视内部的电源模块怎么启动、信号接收器怎么解码——你只知道按一个按钮就行。
+
+外观模式就是遥控器。
+
+它提供**一个简化的入口，把背后复杂的逻辑全藏起来。**
+
+Vue 的 `computed` 就是外观模式的绝佳例子：
+
+```typescript
+const user = reactive({
+  firstName: 'Max',
+  lastName: 'Zhang',
+  settings: {
+    language: 'zh',
+    timezone: 'Asia/Shanghai',
+  },
 })
 
-// B 组件发布事件
-setTimeout(() => {
-  bus.emit('user-login', { name: '张三', time: Date.now() })
-}, 1000)
+// 没有外观：每次都要手动拼接
+console.log(`${user.firstName} ${user.lastName}`)
+
+// 有外观：一个属性搞定了背后的拼接逻辑
+const displayName = computed(() => `${user.firstName} ${user.lastName}`)
+console.log(displayName.value)
 ```
 
-**观察者模式 vs 发布订阅模式**
-
-| 对比项   | 观察者模式                | 发布订阅模式        |
-| -------- | ------------------------- | ------------------- |
-| 通信方式 | Subject 直接通知 Observer | 通过中间件/事件中心 |
-| 耦合度   | 发布者和订阅者耦合        | 完全解耦            |
-| 使用场景 | Vue 响应式                | 跨组件通信          |
-| 灵活性   | 低                        | 高                  |
-
-### 4.3 策略模式 (Strategy Pattern)
-
-**什么时候用**：当有多种算法或行为可以互换，但不想用一堆 if-else 来判断时。
-
-**生活类比**：去北京，你可以坐地铁、公交、打车、骑车——具体选哪个，根据实际情况来定。
-
-#### 实战：表单验证规则
+复杂的表单提交逻辑：
 
 ```typescript
-// 定义各种验证策略
-const validatorStrategies = {
-  // 不能为空
-  isNonEmpty: (val: string) => {
-    return val.trim().length > 0 || '请填写此项'
-  },
-
-  // 最小长度
-  minLength: (val: string, len: number) => {
-    return val.length >= len || `至少需要 ${len} 个字符`
-  },
-
-  // 最大长度
-  maxLength: (val: string, len: number) => {
-    return val.length <= len || `最多 ${len} 个字符`
-  },
-
-  // 邮箱格式
-  isEmail: (val: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(val) || '请输入有效的邮箱地址'
-  },
-
-  // 手机号
-  isPhone: (val: string) => {
-    const phoneRegex = /^1[3-9]\d{9}$/
-    return phoneRegex.test(val) || '请输入有效的手机号'
-  },
+// 没有外观——每个操作都要知道这三步
+async function submitFormRaw() {
+  const validated = await validateAll(formData)
+  if (!validated.success) return showErrors(validated.errors)
+  const sanitized = sanitizeInput(formData)
+  const result = await api.submit(sanitized)
+  if (result.error) return showErrorToast(result.error)
+  showSuccessToast('提交成功')
+  router.push('/dashboard')
 }
 
-// 验证器类
-class FormValidator {
-  private checks: Array<() => string | true> = []
+// 有外观——一个方法，背后全干了
+class FormFacade {
+  async submit() {
+    const validated = await validateAll(this.data)
+    if (!validated.success) return showErrors(validated.errors)
+    const sanitized = sanitizeInput(this.data)
+    const result = await api.submit(sanitized)
+    if (result.error) return showErrorToast(result.error)
+    showSuccessToast('提交成功')
+    router.push('/dashboard')
+  }
+}
 
-  // 添加验证规则
-  add(value: string, rule: keyof typeof validatorStrategies, ...args: any[]) {
-    const strategy = validatorStrategies[rule]
-    this.checks.push(() => strategy(value, ...args))
+// 调用方只需要知道这一步
+await formFacade.submit()
+```
+
+外观模式的意义不在于"封装"（如果只看封装的话，所有函数都是封装），而在于**把多个子系统的交互收敛到一个固定的入口**。如果将来表单验证逻辑从 `validateAll` 换成了别的库，调用方不用知道——改外观内部即可。
+
+**什么时候不该用：** 外观容易变成"上帝对象"——一个类什么都干，回到我们开头说的八百行组件的问题。如果你的外观开始需要传 10 个参数来配置行为，它就失去了"简化入口"的意义。外观模式的好处是简单，代价是灵活性——你把复杂逻辑封在遥控器里了，但有些人就是想拆开电视机自己调。
+
+---
+
+## 行为型：对象之间怎么沟通
+
+创建型管"造人"，结构型管"组队"，行为型管"队伍里的人怎么喊话"。
+
+### 观察者模式
+
+你关注了一个微信公众号。它发新文章的时候，你是被动收到的——你不用每隔五分钟刷一下"发了没"，它自己会通知你。
+
+观察者模式就是这个逻辑：**一个对象（公众号）维护一个粉丝名单，状态变化了就逐个喊醒。**
+
+```typescript
+class Subject {
+  private observers: Array<(data: any) => void> = []
+
+  subscribe(fn: (data: any) => void) {
+    this.observers.push(fn)
+    return () => {
+      this.observers = this.observers.filter((o) => o !== fn)
+    }
   }
 
-  // 执行验证
-  validate() {
-    for (const check of this.checks) {
-      const result = check()
-      if (result !== true) {
-        return result // 返回第一条错误信息
-      }
-    }
-    return true // 全部通过
+  notify(data: any) {
+    this.observers.forEach((fn) => fn(data))
   }
 }
 
 // 使用
-const validator = new FormValidator()
+const userStore = new Subject()
 
-validator.add('test@example.com', 'isEmail')
-validator.add('13800138000', 'isPhone')
-validator.add('123456', 'minLength', 6)
+// 小李关注了用户变更
+const unsubscribe = userStore.subscribe((data) => {
+  console.log('小李收到通知：', data)
+})
 
-const result = validator.validate()
-console.log(result) // true
-
-// 或者中途就发现错误
-const validator2 = new FormValidator()
-validator2.add('', 'isNonEmpty')
-validator2.add('abc', 'isEmail')
-
-console.log(validator2.validate()) // "请填写此项"
+userStore.notify({ name: 'Max', action: 'login' }) // 小李收到通知
+unsubscribe() // 小李取关了
 ```
 
-这种方式比 `if-else` 优雅多了，而且添加新规则只需要在 `validatorStrategies` 里加一项。
+Vue 的响应式系统底层就是观察者模式。`computed` 属性是一个观察者，它订阅所有被读到的 `ref`/`reactive`。当任何一个依赖变化时，`computed` 收到通知，重新计算值。
 
-### 4.4 迭代器模式 (Iterator Pattern)
+React 的 `useEffect` 也是观察者思想的体现——依赖数组就是你的"订阅列表"，cleanup 函数就是"取关"。
 
-**什么时候用**：需要统一遍历各种不同类型的数据结构时。
+**什么时候不该用：** 观察者模式让"通知"变简单，也让"调试"变困难。当 20 个观察者同时响应一个事件时，你的调用栈会变成一坨意大利面。而且如果某个观察者的回调里又触发了另一个通知，很容易形成事件循环。如果你只需要一个接收方，用回调函数，别套观察者模式。
 
-**生活类比**：不管你用的是哪种遥控器（空调、电视、机顶盒），"上一台"和"下一台"按钮的用法都是一样的。
+---
 
-#### 实战：`Symbol.iterator`
+### 发布订阅模式
+
+读到这儿，你可能会想：观察者和发布订阅有什么他妈的区别？
+
+好问题。它们太像了，我第一次学的时候也搞混过。
+
+区别就一句话：**观察者模式里，被观察者直接认识所有观察者。发布订阅里，两边互相不认识——中间有个叫"事件中心"的第三方。**
 
 ```typescript
-// 让自定义对象可以被 for...of 遍历
-const myIterable = {
-  [Symbol.iterator]: function* () {
-    yield 1
-    yield 2
-    yield 3
+class EventBus {
+  private events: Map<string, Array<(data: any) => void>> = new Map()
+
+  on(event: string, fn: (data: any) => void) {
+    if (!this.events.has(event)) this.events.set(event, [])
+    this.events.get(event)!.push(fn)
+  }
+
+  off(event: string, fn: (data: any) => void) {
+    const fns = this.events.get(event)
+    if (fns)
+      this.events.set(
+        event,
+        fns.filter((f) => f !== fn),
+      )
+  }
+
+  emit(event: string, data: any) {
+    this.events.get(event)?.forEach((fn) => fn(data))
+  }
+}
+
+// 使用——两个人隔空喊话
+const bus = new EventBus()
+
+// 组件A：我发布这个事件，但不知道谁会收到
+bus.emit('user-login', { userId: 123 })
+
+// 组件B：我订阅这个事件，但不知道是谁发布的
+bus.on('user-login', (data) => {
+  console.log('组件B收到登录事件', data)
+})
+```
+
+**类比：** 观察者是公众号直接发给粉丝（作者→读者，直接关系）。发布订阅是你在淘宝的发货系统里下了单——卖家发货，物流公司通知你到货。卖家不认识你，你不认识卖家，中间有淘宝这个"事件中心"在做路由。
+
+Vue 2 的 `$on`、`$emit` 就是发布订阅模式的体现。兄弟组件通信不用通过父组件——事件总线搞定。
+
+**什么时候不该用：** 事件总线是一个全局共享的"喊话器"，时间长了你会不知道哪些组件在监听哪些事件。重构的时候，你怕删掉一个 `emit` 会影响到不知道藏在哪个角落的 `on`。如果你的组件关系是明确的父子关系，props + emit 比事件总线清楚得多。发布订阅适合松耦合的跨层级通信，不是让你绕过组件结构用的。
+
+---
+
+### 策略模式
+
+你要从北京去上海。坐飞机？高铁？开车？每一种都是一套"策略"。你选不同的策略，但目的地不变。
+
+策略模式把"算法"和"使用算法的上下文"分开——你用一个入口 `formValidator`，背后根据不同的字段类型选择不同的校验策略。
+
+```typescript
+interface ValidationStrategy {
+  validate(value: any): string | null
+}
+
+const strategies: Record<string, ValidationStrategy> = {
+  isNonEmpty: {
+    validate(value: string) {
+      return value.trim() ? null : '不能为空'
+    },
+  },
+  isEmail: {
+    validate(value: string) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? null : '邮箱格式不正确'
+    },
+  },
+  isPhone: {
+    validate(value: string) {
+      return /^1[3-9]\d{9}$/.test(value) ? null : '手机号格式不正确'
+    },
+  },
+  minLength: {
+    validate(value: string, min: number = 6) {
+      return value.length >= min ? null : `最少 ${min} 个字符`
+    },
   },
 }
 
-for (const num of myIterable) {
-  console.log(num) // 1, 2, 3
+class FormValidator {
+  private checks: Array<{ strategy: ValidationStrategy; value: any; params?: any }> = []
+
+  add(value: any, name: string, params?: any) {
+    const strategy = strategies[name]
+    if (!strategy) throw new Error(`未知的校验规则: ${name}`)
+    this.checks.push({ strategy, value, params })
+  }
+
+  validate(): string | null {
+    for (const { strategy, value, params } of this.checks) {
+      const error = strategy.validate(value, params)
+      if (error) return error
+    }
+    return null
+  }
 }
 
-// 数组展开也可以用
-console.log([...myIterable]) // [1, 2, 3]
+const validator = new FormValidator()
+validator.add('13800138000', 'isPhone')
+validator.add('a@b.com', 'isEmail')
+validator.add('abc', 'minLength', 6)
+console.log(validator.validate()) // "最少 6 个字符"
 ```
 
-JavaScript 内置的数据结构（Array, Map, Set, NodeList 等）都已经实现了迭代器，所以你可以用统一的方式遍历它们。
+如果没有策略模式，你会怎么写？一个巨大的 `if-else`：
 
 ```typescript
-// 统一的遍历方式
-const arr = [1, 2, 3]
-const map = new Map([
-  ['a', 1],
-  ['b', 2],
-])
-const set = new Set([1, 2, 3])
-const nodeList = document.querySelectorAll('div')
+if (rule === 'isNonEmpty' && !value.trim()) return '不能为空'
+else if (rule === 'isEmail' && !isEmailRegex.test(value)) return '邮箱格式不正确'
+else if (rule === 'isPhone' && !isPhoneRegex.test(value)) return '手机号格式不正确'
+// 五十行之后...
+```
 
-// 都可以用 for...of 遍历
-for (const item of arr) {
+产品经理想加一个"身份证号校验"。策略模式：在 `strategies` 里加一条规则。if-else 模式：在一坨条件判断里找到合适的位置，插一脚，祈祷不改坏别的东西。
+
+**什么时候不该用：** 策略只有两种的时候，不需要。校验规则只有"必填"和"邮箱"——直接写就行，套策略模式是过度设计。策略模式的价值在于"策略数量会持续增长"。
+
+---
+
+### 迭代器模式
+
+不管你拿的是什么遥控器——空调的、电视的、机顶盒的——上面的"频道+"和"频道-"按钮，工作方式一模一样。按一下，下一个。不管背后是走有线电视信号还是网络流，操作方式不变。
+
+迭代器模式就是这个：**不管你背后是什么数据结构，遍历的方式是统一的。**
+
+JavaScript 的 `Symbol.iterator` 是语言内置的迭代器：
+
+```typescript
+const myIterable = {
+  data: ['第一页', '第二页', '第三页'],
+  [Symbol.iterator]() {
+    let i = 0
+    return {
+      next: () => {
+        if (i < this.data.length) {
+          return { value: this.data[i++], done: false }
+        }
+        return { value: undefined, done: true }
+      },
+    }
+  },
 }
-for (const [key, value] of map) {
-}
-for (const item of set) {
-}
-for (const node of nodeList) {
+
+for (const item of myIterable) {
+  console.log(item) // 第一页 / 第二页 / 第三页
 }
 ```
 
----
+有了 `Symbol.iterator`，你的自定义对象就能用 `for...of`、展开运算符、解构——跟原生数组一样。
 
-## 总结：怎么用好设计模式
+实际场景：处理树形结构的遍历。
 
-### 三大类型一句话总结
+```typescript
+class TreeNode {
+  value: number
+  children: TreeNode[]
 
-- **创建型**：这个对象**谁来创建**、**怎么创建**
-- **结构型**：这些对象**怎么组装**成更大的结构
-- **行为型**：这些对象**怎么通信**
+  constructor(value: number, children: TreeNode[] = []) {
+    this.value = value
+    this.children = children
+  }
 
-### 什么时候该用，什么时候不该用
+  *[Symbol.iterator](): Generator<number> {
+    yield this.value
+    for (const child of this.children) {
+      yield* child // 递归迭代子节点——深度优先遍历
+    }
+  }
+}
 
-| 该用的情况                       | 不该用的情况               |
-| -------------------------------- | -------------------------- |
-| 代码反复出现相同的问题           | 简单到不需要模式           |
-| 需要团队协作、代码需要被他人维护 | 过度设计会让简单问题变复杂 |
-| 需求经常变化，需要灵活扩展       | 强行套用模式会适得其反     |
-| 需要提高代码复用性               |                            |
+const tree = new TreeNode(1, [new TreeNode(2, [new TreeNode(4), new TreeNode(5)]), new TreeNode(3)])
 
-### 一个项目里通常会混用多种模式
+for (const value of tree) {
+  console.log(value) // 1, 2, 4, 5, 3
+}
+```
 
-比如 Vue 就同时用了：
+一棵树，用 `for...of` 就能遍历。不管这棵树的结构多深——迭代器帮你在背后做完了深度优先。
 
-- **代理模式**：实现响应式
-- **观察者模式**：依赖更新
-- **工厂模式**：创建 VNode
-- **单例模式**：全局组件
+前端里 DOM 的 `NodeList`、`HTMLCollection`，Map、Set——全是可迭代的。不管它们的数据结构多不同，你都可以用 `for...of` 统一遍历。
 
----
-
-## 常见问题
-
-**Q：需要把所有 23 种设计模式都记住吗？**
-
-不需要。记住最常用的几种（工厂、单例、代理、观察者、策略）就够了。其他的在需要的时候再查资料、看源码。
-
-**Q：怎么判断该用哪种模式？**
-
-问自己几个问题：
-
-1. 是对象创建的问题吗？→ 创建型
-2. 是对象组合的问题吗？→ 结构型
-3. 是对象通信的问题吗？→ 行为型
-
-**Q：设计模式会不会让代码变复杂？**
-
-会的。所以有个原则叫 YAGNI（You Aren't Gonna Need It）——你可能不需要它。在代码还没变得复杂之前，不要急着引入设计模式。
+**什么时候不该用：** 如果只需要遍历一次，直接写 `array.forEach()` 就行，不用自己实现迭代器。迭代器有价值的地方是"你希望把遍历逻辑从业务逻辑里抽出来"，让遍历本身成为一种可复用的工具。
 
 ---
 
-_掌握设计模式不是为了炫耀技术，而是为了让代码更易维护、更易扩展。写代码的终极目标是把产品做好，而不是写出让面试官惊叹的"完美代码"。_
+## 退后三步：整幅画长什么样
+
+把上面的所有内容收束起来，设计模式的世界就三层：
+
+```
+
+创建型（谁造）
+├── 工厂：一句话点菜，别自己进后厨
+├── 单例：整个系统只有一个的声音
+└── 原型：拿蓝图克隆，别重画
+
+结构型（怎么装）
+├── 代理：前台帮你挡一下
+├── 装饰器：套个手机壳，功能不变
+├── 适配器：换个转换头，两边能用
+└── 外观：给你一个遥控器，别管背后多复杂
+
+行为型（怎么聊）
+├── 观察者：关注公众号，发文自动推
+├── 发布订阅：两人隔空喊话，中间有个传话筒
+├── 策略：去北京可以坐飞机也可以高铁
+└── 迭代器：不管什么设备，频道键都一样
+
+```
+
+你不需要背这 23 种模式。你只需要在面对一个混乱的代码块时问自己三个问题：
+
+**1. 这个问题是"谁创建对象"的问题吗？**
+——是的话，工厂、单例、原型里选。
+
+**2. 这个问题是"怎么把对象拼起来"的问题吗？**
+——是的话，代理、装饰器、适配器、外观里选。
+
+**3. 这个问题是"对象怎么互相通知和协调"的问题吗？**
+——是的话，观察者、发布订阅、策略、迭代器里选。
+
+如果三个都不是？
+
+那这个地方可能不需要设计模式。
+
+---
+
+## FAQs——那些让你卡住的问题
+
+**Q: 我需要把 23 种全部背下来吗？**
+
+不需要。我写了这么多年前端，一个策略模式写出来之前脑子里根本不过"这是策略模式"这五个字。我是在写完之后突然意识到——哦，这就是策略模式。你不需要背，你需要在看到一段代码的时候能认出来"这是观察者"、"这是适配器"、"这是单例"。名字不重要，结构重要。
+
+**Q: 怎么判断该用哪种模式？**
+
+上面三个问题先问一遍。如果还是不确定——别用。先写传统的 if-else 和直接的函数调用。等代码开始刺痛你的时候，你自然知道该在哪里抽模式。
+
+**Q: 设计模式会不会让代码更复杂？**
+
+会。一定会。
+
+所以有 YAGNI 原则——You Aren't Gonna Need It。你可能不需要它。在代码还简单的时候，别急着引入模式。一个 50 行的工具函数，用不上工厂。一个父子组件通信，用不上发布订阅。
+
+设计模式是你代码变丑之后才请的装修队，不是刚搬进毛坯房就贴金箔。
+
+---
+
+写到这里，窗外已经完全黑了。
+
+其实我想通这件事花了好几年。设计模式一开始对我来说就是面试题的答案——背两句 UML，记几个类图，面完就忘。直到我的代码变得足够恶心，恶心得连我自己都不想维护的时候，那些模式的名字突然全部活过来了。
+
+它们说的就是我现在写的这坨屎。
+
+只不过它们把"屎"叫做"反模式"。
+
+希望下次你在一个八百行的 `user-profile.tsx` 面前举起双手的时候，能在心里默念一遍那三个问题。然后，你会知道从哪里下手。
+
+这比背 23 种模式的名字重要得多。

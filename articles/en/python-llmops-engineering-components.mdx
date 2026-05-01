@@ -1,53 +1,99 @@
 ---
 title: 'Building a Python LLMOps Project in VSCode'
-summary: 'A comprehensive guide to building a production-ready Python LLMOps project in VSCode, covering project structure, environment setup, code quality tools, VSCode best practices, and a complete CI/CD workflow.'
+summary: 'A narrative walkthrough of building a production-ready Python LLMOps project in VSCode, covering project structure, environment setup, code quality tools, VSCode best practices, and CI/CD — told like a friend explaining what they just figured out.'
 category: 'LLMOps'
 tags: ['Python', 'VSCode', 'Environment Setup', 'Ruff', 'FastAPI']
 author: 'Max Zhang'
-date: '2026-03-30'
+date: '2025-06-11'
 ---
 
-When we talk about LLMOps, environment setup and project conventions are often the first step in engineering implementation. A solid project foundation not only improves development efficiency but also lays a strong groundwork for future expansion and maintenance. This article focuses on the Python ecosystem for LLMOps engineering, covering everything from project structure and environment initialization to the complete technical stack, with VSCode best practices included.
+It was 11 PM on a Friday.
 
----
+I was staring at an empty terminal, cursor blinking, folder named `llmops/` sitting there with nothing in it. The gig was simple enough: build an AI-powered customer service system for a client. Hook up a large language model, write some Python, spin up a FastAPI server, done.
 
-# Project Structure
+That's what I told myself.
+
+Then I actually opened the terminal. And I froze. Pip or poetry? Virtual environment inside the project or somewhere else? What code style rules? What do I put in the commit message? Which VSCode extensions? CI setup? And the most annoying question of all — is there a canonical order for doing this shit, or am I just guessing?
+
+You've probably been here. LLMOps sounds sophisticated, but the first thing that punches you in the face isn't model selection or prompt engineering. It's: how the hell do I set this project up properly?
+
+This isn't one of those "just pip install and you're done" articles. What I want to share with you is a walkthrough — every step, from the first command you type to the moment your CI pipeline runs lint, type check, and test automatically on push. Why each step matters. And — soberly — what each step still doesn't solve.
+
+## What problem are you actually solving
+
+Let's step back. Why does LLMOps need so much discipline?
+
+Because LLM applications are naturally unstable.
+
+You tweak one word in a prompt, and the returned JSON structure changes. You upgrade one dependency, and a model call's timeout parameter breaks. And don't even get me started on multi-person collaboration — code that runs perfectly on your machine throws an ImportError the moment someone else pulls it.
+
+This isn't exaggeration. I've seen an LLM project three months into production where `requirements.txt` had 47 packages, 12 of which had direct dependency conflicts nobody knew about for three months. Because "the code runs."
+
+Engineering discipline is about one thing: **putting uncertainty in a cage.**
+
+What does it NOT solve? It doesn't pick your model. It doesn't write your prompts. It doesn't guarantee your AI responses are correct. It only manages your code quality, dependency relationships, and automation pipelines. If you think a standardized project structure will prevent model hallucinations — wake up. Those are two completely different problems.
+
+Alright. You know what engineering solves and what it doesn't. Let's build.
+
+## Project structure — set up your kitchen first
+
+Imagine you're opening a restaurant. You walk into the kitchen. Pots and pans scattered everywhere. Cutting board piled on top of the sink. Fridge door stuck shut. Gas stove won't light. You think you're cooking anything good in there?
+
+Project structure is your goddamn kitchen layout.
 
 ```
 llmops/
-├── .editorconfig            # Unified editor configuration
+├── .editorconfig            # Cross-editor config
 ├── .gitignore               # Git ignore rules
-├── .pre-commit-config.yaml  # pre-commit hooks configuration
+├── .pre-commit-config.yaml  # Pre-commit hook config
 ├── .python-version          # Python version lock
-├── .vscode/                 # VS Code configuration
-│   ├── extensions.json      # Recommended extensions list
-│   └── settings.json        # User settings (best practices)
-├── README.md                # Project documentation
+├── .vscode/                 # VS Code config
+│   ├── extensions.json      # Recommended extensions
+│   └── settings.json        # Best-practice settings
+├── README.md                # Project docs
 ├── main.py                  # Entry point
 ├── pyproject.toml           # Project metadata + dependency management
 └── uv.lock                  # Dependency lock file
 ```
 
----
+Let me walk through each one.
 
-# Environment Initialization
+`.editorconfig` — this is cross-editor. You use VSCode, your teammate uses PyCharm, another person uses Vim. Don't laugh — some people write Python in Vim and they're better than you. This file keeps your indentation, line endings, and encoding consistent across editors. It doesn't solve code style problems (that's Ruff's job). It only solves "different editors have different defaults."
 
-## Install uv
+`.gitignore` — don't commit `.venv`, `__pycache__`, or `.env` to the repository. Sounds obvious, right? I've seen production credential leaks at least ten times because `.env` wasn't in `.gitignore`. Simple file, but miss one line and it's a security incident.
 
-`uv` is a Rust-written ultra-fast Python package manager, compatible with pip while providing virtual environment management and dependency locking.
+`.pre-commit-config.yaml` — we'll get into this later. For now, think of it as a security checkpoint. Every commit gets scanned before it goes through.
+
+`.python-version` — locks the Python version. You write with 3.12, your teammate has 3.11, the deployment server's pyenv is running 3.10. One day you use `functools.cached_property` (added in 3.8) or a `match` statement (added in 3.10), and production explodes. This file prevents that disaster. Both uv and pyenv read it.
+
+`.vscode/` — two files. `extensions.json` tells everyone who opens this project "you should probably install these extensions." `settings.json` configures the editor's behavior directly. A new teammate clones the repo, opens VSCode, and everything is already set up. No configuration hell. That's the feeling of good engineering — not that YOU know how to configure things, but that the next person doesn't have to figure it out from scratch.
+
+`pyproject.toml` — back in the day, a Python project needed `setup.py`, `requirements.txt`, `setup.cfg`, and maybe `tox.ini`. Four config files to write some Python. Since PEP 517/518, everything goes into one file: project metadata, dependencies, Ruff config, mypy config, pytest config. One file to rule them all.
+
+`uv.lock` — dependency lock file. Same idea as `package-lock.json`. `requirements.txt` can specify version ranges (`>=1.0`), but the actual version you get from `pip install` might differ each time. `uv.lock` locks exact versions. You, your teammate, and your CI all get identical dependencies. Eliminates the "but it works on my machine" mystery.
+
+These files together are maybe 100 lines of configuration that YOU write. But they're the skeleton of the entire project.
+
+## Environment initialization — uv is the tool that finally doesn't suck
+
+Let's be honest: Python's package management has been broken for years.
+
+pip's dependency resolution is slow as molasses. Poetry tried to fix things but introduced its own config logic and resolver, which sometimes felt more complicated than my actual business code. Conda is too heavy — for a pure Python project it's like using a bulldozer to plant flowers in a garden.
+
+Then uv arrived.
+
+uv is a Python package manager written in Rust. Rust means fast — not "a bit faster," but an order of magnitude faster. Running `uv sync` feels like breathing in place, not like pip's "go grab a coffee" experience. More importantly, it unifies package management and virtual environment management into one tool. You don't need to `python -m venv .venv`, then `source .venv/bin/activate`, then `pip install -r requirements.txt`. One `uv sync` does everything.
 
 ```bash
+# Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Initialize the project
+uv init              # Creates pyproject.toml
+uv sync              # Auto-creates .venv and installs dependencies
 ```
 
-## Initialize Project
-
-```bash
-uv init              # Create pyproject.toml
-uv sync              # Auto-create .venv and install dependencies
-```
-
-## Manual Virtual Environment Management (Optional)
+Two commands. `uv init` generates a clean `pyproject.toml`. `uv sync` automatically creates the virtual environment (default `.venv` directory) and installs all dependencies. If you want manual control:
 
 ```bash
 uv venv .venv        # Manually create virtual environment
@@ -55,41 +101,31 @@ source .venv/bin/activate   # Activate
 deactivate           # Deactivate
 ```
 
-## Install Dependencies
+Adding dependencies is equally intuitive:
 
 ```bash
-uv add <package>        # Add production dependency
-uv add --dev <package>  # Add dev dependency
-uv sync                 # Sync dependencies (based on pyproject.toml)
+uv add fastapi       # Production dependency
+uv add --dev ruff    # Dev dependency
+uv sync              # Sync dependencies (from pyproject.toml)
 ```
 
-## pre-commit Hooks
+Packages added with `--dev` go into `pyproject.toml`'s `[dependency-groups.dev]` rather than `[project.dependencies]`. Production deployment can skip dev dependencies with `uv sync --no-dev`. This dev/prod distinction is critical — you definitely don't want to ship pytest and Ruff to your production server.
 
-```bash
-uv add --dev pre-commit    # Install pre-commit
-pre-commit install         # Enable auto-checks before git commit
-```
+What does uv NOT solve? It doesn't care about your code quality. It doesn't check your types. It doesn't write your tests. It's just a package manager. You can install all your dependencies perfectly with uv and then write absolute garbage code — uv will faithfully manage the dependency relationships for that garbage, without a single complaint.
 
-## Ruff Code Linting and Formatting
+## Code quality tools — three gatekeepers at three doors
 
-```bash
-uv add --dev ruff    # Install Ruff
-ruff check .         # Lint code
-ruff check --fix .   # Lint and auto-fix
-ruff format .        # Format code
-```
+Package management is sorted. Now you need a few gatekeepers watching over your code quality.
 
-## Testing and Type Checking
+### Ruff: the fastest Python linter and formatter
 
-```bash
-uv add --dev pytest mypy    # Install pytest and mypy
-pytest               # Run tests
-mypy .               # Type checking
-```
+Let me tell you how fragmented the Python ecosystem used to be. Linting with flake8 (slow). Formatting with black (fine). Import sorting with isort (another tool). Security scanning with bandit (another one). Config files scattered across `pyproject.toml`, `setup.cfg`, `.flake8`.
 
-## Ruff and mypy Configuration
+Ruff does all of the above, in a single tool, written in Rust, so fast you won't even feel it running.
 
-Configuration is written in `pyproject.toml` (manually):
+Check your code: `ruff check .`. Auto-fix: `ruff check --fix .`. Format: `ruff format .`.
+
+But you also need to tell Ruff what rules to enforce, in `pyproject.toml`:
 
 ```toml
 [tool.ruff]
@@ -102,16 +138,80 @@ ignore = ["S301", "T201"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
+```
 
+Each letter group is a rule category:
+
+- `E` / `F`: pycodestyle and pyflakes basic error checks
+- `W`: warnings
+- `I`: import sorting (replaces isort)
+- `N`: naming conventions
+- `UP`: auto-upgrade to newer Python syntax (e.g., `Optional[str]` becomes `str | None`)
+- `B`: common bug patterns
+- `C90`: cyclomatic complexity
+- `S`: security checks (replaces bandit)
+- `ANN`: mandatory type annotations
+- `RUF`: Ruff-specific rules
+
+`line-length = 88` because the black community settled on 88, not 80. There's an interesting mathematical argument behind it — not going into it here, just use 88.
+
+Ruff solves: inconsistent code style, missing imports, unsafe patterns, naming chaos. It doesn't solve: whether your code logic is correct, whether your architecture is well-designed. Ruff can tell you `x = x + 1` should be `x += 1`. It can't tell you that this function shouldn't exist in the first place.
+
+### Mypy: adding a type safety net to Python
+
+Python is dynamically typed — you can assign any type to a variable at runtime. Feels great when writing a script. Five minutes into maintaining a 50,000-line codebase? Pure nightmare.
+
+You return a `dict` from a function. The caller expects a `User` object. `user.name` throws an `AttributeError`. You spend half an hour debugging, only to find that some upstream `if` branch returned the wrong type.
+
+Mypy catches this before your code even runs:
+
+```bash
+mypy .
+```
+
+Config goes in `pyproject.toml`:
+
+```toml
 [tool.mypy]
 python_version = "3.12"
 ignore_missing_imports = true
 ```
 
-## pre-commit Configuration
+`ignore_missing_imports = true` means: if a third-party library has no type stubs, don't complain. Otherwise, install boto3 and mypy will spit out hundreds of false-positive errors at you.
+
+Mypy solves: type mismatches, missing attributes, incorrect function signatures. It doesn't solve: whether a runtime value is valid. Mypy guarantees `user_id` is an `int`, but it can't guarantee that `int` corresponds to a real user in your database. That's business validation's job.
+
+### Pytest: does your code actually work
+
+Lint passes. Types are correct. But is the logic right? Does your RAG retriever return the correct document chunks for a given Chinese query? Does your LLM call gracefully degrade on timeout?
+
+```bash
+uv add --dev pytest
+pytest
+```
+
+Tests don't need to be elaborate. But at minimum, you need coverage for critical paths:
+
+- Model calls return successfully
+- Tool calling parameter parsing is correct
+- RAG retrieval recall is within acceptable range
+
+Pytest solves: logical correctness verification. It doesn't solve: the fact that you didn't write any tests.
+
+## pre-commit and commitizen — don't let garbage code sneak into the repo
+
+You've installed the code quality tools. But you might forget to run them. When you're racing against a deadline, who remembers `ruff check` and `mypy`? Just commit first, fix later. I'll do it next time, I swear.
+
+pre-commit solves this "next time" problem.
+
+```bash
+uv add --dev pre-commit
+pre-commit install
+```
+
+Then write a `.pre-commit-config.yaml`:
 
 ```yaml
-# .pre-commit-config.yaml
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.0
@@ -126,108 +226,205 @@ repos:
       - id: mypy
 ```
 
-## Git Commit Convention (Commitizen)
+From now on, every `git commit` will run Ruff and mypy right in front of you. Failed? Commit rejected. Fix it, then try again.
+
+It's a brutally effective code quality enforcement mechanism. But it solves something subtle — **human willpower is finite**. You don't need to "remember" to maintain code quality. It remembers for you.
+
+What does pre-commit NOT solve? It doesn't guarantee your commit messages are meaningful. You can still write `fix`, `update`, `wip`. Three months later you open your git log and discover you can't understand what any commit actually did.
+
+Enter commitizen:
 
 ```bash
-uv add --dev commitizen    # Install Commitizen
-git add .                  # Stage changes first
-cz c                        # Interactively generate convention-compliant commit message
+uv add --dev commitizen
+git add .
+cz c
 ```
 
-## Toolchain Overview
+`cz c` launches an interactive prompt: what type of commit (feat/fix/docs/refactor/test...)? What's the scope? What's the short description?
 
-| Tool               | Purpose                                  |
-| ------------------ | ---------------------------------------- |
-| **uv**             | Package management + virtual environment |
-| **pyproject.toml** | Project metadata + dependency management |
-| **ruff**           | Linting + formatting                     |
-| **mypy**           | Static type checking                     |
-| **pytest**         | Unit testing                             |
-| **pre-commit**     | Pre-commit auto-checks                   |
-| **commitizen**     | Convention-compliant commit messages     |
-| **.gitignore**     | Ignore files from version control        |
+The result looks like this:
 
----
+```
+feat(llm): add OpenAI function calling support
 
-# VSCode Configuration
+Added support for tool calling via OpenAI API,
+including parameter validation with Pydantic models.
+```
 
-## Recommended Extensions
+Instead of:
 
-- **Pylance** (Microsoft) — Python language server, intelligent completions + type checking
+```
+update
+```
+
+Commitizen solves: communication overhead in team collaboration. Three-months-from-now-you, or the person who inherits your code, can actually understand what each commit was about. It doesn't care about code quality — that's pre-commit's job. But with standardized commit messages, changelogs generate automatically, versions bump automatically, the entire release process becomes automatable.
+
+## The toolbox at a glance — one table to rule them all
+
+Here's everything in your toolbox now:
+
+| Tool           | What it does                 | What it doesn't do               |
+| -------------- | ---------------------------- | -------------------------------- |
+| **uv**         | Package management + venv    | Code quality, type safety, logic |
+| **ruff**       | Linting + formatting         | Type safety, logic, architecture |
+| **mypy**       | Static type checking         | Runtime value validity, logic    |
+| **pytest**     | Unit testing                 | Writing the tests for you        |
+| **pre-commit** | Pre-commit automated checks  | Commit message quality           |
+| **commitizen** | Standardized commit messages | Code quality                     |
+
+See that? Every tool has clear boundaries. Tools having boundaries is a good thing — you need to know what a tool DOESN'T do, so you know when you need a different tool to fill the gap.
+
+## VSCode configuration — make your editor smarter than you
+
+Tools are installed. Now you need to wire VSCode deeply into this tooling ecosystem.
+
+A bare editor is like an untuned instrument — it makes sound, but the notes are off. When you connect Ruff, mypy, and pytest to VSCode, the editor tells you what's wrong the instant you type it, rather than waiting for your commit to fail.
+
+### Extensions first
+
+Open VSCode, install these four:
+
+- **Pylance** (Microsoft) — Python language server, intelligent completion plus type checking
 - **Ruff** (charliermarsh) — Linting and formatting
 - **Prettier** (esbenp) — JSON / YAML / Markdown formatting
-- **Python** (Microsoft) — Python debugging + test support
+- **Python** (Microsoft) — Python debugging plus test support
 
-## settings.json Best Practices
+These aren't "recommended." They're required. Especially Pylance — without it, writing Python in VSCode feels like using Notepad.
+
+### settings.json — explained line by line
+
+The config below is long. I don't want you to copy-paste it blindly — I'm going to explain "why" for every block. When you understand why, you'll have confidence when tweaking parameters later.
 
 ```json
 {
-  // --- 1. Intelligent Analysis and Type Inference (Pylance) ---
+  // --- 1. Intelligent analysis & type inference (Pylance) ---
   "python.analysis.typeCheckingMode": "basic",
   "python.analysis.autoImportCompletions": true,
   "python.analysis.inlayHints.functionReturnTypes": true,
   "python.analysis.inlayHints.variableTypes": true,
-  "python.analysis.diagnosticMode": "openFilesOnly",
-
-  // --- 2. Language Server ---
-  "python.languageServer": "Pylance",
-
-  // --- 3. Environment Configuration (uv + .venv) ---
-  "python.terminal.activateEnvironment": true,
-  "python.terminal.activateEnvInCurrentTerminal": true,
-  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
-
-  // --- 4. Code Quality and Formatting (Ruff) ---
-  "[python]": {
-    "editor.defaultFormatter": "charliermarsh.ruff",
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-      "source.fixAll.ruff": "explicit",
-      "source.organizeImports.ruff": "explicit"
-    },
-    "editor.rulers": [88]
-  },
-
-  // --- 5. Markdown Formatting ---
-  "[markdown]": {
-    "editor.formatOnSave": true,
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-
-  // --- 6. Unit Testing (pytest) ---
-  "python.testing.pytestEnabled": true,
-  "python.testing.unittestEnabled": false,
-  "python.testing.pytestArgs": ["tests", "-v"],
-
-  // --- 7. Editor Optimization ---
-  "editor.guides.bracketPairs": "active",
-  "editor.parameterHints.enabled": true,
-  "editor.inlineSuggest.enabled": true,
-  "files.trimTrailingWhitespace": true,
-  "files.insertFinalNewline": true,
-
-  // --- 8. File Exclusions ---
-  "files.exclude": {
-    "**/__pycache__": true,
-    "**/.ruff_cache": true,
-    "**/.mypy_cache": true,
-    "**/.pytest_cache": true,
-    "**/*.pyc": true
-  },
-
-  // --- 9. JSON / YAML Formatting ---
-  "[json]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[yaml]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  "python.analysis.diagnosticMode": "openFilesOnly"
 }
 ```
 
----
+`typeCheckingMode: "basic"` enables Pylance's basic type checking. Note: this doesn't conflict with mypy — Pylance checks in real-time while you type, mypy does a full scan during pre-commit and CI. They complement each other.
 
-# GitHub Actions CI
+`autoImportCompletions` means when you type `FastAPI`, the editor auto-adds `from fastapi import FastAPI`. Saves keystrokes, saves brain cycles.
+
+`inlayHints.functionReturnTypes` and `inlayHints.variableTypes` show ghost-text type hints next to function returns and variables. If you write `data = get_user(42)`, the editor shows `: User` beside it. This is incredibly useful when reading someone else's code (or your own from three months ago).
+
+`diagnosticMode: "openFilesOnly"` means only analyze open files. Otherwise, opening a large project would trigger a full Pylance scan, CPU spikes to 100%, your laptop fan takes off. You sacrifice a bit of global coverage for editor responsiveness.
+
+```json
+// --- 2. Language server ---
+"python.languageServer": "Pylance"
+```
+
+Without this, VSCode might use the Jedi language server. Jedi is fine, but compared to Pylance, the interaction latency and completion quality are a tier lower.
+
+```json
+// --- 3. Environment config (uv + .venv) ---
+"python.terminal.activateEnvironment": true,
+"python.terminal.activateEnvInCurrentTerminal": true,
+"python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
+```
+
+First line: auto-activate the virtual environment when opening the built-in terminal. No more manual `source .venv/bin/activate`.
+
+Second line: also activate in terminals that are already open. This is an easy-to-miss detail — if you have an existing terminal open, VSCode won't auto-activate the environment unless this option is on.
+
+Third line: specify the interpreter path. `${workspaceFolder}` is a VSCode variable pointing to the project root. This tells VSCode: "Use the Python inside my project's `.venv`, not the system Python."
+
+```json
+// --- 4. Code quality & formatting (Ruff) ---
+"[python]": {
+  "editor.defaultFormatter": "charliermarsh.ruff",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.ruff": "explicit",
+    "source.organizeImports.ruff": "explicit"
+  },
+  "editor.rulers": [88]
+}
+```
+
+This block is the most important part of the config.
+
+`formatOnSave: true` means every time you hit Ctrl+S, the editor auto-formats your code. No need to manually run `ruff format`.
+
+`source.fixAll.ruff` auto-fixes Ruff-fixable problems on save (unused imports, extra whitespace). `source.organizeImports.ruff` auto-sorts imports (PEP 8 convention: standard library first, third-party in the middle, local modules at the bottom).
+
+`editor.rulers: [88]` draws a vertical line at column 88. Reminds you not to write excessively long lines. It's the "boundary awareness" of writing code.
+
+```json
+// --- 5. Markdown formatting ---
+"[markdown]": {
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
+}
+```
+
+Your project definitely has a README.md, maybe even a docs directory. Prettier formatting Markdown is way more reliable than manual line breaks.
+
+```json
+// --- 6. Unit testing (pytest) ---
+"python.testing.pytestEnabled": true,
+"python.testing.unittestEnabled": false,
+"python.testing.pytestArgs": ["tests", "-v"]
+```
+
+Enable pytest support, and VSCode's sidebar test panel can discover and run your test cases directly. `pytestArgs` specifies the test directory and verbose output.
+
+```json
+// --- 7. Editor optimizations ---
+"editor.guides.bracketPairs": "active",
+"editor.parameterHints.enabled": true,
+"editor.inlineSuggest.enabled": true,
+"files.trimTrailingWhitespace": true,
+"files.insertFinalNewline": true
+```
+
+`bracketPairs` highlights the active bracket pair — when your function nests three levels of braces, knowing which `}` matches which `{` can save your life.
+
+`parameterHints` shows parameter names when calling functions. Type `create_user(` and a floating panel shows you the function's parameter list.
+
+`inlineSuggest` enables inline suggestions. Note: this is different from completions — completions need you to trigger them, inline suggestions appear as ghost text right after your cursor, accept with Tab.
+
+`trimTrailingWhitespace` auto-removes trailing spaces. `insertFinalNewline` adds a blank line at file end — this is the POSIX standard; without it, some tools will throw warnings.
+
+```json
+// --- 8. File exclusions ---
+"files.exclude": {
+  "**/__pycache__": true,
+  "**/.ruff_cache": true,
+  "**/.mypy_cache": true,
+  "**/.pytest_cache": true,
+  "**/*.pyc": true
+}
+```
+
+Hide these cache directories from VSCode's file explorer. You don't need to see them, and they don't need to clutter your view or search scope. This isn't a security measure (`.gitignore` handles that). It's purely for a clean interface.
+
+```json
+// --- 9. JSON / YAML formatting ---
+"[json]": {
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
+},
+"[yaml]": {
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
+}
+```
+
+JSON and YAML also get Prettier formatting. You'll write a lot of YAML (pre-commit config, CI config, Docker Compose), and consistency matters.
+
+Make the above your project's default `.vscode/settings.json`, and commit it to the repository. The next person runs `git clone`, opens VSCode, and everything is already configured. They just write code.
+
+That's the feeling of good engineering.
+
+## GitHub Actions CI — your code gets inspected while you sleep
+
+Running lint, type check, and test locally is one thing. But what if only you run them, and no one else on the team does?
+
+CI serves exactly one purpose: **enforcement**. It's not about whether you run the checks. It's that you can't NOT run them.
 
 ```yaml
 # .github/workflows/ci.yml
@@ -294,117 +491,182 @@ jobs:
         run: uv run ruff check .
 ```
 
----
+This config does two things.
 
-# Architecture
+First, a `test` job. It runs the full pipeline — install deps, ruff check, mypy, pytest — across Python 3.12 and 3.13 simultaneously using the matrix strategy. If one version fails, the other keeps running independently.
 
-LLMOps engineering follows a layered architecture principle, with each layer having its distinct responsibilities from client to backend infrastructure.
+Second, a `lint` job. It does format and lint checks, running in parallel with `test`. Parallel means you don't wait for tests to finish before seeing lint results — both run at once, the first to fail tells you first.
+
+Notice the `astral-sh/setup-uv@v4` action. It installs uv AND enables caching. Caching means subsequent CI runs don't re-download all dependency packages — the second run onwards is blazing fast.
+
+Also note the difference between `--all-packages` and `--only-package`. The test job needs all dependencies (including dev dependencies, since it runs pytest), so it uses `--all-packages`. The lint job only needs the project package itself, no dev deps — `--only-package` is faster.
+
+CI solves: an objective, un-bypassable check mechanism for code quality after every push. You don't run it? CI runs it for you. It fails? The PR can't be merged.
+
+What does CI NOT solve? It doesn't care if your code is well-designed. Your test coverage might be 100%, but the test cases themselves are garbage — everything mocked, testing nothing real. CI also doesn't care if your architecture is a dumpster fire. CI checks "does it pass," not "is it good."
+
+## Architecture layers — not for drawing pretty diagrams, but for drawing clear boundaries
+
+Everything so far has been about "how to write code." Now let's talk about "how to organize code."
+
+Beyond project structure and CI, an LLMOps project needs its code layered by responsibility. The clearer the boundaries between layers, the less you worry about one layer when you modify another.
+
+I use six layers, top to bottom:
 
 ```
 ┌─────────────────────────────────────────┐
-│  Client Layer                            │
-│  Web App / Mobile App / Mini Program     │
+│  Client Layer                           │
+│  Web App / Mobile App / Mini Programs / │
+│  Open API                               │
 └──────────────────┬──────────────────────┘
                    │ HTTP/gRPC
 ┌──────────────────▼──────────────────────┐
-│  Access Layer  API Gateway · CDN · LB    │
+│  Access Layer                           │
+│  API Gateway · CDN · Load Balancer      │
 └──────────────────┬──────────────────────┘
                    │
 ┌──────────────────▼──────────────────────┐
-│  Application Layer  Users · Auth · Biz   │
+│  Application Layer                      │
+│  User Module · Auth Module · Business   │
+│  Logic                                  │
 └──────────────────┬──────────────────────┘
                    │
 ┌──────────────────▼──────────────────────┐
-│  AI Capability Layer  LLM · Agent · RAG   │
+│  AI Capability Layer                    │
+│  LLM Calls · Agent · RAG · Embeddings   │
 └──────────────────┬──────────────────────┘
                    │
 ┌──────────────────▼──────────────────────┐
-│  Data Layer  PostgreSQL · Redis · Vector  │
+│  Data Layer                             │
+│  PostgreSQL · Redis · Vector Database   │
 └──────────────────┬──────────────────────┘
                    │
 ┌──────────────────▼──────────────────────┐
-│  Infrastructure Layer  Docker · K8s       │
+│  Infrastructure Layer                   │
+│  Docker · K8s · Linux                   │
 └─────────────────────────────────────────┘
 ```
 
-## 1. Client Layer
+For each layer, I'll tell you what it is, why it exists, and what it doesn't handle.
 
-- **Web App (Next.js)**: C-end AI interaction interface
-- **Admin Dashboard (In-house)**: B-end operations management (API Keys, usage, config, visual orchestration)
-- **Mobile App / Mini Program**: Mobile AI applications
-- **Open API (RESTful + GraphQL)**: Public API interfaces
+### Client Layer
 
-## 2. Access Layer
+What users see. Web app (I use Next.js for this), admin dashboard, mobile app, mini programs, plus the Open API.
 
-- **API Gateway (Kong/APISIX)**: Unified entry point, traffic governance
-- **CDN Acceleration**: Static content delivery, reduced latency
-- **Load Balancer (Envoy/LB)**: Request distribution, high availability
+The client layer only handles rendering and sending requests. It doesn't care what happens to requests on the backend. The frontend gets a 500 error — it should display a friendly error page, not dive into server logs.
 
-## 3. Application Layer
+**Why this layer?** If your AI capabilities are tightly coupled with your frontend, switching frontend frameworks means rewriting your entire system. The client layer's independence lets you use Next.js for web today, Swift for iOS tomorrow, and spin up a gRPC interface for partners the day after — the AI capability layer stays completely untouched.
 
-- **User Module**: User management, membership system
-- **Auth Module (RBAC + JWT)**: Permission control, security authentication
-- **Business Logic Module**: Specific business functionality
+**This layer does NOT handle:** authentication, data processing, model invocation. Requests pass through to the next layer.
 
-## 4. AI Capability Layer
+### Access Layer
 
-- **Multi-LLM Integration (OpenAI/Anthropic/Local)**: Unified LLM interface
-- **Agent Framework (LangChain/LangGraph)**: AI Agent development framework
-- **RAG Service**: Retrieval Augmented Generation
-- **Text Embedding Service**: Text vectorization
-- **Function Calling / Tool Integration**: Tool Calling, extended model capabilities
+API Gateway (Kong / APISIX), CDN, Load Balancer (Envoy). This layer is like the building's entrance and front desk — all requests enter through here.
 
-## 5. Data Layer
+What the API gateway does: rate limiting, authentication, logging, routing. If one of your endpoints suddenly gets hammered at 1000 requests per second, the gateway blocks it before it even reaches the application layer. Without a gateway, your FastAPI service could get killed by raw traffic.
 
-- **PostgreSQL 16+**: Structured data storage
-- **Redis 7+**: Caching, session management
-- **Vector Database (Milvus/Qdrant)**: Vector data storage
-- **Object Storage (MinIO/S3)**: File and object storage
+CDN accelerates static assets — your admin dashboard's frontend code, static HTML docs pages. These don't need to hit your server on every request; CDN edge nodes serve them directly.
 
-## 6. Infrastructure Layer
+**Why this layer?** You shouldn't be writing rate limiting and auth into every microservice's code. The access layer is the centralized handling point for cross-cutting concerns.
 
-- **Docker Containers**: Service containerization
-- **Kubernetes (K8s)**: Container orchestration, elastic scaling
-- **Linux Servers**: Base runtime environment
+**This layer does NOT handle:** business logic. The gateway doesn't know what prompt your AI should use today. It only ensures requests are correctly routed downstream.
 
----
+### Application Layer
 
-# Technology Stack
+User module, auth module (RBAC + JWT), business logic.
 
-## Python 3.12+
+This is where you'll write the most FastAPI code. User registration, login, API key management, usage tracking, permission checks — all here.
 
-As the primary language for LLMOps engineering, Python 3.12 provides better performance, type systems, and syntax support.
+**Why this layer?** Because AI capabilities serve the business, they ARE NOT the business itself. Your AI customer service system needs to verify the user's identity, fetch their conversation history, and determine whether they have permission to call GPT-4 or only GPT-3.5 — these are application logic concerns. They should never leak into the AI capability layer.
 
-## FastAPI (Async High-Performance API Framework)
+**This layer does NOT handle:** how to call an LLM, how to do RAG. It organizes user input and context, throws it to the next layer, gets the result back, returns it to the client.
 
-FastAPI is the top choice for modern Python web frameworks, built on Starlette and Pydantic:
+### AI Capability Layer
 
-- Native async support, high concurrency handling
-- Automatic OpenAPI documentation generation
-- Deep Pydantic v2 integration, powerful data validation
-- Dependency injection system, code modularity
+This is the heart of LLMOps. Multi-LLM integration (OpenAI / Anthropic / local models), Agent framework (LangChain / LangGraph), RAG service, text embeddings, function calling.
 
-## LangChain/LangGraph (AI Application Development Framework)
+**Why this layer?** Because models change. Today GPT-4, tomorrow Claude 3.5, the day after a locally fine-tuned Llama. If model invocation logic is scattered throughout the application layer's various services, switching models means rewriting half your system. The AI capability layer provides a unified LLM invocation interface. The application layer doesn't care which model is underneath — it only cares about "give input, get output."
 
-LangChain provides the standard toolkit for building LLM applications:
+**This layer does NOT handle:** who the user is, whether the user has permission, whether this request should be rate-limited. It only handles "given this prompt and context, return a result."
 
-- Chain: Combine multiple LLM calls
-- Agent: Self-directed AI agent
-- RAG: Retrieval Augmented Generation implementation
-- Memory: Conversation context management
+### Data Layer
 
-LangGraph focuses on building stateful, multi-step AI workflows.
+PostgreSQL, Redis, Vector Database (Milvus / Qdrant), Object Storage (MinIO / S3).
 
-## Pydantic v2 (Data Validation)
+**Why this layer?** Structured data goes to PostgreSQL (user tables, order tables). High-frequency read/write data goes to Redis (sessions, caches, rate-limit counters). Vector data goes to the vector database (embedding vector search). Files go to object storage (user-uploaded images, generated reports).
 
-Pydantic is the de facto standard for Python type validation:
+Mix them up? Not an option. You can't use PostgreSQL for embedding search — once data volume scales up, queries slow to the point where users think the system is down. You also can't use Redis for persistent data storage — Redis restarts once and you'll learn the meaning of despair.
 
-- Automatic data model validation
-- Automatic JSON Schema generation
-- Serialization and deserialization
-- Deep FastAPI integration
+**This layer does NOT handle:** the business meaning of data. The database only does CRUD. It doesn't know what a record means in business terms. That's the application layer's job.
 
-## SQLAlchemy 2.0 + asyncpg (Async ORM)
+### Infrastructure Layer
+
+Docker, Kubernetes, Linux servers.
+
+**Why this layer?** Because code that runs on your laptop doesn't necessarily run in production. Different OS versions, different Python versions, missing system-level dependencies — Docker packages the runtime environment into an image, and the gap between "it works on my machine" and "production is broken" vanishes.
+
+K8s handles container orchestration — auto-restart crashed services, auto-scale under traffic spikes, rolling updates with zero downtime.
+
+**This layer does NOT handle:** how application code is written. Docker won't make your RAG retrieval faster. K8s won't help you pick a model.
+
+### The essence of layering
+
+Layering isn't about making diagrams look pretty. It's about modifying one layer without touching the others. Swap models without touching business code. Swap databases without touching AI capabilities. Swap frontend frameworks without touching anything on the backend. Boundaries are the lifeblood of engineering.
+
+## Tech stack — every choice has a "why" behind it
+
+Now that the layers are clear, the technology choices for each layer become obvious.
+
+### Python 3.12+
+
+Python is the first language of the LLM ecosystem. The vast majority of LLM SDKs, tooling, and open-source model serving code is written in Python. Sure, you can call the OpenAI API from Go, but LangChain's Go version has less than one-tenth the features of the Python version.
+
+3.12 brings noticeable performance improvements over 3.11 — especially interpreter startup speed and f-string syntax. Plus, 3.12 has better type system support, pairing well with mypy.
+
+What Python doesn't solve: CPU-intensive tasks at high concurrency. If you need real-time video processing, Python is asking for pain — that's Go or Rust territory. But LLMOps is primarily IO-bound (waiting for model responses), not CPU-bound, so Python works.
+
+### FastAPI
+
+FastAPI is built on Starlette (ASGI framework) and Pydantic (data validation). It's one of the fastest Python web frameworks. Three selling points:
+
+1. Native async. Every request handler can be `async def`, non-blocking on the main thread. While waiting for the OpenAI API to respond, your server handles other requests simultaneously.
+
+2. Auto-generated API docs. Define a `create_user` function in your code, and FastAPI auto-generates Swagger UI and ReDoc documentation pages. No need to manually write OpenAPI schemas.
+
+3. Deep Pydantic v2 integration. Define a request body model, and parameter validation, type coercion, and JSON serialization are all automatic. Frontend sends `{"age": "25"}` (string) — Pydantic auto-converts to `{"age": 25}` (int). Frontend sends `{"age": "twenty-five"}`? 422 error returned directly, your business code never even executes.
+
+What FastAPI doesn't solve: frontend rendering (Jinja2 templates can't compete with Next.js, no matter how hard you try), long-lived connection communication (WebSocket is fine, but for streaming LLM output remember to use `StreamingResponse`).
+
+### LangChain / LangGraph
+
+LangChain isn't mandatory. You can directly call `openai.ChatCompletion.create()` if all you need is a simple LLM invocation.
+
+But when you need these capabilities, LangChain's value emerges:
+
+- Chaining multiple LLM calls into a pipeline (Chain)
+- Agent autonomous decision-making — the model determines whether to call a tool, which tool to call
+- Complete RAG workflow: document loading, chunking, vectorization, retrieval, generation
+- Conversation memory management
+
+LangGraph goes further — it lets you build stateful, multi-step AI workflows. Think of a customer service agent: first understand user intent, then query the order system, then invoke the LLM to generate a response. If any intermediate step fails, rollback and retry.
+
+What LangChain doesn't solve: whether your prompts are well-written. It helps organize prompt templates, but what goes inside the template is still on you. And don't expect LangChain to make your model smarter.
+
+### Pydantic v2
+
+Pydantic is the de facto standard for Python type validation. In LLMOps, its value shows up in several places:
+
+1. Environment variable management. Read your `.env` file, and Pydantic's `BaseSettings` validates types — is `OPENAI_API_KEY` a string? Is `MAX_TOKENS` a positive integer? Configuration errors caught at startup.
+
+2. API request/response validation. FastAPI's request bodies and responses are all Pydantic models. Invalid data never reaches your business code.
+
+3. LLM output structure extraction. You tell GPT-4 to return JSON, but you can't guarantee it actually returns valid JSON. Use Pydantic's `model_validate()` as a safety net — attempt regex fix on invalid output, fall back to defaults if that fails.
+
+What Pydantic doesn't handle: it validates "is the data structure correct," not "is the data content correct." It knows `age` should be `int`, but it doesn't know that `age: -5` makes no sense — that's your business validation logic.
+
+### SQLAlchemy 2.0 + asyncpg
+
+SQLAlchemy 2.0 supports native async, and with the asyncpg driver it can leverage FastAPI's async capabilities:
 
 ```python
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -418,41 +680,76 @@ class User(Base):
     email: Mapped[str] = mapped_column(unique=True)
 ```
 
-## Celery + Redis (Async Task Queue)
+See this code style? Looks familiar, right? Similar to Pydantic models. One pattern for data validation and database mapping — reduces context switching.
 
-Handle long-running AI tasks:
+What SQLAlchemy doesn't solve: database query performance optimization. It writes SQL for you, but the efficiency of that SQL still depends on your model design. Whether to add indexes, how to structure joins — that's all on you.
 
-- Task queuing and async execution
-- Scheduled task scheduling
-- Task retry and monitoring
-- Redis as message broker
+### Celery + Redis
 
-## Docker + K8s (Containerization and Orchestration)
+LLM calls can be slow. GPT-4 generating a 2000-word response might take 30 seconds. Making users wait 30 seconds in the frontend? They'll close your page.
 
-- Containerization: Consistent service delivery
-- Kubernetes: Elastic scaling, self-healing
-- Helm: Application packaging and deployment
+Celery pulls "waiting for the model response" out of the request thread: user sends a request, FastAPI immediately returns "task submitted," then a background Celery worker invokes the LLM, stores the result in Redis when done, and the frontend polls for the result.
 
-## Prometheus + Grafana (Observability)
+In Celery's architecture, Redis serves as both message broker (passing tasks between components) and result backend (storing results).
 
-- **Prometheus**: Metrics collection and storage
-- **Grafana**: Visualization dashboards
-- Key metrics: QPS, latency, error rate, GPU utilization
+What Celery doesn't solve: task priority and complex orchestration. If you need "call the embedding service, then call the LLM, if LLM times out fall back to cached results" — you can do this with Celery, but it's painful. At that point you should look at Temporal or manage the state yourself with LangGraph.
 
-## GitHub Actions / ArgoCD (CICD/CD)
+### Docker + K8s
 
-- **CI**: Code checking, testing, image building
-- **CD**: Auto-deploy to staging/production
-- **ArgoCD**: GitOps continuous deployment
+Docker solves environment consistency. Your FastAPI service, Celery worker, PostgreSQL, Redis — each in its own container, and `docker-compose` runs the entire local environment.
 
----
+K8s solves operational problems. Service crashes? Auto-restart. CPU over 80%? Auto-scale. Rolling updates with zero downtime. Ingress manages domains and TLS for all services uniformly.
 
-# Summary
+Docker doesn't care whether your container's code is correct. K8s doesn't care whether your service logic has bugs. They only manage "runtime environment" and "resource orchestration."
 
-A mature Python LLMOps project requires standardization from the very beginning of environment configuration. Using `uv` as the package manager, Ruff + mypy for code quality, and pre-commit for pre-commit checks, together with a complete layered architecture design, ensures project maintainability and scalability.
+### Prometheus + Grafana
 
-VSCode combined with Pylance + Ruff + pytest provides an excellent development experience. GitHub Actions CI ensures every code commit goes through automated checks, guaranteeing code quality.
+In LLMOps, the metrics you most need to track:
 
-From the client layer to the infrastructure layer, each layer has its unique responsibilities and technology choices. Next.js builds the frontend interaction interface, FastAPI provides high-performance APIs, LangChain/LangGraph encapsulates AI capabilities, PostgreSQL + Redis + vector databases provide diversified storage, and Docker + K8s ensure high availability and elastic scaling of the system.
+- **QPS** (queries per second) — know how much traffic your system is handling
+- **Latency** — P50 / P95 / P99 — how long most users wait, how long the worst-off users wait
+- **Error rate** — 4xx / 5xx ratio — is the system healthy
+- **Token consumption** — how many tokens each LLM call costs — directly tied to your bill
+- **GPU utilization** — if you're self-hosting models
 
-These components together form a complete LLMOps engineering system, providing solid guarantees for the stable output of AI capabilities.
+Prometheus collects these metrics. Grafana turns them into dashboards you can read at a glance.
+
+Observability tools don't solve: you know there's a problem, but you don't know how to fix it. An alert tells you "P99 latency suddenly jumped from 2 seconds to 30 seconds" — you still need to investigate which component is responsible. Is the model responding slower? Is the database connection pool saturated? Did a downstream service die? Observability helps you locate the problem, but it won't think for you.
+
+## The cost of engineering discipline
+
+You might be thinking this is way too heavy. And honestly? It is heavy.
+
+Installing all these tools, configuring all these files, writing CI, layering, selecting the tech stack — does a "hello world" level LLM call really need all of this?
+
+Not necessarily. If you're just writing a script for yourself to play around with, `pip install openai` and a hundred lines of code for a CLI tool — completely fine. Don't over-engineer. That's a different kind of hole to fall into.
+
+But if you're building something for a team, something that needs long-term maintenance, something users are paying real money for — then every piece you set up now will save your ass someday.
+
+Every time you push code and CI tells you the types are wrong — that's a production incident that got blocked at the door.
+
+Every time a new teammate clones the repo, opens VSCode, and starts writing code immediately without configuring anything — that's the payoff for the time you spent on those settings.
+
+Every time you need to switch models, databases, or deployment strategies, and the layered architecture lets you change only one layer — that's why you drew those boundaries in the first place.
+
+## A judgment framework for you
+
+I'm wrapping up. I'm not going to summarize — you can scroll back to the table of contents for that.
+
+Instead, here are some questions. When you're setting up your own LLMOps project, run through these:
+
+1. **Can anyone spin up your project with a single command?** After `git clone`, how many steps to get it running? More than three is too many.
+
+2. **Is code quality checking automatic or based on willpower?** If it relies on willpower, do you honestly believe nobody will ever skip it when a deadline is breathing down their neck?
+
+3. **How many layers of code do you need to change to switch models?** If switching models requires touching business logic code, your AI capability layer boundaries aren't clear enough.
+
+4. **Six months from now, can you read your commit history?** Open `git log`. If it's all "fix" and "update," commitizen is worth the ten minutes it takes to install.
+
+5. **When someone opens a PR, do you have to manually review formatting and types?** If yes, your CI is missing ruff and mypy.
+
+6. **Is the cost of this engineering discipline worth it?** If your project's lifespan is under a month, don't build all this. If your project is going to run for a year or more, not building it now will hurt worse later.
+
+Problems? Add more tools. No problems? Go write code.
+
+The end goal of engineering isn't making things more and more complex. It's staying calm in the face of complexity.

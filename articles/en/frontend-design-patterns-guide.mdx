@@ -2,114 +2,144 @@
 title: 'Comprehensive Guide to Design Patterns in Frontend Engineering'
 summary: 'A dive into SOLID principles and the application of GoF design patterns in frontend development. Covers Creational (Factory, Singleton, Prototype), Structural (Decorator, Proxy, Adapter, Facade), and Behavioral (Observer, Pub-Sub, Iterator, Strategy) patterns, featuring Vue/React practical code and Mermaid architectural diagrams.'
 category: 'Frontend'
-tags: ['Vue', 'React']
+tags: ['Design Patterns', 'SOLID', 'Vue', 'React', 'TypeScript']
 author: 'Max Zhang'
-date: '2026-03-23'
+date: '2022-12-18'
 ---
 
-> A beginner-friendly handbook for understanding and applying design patterns in real-world projects
+For a while, the first thing I did every morning was open the 800-line `user-profile.tsx`.
 
-Ever read a bunch of articles about design patterns, felt like you understood them, then forgot how to actually use them a few days later? Or maybe you had a gut feeling that "this code could use some pattern" but couldn't quite figure out which one?
+Eight hundred lines. One component. It had API calls, state management, form validation, analytics tracking, permission checks, date formatting, avatar cropping—you name it, it was in there. Every time a product manager walked over and said "add recent browsing history," or a designer said "make the avatar rounded," my stomach dropped. I knew I'd have to knead that entire blob from top to bottom again.
 
-Don't worry—this article is written for you. We're not going for the goal of memorizing all 23 patterns. Instead, we want you to really understand: **when to use which pattern, when NOT to use them, and how to actually apply them in your own projects**.
+I'd read plenty of articles about design patterns. Honestly? Read them, forgot them. The UML diagrams were pretty. The C++ examples were standard. But I had no goddamn idea how to bring any of it back to my React project. What did the factory pattern have to do with me? Wasn't a singleton just a global variable? What the hell was the difference between observer and pub/sub?
 
----
+Then one Friday night.
 
-## First Things First: What Are Design Patterns?
+I was refactoring that 800-line component for the Nth time, cursing at my screen. Around the third hour, I just stopped. Stared at the monitor for a long time. What I was doing—splitting out that request hook—wasn't that the single responsibility principle? The pattern behind that extracted hook—wasn't that the factory pattern? That validation logic, written another way—wasn't that the strategy pattern?
 
-Let me use an analogy. Say you're renovating a house—how to arrange the kitchen, where to run the bathroom pipes, where to put the electrical outlets. These are all problems that previous generations have already figured out solutions for. You don't need to reinvent the wheel.
+Shit.
 
-That's exactly what design patterns are. They're **battle-tested solutions that programmers have developed over years of practice**, specifically designed to tackle common problems that keep showing up in software development.
+These design patterns were describing the exact garbage code I was writing.
 
-Why bother learning design patterns?
+They just used names I could never remember.
 
-- **Easier to maintain code**: When someone else takes over your code, they won't be completely lost
-- **Handle changing requirements**: Adding new features doesn't mean rewriting old code
-- **Avoid common pitfalls**: Many mistakes have already been made and solved by others
-
-But here's one thing to keep in mind: **patterns are a tool, not a goal in themselves.** Forcing patterns into situations where they don't fit will only make simple things complicated.
+That was when it hit me: design patterns aren't something you memorize. They're something you suddenly recognize when you're standing in front of a pile of crap.
 
 ---
 
-## 1. The Foundation: SOLID Principles
+## Step Back for a Second
 
-Before we dive into specific patterns, there are some fundamental principles you need to know. Think of them as the "inner energy" of martial arts—once you grasp them, understanding design patterns becomes much faster.
+Let me give you an analogy. You're renovating a house. How to lay out the kitchen, where the plumbing goes, how far apart the outlets should be—you don't need to design any of this from scratch. Generations of builders already figured it out. You just follow the playbook.
 
-### OCP: Open/Closed Principle
+That's what design patterns are.
 
-**Open for extension, closed for modification.**
+They're battle-tested recipes that programmers have distilled over decades—"do it this way, and you probably won't screw it up."
 
-Sounds confusing? Let me tell you a story.
+**But they're not rules.**
 
-You run a burger shop, initially only selling beef burgers. Later, customers ask for chicken burgers and pork burgers. What do you do?
+This is the most critical distinction. Rules must be followed. Patterns don't have to be. Your code runs fine without the factory pattern. The sky doesn't fall if you skip the singleton. A design pattern is just someone saying—"Hey, I've been here before. Doing it this way felt right. Want to give it a shot?"
 
-**Wrong approach**: Modify the burger-making machine to handle chicken and pork. The problem? Every time you add a new type, you have to modify the machine. What if you accidentally break the beef burger function?
+Understand this, and everything else follows.
 
-**Right approach**: The machine has a swappable "meat patty" interface. Just swap in different patties for different burgers, no need to touch the machine itself.
+---
 
-In frontend code, this principle looks like this:
+## SOLID: Five Principles You've Probably Heard and Never Quite Understood
+
+Before we dive into specific patterns, these five are unavoidable. Think of them as fundamentals—the specific moves vary, but the underlying principles are the same.
+
+### OCP: The Open/Closed Principle
+
+My first real encounter with OCP was a button component.
+
+In my feral coding days, buttons looked like this:
 
 ```typescript
-// Wrong: Hardcoded logic for button types
 function Button({ type, children }) {
   if (type === 'primary') {
-    return <button className="bg-blue-500">{children}</button>
+    return <button className="bg-blue-500 rounded px-4">{children}</button>
   } else if (type === 'danger') {
-    return <button className="bg-red-500">{children}</button>
+    return <button className="bg-red-500 rounded px-4">{children}</button>
+  } else if (type === 'ghost') {
+    return <button className="bg-transparent border rounded px-4">{children}</button>
   }
-  // Have to change this every time we add a new type...
+  return <button className="bg-gray-500 rounded px-4">{children}</button>
 }
+```
 
-// Right: Extensible interface
-function Button({ variant = 'default', children, ...props }) {
+Every new color meant a new `else if`. A designer had a whim one day—"add a `success` green button"—and you'd open this function, jam in more code. Nested braces upon nested braces. And if you slipped while tweaking `primary` styles, `danger` could break too.
+
+This is called being "open for modification."
+
+OCP says the opposite: **open for extension, closed for modification.** In human language—when adding a feature, add new code, don't touch old code.
+
+Here's what it looks like fixed:
+
+```typescript
+function Button({ variant = 'default', className = '', children, ...props }) {
+  const base = 'px-4 py-2 rounded font-medium'
+  const variants = {
+    primary: 'bg-blue-500 text-white',
+    danger: 'bg-red-500 text-white',
+    ghost: 'bg-transparent border border-gray-300',
+    default: 'bg-gray-100 text-gray-800',
+  }
   return (
-    <button
-      className={`btn btn-${variant}`}
-      {...props}
-    >
+    <button className={`${base} ${variants[variant] || variants.default} ${className}`} {...props}>
       {children}
     </button>
   )
 }
 ```
 
-Vue's `slot` mechanism is a great example: you don't need to modify the component code, just put whatever content you want into the slot.
+Now when a designer wants a `success` green button, you add one line to the `variants` object: `success: 'bg-green-500 text-white'`. Old code? Untouched.
 
-### SRP: Single Responsibility Principle
+**Analogy:** A burger joint cook. The boss says "add chicken burgers to the menu." What does he do? The dumb move is taking apart the beef burger machine and installing a "chicken-specific tube"—then next month, pork burgers require dismantling it again. The smart move: the machine has a "swap patty" slot. New meat, same machine.
 
-**Each thing should do one job and do it well.**
+Vue's `slot` mechanism is classic OCP thinking. You can stuff anything into a component's slot—the component itself never changes.
 
-This one's pretty straightforward. Just like you wouldn't make one person do the job of a chef, a waiter, AND a cashier at the same time, your code should also have clear responsibilities.
+**When NOT to use it:** If your button only has two colors and no product manager will request a third in the next three years—if-else is fine. Abstracting because "maybe we'll extend later" is exactly what YAGNI warns us against.
 
-Here's how this looks in real frontend projects:
+---
+
+### SRP: The Single Responsibility Principle
+
+Easiest to understand, hardest to do.
+
+Simple version: **One thing does one job.**
+
+You walk into a tiny noodle shop. The owner kneads dough, stir-fries, takes money, and wipes tables—and the food tastes inconsistent and the shop can barely stay open. A real restaurant? The chef handles the kitchen, waiters take orders, the cashier manages the till. Clear roles.
+
+Back to our 800-line `user-profile.tsx`:
 
 ```typescript
-// Wrong: One component doing three things
+// A single function doing three people's jobs
 function UserProfile({ userId }) {
   const [user, setUser] = useState(null)
   const [posts, setPosts] = useState([])
 
   useEffect(() => {
-    // Fetch user data
     fetchUser(userId).then(setUser)
-    // Fetch posts
     fetchPosts(userId).then(setPosts)
-    // Send analytics
-    trackView('profile', userId)
+    trackPageView('profile', userId)  // Analytics tangled in here too
   }, [userId])
 
   return (
     <div>
-      <UserInfo user={user} />
+      <Avatar src={user?.avatar} />
+      <h1>{user?.name}</h1>
       <PostList posts={posts} />
     </div>
   )
 }
+```
 
-// Right: Split into three focused parts
+What looks like "fetch user data and render" to one person is three jobs under SRP: fetching the user, fetching posts, rendering UI. Change the analytics logic and accidentally break a request parameter—that's collateral damage from muddled responsibilities.
 
-// 1. Hook for fetching user data
-function useUser(userId) {
+After splitting:
+
+```typescript
+// Hook does only one thing: fetch user
+function useFetchUser(userId: string) {
   const [user, setUser] = useState(null)
   useEffect(() => {
     fetchUser(userId).then(setUser)
@@ -117,799 +147,888 @@ function useUser(userId) {
   return user
 }
 
-// 2. Hook for sending analytics
-function useTrackView(pageName, id) {
+// Another hook only handles analytics
+function useTrackPageView(event: string, userId: string) {
   useEffect(() => {
-    trackView(pageName, id)
-  }, [pageName, id])
+    trackPageView(event, userId)
+  }, [event, userId])
 }
 
-// 3. Pure UI component
-function UserProfile({ userId }) {
-  const user = useUser(userId)
-  useTrackView('profile', userId)
-
-  return <UserInfo user={user} />
+// Component only renders
+function UserProfile({ userId }: { userId: string }) {
+  const user = useFetchUser(userId)
+  useTrackPageView('profile', userId)
+  return <UserProfileUI user={user} />
 }
 ```
 
-After splitting things up, each piece is much easier to test and reuse.
+Each piece worries about its own thing. Change analytics? Go to the analytics hook. No risk of breaking data fetching.
 
-### LSP: Liskov Substitution Principle
+**When NOT to use it:** If your component is 30 lines, splitting it into three files adds cognitive overhead—don't. SRP is a guardrail against chaos, not a commandment demanding atomization.
 
-**Subclasses can extend what parents do, but they can't change the original behavior.**
+---
 
-Simply put: **a child can be more capable than its parent, but it must still follow the rules.**
+### LSP: The Liskov Substitution Principle
 
-Here's a frontend-friendly example:
+The name itself is the most intimidating part. First time I heard "Liskov substitution," I assumed it was some mathematical theorem.
+
+But it says something dead simple: **a child object should be able to replace its parent without screwing things up.**
+
+The classic example:
 
 ```typescript
-// Parent class: Bird
 class Bird {
-  fly() {
-    return 'Bird flying in the sky'
+  fly(): string {
+    return 'I flew away'
   }
 }
 
-// Correct subclass: Penguin (can't fly, but has its own way)
+class Duck extends Bird {
+  fly(): string {
+    return 'Flew away quacking' // Extended fly, but kept the contract
+  }
+}
+```
+
+A duck is a bird, it can fly—fine. What about a penguin?
+
+```typescript
 class Penguin extends Bird {
-  swim() {
-    return 'Penguin swimming in water'
-  }
-}
-
-// Wrong subclass: Changes the parent's behavior
-class DeadBird extends Bird {
-  fly() {
-    throw new Error("I'm dead, can't fly") // This violates LSP
+  fly(): string {
+    throw new Error('I can't fucking fly!')  // Breaks the parent's contract
   }
 }
 ```
 
-In TypeScript, this principle reminds us: when using inheritance, subclasses must be able to fully replace their parent class. If using the subclass causes errors where the parent wouldn't, something's wrong.
+The problem isn't that penguins can't fly. It's that **you shoved something that can't fly into an inheritance chain that promises flying.** Callers take any `Bird` subclass and call `.fly()` assuming it'll work. Then it blows up.
 
-### ISP: Interface Segregation Principle
-
-**Don't force people to use things they don't need.**
-
-Think of it this way: you go to a restaurant, and the menu says "You must order the combo meal, no single items allowed"—that's the opposite of interface segregation.
-
-In frontend code, this commonly shows up as bloated props:
+The fix: pull "can't fly" out of the chain.
 
 ```typescript
-// Wrong: Passing props the component doesn't even use
-function UserCard({ name, age, email, phone, address, avatar, bio, ...extras }) {
-  return <div>{name}</div>
+interface Animal {
+  move(): string
 }
 
-// When calling it
-<UserCard
-  name="John"
-  age={25}
-  email="john@example.com" // This component doesn't need these
-  phone="13800138000"
-  address="Beijing"
-  avatar="xxx.jpg"
-  bio="This is my bio"
-/>
+class Duck implements Animal {
+  move(): string {
+    return 'Flew away'
+  }
+}
 
-// Right: Split interfaces by what's actually needed
-function BasicInfo({ name, avatar }) { return <div>{name}</div> }
-function ContactInfo({ email, phone }) { return <div>{email}</div> }
-function FullProfile({ name, email, phone, ... }) { /* ... */ }
+class Penguin implements Animal {
+  move(): string {
+    return 'Slid away on ice'
+  }
+}
 ```
 
-### DIP: Dependency Inversion Principle
+LSP's real message: **a subclass can extend its parent's capabilities, but it cannot break the parent's existing contract.** Your dad promised "my son can drive." If you're blind, that's not your fault—your dad shouldn't have made that promise. Whoever put the wrong thing in the wrong chain violated LSP.
 
-**Program to interfaces, depend on abstractions rather than concrete implementations.**
+In frontend frameworks, class inheritance is rare (everyone uses composition now), but this principle shows up everywhere in type systems. If you define a `FormField` interface saying every field must have a `validate()` method, then every class implementing `FormField` must return a meaningful result from `validate()`—never throw.
 
-This sounds fancy, let me give you an example.
+**When NOT to use it:** Frontend barely uses class inheritance. If you're not using inheritance, this principle barely touches you. Don't force classes just because you learned LSP.
 
-You're assembling a computer. The CPU, RAM, and hard drive all have fixed interfaces (abstractions). It doesn't matter if you buy Intel or AMD—as long as the interface matches, it works.
+---
 
-In frontend projects, this shows up as dependency injection:
+### ISP: The Interface Segregation Principle
+
+"Don't force clients to depend on things they don't need."
+
+Ever ordered delivery and been stuck with a combo meal—a rice bowl forcibly bundled with soup, a side dish, and milk tea—when all you wanted was the rice?
+
+The `UserCard` component is exactly this:
 
 ```typescript
-// Wrong: Directly depending on concrete implementation
+interface UserCardProps {
+  name: string
+  avatar: string
+  email: string
+  phone: string
+  address: string // List page doesn't need this
+  bio: string // List page doesn't need this
+  lastLoginAt: string // List page doesn't need this
+  permissions: string[] // List page doesn't need this
+}
+```
+
+A simple user list page only needs `name` and `avatar`. But you have to work with this bloated Props interface—unless you write a separate one.
+
+ISP says: **split into small interfaces, take what you need.**
+
+```typescript
+interface UserBasic {
+  name: string
+  avatar: string
+}
+
+interface UserContact {
+  email: string
+  phone: string
+  address: string
+}
+
+interface UserProfile extends UserBasic, UserContact {
+  bio: string
+  lastLoginAt: string
+  permissions: string[]
+}
+```
+
+List pages use `UserBasic`. Detail pages use `UserProfile`. Nobody is force-fed anything.
+
+**Analogy:** Buying a tool set. A good set has each tool standalone—buy what you need. A bad set is a plastic shell with fifteen screwdriver heads crammed inside—you have to buy the whole set for one head.
+
+GraphQL's field-level queries are this principle applied to databases—the client says exactly what fields it wants, the server returns precisely those.
+
+**When NOT to use it:** If your component only has one consumer, splitting Props interfaces is just self-indulgence. ISP only feels good when you have three or more consumers—one consumer, no isolation needed.
+
+---
+
+### DIP: The Dependency Inversion Principle
+
+This one took me a long time to get.
+
+It's called "dependency inversion," but just read it as **"depend on abstractions, not concretions."**
+
+```typescript
+// Hardcoded to MySQL
 class UserService {
-  private db = new MySQLDatabase() // Hardcoded
+  private db = new MySQLDatabase()
 
-  getUser(id) {
-    return this.db.query(...)
+  getUser(id: string) {
+    return this.db.query(`SELECT * FROM users WHERE id = ${id}`)
   }
 }
+```
 
-// Right: Depend on abstract interface
+What's wrong? `UserService` is welded to `MySQLDatabase`. The day you want to switch to PostgreSQL, or use an in-memory database for tests—sorry, you're cracking open `UserService` to rewrite it.
+
+DIP says: **`UserService` shouldn't depend on `MySQLDatabase`—both should depend on an abstract `Database` interface.**
+
+```typescript
 interface Database {
   query(sql: string): any
 }
 
-class UserService {
-  constructor(private db: Database) {} // Any database works
+class MySQLDatabase implements Database {
+  query(sql: string) {
+    /* MySQL implementation */
+  }
+}
 
-  getUser(id) {
+class PostgresDatabase implements Database {
+  query(sql: string) {
+    /* PostgreSQL implementation */
+  }
+}
+
+class UserService {
+  constructor(private db: Database) {} // Depends on interface, not implementation
+
+  getUser(id: string) {
     return this.db.query(`SELECT * FROM users WHERE id = ${id}`)
   }
 }
 
-// Switching databases doesn't require changing UserService
-const mysqlDb = new MySQLDatabase()
-const userService = new UserService(mysqlDb)
-
-// Or
-const postgresDb = new PostgreSQLDatabase()
-const userService2 = new UserService(postgresDb)
+// Test with mock, production with MySQL—swap databases like swapping plugs
+const service = new UserService(new MySQLDatabase())
 ```
 
-Angular's service injection heavily uses this principle.
+**Analogy:** Your wall outlet. An appliance doesn't care whether the electricity behind the outlet comes from coal or hydro—it only cares about "give me 220V." The `Database` interface is the outlet spec; `MySQLDatabase` and `PostgresDatabase` are coal and hydro plants. The appliance (`UserService`) depends on the outlet spec (`Database` interface), not the power plant type.
 
-### Bonus: Unix Philosophy
+In frontend, DIP's most common use case: your business logic hooks don't depend directly on axios—they depend on an abstract `HttpClient` interface. Switch between fetch, axios, or a built-in request method—you only change the injection point, never the business logic.
 
-You can borrow some ideas from Unix when writing frontend code:
-
-1. **Small is beautiful**: One function, one component, does one thing
-2. **Each tool does one thing**: Don't make a single function handle too many responsibilities
-3. **Pipes and filters**: The `compose` and `pipe` functions in functional programming embody this idea
-
-```typescript
-// Function composition via piping
-const pipe =
-  (...fns) =>
-  (x) =>
-    fns.reduce((v, f) => f(v), x)
-
-const processUser = pipe(
-  validateInput, // Step 1: Validate input
-  normalizeData, // Step 2: Normalize data
-  saveToDatabase, // Step 3: Save
-  sendNotification, // Step 4: Notify
-)
-
-processUser(rawData)
-```
+**When NOT to use it:** Your backend hasn't switched databases in three years, and there's no plan to. Abstraction isn't free—every layer of abstraction adds complexity. Only when you genuinely face "we might need to swap" does abstraction start paying for itself.
 
 ---
 
-## 2. Creational Patterns: Where Objects Are Born
+## Creational: Who Creates, and How
 
-Creational patterns solve the problem of **how objects get created**. Why care? Because how you create objects affects your code's flexibility and maintainability.
+Creational patterns center on one question: **how do objects get produced, and how do you keep the production process under control?**
 
-### 2.1 Factory Pattern
+### Factory Pattern
 
-**When to use**: When object creation is complex, or you need to create different types of objects based on conditions.
+You walk into McDonald's and say "one Big Mac meal." The cashier hands you a complete set—burger, fries, Coke, all packaged. You don't care which patty went in, how long the fries were fried, or how the syrup ratio was calibrated.
 
-**Real-world analogy**: Going to McDonald's—you don't make the burger yourself. You tell the cashier what you want, and they make it for you. The cashier is a "factory."
+That's the factory pattern.
 
-#### Practical Example A: jQuery's `$`
+**The `new` operator is you walking into the kitchen and frying your own fries. A factory is you telling the counter one sentence and getting the finished product handed to you.**
 
-Remember jQuery? The `$('div')` syntax is powered by the factory pattern:
+In React, `React.createElement` is a classic factory:
 
 ```typescript
-class jQuery {
-  constructor(selector: string) {
-    // Complex DOM query logic
-    const dom = Array.from(document.querySelectorAll(selector))
-    for (let i = 0; i < dom.length; i++) {
-      this[i] = dom[i]
+// Without factory—you manually new, worrying about parameters
+const button = new VNode('button', { className: 'btn' }, ['Click me'])
+
+// With factory—one call, done
+const button = React.createElement('button', { className: 'btn' }, 'Click me')
+```
+
+jQuery's `$()` is also a factory. You pass a selector string, it returns a jQuery object—the entire creation process is wrapped inside `$()`.
+
+The most common real-world scenario: creating different form fields based on type.
+
+```typescript
+interface FormField {
+  type: 'text' | 'select' | 'datepicker'
+  label: string
+  value: any
+}
+
+class FormFieldFactory {
+  static create(field: FormField) {
+    switch (field.type) {
+      case 'text':
+        return new TextField(field)
+      case 'select':
+        return new SelectField(field)
+      case 'datepicker':
+        return new DatePickerField(field)
+      default:
+        throw new Error(`Unknown field type: ${field.type}`)
     }
-    this.length = dom.length
   }
-
-  addClass(name: string) {
-    // Logic for adding classes
-  }
-
-  // ... many more methods
 }
-
-// Factory function: Users don't need to know about jQuery class
-window.$ = function (selector: string) {
-  return new jQuery(selector)
-}
-
-// Usage
-$('div').addClass('active')
 ```
 
-Users only need to know that `$()` helps them query the DOM—they don't need to know how the underlying `jQuery` class works.
+The backend returns JSON describing what fields to render. The frontend factory handles them all uniformly. Add a new field type? One line in the factory. Nothing else touched.
 
-#### Practical Example B: React's `createElement`
-
-Why can React use JSX to write UI? Because of the `createElement` factory function:
-
-```typescript
-// This is how React converts JSX to objects internally
-function createElement(type, props, ...children) {
-  return {
-    type, // Tag name like 'button', or a component
-    props: {
-      ...props,
-      children: children.map((c) => (typeof c === 'object' ? c : { type: 'TEXT_ELEMENT', props: { nodeValue: c } })),
-    },
-  }
-}
-
-// <button className="btn">Click me</button>
-// Becomes:
-createElement('button', { className: 'btn' }, 'Click me')
-```
-
-#### When NOT to use
-
-If your object creation is simple, like just `new Something()`, don't overcomplicate things. The factory pattern solves complex problems.
-
-### 2.2 Singleton Pattern
-
-**When to use**: When you only need one instance of something, like global state management, modal containers, or global config.
-
-**Real-world analogy**: A country can only have one president (under normal circumstances), a company only has one CEO.
-
-#### Practical Example: Global Modal Container
-
-Modal dialogs on a page don't need a new container every time:
-
-```typescript
-class Modal {
-  // Key: Static property, only one exists at class level
-  private static instance: Modal
-  private container: HTMLElement
-
-  // Key: Private constructor, can't use new Modal()
-  private constructor() {
-    this.container = document.createElement('div')
-    this.container.id = 'global-modal'
-    document.body.appendChild(this.container)
-  }
-
-  // Key: Get the single instance via getInstance
-  public static getInstance(): Modal {
-    if (!Modal.instance) {
-      Modal.instance = new Modal()
-    }
-    return Modal.instance
-  }
-
-  show(content: string) {
-    this.container.innerHTML = content
-    this.container.style.display = 'block'
-  }
-
-  hide() {
-    this.container.style.display = 'none'
-  }
-}
-
-// Usage: No matter how many times you call it, you get the same instance
-const modal1 = Modal.getInstance()
-const modal2 = Modal.getInstance()
-console.log(modal1 === modal2) // true
-```
-
-Vuex/Pinia stores are applications of the singleton pattern, ensuring a single source of truth for global state.
-
-#### When NOT to use
-
-- When you need multiple instances
-- When instances need to be independent from each other
-- When singletons make testing difficult
-
-### 2.3 Prototype Pattern
-
-**When to use**: When you need to create lots of similar objects, but each only differs in a few properties.
-
-**Real-world analogy**: Blueprints for building houses—the prototype is the same, but you can change colors, materials, etc. as needed.
-
-#### Practical Example: `Object.create` and Property Descriptors
-
-JavaScript's prototype chain is itself an application of the prototype pattern:
-
-```typescript
-// Define a base template
-const baseUser = {
-  getRole() {
-    return this.role
-  },
-  introduce() {
-    return `I'm ${this.name}`
-  },
-}
-
-// Create new objects with baseUser as the prototype
-const admin = Object.create(baseUser, {
-  role: {
-    value: 'ADMIN',
-    writable: false, // Cannot be modified
-  },
-  permissions: {
-    value: ['READ', 'WRITE', 'DELETE'],
-    writable: false,
-  },
-  name: { value: 'Admin User' },
-})
-
-const normalUser = Object.create(baseUser, {
-  role: { value: 'USER' },
-  name: { value: 'Normal User' },
-})
-
-console.log(admin.getRole()) // ADMIN
-console.log(admin.introduce()) // I'm Admin User
-console.log(normalUser.getRole()) // USER
-```
-
-Vue's `data` option is based on the prototype pattern: all instances share the same prototype methods but have their own data properties.
+**When NOT to use it:** If you only have two field types, a two-line `switch` is fine—no separate factory class needed. The factory's value lies in "the creation logic is complex enough to warrant encapsulation."
 
 ---
 
-## 3. Structural Patterns: The Art of Organizing Objects
+### Singleton Pattern
 
-Structural patterns focus on **how things get assembled together**, like building with LEGO blocks—how you combine them determines the final result.
+A country has one president at a time.
 
-### 3.1 Proxy Pattern
+Not that the president can't change—just that "there's only one person sitting in that seat at any given moment."
 
-**When to use**: When you need to do something extra before or after accessing an object, like permission checks, caching, or logging.
-
-**Real-world analogy**: You go to visit the CEO at a company. The receptionist stops you first and asks "Do you have an appointment?" The receptionist is acting as a proxy.
-
-#### Practical Example: Vue3 Reactivity
-
-Vue3's reactivity system is built on Proxy:
+A singleton is your program's president.
 
 ```typescript
-function reactive<T extends object>(target: T): T {
-  return new Proxy(target, {
-    get(target, key, receiver) {
-      const res = Reflect.get(target, key, receiver)
+class ModalManager {
+  private static instance: ModalManager
+  private modalStack: string[] = []
 
-      // Auto-log when accessing properties
-      console.log(`Reading ${String(key)}`)
+  private constructor() {} // Note: private constructor
 
-      // If it's a function, bind it back to the original object
-      if (typeof res === 'function') {
-        return res.bind(target)
-      }
+  static getInstance(): ModalManager {
+    if (!ModalManager.instance) {
+      ModalManager.instance = new ModalManager()
+    }
+    return ModalManager.instance
+  }
 
-      // If it's an object, recursively proxy it (deep reactivity)
-      return typeof res === 'object' && res !== null ? reactive(res) : res
-    },
+  open(id: string) {
+    this.modalStack.push(id)
+  }
 
-    set(target, key, value, receiver) {
-      console.log(`Setting ${String(key)} = ${value}`)
-      return Reflect.set(target, key, value, receiver)
-    },
-  })
+  close() {
+    this.modalStack.pop()
+  }
+
+  get top(): string | undefined {
+    return this.modalStack[this.modalStack.length - 1]
+  }
 }
 
-// Usage
-const state = reactive({ count: 0 })
-state.count++ // Auto-logs: "Reading count", "Setting count = 1"
+// Everywhere in the app gets the same instance
+const manager = ModalManager.getInstance()
+manager.open('confirm-dialog')
 ```
 
-That's why modifying data in Vue3 automatically updates the view—Proxy does the "intercepting" work for you.
+The scenario is clear: global state management, modal managers, log collectors—these things only need one instance in a program.
 
-#### Practical Example: Image Lazy Loading
+Many people hear "singleton" and think "global variable." What's the difference? A singleton has a `getInstance` gate—whenever you fetch it, it guarantees only one exists. A global variable is a public square—anyone can drop something there, anyone can step on it.
+
+**When NOT to use it:** Singletons are convenient, but they couple all your code to the same state. They're a nightmare for testing—you can't reset a singleton's state between tests. If your "global need" could actually be solved with Context or provide/inject, skip the singleton.
+
+---
+
+### Prototype Pattern
+
+You have a precise architectural blueprint. You want to build 100 identical houses—not redraw the blueprint 100 times, but take this one blueprint and clone it 100 times.
 
 ```typescript
-function lazyLoadImage(img: HTMLImageElement, realSrc: string) {
-  return new Proxy(img, {
-    get(target, prop) {
-      if (prop === 'src' && !target.dataset.loaded) {
-        // Return placeholder
-        return target.dataset.placeholder || ''
+const baseConfig = {
+  api: {
+    baseURL: 'https://api.example.com',
+    timeout: 5000,
+    headers: { 'Content-Type': 'application/json' },
+  },
+  auth: {
+    tokenKey: 'access_token',
+    refreshEndpoint: '/auth/refresh',
+  },
+}
+
+// Clone with tweaks
+function createAppConfig(overrides: Partial<typeof baseConfig> = {}) {
+  return deepMerge(baseConfig, overrides)
+}
+
+const testConfig = createAppConfig({
+  api: { baseURL: 'https://test-api.example.com' },
+})
+```
+
+JavaScript's `Object.create()` is native prototype pattern support—the new object takes the old object as its prototype chain.
+
+```typescript
+const animal = {
+  speak() {
+    return `${this.name} makes a sound`
+  },
+}
+
+const dog = Object.create(animal)
+dog.name = 'Dog'
+dog.speak() // "Dog makes a sound"
+```
+
+`Object.create` doesn't call a constructor, doesn't copy properties—it just builds a prototype chain bridge between two objects.
+
+**When NOT to use it:** The prototype pattern's advantage is speed (no constructor call), but the cost is implicit inheritance relationships between objects. When you need to clearly know what properties an object has, the prototype chain makes debugging painful. Most of the time, `Object.assign` or spread operator shallow copies are enough.
+
+---
+
+## Structural: How to Assemble Parts Into a Working Machine
+
+Creational is about "producing parts." Structural is about "putting the parts together."
+
+### Proxy Pattern
+
+You visit a big company to meet the CTO. You don't just push open the office door—you go through the front desk first. The receptionist confirms your identity, logs your purpose, calls back to ask "are you available right now," and only then lets you through.
+
+A proxy is the front desk in your code.
+
+Vue 3's `reactive()` system is the most elegant example of the proxy pattern:
+
+```typescript
+const raw = { count: 0 }
+const state = new Proxy(raw, {
+  get(target, key) {
+    console.log(`Someone is reading ${String(key)}`)
+    track(target, key) // Collect dependencies
+    return target[key]
+  },
+  set(target, key, value) {
+    console.log(`Someone is setting ${String(key)} to ${value}`)
+    target[key] = value
+    trigger(target, key) // Notify dependencies
+    return true
+  },
+})
+
+state.count // Console: Someone is reading count
+state.count = 1 // Console: Someone is setting count to 1
+```
+
+You use `state.count` thinking you're directly reading and writing an object. In reality, every read and write goes through the Proxy—this front desk that automatically signs you in (track) when you enter and notifies (trigger) when you leave. You never feel its presence, but it never stops working.
+
+Lazy-loading images is another classic proxy use case:
+
+```typescript
+function lazyLoadImage(src: string): HTMLImageElement {
+  const img = new Image()
+
+  const proxy = new Proxy(img, {
+    set(target, key, value) {
+      if (key === 'src') {
+        const observer = new IntersectionObserver((entries) => {
+          if (entries[0].isIntersecting) {
+            target.src = value // Load only when entering viewport
+            observer.disconnect()
+          }
+        })
+        observer.observe(target)
+        return true
       }
-      return target[prop as keyof HTMLImageElement]
-    },
-    set(target, prop, value) {
-      if (prop === 'src' && value === realSrc) {
-        target.dataset.loaded = 'true'
-      }
-      target[prop as keyof HTMLImageElement] = value
+      target[key] = value
+      return true
     },
   })
+
+  return proxy
 }
 ```
 
-### 3.2 Decorator Pattern
+**When NOT to use it:** Proxy has a performance cost. For simple value reads and writes, there's no need for a wrapper layer. Proxies add indirection—debugging reveals an extra Proxy handler in your call stack, making investigation harder.
 
-**When to use**: When you need to add new functionality to an object without modifying its original code. AOP (Aspect-Oriented Programming) is a typical application of the decorator pattern.
+---
 
-**Real-world analogy**: A phone case. The phone is still the same phone, but now it has the extra protection from the case.
+### Decorator Pattern
 
-#### Practical Example: TypeScript Decorators
+You just bought a new phone. You don't like how slippery it is, so you put a case on it. The phone is still the same phone, all functions intact—but now it has something extra: drop protection.
+
+That's the decorator: **don't modify the original object, just wrap it with new capabilities.**
+
+TypeScript's experimental decorator syntax:
 
 ```typescript
-// Timer decorator: Automatically logs function execution time
-function timeTrack(target: any, name: string, descriptor: PropertyDescriptor) {
+function timeTrack(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
   const original = descriptor.value
-
   descriptor.value = function (...args: any[]) {
     const start = performance.now()
     const result = original.apply(this, args)
-    const duration = performance.now() - start
-    console.log(`${name} took ${duration.toFixed(2)}ms`)
+    const end = performance.now()
+    console.log(`[${propertyKey}] execution time: ${(end - start).toFixed(2)}ms`)
     return result
   }
-
   return descriptor
 }
 
-class ApiService {
+class ApiClient {
   @timeTrack
-  fetchUserList() {
-    // Simulated API request
-    return new Promise((resolve) => setTimeout(() => resolve([1, 2, 3]), 500))
-  }
-
-  @timeTrack
-  fetchDetail(id: number) {
-    return new Promise((resolve) => setTimeout(() => resolve({ id }), 200))
+  async fetchUserData(userId: string) {
+    return fetch(`/api/users/${userId}`).then((r) => r.json())
   }
 }
 
-const api = new ApiService()
-api.fetchUserList() // Output: fetchUserList took 502.34ms
+const client = new ApiClient()
+client.fetchUserData('123') // Console: [fetchUserData] execution time: 234.56ms
 ```
 
-#### Practical Example: Redux `connect` Principle
+You didn't change `fetchUserData`'s source code, but you added timing capability to it. Like a phone case—the phone is still the same phone, but now it has an extra layer of protection.
 
-Redux's `connect` function is essentially the decorator pattern—it "decorates" components, adding Redux state and dispatch capabilities.
-
-### 3.3 Adapter Pattern
-
-**When to use**: When two incompatible interfaces need to work together.
-
-**Real-world analogy**: A power plug adapter. The outlet has three holes, the charger has two prongs. The adapter lets them work together.
-
-#### Practical Example: Adapting Between Old and New API Formats
+In React, Higher-Order Components (HOC) are the React version of decorators:
 
 ```typescript
-// Old API response format
-interface OldUser {
-  name: string
-  age: number
-  job_detail: string  // snake_case format
-}
-
-// New API expected format
-interface NewUser {
-  fullName: string
-  years: number
-  jobDetail: string   // camelCase format
-}
-
-// Adapter: Converts old format to new format
-class UserAdapter {
-  static adapt(oldUser: OldUser): NewUser {
-    return {
-      fullName: oldUser.name,
-      years: oldUser.age,
-      jobDetail: oldUser.job_detail,
-    }
+function withLoading<P>(Component: React.ComponentType<P>) {
+  return function LoadingWrapper(props: P & { loading: boolean }) {
+    if (props.loading) return <Spinner />
+    return <Component {...props} />
   }
 }
 
-// Usage: Adapt before calling new components
-async function loadUserProfile(userId: string) {
-  const oldData = await oldApi.getUser(userId)  // Old API
-  const user = UserAdapter.adapt(oldData)       // Convert format
-  return <UserProfile user={user} />            // Feed to new component
-}
+const UserListWithLoading = withLoading(UserList)
 ```
 
-This pattern is super useful when your frontend talks to backend APIs—the backend's data format often doesn't match what your frontend expects.
+`UserList` knows nothing about loading states. We wrapped it with an HOC to add loading capability. The original component stays clean.
 
-### 3.4 Facade Pattern
-
-**When to use**: When a feature requires calling many low-level APIs, but users just want a simple interface.
-
-**Real-world analogy**: A TV remote control. You press one "power" button, but behind the scenes the TV is doing a bunch of things (turning on the screen, connecting to the signal, adjusting volume) that you don't need to know about.
-
-#### Practical Example: Vue's `computed`
-
-Vue's `computed` is a classic facade pattern—it hides all the complex logic (dependency tracking, dirty checking, caching) behind a simple ".value" interface.
-
-```typescript
-// Your code: Simple to write
-const fullName = computed(() => firstName.value + ' ' + lastName.value)
-
-// What Vue does behind the scenes:
-// 1. Track dependencies (firstName, lastName)
-// 2. Detect data changes
-// 3. Recalculate values
-// 4. Cache results to avoid recalculation
-// 5. Notify dependents to update
-```
+**When NOT to use it:** Too many decorators become an onion—layer after layer, all wrapping shells. If a component has auth, loading, error, and tracking HOCs simultaneously, debugging means remembering "which layer wrapped what." More than three decorators, and it's time to reconsider.
 
 ---
 
-## 4. Behavioral Patterns: How Objects Communicate
+### Adapter Pattern
 
-Behavioral patterns focus on **how objects talk to each other**, much like how people communicate with each other.
+You travel to Japan with a Chinese charger. You get to the hotel and freeze—their outlets are two flat prongs, your charger is three-pronged, won't fit. You don't open up the charger and re-solder it. You buy an adapter.
 
-### 4.1 Observer Pattern
+An adapter is that converter.
 
-**When to use**: When one object's state changes need to notify other objects.
-
-**Real-world analogy**: Following a WeChat public account. When the author posts an article, all subscribers get notified.
+The most common frontend scenario: backend API returns `snake_case`, frontend uses `camelCase`:
 
 ```typescript
-// Simple implementation
-class Subject {
-  private observers: Function[] = []
-
-  // Subscribe
-  subscribe(observer: Function) {
-    this.observers.push(observer)
-  }
-
-  // Unsubscribe
-  unsubscribe(observer: Function) {
-    this.observers = this.observers.filter((o) => o !== observer)
-  }
-
-  // Notify: When state changes, notify all subscribers
-  notify(data: any) {
-    this.observers.forEach((observer) => observer(data))
-  }
+// Backend returns
+const apiResponse = {
+  user_id: 123,
+  first_name: 'Max',
+  last_name: 'Zhang',
+  created_at: '2026-03-23',
 }
 
-// Usage
-const news = new Subject()
+// Adapter
+interface User {
+  userId: number
+  firstName: string
+  lastName: string
+  createdAt: string
+}
 
-news.subscribe((content) => console.log('User A received: ' + content))
-news.subscribe((content) => console.log('User B received: ' + content))
-
-news.notify('New product released!')
-// Output:
-// User A received: New product released!
-// User B received: New product released!
-```
-
-Vue's reactivity system is essentially the observer pattern: `data` is the Subject, `watcher` is the Observer, and when `data` changes, it automatically notifies the `watcher` to update.
-
-### 4.2 Publish/Subscribe Pattern
-
-An upgraded version of the observer pattern. It adds an "event hub" so publishers and subscribers don't need to know about each other directly.
-
-```mermaid
-graph LR
-    Publisher --> EventCenter
-    EventCenter --> Subscriber1
-    EventCenter --> Subscriber2
-    EventCenter --> Subscriber3
-```
-
-```typescript
-type Handler = (data?: any) => void
-
-class EventEmitter {
-  private events: Map<string, Handler[]> = new Map()
-
-  // Subscribe
-  on(name: string, fn: Handler) {
-    const handlers = this.events.get(name) || []
-    handlers.push(fn)
-    this.events.set(name, handlers)
-  }
-
-  // Publish
-  emit(name: string, data?: any) {
-    this.events.get(name)?.forEach((fn) => fn(data))
-  }
-
-  // Unsubscribe
-  off(name: string, fn: Handler) {
-    const handlers = this.events.get(name)
-    if (handlers) {
-      this.events.set(
-        name,
-        handlers.filter((h) => h !== fn),
-      )
+class UserAdapter {
+  static adapt(raw: typeof apiResponse): User {
+    return {
+      userId: raw.user_id,
+      firstName: raw.first_name,
+      lastName: raw.last_name,
+      createdAt: raw.created_at,
     }
   }
 }
 
-// Usage
-const bus = new EventEmitter()
+const user: User = UserAdapter.adapt(apiResponse)
+```
 
-// Component A subscribes to event
-bus.on('user-login', (user) => {
-  console.log('Got user login info:', user)
+The benefit is clear—frontend code always uses `firstName`. If the backend format changes, you fix the adapter, not business code.
+
+Another classic scenario: a third-party library's interface doesn't match your project's conventions. You use an old chart library whose `setData` takes `{x: number, y: number}[]`, but your project uses `{label: string, value: number}[]` everywhere. Write an adapter, and you don't need to convert at every call site.
+
+**When NOT to use it:** If the backend format is stable and your project convention is to match backend field names—just use them directly, no adapter. Adapters add a layer of indirection and more code. They're only valuable when the "mismatch" pain is real.
+
+---
+
+### Facade Pattern
+
+You pick up the TV remote and press the red button. The TV turns on. You don't care how the remote emits infrared, how the TV's power module starts up, or how the signal receiver decodes—you just know one button does the job.
+
+The facade pattern is the remote control.
+
+It provides **a simplified entry point that hides all the complex logic behind it.**
+
+Vue's `computed` is a perfect facade example:
+
+```typescript
+const user = reactive({
+  firstName: 'Max',
+  lastName: 'Zhang',
+  settings: {
+    language: 'zh',
+    timezone: 'Asia/Shanghai',
+  },
 })
 
-// Component B publishes event
-setTimeout(() => {
-  bus.emit('user-login', { name: 'John', time: Date.now() })
-}, 1000)
+// Without facade: manually concatenate every time
+console.log(`${user.firstName} ${user.lastName}`)
+
+// With facade: one property handles the concatenation behind the scenes
+const displayName = computed(() => `${user.firstName} ${user.lastName}`)
+console.log(displayName.value)
 ```
 
-**Observer Pattern vs Pub/Sub Pattern**
-
-| Aspect        | Observer Pattern                     | Pub/Sub Pattern               |
-| ------------- | ------------------------------------ | ----------------------------- |
-| Communication | Subject directly notifies Observer   | Through middleware/event hub  |
-| Coupling      | Publisher and subscriber are coupled | Fully decoupled               |
-| Use case      | Vue reactivity                       | Cross-component communication |
-| Flexibility   | Lower                                | Higher                        |
-
-### 4.3 Strategy Pattern
-
-**When to use**: When you have multiple algorithms or behaviors that are interchangeable, but you don't want to use a bunch of if-else statements to decide which one to use.
-
-**Real-world analogy**: Getting to Beijing. You can take the subway, bus, taxi, or bike—depending on the situation, you pick the right option.
-
-#### Practical Example: Form Validation Rules
+Complex form submission logic:
 
 ```typescript
-// Define validation strategies
-const validatorStrategies = {
-  // Cannot be empty
-  isNonEmpty: (val: string) => {
-    return val.trim().length > 0 || 'This field is required'
-  },
-
-  // Minimum length
-  minLength: (val: string, len: number) => {
-    return val.length >= len || `Must be at least ${len} characters`
-  },
-
-  // Maximum length
-  maxLength: (val: string, len: number) => {
-    return val.length <= len || `Must be at most ${len} characters`
-  },
-
-  // Email format
-  isEmail: (val: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(val) || 'Please enter a valid email address'
-  },
-
-  // Phone number
-  isPhone: (val: string) => {
-    const phoneRegex = /^1[3-9]\d{9}$/
-    return phoneRegex.test(val) || 'Please enter a valid phone number'
-  },
+// Without facade—caller must know all three steps
+async function submitFormRaw() {
+  const validated = await validateAll(formData)
+  if (!validated.success) return showErrors(validated.errors)
+  const sanitized = sanitizeInput(formData)
+  const result = await api.submit(sanitized)
+  if (result.error) return showErrorToast(result.error)
+  showSuccessToast('Submitted successfully')
+  router.push('/dashboard')
 }
 
-// Validator class
-class FormValidator {
-  private checks: Array<() => string | true> = []
+// With facade—one method, everything handled
+class FormFacade {
+  async submit() {
+    const validated = await validateAll(this.data)
+    if (!validated.success) return showErrors(validated.errors)
+    const sanitized = sanitizeInput(this.data)
+    const result = await api.submit(sanitized)
+    if (result.error) return showErrorToast(result.error)
+    showSuccessToast('Submitted successfully')
+    router.push('/dashboard')
+  }
+}
 
-  // Add validation rule
-  add(value: string, rule: keyof typeof validatorStrategies, ...args: any[]) {
-    const strategy = validatorStrategies[rule]
-    this.checks.push(() => strategy(value, ...args))
+// Caller only needs to know one step
+await formFacade.submit()
+```
+
+The facade pattern's significance isn't about "encapsulation" (if that's all you see, every function is a facade). It's about **converging interactions with multiple subsystems into a single fixed entry point.** If the validation logic changes from `validateAll` to another library later, callers don't need to know—fix it inside the facade.
+
+**When NOT to use it:** Facades easily become "god objects"—a class that does everything, circling back to our 800-line component problem. If your facade starts requiring 10 parameters to configure behavior, it's lost the meaning of "simplified entry point." The facade's advantage is simplicity, the cost is flexibility—you sealed the complexity inside the remote, but some people actually want to open the TV and tune it themselves.
+
+---
+
+## Behavioral: How Objects Talk to Each Other
+
+Creational handles "creating people." Structural handles "forming teams." Behavioral handles "how people on the team shout to each other."
+
+### Observer Pattern
+
+You follow a WeChat official account. When they publish a new article, you receive it passively—you don't refresh every five minutes asking "did they post yet." They notify you.
+
+The observer pattern is this logic: **one object (the account) maintains a list of followers and wakes each one up when its state changes.**
+
+```typescript
+class Subject {
+  private observers: Array<(data: any) => void> = []
+
+  subscribe(fn: (data: any) => void) {
+    this.observers.push(fn)
+    return () => {
+      this.observers = this.observers.filter((o) => o !== fn)
+    }
   }
 
-  // Run validation
-  validate() {
-    for (const check of this.checks) {
-      const result = check()
-      if (result !== true) {
-        return result // Return first error message
-      }
-    }
-    return true // All passed
+  notify(data: any) {
+    this.observers.forEach((fn) => fn(data))
   }
 }
 
 // Usage
-const validator = new FormValidator()
+const userStore = new Subject()
 
-validator.add('test@example.com', 'isEmail')
-validator.add('13800138000', 'isPhone')
-validator.add('123456', 'minLength', 6)
+// Xiao Li subscribes to user changes
+const unsubscribe = userStore.subscribe((data) => {
+  console.log('Xiao Li received notification:', data)
+})
 
-const result = validator.validate()
-console.log(result) // true
-
-// Or catches errors early
-const validator2 = new FormValidator()
-validator2.add('', 'isNonEmpty')
-validator2.add('abc', 'isEmail')
-
-console.log(validator2.validate()) // "This field is required"
+userStore.notify({ name: 'Max', action: 'login' }) // Xiao Li receives notification
+unsubscribe() // Xiao Li unsubscribes
 ```
 
-This approach is much cleaner than using if-else, and adding new rules is as simple as adding one entry to `validatorStrategies`.
+Vue's reactivity system is built on the observer pattern at its core. A `computed` property is an observer—it subscribes to every `ref`/`reactive` it reads. When any dependency changes, `computed` receives a notification and recomputes.
 
-### 4.4 Iterator Pattern
+React's `useEffect` also embodies observer thinking—the dependency array is your "subscription list," and the cleanup function is the "unsubscribe."
 
-**When to use**: When you need to traverse different types of data structures in a uniform way.
+**When NOT to use it:** The observer pattern makes "notification" simple and "debugging" hard. When 20 observers respond to one event simultaneously, your call stack becomes a plate of spaghetti. And if one observer's callback triggers another notification, you can easily create an event loop. If you only have one receiver, use a callback—don't wrap it in the observer pattern.
 
-**Real-world analogy**: No matter which remote you're using (AC, TV, set-top box), the "channel up" and "channel down" buttons work the same way.
+---
 
-#### Practical Example: `Symbol.iterator`
+### Pub/Sub Pattern
+
+Reading this, you might be wondering: what the hell is the difference between observer and pub/sub?
+
+Great question. They're too similar. I got confused the first time too.
+
+The difference in one sentence: **in observer, the subject knows all its observers directly. In pub/sub, neither side knows the other—there's a third party in the middle called an "event hub."**
 
 ```typescript
-// Make custom objects iterable with for...of
-const myIterable = {
-  [Symbol.iterator]: function* () {
-    yield 1
-    yield 2
-    yield 3
+class EventBus {
+  private events: Map<string, Array<(data: any) => void>> = new Map()
+
+  on(event: string, fn: (data: any) => void) {
+    if (!this.events.has(event)) this.events.set(event, [])
+    this.events.get(event)!.push(fn)
+  }
+
+  off(event: string, fn: (data: any) => void) {
+    const fns = this.events.get(event)
+    if (fns)
+      this.events.set(
+        event,
+        fns.filter((f) => f !== fn),
+      )
+  }
+
+  emit(event: string, data: any) {
+    this.events.get(event)?.forEach((fn) => fn(data))
+  }
+}
+
+// Usage—two strangers shouting through a middleman
+const bus = new EventBus()
+
+// Component A: I'm emitting this event, but I don't know who'll hear it
+bus.emit('user-login', { userId: 123 })
+
+// Component B: I'm listening for this event, but I don't know who's emitting it
+bus.on('user-login', (data) => {
+  console.log('Component B received login event', data)
+})
+```
+
+**Analogy:** Observer is an official account pushing directly to followers (author → reader, direct relationship). Pub/sub is you placing an order on a shipping platform—the seller ships, the logistics company notifies you of arrival. The seller doesn't know you, you don't know the seller, but the platform (the "event hub") routes everything.
+
+Vue 2's `$on` and `$emit` embody the pub/sub pattern. Sibling component communication without going through the parent component—an event bus handles it.
+
+**When NOT to use it:** An event bus is a globally shared megaphone. Over time, you'll forget which components are listening to which events. When refactoring, you're terrified to delete an `emit` because it might affect an `on` hidden in some corner. If your component relationship is a clear parent-child tree, props + emit are much clearer than an event bus. Pub/sub is for loosely coupled cross-level communication—not a shortcut to bypass component structure.
+
+---
+
+### Strategy Pattern
+
+You need to go from Beijing to Shanghai. Fly? High-speed rail? Drive? Each is a "strategy." You choose different strategies, but the destination doesn't change.
+
+The strategy pattern separates "algorithm" from "context that uses the algorithm"—you have a single entry point like `formValidator`, but it selects different validation strategies based on field type.
+
+```typescript
+interface ValidationStrategy {
+  validate(value: any): string | null
+}
+
+const strategies: Record<string, ValidationStrategy> = {
+  isNonEmpty: {
+    validate(value: string) {
+      return value.trim() ? null : 'This field is required'
+    },
+  },
+  isEmail: {
+    validate(value: string) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? null : 'Invalid email format'
+    },
+  },
+  isPhone: {
+    validate(value: string) {
+      return /^1[3-9]\d{9}$/.test(value) ? null : 'Invalid phone number'
+    },
+  },
+  minLength: {
+    validate(value: string, min: number = 6) {
+      return value.length >= min ? null : `Minimum ${min} characters`
+    },
   },
 }
 
-for (const num of myIterable) {
-  console.log(num) // 1, 2, 3
+class FormValidator {
+  private checks: Array<{ strategy: ValidationStrategy; value: any; params?: any }> = []
+
+  add(value: any, name: string, params?: any) {
+    const strategy = strategies[name]
+    if (!strategy) throw new Error(`Unknown validation rule: ${name}`)
+    this.checks.push({ strategy, value, params })
+  }
+
+  validate(): string | null {
+    for (const { strategy, value, params } of this.checks) {
+      const error = strategy.validate(value, params)
+      if (error) return error
+    }
+    return null
+  }
 }
 
-// Also works with spread operator
-console.log([...myIterable]) // [1, 2, 3]
+const validator = new FormValidator()
+validator.add('13800138000', 'isPhone')
+validator.add('a@b.com', 'isEmail')
+validator.add('abc', 'minLength', 6)
+console.log(validator.validate()) // "Minimum 6 characters"
 ```
 
-JavaScript's built-in data structures (Array, Map, Set, NodeList, etc.) all implement iterators, so you can traverse them all the same way.
+Without the strategy pattern, how would you write this? A giant `if-else`:
 
 ```typescript
-// Uniform way to traverse
-const arr = [1, 2, 3]
-const map = new Map([
-  ['a', 1],
-  ['b', 2],
-])
-const set = new Set([1, 2, 3])
-const nodeList = document.querySelectorAll('div')
+if (rule === 'isNonEmpty' && !value.trim()) return 'This field is required'
+else if (rule === 'isEmail' && !isEmailRegex.test(value)) return 'Invalid email format'
+else if (rule === 'isPhone' && !isPhoneRegex.test(value)) return 'Invalid phone number'
+// Fifty lines later...
+```
 
-// All work with for...of
-for (const item of arr) {
+The product manager wants to add "ID number validation." Strategy pattern: add one entry to `strategies`. If-else pattern: find the right spot in that pile of conditionals, jam it in, pray you didn't break anything.
+
+**When NOT to use it:** Only two strategies? Don't bother. If validation rules are just "required" and "email"—write them directly. Wrapping them in the strategy pattern is overengineering. The strategy pattern's value lies in "the number of strategies will keep growing."
+
+---
+
+### Iterator Pattern
+
+No matter what remote you're holding—air conditioner, TV, set-top box—the "channel up" and "channel down" buttons work exactly the same way. Press once, next one. Whether it's cable TV signals or streaming behind the scenes, the operation is identical.
+
+The iterator pattern is this: **no matter what data structure is behind you, the traversal method is unified.**
+
+JavaScript's `Symbol.iterator` is built-in iterator support:
+
+```typescript
+const myIterable = {
+  data: ['Page One', 'Page Two', 'Page Three'],
+  [Symbol.iterator]() {
+    let i = 0
+    return {
+      next: () => {
+        if (i < this.data.length) {
+          return { value: this.data[i++], done: false }
+        }
+        return { value: undefined, done: true }
+      },
+    }
+  },
 }
-for (const [key, value] of map) {
-}
-for (const item of set) {
-}
-for (const node of nodeList) {
+
+for (const item of myIterable) {
+  console.log(item) // Page One / Page Two / Page Three
 }
 ```
 
----
+With `Symbol.iterator`, your custom object works with `for...of`, spread operator, destructuring—just like a native array.
 
-## Summary: How to Use Design Patterns Well
+Real-world scenario: traversing tree structures.
 
-### Quick Summary of the Three Categories
+```typescript
+class TreeNode {
+  value: number
+  children: TreeNode[]
 
-- **Creational**: **Who creates** this object, **how** it's created
-- **Structural**: **How** to assemble these objects into larger structures
-- **Behavioral**: **How** these objects communicate
+  constructor(value: number, children: TreeNode[] = []) {
+    this.value = value
+    this.children = children
+  }
 
-### When to Use, When Not to Use
+  *[Symbol.iterator](): Generator<number> {
+    yield this.value
+    for (const child of this.children) {
+      yield* child // Recursively iterate children—depth-first traversal
+    }
+  }
+}
 
-| Good fit                                    | Not a good fit                                   |
-| ------------------------------------------- | ------------------------------------------------ |
-| Code keeps having the same problems         | Situation is too simple for patterns             |
-| Team collaboration, code needs maintenance  | Over-engineering makes simple things complicated |
-| Requirements change often, need flexibility | Forcing patterns makes things worse              |
-| Need better code reuse                      |                                                  |
+const tree = new TreeNode(1, [new TreeNode(2, [new TreeNode(4), new TreeNode(5)]), new TreeNode(3)])
 
-### Projects Usually Mix Multiple Patterns
+for (const value of tree) {
+  console.log(value) // 1, 2, 4, 5, 3
+}
+```
 
-For example, Vue uses:
+A tree, traversable with `for...of`. No matter how deep the tree is—the iterator handles depth-first traversal behind the scenes.
 
-- **Proxy pattern**: For reactivity
-- **Observer pattern**: For dependency updates
-- **Factory pattern**: For creating VNodes
-- **Singleton pattern**: For global components
+In frontend, the DOM's `NodeList`, `HTMLCollection`, `Map`, `Set`—all iterable. No matter how different their data structures are, you can traverse them all uniformly with `for...of`.
 
----
-
-## FAQ
-
-**Q: Do I need to memorize all 23 patterns?**
-
-No. Just remember the most commonly used ones (Factory, Singleton, Proxy, Observer, Strategy). Look up the others when you need them.
-
-**Q: How do I know which pattern to use?**
-
-Ask yourself these questions:
-
-1. Is it about object creation? → Creational
-2. Is it about object composition? → Structural
-3. Is it about object communication? → Behavioral
-
-**Q: Won't patterns make code more complicated?**
-
-Yes, they might. That's why there's a principle called YAGNI (You Aren't Gonna Need It)—you probably don't need it yet. Don't introduce patterns until your code actually becomes complex enough to warrant them.
+**When NOT to use it:** If you only need to traverse once, just use `array.forEach()`—no need to implement your own iterator. Iterators are valuable when you want to extract traversal logic from business logic, making traversal itself a reusable tool.
 
 ---
 
-_The goal of mastering design patterns isn't to show off technical skills. It's to make code easier to maintain and extend. The ultimate goal of coding is to build good products, not to write "perfect code" that impresses interviewers._
+## Step Back: What the Whole Picture Looks Like
+
+Pull everything together, and the world of design patterns is just three layers:
+
+```
+
+Creational (Who makes)
+├── Factory: Order at the counter, don't walk into the kitchen
+├── Singleton: Only one voice in the entire system
+└── Prototype: Clone the blueprint, don't redraw it
+
+Structural (How to assemble)
+├── Proxy: The front desk screens for you
+├── Decorator: Put on a phone case, functions untouched
+├── Adapter: Swap the converter, both sides work
+└── Facade: Here's a remote, don't worry about the complexity
+
+Behavioral (How to communicate)
+├── Observer: Follow an account, new posts auto-push
+├── Pub/Sub: Two people shouting through the void, a middleman relays
+├── Strategy: Fly or take the train, destination unchanged
+└── Iterator: No matter the device, the channel button is the same
+
+```
+
+You don't need to memorize all 23 patterns. You just need to ask yourself three questions when facing a messy block of code:
+
+**1. Is this a "who creates what" problem?**
+— If yes, pick from Factory, Singleton, Prototype.
+
+**2. Is this a "how to assemble objects" problem?**
+— If yes, pick from Proxy, Decorator, Adapter, Facade.
+
+**3. Is this a "how do objects notify and coordinate" problem?**
+— If yes, pick from Observer, Pub/Sub, Strategy, Iterator.
+
+If none of the three?
+
+Then this place probably doesn't need a design pattern.
+
+---
+
+## FAQs — The Questions That Trip You Up
+
+**Q: Do I need to memorize all 23?**
+
+No. I've been writing frontend code for years, and before I write a strategy pattern, the words "strategy pattern" never cross my mind. I finish writing it, then suddenly realize—oh, that's the strategy pattern. You don't need to memorize. You need to look at a piece of code and recognize it: "that's observer," "that's adapter," "that's singleton." Names don't matter. Structure does.
+
+**Q: How do I decide which pattern to use?**
+
+Run the three questions above first. If you're still unsure—don't use one. Write traditional if-else and direct function calls. When the code starts hurting you, you'll naturally know where to extract a pattern.
+
+**Q: Won't design patterns make the code more complex?**
+
+Yes. Absolutely yes.
+
+That's why there's YAGNI—You Aren't Gonna Need It. While the code is still simple, don't rush to introduce patterns. A 50-line utility function doesn't need a factory. Parent-child component communication doesn't need pub/sub.
+
+Design patterns are the renovation crew you call after the code gets ugly—not gold leaf you apply to a bare concrete room.
+
+---
+
+It's dark outside now.
+
+Honestly, this took me years to figure out. At first, design patterns were just interview question answers—memorize a couple of UML diagrams, remember a few class diagrams, forget them after the interview. Until my code became disgusting enough—so disgusting even I didn't want to maintain it—that those pattern names suddenly came alive.
+
+They were describing the exact garbage I was writing.
+
+They just called "garbage" an "anti-pattern."
+
+I hope the next time you face an 800-line `user-profile.tsx` and raise your hands in surrender, you can silently run through those three questions. And then, you'll know where to start.
+
+That's worth a hell of a lot more than memorizing 23 pattern names.

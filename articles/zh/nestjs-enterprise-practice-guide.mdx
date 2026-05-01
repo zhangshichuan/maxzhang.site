@@ -4,47 +4,34 @@ summary: '覆盖多环境配置、日志、缓存、数据库ORM、认证授权�
 category: 'Backend'
 tags: ['NestJS', 'TypeScript', '微服务', '全栈']
 author: 'Max Zhang'
-date: '2022-09-25'
+date: '2022-08-25'
 ---
 
-> 写给想用 NestJS 搭一套能扛住生产流量、经得起团队协作考验的后端系统的开发者们
+> 这不是一篇"官方文档翻译"。这是一次复盘——我把搭了三次企业级 NestJS 项目踩过的坑、攒下的代码、半夜对着屏幕抽烟才想明白的道理全写下来了。
 
-你有没有遇到过这种情况：用 Express 写了个接口，跑着没问题，但业务一扩展、同事一多，代码就开始失控——路由写得像面条，数据库查询散落在各个文件里，Auth 逻辑靠中间件硬怼，测试覆盖率全靠运气。
+那天凌晨两点，我在公司群里发了一条消息："先别上线，数据库字段类型改了，前端还没同步。"
 
-你换到 NestJS，看了一圈官方文档——控制器、模块、依赖注入这些概念倒是理解了。但真要搭一套企业级项目：多环境配置怎么搞？日志用什么？数据库怎么接？认证授权怎么玩？微服务怎么拆？
+消息发出去，我就知道今晚不用睡了。
 
-这篇文章就是来解决这些问题的。我会按照从头搭建一个企业级 NestJS 项目的实际顺序来讲，每一个模块都附带可以直接抄的生产级代码。不翻译文档，只讲你真正需要的东西。
+事情的起因很简单：后端同事改了个接口——`userId` 从 `number` 变成了 `string`。他觉得没啥，就是个类型嘛。但前端的代码里，所有用到 `userId` 的地方都标注了 `number`。TypeScript 编译的时候不报错——build 的时候你拿到的是 JSON 数据，type annotation 根本不参与运行时校验。
+
+上线两小时，用户开始报 bug。付款记录查不到，个人中心报错。找了半天才定位到类型不一致。
+
+操。
+
+这种破事我遇到过太多次了。但不是你一个人的问题——这是整个前后端协作方式的问题。传统开发流程里，类型信息在 API 边界上丢失了。后端改了返回值，前端没人通知，bug 就埋下去了，等到生产环境才炸。
+
+所以后来我押宝 TypeScript 全栈。不是追新技术——是被这种类型断层搞怕了。
+
+这篇文章，就是我摸索出来的全套方案。从配置到部署，从单体到微服务。不翻译文档，每一个结论都是踩过坑的。你不需要一口气看完，挑你眼下最头疼的部分先看就行。
 
 ---
 
-## 一、为什么 TypeScript 全栈是未来
+## 一、当你受够了类型断层
 
-在聊 NestJS 之前，先回答一个根本问题：为什么要押注 TypeScript 全栈？
+先讲一个概念。这不抽象——你下周就能用上。
 
-### 1.1 数据库到客户端的端到端类型安全
-
-传统开发流程里，类型断层是 bug 的主要来源。后端改了某个字段的返回值类型，前端没人通知，上线就炸。
-
-```typescript
-// 后端改了返回类型
-// 从 { userId: number } 变成 { userId: string }
-@Get('/user')
-getUser() {
-  return { userId: 'abc-123' } // 原来是 123，现在变成字符串了
-}
-```
-
-```typescript
-// 前端还在用 number 类型接
-const response: { userId: number } = await fetch('/api/user').then((r) => r.json())
-// 💥 编译不报错，运行时却炸了
-```
-
-TypeScript 全栈的解法是：**把类型定义抽成共享包，前后端共同引用**。谁改了类型，另一端编译就直接报错，根本不会留到运行时。
-
-### 1.2 tRPC：前后端共享类型的最佳实践
-
-tRPC 把这个思路做到了极致——后端的类型定义自动推导到前端，你甚至不需要手动维护类型文件：
+tRPC 做的事很简单：把后端的类型定义自动推导到前端。你不用手动维护共享的 interface 文件，不用前后端两头改。以后端为准，前端自动跟上。
 
 ```typescript
 // 后端定义
@@ -58,17 +45,20 @@ export type AppRouter = typeof appRouter
 ```
 
 ```typescript
-// 前端直接推导出完整类型
+// 前端什么都不用写
 const user = await trpc.userById.query('abc-123')
-// user 的类型自动推导为 { id: string; name: string; email: string }
-// 根本不需要手动写 interface
+// user 自动推导为 { id: string; name: string; email: string }
 ```
 
-### 1.3 Zod：运行时类型校验的最后一道防线
+你后端改了返回字段，前端编译直接报错。根本不会留到运行时。
 
-TypeScript 的类型只在编译时存在，运行时它们全被擦除了。这意味着用户提交的数据、第三方 API 的返回值，编译时再严谨也拦不住。
+但 tRPC 不是万能药。它解决的是 RPC 调用的类型推导问题：
 
-Zod 解决了这个问题——它同时是 Type 定义和运行时校验器：
+- 你要对接外部系统（第三方 API、App 客户端），tRPC 的协议不通用
+- 前端是 React Native / Flutter / Swift，tRPC 用不了
+- 团队对抽象层有抵触，强行推只会增加矛盾
+
+这时候 Zod 出场。它是一个运行时校验库，同时能推导出 TypeScript 类型：
 
 ```typescript
 import { z } from 'zod'
@@ -79,32 +69,35 @@ const CreateUserSchema = z.object({
   age: z.number().min(0).max(150),
 })
 
-// 从 Schema 自动推导出 TypeScript 类型
 type CreateUserDto = z.infer<typeof CreateUserSchema>
 
-// 运行时校验
 const result = CreateUserSchema.safeParse(req.body)
 if (!result.success) {
-  // 这里的错误信息可以直接返回给客户端
   return { code: 400, errors: result.error.flatten() }
 }
-// result.data 的类型自动就是 CreateUserDto
 ```
 
-NestJS 生态里，`class-validator` 和 `class-transformer` 扮演了类似的角色。但 Zod 的优势在于——它不需要装饰器类，可以和 tRPC、OpenAPI 等任意框架组合使用，并且推导出的类型可以直接跨项目共享。后续我们会在认证章节详细对比这两种方案。
+TypeScript 的类型在编译后就灰飞烟灭了。Zod 是你的最后一道防线——任何用户输入、外部 API 响应，都必须经过它。
+
+NestJS 生态里 `class-validator` + `class-transformer` 也是干这个的。Zod 的好处在不需要装饰器类，一个 Schema 文件可以跨项目共享。
+
+记住一条原则：**编译时类型检查 + 运行时 Schema 校验，少一个都不行。** 类型不是装饰品，是防弹衣。
 
 ---
 
-## 二、前置概念：NestJS 的"世界观"
+## 二、NestJS 的"世界观"——先看懂这盘棋
 
-NestJS 绕不开几个范式。不理解这些，你永远只能"照着文档抄"，改不动也排不了坑。
+你第一次打开 NestJS 文档，看到 Module、Controller、Provider、Decorator、Dependency Injection，脑子是懵的。正常。我当初也是。
 
-### 2.1 OOP、FP、FRP 在 NestJS 中的影子
+后来我想明白了：NestJS 不是 Express 的升级版，它是一套建筑框架。Express 给你的是砖头，你怎么砌都行。NestJS 给你的是钢筋混凝土结构——有规则，但你按规则来，它能撑 100 层。
 
-**OOP（面向对象编程）**是 NestJS 的骨架。模块、控制器、服务全都是类——你可以用继承复用通用逻辑，用封装隐藏实现细节。
+### 2.1 三种编程范式搅在一起
+
+NestJS 里同时有三种编程范式的影子。
+
+**OOP（面向对象）** —— 这是它的骨架。Module、Controller、Service 全是类。你可以继承、封装、多态。
 
 ```typescript
-// OOP 的经典模式：抽象基类
 export abstract class BaseCrudService<T> {
   constructor(protected readonly repository: Repository<T>) {}
 
@@ -116,73 +109,56 @@ export abstract class BaseCrudService<T> {
 }
 ```
 
-**FP（函数式编程）**在 NestJS 里表现为管道和拦截器的组合模式——每个函数做一件事，通过 `pipe` 组合：
+**FP（函数式）** —— 管道和拦截器的组合模式。一个请求进来，经过一层层 Pipe，每个 Pipe 做一件事，组合起来。
+
+**FRP（函数响应式）** —— RxJS 承载的异步流。后面会专门讲。你先知道 NestJS 里大量的 `pipe()` 调用不是装饰，是真的在组合异步操作就行。
+
+你不必同时精通这三种。OOP 是必选项——理解类和依赖注入。FP 和 FRP 可以慢慢来。
+
+### 2.2 AOP：切面编程——餐厅的记账系统
+
+AOP 很多人觉得抽象。我讲个故事。
+
+你去餐厅吃饭。点单、上菜、结账——这是"业务逻辑"。
+
+但收银台有个规矩：每一笔消费，不管谁、不管吃什么，都要同步记到财务系统。这个"记账"跟吃饭没关系，但每桌客人都触发一遍。这就是横切关注点。
+
+在你的后端系统里，这种横切关注点太多了：记日志、鉴权、脱敏、统一错误格式化。如果把这些代码写在每个 Controller 方法里，业务代码里 60% 都是这些——这他妈还怎么维护？
+
+NestJS 用四种机制解决：
+
+| 机制         | 干什么的               | 食堂比喻       |
+| ------------ | ---------------------- | -------------- |
+| Middleware   | 请求还没进路由之前     | 进门检查健康码 |
+| Guards       | 决定你能不能进这个接口 | 保安查工牌     |
+| Interceptors | 方法调用的前后         | 上菜前记台账   |
+| Pipes        | 参数校验和转换         | 后厨验菜       |
+| Filters      | 异常甩出来之后统一处理 | 投诉处理流程   |
+
+AOP 一点都不玄。就是把"跟业务无关但每个请求都要做的事"从业务代码里抽出来。
+
+### 2.3 依赖注入：为什么你的依赖都是"传"进来的
+
+你写 Express 的时候：
 
 ```typescript
-// RxJS 的 pipe 就是典型的 FP 风格
-this.userService.findById(id).pipe(
-  map((user) => user.email),
-  filter((email) => email.endsWith('@company.com')),
-)
-```
-
-**FRP（函数响应式编程）**由 RxJS 承载。NestJS 大量使用 Observable 处理异步流——不仅仅是 HTTP 响应，还包括微服务消息、数据库查询重试、定时任务等。这个概念我们在第十章会深入讲。
-
-### 2.2 AOP：切面编程与 NestJS 的拦截机制
-
-AOP（Aspect-Oriented Programming）的核心思想是：**把横切关注点（日志、事务、权限）从业务代码中抽离出来**。
-
-打个比方：你去餐厅吃饭，点单、上菜是"业务逻辑"。但你付钱时有个"记账"动作——每笔消费都要记到财务系统里。这个"记账"跟吃饭这个业务无关，但每桌客人都要触发，这就是横切关注点。
-
-在 NestJS 中，AOP 通过四种机制实现：
-
-| 机制         | 作用阶段         | 典型用途                 |
-| ------------ | ---------------- | ------------------------ |
-| Middleware   | 请求进入路由之前 | CORS、日志、body 解析    |
-| Guards       | 确定是否放行请求 | 认证、权限               |
-| Interceptors | 方法调用前后     | 响应脱敏、性能监控、事务 |
-| Pipes        | 参数绑定与转换   | 数据校验、类型转换       |
-| Filters      | 异常抛出后       | 统一错误格式、异常上报   |
-
-```typescript
-// 一个 Interceptor 实现"记账"功能——完全不影响业务代码
-@Injectable()
-export class AuditInterceptor implements NestInterceptor {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const request = context.switchToHttp().getRequest()
-    const user = request.user?.username ?? 'anonymous'
-    const path = request.url
-
-    const now = Date.now()
-    return next.handle().pipe(
-      tap(() => {
-        this.auditService.log(`${user} 访问了 ${path}，耗时 ${Date.now() - now}ms`)
-      }),
-    )
-  }
-}
-```
-
-### 2.3 DI 和 IoC：为什么到处都在"注入"
-
-你刚开始写 NestJS 时，最困惑的可能是：为什么所有依赖都是通过构造函数传进来的？
-
-```typescript
-// 你在 Express 里可能是这样写的
 app.get('/users', (req, res) => {
-  const db = new Database() // 手动创建依赖
-  const userService = new UserService(db) // 手动组装
+  const db = new Database()
+  const userService = new UserService(db)
   res.json(userService.findAll())
 })
 ```
 
+你自己 new，自己传，自己管生命周期。
+
+NestJS 里变成了：
+
 ```typescript
-// NestJS 里变成了这样
 @Controller('users')
 export class UserController {
   constructor(
-    private readonly userService: UserService, // 自动注入
-    private readonly auditService: AuditService, // 自动注入
+    private readonly userService: UserService,
+    private readonly auditService: AuditService,
   ) {}
 
   @Get()
@@ -192,326 +168,204 @@ export class UserController {
 }
 ```
 
-这背后是 **IoC（控制反转）**和 **DI（依赖注入）**两个概念：
+这个 `userService` 哪来的？没人 new 它啊。
 
-- **IoC（控制反转）**：谁创建对象？不是你——是容器。你把创建对象的"控制权"反交给了 NestJS 的 IoC 容器。
-- **DI（依赖注入）**：`UserController` 需要的 `UserService` 不是它自己 new 的，而是容器"注入"进去的。
+答案是：**NestJS 的 IoC 容器帮你 new 的，然后注入到你的构造函数里。**
 
-这样做有三个好处：
+为什么这么搞？三个原因：
 
-1. **方便测试**：测试时可以注入 Mock 实例，而不是真实的数据库连接
-2. **解耦**：`UserController` 只依赖 `UserService` 的接口，不依赖具体实现
-3. **生命周期管理**：容器自动处理单例、请求作用域等生命周期
+1. **好测试**——测试时注入假的 `UserService`，不用真的连数据库
+2. **解耦**——Controller 只依赖 Service 的接口，不依赖具体实现
+3. **生命周期管理**——你不管这个 Service 是单例还是请求作用域
 
-### 2.4 装饰器：@Injectable、@Inject 和自定义装饰器
+刚开始不习惯。但用了一周之后，再回去写 `new Database()` 会全身不舒服。就像用惯了自来水，突然让你去井里打水。
 
-装饰器是 TypeScript 的实验性特性，NestJS 用它来声明元数据。理解装饰器的本质很重要——它就是一个**函数**，在类/方法/属性定义时被调用。
+### 2.4 装饰器：贴在代码上的便利贴
+
+装饰器本质就是一个函数——在类/方法/属性定义时被调用。NestJS 用它在不侵入代码的前提下声明元数据：
 
 ```typescript
-// 看一个最简化的 @Injectable 是怎么工作的
 function Injectable(): ClassDecorator {
   return (target: any) => {
-    // 把类的设计时类型信息存到 Reflect 元数据中
     Reflect.defineMetadata('design:paramtypes', [UserRepository], target)
-    // NestJS 容器读取这个元数据，就知道要注入 UserRepository
+    // 容器读到这个，就知道要注入 UserRepository
   }
 }
 ```
 
-NestJS 中常见的装饰器：
+你常用的：`@Module()`、`@Controller()`、`@Injectable()`、`@Get()`、`@Post()`、`@Param()`、`@Body()`、`@UseGuards()`。
 
-| 装饰器                                  | 作用                          | 使用位置     |
-| --------------------------------------- | ----------------------------- | ------------ |
-| `@Module()`                             | 声明模块及其依赖              | 类           |
-| `@Controller()`                         | 声明控制器                    | 类           |
-| `@Injectable()`                         | 标记可注入的服务              | 类           |
-| `@Inject()`                             | 手动指定注入令牌              | 构造函数参数 |
-| `@Optional()`                           | 依赖可选，不存在也不报错      | 构造函数参数 |
-| `@InjectRepository()`                   | TypeORM 专用，注入 Repository | 构造函数参数 |
-| `@Get()`, `@Post()` 等                  | 声明路由                      | 方法         |
-| `@Param()`, `@Query()`, `@Body()`       | 提取请求参数                  | 方法参数     |
-| `@Req()`, `@Res()`                      | 获取原生请求/响应对象         | 方法参数     |
-| `@UseGuards()`, `@UseInterceptors()` 等 | 绑定守卫/拦截器               | 类或方法     |
-
-你还可以自己写装饰器：
+还能自己写：
 
 ```typescript
-// 自定义参数装饰器：从请求中提取当前用户
 export const CurrentUser = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest()
-    return request.user
+    return ctx.switchToHttp().getRequest().user
   },
 )
 
-// 用法
 @Get('profile')
 getProfile(@CurrentUser() user: User) {
   return user
 }
 ```
 
-### 2.5 控制器、服务、模块与常见装饰器速览
-
-NestJS 应用本质上是一个"模块树"：
+### 2.5 各层职责——铁律
 
 ```
 AppModule
 ├── AuthModule
-│   ├── AuthController (路由层)
-│   ├── AuthService (业务逻辑层)
-│   └── UserModule (子模块)
-├── ConfigModule (全局配置)
-├── DatabaseModule (数据库连接)
-└── CacheModule (缓存)
+│   ├── AuthController  → 路由层
+│   ├── AuthService     → 业务逻辑层
+│   └── UserModule      → 子模块
+├── ConfigModule
+├── DatabaseModule
+└── CacheModule
 ```
 
-各层职责：
+- **Controller**：收请求、调 Service、返回响应。**绝不写业务逻辑。永远不。**
+- **Service**：纯业务逻辑。被 Controller 调，也能被其他 Service 调。
+- **Module**：组织代码单元，声明有哪些 Controller、Service、导入了什么、导出了什么。
 
-- **Controller**：接收 HTTP 请求、参数校验、返回响应。**绝不写业务逻辑。**
-- **Service**：纯业务逻辑。可以被 Controller、其他 Service、甚至微服务调用。
-- **Module**：组织代码的基本单元，声明该模块有哪些 Controller、Service，导入/导出了哪些依赖。
-
-```typescript
-@Module({
-  imports: [TypeOrmModule.forFeature([User])], // 导入 TypeORM 实体
-  controllers: [UserController], // 注册控制器
-  providers: [UserService], // 注册服务
-  exports: [UserService], // 导出给其他模块使用
-})
-export class UserModule {}
-```
+我看到太多项目，Controller 里写了 200 行 SQL。这不是 NestJS 的问题，是没理解这个框架的设计意图。
 
 ---
 
-## 三、多环境配置：让应用在不同环境"活起来"
+## 三、让应用在不同环境里"活"过来
 
-企业级项目不可能只有一套配置。开发环境连本地数据库，生产环境连 RDS；开发环境日志打控制台，生产环境打到 Elasticsearch。配置管理搞不好，生产事故就是迟早的。
+企业级项目不可能只有一套配置。开发连本地 DB，生产连 RDS。开发日志打控制台，生产打到 Elasticsearch。配置管理搞不好，生产事故迟早的。
 
-### 3.1 ConfigModule.forRoot() 的正确用法
+### 3.1 环境变量的正确方式
 
 ```bash
 pnpm add @nestjs/config
 ```
 
 ```typescript
-// app.module.ts
-import { Module } from '@nestjs/common'
-import { ConfigModule } from '@nestjs/config'
-
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true, // ✅ 全局可用，不用在每个模块里重复 import
-      envFilePath: ['.env.development', '.env'], // ✅ 后面的文件覆盖前面的
-      validationSchema: validationSchema, // ✅ Joi 校验
+      isGlobal: true,
+      envFilePath: [`.env.${process.env.NODE_ENV || 'development'}`, '.env'],
+      validationSchema: validationSchema,
     }),
   ],
 })
 export class AppModule {}
 ```
 
-`isGlobal: true` 很重要——否则每个需要用配置的模块都得单独 `imports: [ConfigModule]`，时间长了你会疯。
+`isGlobal: true` 很重要。不设的话，20 个模块你每个都得手动 `imports: [ConfigModule]`，累死你。
 
-### 3.2 环境文件优先级策略
+环境文件优先级：数组前面的覆盖后面的。`NODE_ENV=production` 时先读 `.env.production`，再 `.env` 兜底。
 
-```typescript
-// 推荐的做法
-const envFilePath = [
-  `.env.${process.env.NODE_ENV || 'development'}`, // 优先级最高
-  '.env', // 兜底
-]
+### 3.2 用 Joi 做启动校验——变量不对就别跑
 
-ConfigModule.forRoot({
-  envFilePath,
-  // ...
-})
-```
-
-这个策略的含义是：
-
-- `NODE_ENV=production` 时，优先读 `.env.production`，找不到再读 `.env`
-- `NODE_ENV=development` 时，优先读 `.env.development`
-- 变量名相同时，**排在数组前面的文件优先级更高**
-
-```bash
-# .env.development (优先)
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
-
-# .env (兜底)
-DATABASE_HOST=prod-rds.xxx.com  # 这个值会被 .env.development 覆盖
-REDIS_HOST=localhost             # .env.development 里没写，所以取这个
-```
-
-### 3.3 Joi 校验：环境变量出错了就早点报
-
-最怕的场景：部署到生产环境，跑了一个小时才发现某个环境变量没配。应用不应该默默带着 undefined 继续跑——应该在启动时就炸掉。
-
-```bash
-pnpm add joi
-```
+最怕的场景：部署到生产，跑了一小时才发现某个环境变量没配。应用不该默默带着 `undefined` 继续跑——应该在启动时就炸掉。
 
 ```typescript
 import * as Joi from 'joi'
 
 const validationSchema = Joi.object({
   NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
-
   PORT: Joi.number().default(3000),
-
   DATABASE_HOST: Joi.string().required(),
   DATABASE_PORT: Joi.number().default(5432),
   DATABASE_USER: Joi.string().required(),
   DATABASE_PASSWORD: Joi.string().required(),
   DATABASE_NAME: Joi.string().required(),
-
   REDIS_HOST: Joi.string().required(),
   REDIS_PORT: Joi.number().default(6379),
-
   JWT_SECRET: Joi.string().min(32).required(),
   JWT_EXPIRES_IN: Joi.string().default('7d'),
 })
-
-export default validationSchema
 ```
 
-如果启动时 `DATABASE_PASSWORD` 没有配，应用会直接抛异常：「ValidationError: "DATABASE_PASSWORD" is required」——而不是跑着跑着数据库连不上。
+`DATABASE_PASSWORD` 忘了配？应用直接报「"DATABASE_PASSWORD" is required」——炸在启动阶段，而不是跑着跑着数据库连不上。这才叫安全的失败。
 
 ---
 
-## 四、日志方案：生产环境的"黑匣子"
+## 四、日志：生产环境的黑匣子
 
-企业级应用上线后，你最依赖的东西就是日志。出 bug 了看日志，性能慢了看日志，被攻击了也看日志。
+项目上线后，你最依赖的就是日志。出 bug 看日志，性能慢看日志，被人攻击也看日志。
+
+我最早用 `console.log`。开发时没问题。上了生产——日志里什么都有，但什么也找不到。没有结构化，搜一个用户的操作要翻几百行。
 
 ### 4.1 为什么推荐 Pino
 
-日志库选型，三个核心维度：性能、结构化、生态。
+| 方案               | 吞吐量 | 结构化    | 场景             |
+| ------------------ | ------ | --------- | ---------------- |
+| Pino               | 极高   | JSON 原生 | 生产环境首选     |
+| Winston            | 中     | 需配置    | 需要复杂传输策略 |
+| NestJS 内置 Logger | 低     | 弱        | Demo、本地调试   |
 
-| 方案               | 吞吐量 | 结构化    | 适用场景            |
-| ------------------ | ------ | --------- | ------------------- |
-| Pino               | 极高   | JSON 原生 | 生产环境首选        |
-| Winston            | 中     | 需配置    | 需要复杂传输策略时  |
-| NestJS 内置 Logger | 低     | 弱        | 开发调试、Demo 项目 |
-
-Pino 快的原因很简单——它是异步的，JSON 序列化用的是优化的 schema 方案而不是 `JSON.stringify`。在高 QPS 场景下，这一点差异会被放大到不可忽视。
+Pino 快的原因：异步的，JSON 序列化用优化 schema 而不是 `JSON.stringify`。QPS 一高，差异非常明显。
 
 ```bash
 pnpm add nestjs-pino pino-http pino-pretty
 ```
 
 ```typescript
-// main.ts
-import { Logger } from 'nestjs-pino'
-
-const app = await NestFactory.create(AppModule, {
-  bufferLogs: true, // ✅ 启动阶段的日志先缓存，等 pino 初始化完再输出
-})
-
-app.useLogger(app.get(Logger))
-```
-
-```typescript
-// app.module.ts - LoggerModule 的配置
 LoggerModule.forRoot({
   pinoHttp: {
-    // 开发环境：人类可读格式
     transport:
       process.env.NODE_ENV !== 'production' ? { target: 'pino-pretty', options: { colorize: true } } : undefined,
-    // 生产环境：JSON 格式，方便 ELK 等日志系统解析
     level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-    // 自动记录每个请求的耗时和响应体大小
-    autoLogging: false, // 配合拦截器手动控制，避免敏感信息进入日志
+    autoLogging: false,
     serializers: {
       req: (req) => ({
         method: req.method,
         url: req.url,
-        // ❌ 不记录 headers 和 body，避免日志里出现密码
+        // 不记录 headers 和 body——避免密码进日志
       }),
     },
   },
 })
 ```
 
-### 4.2 业务日志的正确写法
+### 4.2 打日志的正确姿势
 
 ```typescript
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino'
+// 错误——拼字符串
+this.logger.info(`用户 ${email} 创建成功`)
 
-@Injectable()
-export class UserService {
-  constructor(
-    @InjectPinoLogger(UserService.name)
-    private readonly logger: PinoLogger,
-  ) {}
-
-  async createUser(dto: CreateUserDto) {
-    this.logger.info({ email: dto.email }, '开始创建用户')
-
-    try {
-      const user = await this.repository.save(dto)
-      this.logger.info({ userId: user.id }, '用户创建成功')
-      return user
-    } catch (error) {
-      // 第二个参数放上下文，不要拼到消息里
-      this.logger.error({ err: error, email: dto.email }, '创建用户失败')
-      throw error
-    }
-  }
-}
+// 正确——上下文数据放在第一个对象参数
+this.logger.info({ userId: user.id, email: dto.email }, '用户创建成功')
 ```
 
-Pino 日志的关键习惯：**把上下文数据作为第一个对象参数，消息字符串作为第二个参数**。这样日志里搜 `email: "xxx"` 就能精确匹配，而不是用正则去抠消息字符串。
+为什么？日志系统搜索结构化数据比搜字符串快一万倍。搜 `email: "xxx"` 是精确匹配，搜"用户 xxx 创建成功"是用正则抠字符串。日志量大你就知道了。
 
-### 4.3 Winston 的工程化用法（备选）
+三条铁律：敏感信息挡在序列化器外、上下文数据放结构化对象、消息字符串只写人读的描述。
 
-如果你的团队已经深度使用 Winston + Elasticsearch 等传输层，NestJS 也原生支持：
-
-```bash
-pnpm add nest-winston winston
-```
+### 4.3 已绑定 Winston 的话
 
 ```typescript
-// Winston 的典型配置
-import { transports, format } from 'winston'
-
 WinstonModule.forRoot({
   transports: [
-    // 控制台输出
     new transports.Console({
-      format: format.combine(
-        format.timestamp(),
-        format.colorize(),
-        format.printf(({ timestamp, level, message, context }) => {
-          return `[${timestamp}] ${level} [${context || 'App'}]: ${message}`
-        }),
-      ),
+      /* ... */
     }),
-    // 文件输出——按日期滚动
     new transports.DailyRotateFile({
       filename: 'logs/error-%DATE%.log',
-      datePattern: 'YYYY-MM-DD',
       level: 'error',
-      maxFiles: '30d', // 保留 30 天
+      maxFiles: '30d',
     }),
   ],
 })
 ```
 
+Winston 不差，只是没 Pino 快。QPS 不超 1000，差别不大。选团队熟悉的。
+
 ---
 
-## 五、过滤器、CORS、前缀、版本控制
+## 五、过滤器、CORS、前缀——地基配置
 
-这些是"地基"级别的配置——每个接口都会经过，必须在一开始就搞对。
+这些配置每个接口都经过，一开始就搞对。
 
-### 5.1 异常过滤器：统一错误响应格式
+### 5.1 统一错误响应格式
 
-前端最讨厌的事：同一个接口，成功时返回 `{ data: ... }`，失败时返回 `{ statusCode: 400, message: '...' }`——两种格式完全不一样，前端要写两套判断。
-
-统一异常过滤器解决这个问题：
+前端最恨：同一个接口，成功是 `{ data: ... }`，失败是 `{ statusCode: 400, message: '...' }`——两套格式，前端两套判断。
 
 ```typescript
-// http-exception.filter.ts
 @Catch(HttpException)
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: HttpException, host: ArgumentsHost) {
@@ -519,7 +373,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>()
     const request = ctx.getRequest<Request>()
     const status = exception.getStatus()
-
     const exceptionResponse = exception.getResponse()
     const message =
       typeof exceptionResponse === 'string' ? exceptionResponse : (exceptionResponse as any).message || '未知错误'
@@ -533,25 +386,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
   }
 }
 
-// 所有未被 HttpException 捕获的异常——兜底
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  constructor(private readonly logger: PinoLogger) {}
-
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp()
     const response = ctx.getResponse()
     const request = ctx.getRequest()
-
-    this.logger.error(
-      {
-        err: exception,
-        url: request.url,
-        ip: request.ip,
-      },
-      '未捕获的异常',
-    )
-
+    this.logger.error({ err: exception, url: request.url, ip: request.ip }, '未捕获的异常')
     response.status(500).json({
       code: 500,
       message: '服务器内部错误',
@@ -562,183 +403,83 @@ export class AllExceptionsFilter implements ExceptionFilter {
 }
 ```
 
-### 5.2 CORS 与全局前缀
+给前端的永远同一个格式：`{ code, message, timestamp, path, data? }`。前端只判断 `code`，不用管其他的。
+
+### 5.2 CORS 和前缀
 
 ```typescript
-// main.ts
-const app = await NestFactory.create(AppModule)
-
-// CORS 根据环境区别对待
 app.enableCors({
   origin:
     process.env.NODE_ENV === 'production'
-      ? ['https://yourdomain.com'] // ✅ 生产环境白名单
-      : ['http://localhost:3000', 'http://localhost:5173'], // ✅ 开发环境
-  credentials: true, // 允许携带 Cookie
+      ? ['https://yourdomain.com']
+      : ['http://localhost:3000', 'http://localhost:5173'],
+  credentials: true,
 })
 
-// 全局前缀——所有接口都以 /api 开头
-app.setGlobalPrefix('api')
-
-// 排除健康检查接口，避免被前缀覆盖
-// setGlobalPrefix 支持 exclude 方法
-app.setGlobalPrefix('api', {
-  exclude: ['health'], // /health 不加前缀
-})
+app.setGlobalPrefix('api', { exclude: ['health'] })
 ```
+
+生产环境 CORS 必须白名单。别图省事写 `origin: '*'`——带了 credentials 直接报废。
 
 ### 5.3 API 版本控制
 
-业务升级时，你不可能要求所有客户端同时升级到新接口。版本控制是必经之路。
-
-NestJS 内置了强大的版本控制方案：
-
 ```typescript
-// main.ts
 app.enableVersioning({
-  type: VersioningType.URI, // 版本号在 URL 路径中: /api/v1/users
-  defaultVersion: ['1'], // 不指定版本时默认用 v1
-  // 也可以选 Header 模式: VersioningType.HEADER
-  // 或 Media Type 模式: VersioningType.MEDIA_TYPE
+  type: VersioningType.URI,
+  defaultVersion: ['1'],
 })
-```
 
-```typescript
-// 控制器指定版本
 @Controller({ path: 'users', version: ['1', '2'] })
 export class UserController {
-  // 两个版本共用的接口
   @Get()
-  findAll() { ... }
+  findAll() {}
 
-  // 仅 v2 新增的接口
   @Version('2')
   @Get('stats')
-  getStats() { ... }
+  getStats() {}
 }
 ```
 
-```typescript
-// 或者控制器级别的版本隔离
-@Controller({ path: 'users', version: '1' })
-export class UserV1Controller { ... }
-
-@Controller({ path: 'users', version: '2' })
-export class UserV2Controller { ... }
-```
-
-访问效果：
-
-- `GET /api/v1/users` → UserV1Controller
-- `GET /api/v2/users` → UserV2Controller
-- `GET /api/v2/users/stats` → UserV2Controller.getStats()
-
-### 5.4 记录请求 IP
-
-```typescript
-// 在 main.ts 中设置
-app.set('trust proxy', 1) // 如果部署在反向代理后面（Nginx/ALB）
-
-// 在 Filter 或 Interceptor 中获取
-const ip = request.ip
-// 或者在 Guard 中
-const ip = context.switchToHttp().getRequest().ip
-```
-
-别忘了在生产环境配合 Nginx 配置 `X-Forwarded-For` 头，否则拿到的永远是负载均衡器的 IP。
+`/api/v1/users` 老接口，`/api/v2/users/stats` 新接口。客户慢慢迁移，你别求所有人同时升级。
 
 ---
 
-## 六、SWC、Jest、Vitest：构建与测试的"铁三角"
+## 六、构建和测试——让 CI 别那么慢
 
-### 6.1 SWC 构建加速
+### 6.1 SWC：Rust 写的编译加速器
 
-NestJS 默认用 `tsc` 编译。开发体验还好，但 CI/CD 构建慢得让人想喝咖啡。SWC 是一个用 Rust 写的超快 JS/TS 编译器，能把编译时间降到 tsc 的 1/10 甚至更低。
+NestJS 默认用 `tsc`。本地开发还行，CI/CD 慢成狗。SWC 能把编译时间降到 1/10。
 
 ```bash
 pnpm add -D @swc/cli @swc/core
 ```
 
 ```json
-// .swcrc
-{
-  "jsc": {
-    "parser": {
-      "syntax": "typescript",
-      "decorators": true, // ✅ 关键：支持装饰器
-      "dynamicImport": true
-    },
-    "target": "es2022",
-    "keepClassNames": true, // ✅ NestJS 依赖类名做 DI
-    "baseUrl": "./"
-  },
-  "module": {
-    "type": "commonjs"
-  },
-  "sourceMaps": true
-}
-```
-
-```json
-// nest-cli.json
 {
   "compilerOptions": {
     "builder": "swc",
-    "typeCheck": true, // ✅ 编译时仍然跑类型检查
+    "typeCheck": true,
     "deleteOutDir": true
   }
 }
 ```
 
-注意 `typeCheck: true`——SWC 只管编译，不管类型检查。如果关闭 typeCheck，TypeScript 的类型错误会被静默跳过，上线就炸。
+`typeCheck: true` 是重点——SWC 只管编译，不管类型检查。关了就等着类型错误静默通过上线炸。
 
-### 6.2 Vitest：比 Jest 快一个量级的单元测试
+### 6.2 Vitest：比 Jest 快一个量级
 
-Jest 很好，但它慢——启动慢、转换慢、watch 模式也慢。Vitest 用 esbuild 做转换，原生 ESM 支持，速度碾压 Jest。
+Jest 很好，但慢。Vitest 用 esbuild 做转换，原生 ESM，速度碾压。
 
 ```bash
 pnpm add -D vitest @swc-node/register unplugin-swc
 ```
 
-```typescript
-// vitest.config.ts
-import { defineConfig } from 'vitest/config'
-import swc from 'unplugin-swc'
-
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: 'node',
-    include: ['src/**/*.spec.ts'],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'lcov'],
-    },
-  },
-  plugins: [
-    swc.vite({
-      jsc: {
-        parser: { syntax: 'typescript', decorators: true },
-        target: 'es2022',
-        keepClassNames: true,
-      },
-    }),
-  ],
-})
-```
-
-NestJS 测试的典型写法——利用 NestJS 的 TestingModule 创建隔离的测试容器：
+NestJS 测试的典型写法——TestingModule 创建隔离测试容器：
 
 ```typescript
-// user.service.spec.ts
-import { Test, TestingModule } from '@nestjs/testing'
-import { getRepositoryToken } from '@nestjs/typeorm'
-
 describe('UserService', () => {
   let service: UserService
-  let repository: MockType<Repository<User>>
 
-  // 创建 Mock Repository
   const mockRepository = {
     find: vi.fn(),
     findOne: vi.fn(),
@@ -746,148 +487,68 @@ describe('UserService', () => {
   }
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        UserService,
-        {
-          provide: getRepositoryToken(User),
-          useValue: mockRepository, // ✅ 注入 Mock 替代真实的数据库连接
-        },
-      ],
+    const module = await Test.createTestingModule({
+      providers: [UserService, { provide: getRepositoryToken(User), useValue: mockRepository }],
     }).compile()
 
     service = module.get<UserService>(UserService)
-    repository = module.get(getRepositoryToken(User))
   })
 
   it('应该返回所有用户', async () => {
     const mockUsers = [{ id: 1, name: '张三' }]
-    repository.find.mockResolvedValue(mockUsers)
-
+    mockRepository.find.mockResolvedValue(mockUsers)
     const result = await service.findAll()
     expect(result).toEqual(mockUsers)
-    expect(repository.find).toHaveBeenCalledTimes(1)
+    expect(mockRepository.find).toHaveBeenCalledTimes(1)
   })
 })
 ```
 
-如果团队已经深度绑定了 Jest，也可以用 `@swc/jest` 加速：
-
-```json
-// package.json
-{
-  "jest": {
-    "transform": {
-      "^.+\\.(t|j)s$": "@swc/jest"
-    }
-  }
-}
-```
+注入 Mock Repository，不依赖真实数据库。测试跑得快，你才会写得多。
 
 ---
 
-## 七、为什么需要高速缓存
+## 七、缓存——餐馆不能没有冰箱
 
-一个没有缓存的企业级应用，就像一家餐馆没有冰箱——每次来客人都得现买食材。流量一大，数据库就扛不住。
+一个没有缓存的应用就像一间没有冰箱的餐馆。每次来客人都得现买食材、现洗、现切、现炒。流量一大，厨房（数据库）就崩了。
 
-### 7.1 Redis 客户端选型：ioredis 推荐
+### 7.1 Redis 客户端选型
 
-| 方案                      | 优点                                             | 缺点                 |
-| ------------------------- | ------------------------------------------------ | -------------------- |
-| ioredis                   | 原生 Promise、集群/Sentinel 支持好、Lua 脚本方便 | 包体积稍大           |
-| node-redis (v4+)          | 官方维护、模块化                                 | API 设计不够直觉     |
-| `@nestjs-modules/ioredis` | NestJS 原生集成                                  | 封装稍厚，定制时受限 |
+| 方案                    | 优点                     | 缺点         |
+| ----------------------- | ------------------------ | ------------ |
+| ioredis                 | 原生 Promise、集群支持好 | 包稍大       |
+| node-redis (v4+)        | 官方维护                 | API 不够直觉 |
+| @nestjs-modules/ioredis | NestJS 原生集成          | 封装稍厚     |
 
-推荐 ioredis——不是因为 node-redis 不行，而是 ioredis 的 API 设计更贴近实际使用场景，特别是集群模式的配置简洁得多。
-
-### 7.2 Docker Compose 启动 Redis
-
-```bash
-# 推荐 bitnami/redis 镜像——安全加固更好
-```
-
-```yaml
-# docker-compose.yml
-version: '3.8'
-services:
-  redis:
-    image: bitnami/redis:7.2
-    environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-    ports:
-      - '6379:6379'
-    volumes:
-      - redis_data:/bitnami/redis/data
-    restart: unless-stopped
-
-volumes:
-  redis_data:
-```
-
-推荐两个 Redis 桌面客户端：
-
-- **Another Redis Desktop Manager**（免费、跨平台、中文界面友好）
-- **RedisInsight**（官方出品、可视化更漂亮、但体积大）
-
-### 7.3 在 NestJS 中集成 ioredis
+推荐 ioredis——API 更贴近实际场景，集群配置简洁。
 
 ```bash
 pnpm add @nestjs-modules/ioredis ioredis
 ```
 
 ```typescript
-// redis.module.ts
-import { Module } from '@nestjs/common'
-import { RedisModule } from '@nestjs-modules/ioredis'
-
-@Module({
-  imports: [
-    RedisModule.forRoot({
-      type: 'single', // 单机模式; 生产环境用 'cluster'
-      url: `redis://:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`,
-      options: {
-        // 连接池
-        maxRetriesPerRequest: 3,
-        retryStrategy(times) {
-          const delay = Math.min(times * 50, 2000)
-          return delay
-        },
-        // 断线重连
-        reconnectOnError(err) {
-          const targetError = 'READONLY'
-          if (err.message.includes(targetError)) {
-            return true // 主从切换时触发重连
-          }
-          return false
-        },
-      },
-    }),
-  ],
-  exports: [RedisModule],
+RedisModule.forRoot({
+  type: 'single',
+  url: `redis://:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`,
+  options: {
+    maxRetriesPerRequest: 3,
+    retryStrategy(times) {
+      return Math.min(times * 50, 2000)
+    },
+  },
 })
-export class RedisCacheModule {}
 ```
 
-### 7.4 使用 @nestjs/cache-manager + LRU 做两级缓存
+### 7.2 两级缓存：内存 LRU + Redis
 
-Redis 快，但毕竟是要走网络的。对于高频访问但不怎么变的数据（比如字典表、配置项），在内存里加一层 LRU 缓存，性能可以再提一个量级。
-
-```bash
-pnpm add @nestjs/cache-manager cache-manager lru-cache
-```
+Redis 快，但毕竟要走网络。字典表、配置项这种高频但不怎么变的数据，内存里加一层 LRU，性能再提一个量级。
 
 ```typescript
-import { CacheModule } from '@nestjs/cache-manager'
-import { createKeyv } from 'create-keyv'
-import KeyvRedis from '@keyv/redis'
-
-// 内存 LRU 缓存（进程内，零网络开销）
 const memoryCache = createKeyv('cache-manager://store/memory', {
-  max: 1000, // 最多缓存 1000 个 key
-  ttl: 60000, // 60 秒过期
+  max: 1000,
+  ttl: 60000,
 })
 
-// Redis 缓存（跨进程共享）
 const redisCache = createKeyv({
   store: new KeyvRedis({
     url: `redis://:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`,
@@ -895,247 +556,144 @@ const redisCache = createKeyv({
 })
 
 CacheModule.register({
-  stores: [memoryCache, redisCache], // ✅ 先查内存，未命中再查 Redis
+  stores: [memoryCache, redisCache], // 先查内存，未命中再查 Redis
   isGlobal: true,
 })
 ```
 
-### 7.5 通过标志位动态控制缓存
+### 7.3 两条铁律
 
-缓存很好，但在某些场景你必须能**动态关闭**缓存——比如数据刚更新、或者调试时：
+**第一，永远在写操作后主动 invalidate 缓存。** 别依赖 TTL 自然过期。
 
 ```typescript
-@Injectable()
-export class UserService {
-  constructor(
-    @InjectRepository(User) private readonly userRepo: Repository<User>,
-    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-  ) {}
-
-  async findById(id: number, useCache = true): Promise<User | null> {
-    const cacheKey = `user:${id}`
-
-    // ✅ 通过参数控制是否使用缓存
-    if (useCache) {
-      const cached = await this.cacheManager.get<User>(cacheKey)
-      if (cached) return cached
-    }
-
-    const user = await this.userRepo.findOne({ where: { id } })
-    if (user) {
-      await this.cacheManager.set(cacheKey, user, 60000) // 60秒过期
-    }
-    return user
-  }
-
-  async updateUser(id: number, dto: UpdateUserDto) {
-    const result = await this.userRepo.update(id, dto)
-    // ✅ 更新后主动清除缓存
-    await this.cacheManager.del(`user:${id}`)
-    return result
-  }
+async updateUser(id: number, dto: UpdateUserDto) {
+  const result = await this.userRepo.update(id, dto)
+  await this.cacheManager.del(`user:${id}`)
+  return result
 }
 ```
 
-这种模式的关键习惯：**永远在写操作后主动 invalidate 缓存**，不要依赖 TTL 自然过期。否则数据不一致的时间窗口可能长达几十分钟。
+**第二，留一个开关。** 调试时能直接穿透缓存查数据库：
+
+```typescript
+async findById(id: number, useCache = true): Promise<User | null> {
+  const cacheKey = `user:${id}`
+  if (useCache) {
+    const cached = await this.cacheManager.get<User>(cacheKey)
+    if (cached) return cached
+  }
+  const user = await this.userRepo.findOne({ where: { id } })
+  if (user) await this.cacheManager.set(cacheKey, user, 60000)
+  return user
+}
+```
+
+这个 `useCache` 参数救过我很多次。
 
 ---
 
-## 八、商业化邮件服务
+## 八、发邮件——别自建
 
-企业级应用基本都需要发邮件——注册验证、密码重置、通知推送。自建邮件服务器几乎不可行（IP 声誉、垃圾邮件过滤、退订管理等不是业务该操心的事）。
+注册验证、密码重置、通知推送——企业级应用基本都得发邮件。
 
-### 8.1 邮件服务选型
+我见过有团队专门搭了台服务器搞邮件。不到一个月，发出去的邮件基本全进垃圾箱。IP 没预热、没信誉、ESP 不给过。这不是业务该操心的事。
 
-| 服务商             | 优势                    | 劣势                        |
-| ------------------ | ----------------------- | --------------------------- |
-| AWS SES            | 便宜、与 AWS 生态集成好 | 审核严格、需要独立出站      |
-| Mailgun            | API 友好、送达率高      | 免费额度小                  |
-| SendCloud          | 国内送达好、中文支持    | 海外不行                    |
-| Nodemailer（自建） | 完全可控                | IP 预热、送达率、维护成本高 |
+### 8.1 选型
 
-大部分场景推荐 **AWS SES + Nodemailer 作为传输层**：
+| 服务商             | 优势                 | 劣势             |
+| ------------------ | -------------------- | ---------------- |
+| AWS SES            | 便宜、AWS 生态集成好 | 审核严格         |
+| Mailgun            | API 友好、送达率高   | 免费额度小       |
+| SendCloud          | 国内送达好           | 海外不行         |
+| Nodemailer（自建） | 完全可控             | 维护成本高到离谱 |
+
+大部分场景选 **AWS SES + Nodemailer 传输层**：
 
 ```bash
 pnpm add @nestjs-modules/mailer nodemailer @aws-sdk/client-ses
 ```
 
-### 8.2 NestJS 邮件模块集成
-
 ```typescript
-// mail.module.ts
-import { MailerModule } from '@nestjs-modules/mailer'
-import { SES } from '@aws-sdk/client-ses'
-
-@Module({
-  imports: [
-    MailerModule.forRoot({
-      transport: {
-        SES: new SES({
-          region: process.env.AWS_REGION,
-          credentials: {
-            accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-          },
-        }),
-      },
-      defaults: {
-        from: '"系统通知" <noreply@yourdomain.com>',
-      },
-      template: {
-        // 使用 Handlebars 模板
-        dir: path.join(__dirname, '..', 'templates', 'emails'),
-        adapter: new HandlebarsAdapter(),
-        options: {
-          strict: true,
-        },
+MailerModule.forRoot({
+  transport: {
+    SES: new SES({
+      region: process.env.AWS_REGION,
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
       },
     }),
-  ],
+  },
+  defaults: { from: '"系统通知" <noreply@yourdomain.com>' },
+  template: {
+    dir: path.join(__dirname, '..', 'templates', 'emails'),
+    adapter: new HandlebarsAdapter(),
+    options: { strict: true },
+  },
 })
-export class MailModule {}
 ```
 
-### 8.3 发送邮件的服务层封装
+### 8.2 发邮件失败别拦用户
 
 ```typescript
-// mail.service.ts
-@Injectable()
-export class MailService {
-  constructor(
-    private readonly mailerService: MailerService,
-    @InjectPinoLogger(MailService.name) private readonly logger: PinoLogger,
-  ) {}
-
-  async sendWelcomeEmail(to: string, username: string) {
-    try {
-      await this.mailerService.sendMail({
-        to,
-        subject: '欢迎注册',
-        template: 'welcome', // 对应 templates/emails/welcome.hbs
-        context: { username },
-      })
-      this.logger.info({ to }, '欢迎邮件发送成功')
-    } catch (error) {
-      this.logger.error({ err: error, to }, '欢迎邮件发送失败')
-      // ❌ 不要因为发邮件失败而阻止用户注册
-      // 失败邮件可以放进队列重试
-    }
+async sendWelcomeEmail(to: string, username: string) {
+  try {
+    await this.mailerService.sendMail({ to, subject: '欢迎注册', template: 'welcome', context: { username } })
+    this.logger.info({ to }, '欢迎邮件发送成功')
+  } catch (error) {
+    this.logger.error({ err: error, to }, '欢迎邮件发送失败')
+    // 不发邮件不代表注册失败——失败任务丢进队列重试
   }
 }
 ```
 
-```handlebars
-<!-- templates/emails/welcome.hbs -->
-<h2>你好，{{username}}！</h2>
-<p>感谢注册我们的服务。</p>
-<p>如有任何问题，请回复此邮件。</p>
-```
+**发邮件失败绝对不要阻止用户业务流程。** 记个日志，放进重试队列。用户完成注册但报 500 错误，体验完全不一样。
 
 ---
 
-## 九、数据库集成与 ORM：企业级应用的"心脏"
+## 九、数据库与 ORM——选错成本最高的一章
 
-这是 NestJS 最有争议、也最重要的一章。选错了 ORM 或者搞错了数据库架构，后面改起来的成本是整个项目里最高的。
+这是全文最他妈重要的一章。ORM 选错了改不起，数据库架构搞错了没法回头。
 
-### 9.1 ORM 选型对比
+### 9.1 ORM 选型
 
-| ORM      | 优势                                   | 劣势                            |
-| -------- | -------------------------------------- | ------------------------------- |
-| TypeORM  | NestJS 原生支持最好、装饰器风格、成熟  | 类型推导弱、部分 API 设计有争议 |
-| Prisma   | 类型安全极好、Schema-First、迁移工具强 | 多一层抽象、生成代码不透明      |
-| Mongoose | MongoDB 事实标准、Schema 定义直观      | 仅适用于 MongoDB                |
-| MikroORM | 设计更现代、类型推导好                 | 社区比 TypeORM 小               |
+| ORM      | 亮点                            | 坑点                       |
+| -------- | ------------------------------- | -------------------------- |
+| TypeORM  | NestJS 原生支持最好、装饰器风格 | 类型推导弱、部分 API 绕    |
+| Prisma   | 类型安全极好、迁移工具强        | 多一层抽象、生成代码不透明 |
+| Mongoose | MongoDB 事实标准                | 仅适用于 MongoDB           |
+| MikroORM | 设计现代、类型推导好            | 社区比 TypeORM 小          |
 
-**选型建议**：
+**建议**：关系型数据库（PG/MySQL），新项目优先 **Prisma**。团队熟悉 NestJS 装饰器风格，**TypeORM** 也够用。MongoDB 直接用 **Mongoose**。
 
-- 用的是关系型数据库（PostgreSQL/MySQL）：新项目优先考虑 **Prisma**——它的类型安全和迁移体验是降维打击。但如果团队大部分人对 NestJS 装饰器风格更熟悉，**TypeORM** 也完全够用。
-- 用的是 MongoDB：直接用 **Mongoose**，没有争议。
-- 一个都不熟：先学 Prisma——它的学习曲线最平滑，Schema 定义即文档。
-
-### 9.2 TypeORM 的集成与多数据库连接
-
-```bash
-pnpm add @nestjs/typeorm typeorm pg
-```
-
-#### 9.2.1 单数据库配置
+### 9.2 TypeORM 集成
 
 ```typescript
-// database.module.ts
-import { TypeOrmModule } from '@nestjs/typeorm'
-import { ConfigService } from '@nestjs/config'
-
-@Module({
-  imports: [
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.get<string>('DATABASE_HOST'),
-        port: config.get<number>('DATABASE_PORT'),
-        username: config.get<string>('DATABASE_USER'),
-        password: config.get<string>('DATABASE_PASSWORD'),
-        database: config.get<string>('DATABASE_NAME'),
-        entities: [User, Role, Permission], // 或使用 autoLoadEntities: true
-        synchronize: config.get('NODE_ENV') !== 'production', // ❌ 生产环境绝对关闭
-        logging: config.get('NODE_ENV') === 'development',
-        // 连接池配置
-        extra: {
-          max: 20, // 最大连接数
-          idleTimeoutMillis: 30000,
-          connectionTimeoutMillis: 2000,
-        },
-      }),
-    }),
-  ],
-})
-export class DatabaseModule {}
-```
-
-重点提醒：**`synchronize: true` 在生产环境是灾难性的**——它会自动修改数据库表结构，一个不小心就删字段、丢数据。
-
-#### 9.2.2 TypeORM CLI 与 ormconfig.ts
-
-```typescript
-// ormconfig.ts
-import { DataSource } from 'typeorm'
-import { config } from 'dotenv'
-
-config({ path: `.env.${process.env.NODE_ENV || 'development'}` })
-
-export default new DataSource({
-  type: 'postgres',
-  host: process.env.DATABASE_HOST,
-  port: parseInt(process.env.DATABASE_PORT || '5432'),
-  username: process.env.DATABASE_USER,
-  password: process.env.DATABASE_PASSWORD,
-  database: process.env.DATABASE_NAME,
-  entities: ['src/**/*.entity.ts'],
-  migrations: ['src/database/migrations/*.ts'],
+TypeOrmModule.forRootAsync({
+  imports: [ConfigModule],
+  inject: [ConfigService],
+  useFactory: (config: ConfigService) => ({
+    type: 'postgres',
+    host: config.get<string>('DATABASE_HOST'),
+    port: config.get<number>('DATABASE_PORT'),
+    username: config.get<string>('DATABASE_USER'),
+    password: config.get<string>('DATABASE_PASSWORD'),
+    database: config.get<string>('DATABASE_NAME'),
+    entities: [User, Role, Permission],
+    synchronize: config.get('NODE_ENV') !== 'production',
+    logging: config.get('NODE_ENV') === 'development',
+    extra: { max: 20, idleTimeoutMillis: 30000, connectionTimeoutMillis: 2000 },
+  }),
 })
 ```
 
-```json
-// package.json scripts
-{
-  "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js -d ormconfig.ts",
-  "migration:generate": "npm run typeorm migration:generate src/database/migrations/NewMigration",
-  "migration:run": "npm run typeorm migration:run",
-  "migration:revert": "npm run typeorm migration:revert"
-}
-```
+**`synchronize: true` 在生产环境是灾难。** 它会自动修改表结构。一个配置失误直接丢字段、删数据。我劝过多少团队——有些听进去了，有些交完学费才懂。
 
-#### 9.2.3 多数据库连接（多租户场景）
-
-这是企业级应用最常见的需求之一——同一个服务连接多个数据库。比如 SaaS 系统的每个租户有独立数据库。
+### 9.3 多数据库——多租户
 
 ```typescript
-// multi-database.service.ts
 @Injectable()
 export class MultiDatabaseService implements OnApplicationShutdown {
-  // ✅ 全局 Map 存放所有 DataSource 实例（这不是连接池，是连接管理器）
   private dataSources = new Map<string, DataSource>()
 
   async getDataSource(tenantId: string): Promise<DataSource> {
@@ -1143,10 +701,7 @@ export class MultiDatabaseService implements OnApplicationShutdown {
       const ds = this.dataSources.get(tenantId)!
       if (ds.isInitialized) return ds
     }
-
-    // 从配置中心或元数据库读取该租户的数据库配置
     const tenantConfig = await this.loadTenantConfig(tenantId)
-
     const dataSource = new DataSource({
       type: 'postgres',
       host: tenantConfig.host,
@@ -1157,85 +712,27 @@ export class MultiDatabaseService implements OnApplicationShutdown {
       entities: [User, Order],
       synchronize: false,
     })
-
     await dataSource.initialize()
     this.dataSources.set(tenantId, dataSource)
     return dataSource
   }
 
-  async getRepository<T>(tenantId: string, entity: EntityTarget<T>): Promise<Repository<T>> {
-    const ds = await this.getDataSource(tenantId)
-    return ds.getRepository(entity)
-  }
-
-  // ✅ 应用关闭时循环销毁所有 DataSource
   async onApplicationShutdown() {
     for (const [tenantId, ds] of this.dataSources) {
-      if (ds.isInitialized) {
-        await ds.destroy()
-        console.log(`租户 ${tenantId} 数据库连接已关闭`)
-      }
-    }
-  }
-
-  private async loadTenantConfig(tenantId: string) {
-    // 从元数据库或配置中心查询租户的 DB 连接信息
-    return { host: '...', port: 5432, username: '...', password: '...', database: `tenant_${tenantId}` }
-  }
-}
-```
-
-你需要区分两个概念：
-
-1. **ORM 的连接池**：TypeORM 内部的 pool，管理到同一个数据库的多个连接
-2. **DataSource Map**：你手动管理的"多数据库连接集合"，不同租户连不同数据库
-
-两者不是一个东西，一个是池化复用，一个是路由分发。
-
-#### 9.2.4 TypeOrmConfigService 模式（推荐替代 useFactory）
-
-当数据库配置逻辑比较复杂时，不要直接写在 `useFactory` 回调里——抽成一个专门的 Config Service：
-
-```typescript
-@Injectable()
-export class TypeOrmConfigService implements TypeOrmOptionsFactory {
-  constructor(private readonly configService: ConfigService) {}
-
-  createTypeOrmOptions(): TypeOrmModuleOptions {
-    return {
-      type: 'postgres',
-      host: this.configService.get('DATABASE_HOST'),
-      port: this.configService.get('DATABASE_PORT'),
-      // ... 其他配置
+      if (ds.isInitialized) await ds.destroy()
     }
   }
 }
-
-// 在 Module 中使用
-TypeOrmModule.forRootAsync({
-  useClass: TypeOrmConfigService, // ✅ 代码更清晰，可注入、可测试
-})
 ```
 
-#### 9.2.5 @InjectRepository 与抽象公共 Repository
+区分两个概念：
 
-```typescript
-// 每个租户的请求进入后，Guard 先查出 tenantId
-// Controller 拿到 tenantId 后调用 Service
-// Service 通过 MultiDatabaseService 获取该租户的 DataSource 和 Repository
+1. **ORM 连接池**：TypeORM 内部管理到一个 DB 的多个连接（池化复用）
+2. **DataSource Map**：你手动管理的多 DB 路由（按租户分发）
 
-@Injectable()
-export class OrderService {
-  constructor(private readonly multiDbService: MultiDatabaseService) {}
+不是一码事。一个池化，一个路由。
 
-  async findAll(tenantId: string): Promise<Order[]> {
-    const repo = await this.multiDbService.getRepository(tenantId, Order)
-    return repo.find()
-  }
-}
-```
-
-### 9.3 Prisma 的集成
+### 9.4 Prisma 集成
 
 ```bash
 pnpm add prisma @prisma/client
@@ -1243,7 +740,6 @@ npx prisma init
 ```
 
 ```prisma
-// prisma/schema.prisma
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -1258,224 +754,137 @@ model User {
   email     String    @unique
   password  String
   name      String?
-  roles     UserRole[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-}
-
-model Role {
-  id     Int        @id @default(autoincrement())
-  name   String     @unique
-  users  UserRole[]
 }
 ```
 
 ```typescript
-// prisma.module.ts
-import { Module, Global } from '@nestjs/common'
-import { PrismaService } from './prisma.service'
-
-@Global() // ✅ 全局模块，不需要每个模块都 import
+@Global()
 @Module({
   providers: [PrismaService],
   exports: [PrismaService],
 })
 export class PrismaModule {}
-```
-
-```typescript
-// prisma.service.ts
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common'
-import { PrismaClient } from '@prisma/client'
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     await this.$connect()
   }
-
   async onModuleDestroy() {
     await this.$disconnect()
   }
 }
 ```
 
-#### 9.3.1 Prisma 多 Client 场景
+Prisma 的 Schema 文件就是你的数据库文档。改了 Schema，跑 `prisma migrate dev`，自动生成迁移文件。
 
-当需要连接多个数据库时（比如读写分离）：
+### 9.5 连接池经验公式
 
-```typescript
-// 主库 client（写操作）
-const prisma = new PrismaClient({
-  datasources: { db: { url: process.env.PRIMARY_DATABASE_URL } },
-})
+PostgreSQL 默认最大 100 连接。5 个 Pod，每个 `max: 20`，刚好 100。每个 `max: 50`，就是 250——超出限制，新连接被拒绝。
 
-// 只读副本 client（读操作）
-const prismaReadonly = new PrismaClient({
-  datasources: { db: { url: process.env.READONLY_DATABASE_URL } },
-})
-```
-
-### 9.4 数据库连接池的正确理解
-
-连接池不是你设置的越大越好。PostgreSQL 默认连接数上限是 100，如果你的服务实例有 5 个 Pod，每个 Pod 的 `max: 20` 刚好到上限。但如果你给每个 Pod 设了 `max: 50`，5 个 Pod 就是 250 个连接——超出 PostgreSQL 限制，新的连接会被拒绝。
-
-连接池大小的经验公式：`max = (数据库最大连接数 / 服务实例数) * 0.8`，留 20% 的余量给运维操作和紧急查询。
+公式：`max = (数据库最大连接数 / 服务实例数) × 0.8`。留 20% 给运维操作。
 
 ---
 
-## 十、RxJS：把异步当集合处理的利器
+## 十、RxJS——把异步当集合处理
 
-很多人觉得 NestJS 里的 RxJS 是多余的——"我回调/Promise 用得好好的，为什么要学这个？"
+很多人抱怨 NestJS 里到处是 RxJS："我 Promise 用得好好的，为什么要学这个？"
 
-这就像你用 for 循环处理数组一样能干活，但遇到复杂的过滤、转换、合并操作时，没学过 map/filter/reduce 就很痛苦。RxJS 对异步事件的操控力，跟数组方法对数据的操控力是一个道理。
+我一开始也这么想。后来遇到一个需求改变了我。
 
-### 10.1 核心概念：把异步事件当作集合
+搜索框：输入要防抖、相同值不重复请求、新搜索来了取消旧的。传统写法：
 
 ```typescript
-// 没有 RxJS——写一个"用户输入搜索"的防抖
 let timer: NodeJS.Timeout
 inputElement.addEventListener('input', (e) => {
   clearTimeout(timer)
-  timer = setTimeout(() => {
-    search(e.target.value)
-  }, 300)
+  timer = setTimeout(() => search(e.target.value), 300)
 })
 ```
 
+三个操作，代码已经乱了。再加"取消上一次请求"、"去重"——没法看了。
+
+RxJS：
+
 ```typescript
-// 用 RxJS——声明式，一眼看懂
 fromEvent(inputElement, 'input')
   .pipe(
     map((e) => e.target.value),
-    debounceTime(300), // 300ms 防抖
-    distinctUntilChanged(), // 相同值不重复请求
-    switchMap(
-      (
-        keyword, // ✅ 新搜索来了就取消旧的
-      ) => this.searchService.search(keyword),
-    ),
+    debounceTime(300),
+    distinctUntilChanged(),
+    switchMap((keyword) => this.searchService.search(keyword)),
   )
-  .subscribe((results) => {
-    this.displayResults(results)
-  })
+  .subscribe((results) => this.displayResults(results))
 ```
 
-### 10.2 数据库断连重试
+声明式。防抖、去重、取消旧请求——三行管子搞定。把 RxJS 当成"异步事件的 Lodash"就行。
 
-生产环境数据库偶尔会断连——可能是网络抖动，可能是数据库主从切换。RxJS 的 `retry` 操作符能优雅地处理这类问题：
+### 10.1 数据库断连重试
 
 ```typescript
-import { from, throwError } from 'rxjs'
-import { retry, catchError, delay, take } from 'rxjs/operators'
-
-@Injectable()
-export class ResilientUserService {
-  constructor(@InjectRepository(User) private readonly userRepo: Repository<User>) {}
-
-  findByIdWithRetry(id: number) {
-    return from(this.userRepo.findOne({ where: { id } })).pipe(
-      retry({
-        count: 3, // 最多重试 3 次
-        delay: (error, retryCount) => {
-          console.log(`第 ${retryCount} 次重试，错误: ${error.message}`)
-          // 指数退避: 1s, 2s, 4s
-          return new Promise((resolve) => setTimeout(resolve, Math.pow(2, retryCount - 1) * 1000))
-        },
-      }),
-      catchError((error) => {
-        console.error('重试耗尽，查询失败', error)
-        return throwError(() => new Error('服务暂时不可用，请稍后重试'))
-      }),
-    )
-  }
+findByIdWithRetry(id: number) {
+  return from(this.userRepo.findOne({ where: { id } })).pipe(
+    retry({
+      count: 3,
+      delay: (_, retryCount) =>
+        new Promise((resolve) => setTimeout(resolve, Math.pow(2, retryCount - 1) * 1000)),
+    }),
+    catchError((error) => {
+      console.error('重试耗尽，查询失败', error)
+      return throwError(() => new Error('服务暂时不可用'))
+    }),
+  )
 }
 ```
 
-### 10.3 计时器与间隔任务
-
-```typescript
-import { interval, Subscription } from 'rxjs'
-
-// 每 5 秒检查一次服务健康状态
-const healthCheck$ = interval(5000).pipe(switchMap(() => from(this.checkServiceHealth())))
-
-let subscription: Subscription
-subscription = healthCheck$.subscribe((status) => {
-  console.log('服务状态:', status)
-})
-
-// 组件销毁或服务关闭时取消订阅
-// subscription.unsubscribe()
-```
+查 DB → 失败重试 3 次 → 每次等时翻倍（1s / 2s / 4s）→ 耗尽降级。不用 RxJS，你至少一个 for 循环加一堆 try-catch。
 
 ---
 
-## 十一、用户认证：从登录到接口脱敏的完整链路
+## 十一、用户认证——最容易出安全问题的地方
 
-认证系统是企业级应用的门面。做不好，用户数据泄露、越权访问、Session 劫持这些事就排队等着你。
+认证系统是门面。做不好，数据泄露、越权访问、Session 劫持——排队等你。
 
-### 11.1 AuthModule 的整体架构
-
-NestJS 中认证系统的标准模块划分：
-
-```
-AuthModule
-├── AuthController       → 路由：/auth/login, /auth/register, /auth/refresh
-├── AuthService          → 业务：密码校验、Token 签发、Token 刷新
-├── JwtStrategy          → Passport 策略：验证 JWT 并加载用户
-├── LocalStrategy        → Passport 策略：验证用户名密码
-├── JwtAuthGuard         → 守卫：保护需要登录的接口
-└── RolesGuard           → 守卫：权限校验（下一章讲）
-```
-
-### 11.2 数据校验：Pipe + DTO + class-validator
+### 11.1 数据校验：三道防线
 
 ```bash
 pnpm add class-validator class-transformer
 ```
 
 ```typescript
-// auth.dto.ts
-import { IsEmail, IsString, MinLength, MaxLength, Matches } from 'class-validator'
-
 export class RegisterDto {
   @IsEmail({}, { message: '邮箱格式不正确' })
   email: string
 
   @IsString()
   @MinLength(8, { message: '密码至少 8 位' })
-  @MaxLength(32, { message: '密码最多 32 位' })
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-    message: '密码必须包含大小写字母和数字',
-  })
+  @MaxLength(32)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, { message: '密码必须包含大小写字母和数字' })
   password: string
 
   @IsString()
-  @MinLength(1, { message: '用户名不能为空' })
-  @MaxLength(20, { message: '用户名最多 20 位' })
+  @MinLength(1)
+  @MaxLength(20)
   username: string
 }
 ```
 
 ```typescript
-// 全局管道——所有请求自动校验
-// main.ts
 app.useGlobalPipes(
   new ValidationPipe({
-    whitelist: true, // ✅ 自动剔除 DTO 里没有定义的字段
-    forbidNonWhitelisted: true, // ❌ 如果传了未定义的字段，直接报 400
-    transform: true, // ✅ 自动类型转换（比如 string → number）
-    transformOptions: {
-      enableImplicitConversion: true, // ✅ 无需显式 @Type(() => Number)
-    },
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+    transformOptions: { enableImplicitConversion: true },
   }),
 )
 ```
 
-`whitelist: true` 是安全必备——没有它，攻击者可以在请求里塞任意字段，说不准哪天就有个被遗忘的字段引发越权。
+`whitelist: true` 是安全必备——自动剔除 DTO 没定义的字段。攻击者塞任意字段？直接过滤掉。
 
-### 11.3 Guards 守卫：JWT + Passport 集成
+### 11.2 Passport + JWT
 
 ```bash
 pnpm add @nestjs/passport passport @nestjs/jwt passport-jwt passport-local
@@ -1483,7 +892,6 @@ pnpm add -D @types/passport-jwt @types/passport-local
 ```
 
 ```typescript
-// jwt.strategy.ts
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private readonly configService: ConfigService) {
@@ -1494,7 +902,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     })
   }
 
-  // ✅ validate 的返回值会被挂到 request.user 上
   async validate(payload: JwtPayload): Promise<User> {
     const user = await this.userService.findById(payload.sub)
     if (!user) throw new UnauthorizedException('用户不存在')
@@ -1504,34 +911,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 }
 ```
 
-```typescript
-// local.strategy.ts
-@Injectable()
-export class LocalStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly authService: AuthService) {
-    super({ usernameField: 'email' }) // ✅ 如果用邮箱登录
-  }
+### 11.3 Guard vs Middleware
 
-  async validate(email: string, password: string): Promise<User> {
-    const user = await this.authService.validateUser(email, password)
-    if (!user) throw new UnauthorizedException('邮箱或密码错误')
-    return user
-  }
-}
-```
-
-### 11.4 中间件 vs 守卫：为什么要用守卫做认证？
-
-中间件的问题：它不知道 `next()` 后面是什么。你在中间件里做了认证，但拦不住后面某个方法抛异常后绕过去。
-
-守卫不同——守卫能拿到 `ExecutionContext`，它知道：
-
-- 即将执行的是哪个 Controller 的哪个方法
-- 该方法上有什么装饰器（比如 `@Public()`、`@Roles()`）
-- 请求的完整上下文
+中间件不知道 `next()` 后面是什么。守卫能拿到 `ExecutionContext`——知道要执行哪个 Controller 的哪个方法、上面有什么装饰器：
 
 ```typescript
-// jwt-auth.guard.ts
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
   constructor(private readonly reflector: Reflector) {
@@ -1539,872 +923,341 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
-    // ✅ 检查是否有 @Public() 装饰器
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
     ])
     if (isPublic) return true
-
     return super.canActivate(context)
   }
 }
-```
-
-```typescript
-// 自定义装饰器：标记公开接口
-import { SetMetadata } from '@nestjs/common'
 
 export const IS_PUBLIC_KEY = 'isPublic'
 export const Public = () => SetMetadata(IS_PUBLIC_KEY, true)
 
-// 用法
 @Public()
 @Post('register')
-async register(@Body() dto: RegisterDto) { ... }
-```
+async register(@Body() dto: RegisterDto) { }
 
-```typescript
-// 全局守卫——保护所有接口
-// main.ts 或 AppModule
+// 全局注册
 providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }]
 ```
 
-### 11.5 Argon2：密码哈希的唯一推荐
+### 11.4 Argon2——密码哈希的唯一答案
 
 ```bash
 pnpm add argon2
 ```
 
 ```typescript
-import * as argon2 from 'argon2'
+async hashPassword(password: string): Promise<string> {
+  return argon2.hash(password, {
+    type: argon2.argon2id,
+    memoryCost: 65536,
+    timeCost: 3,
+    parallelism: 4,
+  })
+}
 
-@Injectable()
-export class AuthService {
-  async hashPassword(password: string): Promise<string> {
-    return argon2.hash(password, {
-      type: argon2.argon2id, // ✅ argon2id 是最安全的变体
-      memoryCost: 65536, // 64 MB
-      timeCost: 3, // 3 轮迭代
-      parallelism: 4, // 4 并行
-    })
-  }
-
-  async verifyPassword(hash: string, password: string): Promise<boolean> {
-    return argon2.verify(hash, password)
-  }
+async verifyPassword(hash: string, password: string): Promise<boolean> {
+  return argon2.verify(hash, password)
 }
 ```
 
-Argon2 对比 bcrypt 的优势：
+别再用 bcrypt 了。Argon2 是 2015 年密码哈希竞赛冠军，同时扛 GPU 和 ASIC 攻击，OWASP 首选。能配内存开销——暴力破解成本成倍增加。
 
-- bcrypt 只能扛 GPU 攻击，Argon2 同时扛 GPU 和 ASIC 攻击
-- 可配置内存开销——暴力破解的成本成倍增加
-- 是 2015 年密码哈希竞赛的冠军，已成为 OWASP 推荐的首选
-
-### 11.6 拦截器脱敏：接口不返回密码
+### 11.5 接口脱敏——密码绝不出现在响应里
 
 ```typescript
-// serialize.interceptor.ts
-@Injectable()
-export class SerializeInterceptor implements NestInterceptor {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    return next.handle().pipe(
-      map((data) => {
-        if (Array.isArray(data)) {
-          return data.map((item) => this.transform(item))
-        }
-        return this.transform(data)
-      }),
-    )
-  }
-
-  private transform(data: any) {
-    if (!data) return data
-
-    // ✅ 敏感字段自动剔除
-    const sensitiveFields = ['password', 'passwordHash', 'refreshToken', 'secretAnswer']
-    const result = { ...data }
-    for (const field of sensitiveFields) {
-      delete result[field]
-    }
-    return result
-  }
-}
-```
-
-更精细的做法是用 class-transformer 的 `@Exclude()` 装饰器：
-
-```typescript
-// user.entity.ts
-import { Exclude } from 'class-transformer'
-
 @Entity()
 export class User {
-  @PrimaryGeneratedColumn()
-  id: number
+  @PrimaryGeneratedColumn() id: number
 
-  @Column()
-  email: string
-
-  @Column()
-  @Exclude() // ✅ 序列化时自动排除
+  @Column() @Exclude()
   password: string
 
-  @Column()
-  name: string
+  @Column() name: string
 }
-```
 
-```typescript
-// 在 Controller 或 Interceptor 中使用
 @UseInterceptors(ClassSerializerInterceptor)
 @Get('profile')
 getProfile(@CurrentUser() user: User) {
-  return user // password 字段自动被排除
+  return user // password 自动排除
 }
 ```
+
+在 Entity 上加 `@Exclude()`，一劳永逸。这是代码里最不该省的三行。
 
 ---
 
-## 十二、权限控制：RBAC 与 CASL 实战
+## 十二、权限控制——能做什么比你是谁更重要
 
-认证回答"你是谁"，授权回答"你能做什么"。很多项目把这两个混在一起，结果是灾难性的——当你需要支持多角色、细粒度权限时，代码已经散落在几十个 if-else 里。
+认证答"你是谁"，授权答"你能做什么"。混在一起的后果：多角色、细粒度权限时，if-else 散落在几十个文件里。
 
-### 12.1 权限模型简介
+### 12.1 RBAC——覆盖 80%
 
-| 模型 | 含义               | 粒度   | 复杂度 |
-| ---- | ------------------ | ------ | ------ |
-| ACL  | 访问控制列表       | 资源级 | 高     |
-| DAC  | 自主访问控制       | 用户级 | 中     |
-| MAC  | 强制访问控制       | 标签级 | 高     |
-| ABAC | 基于属性的访问控制 | 属性级 | 很高   |
-| RBAC | 基于角色的访问控制 | 角色级 | 中     |
-
-企业级应用大多数场景用 **RBAC** 就够了——先确定角色，再给角色分配权限，最后给用户分配角色。
-
-### 12.2 RBAC 实体设计
+先确定角色 → 角色分配权限 → 用户分配角色。
 
 ```typescript
-// permission.entity.ts
 @Entity()
 export class Permission {
-  @PrimaryGeneratedColumn()
-  id: number
-
-  @Column({ unique: true })
-  name: string // 如 'user:create', 'user:read', 'user:update', 'user:delete', 'user:manage'
-
-  @Column()
-  action: string // 'create' | 'read' | 'update' | 'delete' | 'manage'
-
-  @Column({ nullable: true })
-  description: string
-
-  @OneToMany(() => RolePermission, (rp) => rp.permission)
-  rolePermissions: RolePermission[]
+  @PrimaryGeneratedColumn() id: number
+  @Column({ unique: true }) name: string // 'user:create', 'user:read'
 }
-```
 
-```typescript
-// role.entity.ts
 @Entity()
 export class Role {
-  @PrimaryGeneratedColumn()
-  id: number
-
-  @Column({ unique: true })
-  name: string // 'admin', 'editor', 'viewer'
-
-  @OneToMany(() => RolePermission, (rp) => rp.role)
-  rolePermissions: RolePermission[]
-
-  @ManyToMany(() => User, (user) => user.roles)
-  users: User[]
+  @PrimaryGeneratedColumn() id: number
+  @Column({ unique: true }) name: string // 'admin', 'editor'
+  @ManyToMany(() => User, (user) => user.roles) users: User[]
 }
 ```
 
 ```typescript
-// role-permission.entity.ts —— 中间表
-@Entity()
-export class RolePermission {
-  @PrimaryGeneratedColumn()
-  id: number
-
-  @ManyToOne(() => Role, (role) => role.rolePermissions)
-  @JoinColumn({ name: 'roleId' })
-  role: Role
-
-  @ManyToOne(() => Permission, (permission) => permission.rolePermissions)
-  @JoinColumn({ name: 'permissionId' })
-  permission: Permission
-}
-```
-
-### 12.3 @Permission 装饰器 + PermissionGuard
-
-```typescript
-// permission.decorator.ts
-import { SetMetadata } from '@nestjs/common'
-
-export const PERMISSIONS_KEY = 'permissions'
 export const RequirePermissions = (...permissions: string[]) =>
   SetMetadata(PERMISSIONS_KEY, permissions)
 
-// 用法
-@RequirePermissions('user:create', 'user:read')
-@Post()
-createUser(@Body() dto: CreateUserDto) { ... }
-```
-
-```typescript
-// permission.guard.ts
 @Injectable()
 export class PermissionGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
-
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredPermissions = this.reflector.getAllAndOverride<string[]>(PERMISSIONS_KEY, [
       context.getHandler(),
       context.getClass(),
     ])
-
-    // 没有 @RequirePermissions 装饰器 = 不需要权限
-    if (!requiredPermissions || requiredPermissions.length === 0) {
-      return true
-    }
-
-    const request = context.switchToHttp().getRequest()
-    const user: User = request.user
-
-    if (!user) return false
-
-    // 查询用户的所有权限
+    if (!requiredPermissions) return true
+    const { user } = context.switchToHttp().getRequest()
     const userPermissions = await this.authService.getUserPermissionNames(user.id)
-
-    // ✅ 任一所需权限满足即可（OR 逻辑）
-    // 如果需要全部满足（AND 逻辑），改用 every
     return requiredPermissions.some((perm) => userPermissions.includes(perm))
   }
 }
-```
 
-```typescript
-// 在模块中注册为全局守卫——注意顺序：JWT 在前，权限在后
+@RequirePermissions('user:create', 'user:read')
+@Post()
+createUser(@Body() dto: CreateUserDto) { }
+
+// 注意顺序：JWT 在前，权限在后
 providers: [
   { provide: APP_GUARD, useClass: JwtAuthGuard },
   { provide: APP_GUARD, useClass: PermissionGuard },
 ]
 ```
 
-### 12.4 前端权限：路由、菜单、按钮
+### 12.2 CASL——解决剩下 20%
 
-权限控制不能只靠后端——用户能看到的界面也应该根据权限动态展示。通常做法是用户登录后，后端返回一个权限列表：
-
-```typescript
-// GET /api/auth/me 的响应
-{
-  "user": { "id": 1, "name": "张三" },
-  "roles": ["editor"],
-  "permissions": ["post:read", "post:create", "post:update", "comment:read", "comment:create"]
-}
-```
-
-前端根据这个列表：
-
-- **路由权限**：没有 `user:manage` 权限的用户看不到用户管理页
-- **菜单权限**：侧边栏动态渲染有权限的菜单项
-- **按钮权限**：没有 `post:delete` 权限的用户看不到删除按钮
-
-### 12.5 CASL：基于属性的权限策略库
-
-RBAC 能覆盖大多数场景，但当权限逻辑变成"用户只能编辑自己创建的文章"或"部门领导只能看自己部门的报表"时，RBAC 的粒度就不够了。这时候需要 **CASL**——一个支持 ABAC 风格策略的权限库。
+RBAC 管不了"只能编辑自己的文章"、"部门领导只看本部门报表"。CASL 条件能力上场：
 
 ```bash
 pnpm add @casl/ability
 ```
 
 ```typescript
-import { AbilityBuilder, createMongoAbility, AbilityClass, ExtractSubjectType } from '@casl/ability'
-
-type Actions = 'manage' | 'create' | 'read' | 'update' | 'delete'
-type Subjects = 'Article' | 'User' | 'Comment' | Article | User
-
-export type AppAbility = MongoAbility<[Actions, Subjects]>
-export const AppAbility = MongoAbility as AbilityClass<AppAbility>
-
 export function defineAbilityFor(user: User) {
-  const { can, cannot, build } = new AbilityBuilder(AppAbility)
+  const { can, build } = new AbilityBuilder(AppAbility)
 
-  if (user.roles?.some((r) => r.name === 'admin')) {
-    can('manage', 'all') // 管理员可以做任何事
-  }
-
+  if (user.roles?.some((r) => r.name === 'admin')) can('manage', 'all')
   if (user.roles?.some((r) => r.name === 'editor')) {
     can(['create', 'read', 'update'], 'Article')
-    can('delete', 'Article', { authorId: user.id }) // ✅ 只能删自己的文章
-    can(['create', 'read'], 'Comment')
+    can('delete', 'Article', { authorId: user.id }) // 只能删自己的
   }
-
   if (user.roles?.some((r) => r.name === 'viewer')) {
-    can('read', 'Article', { status: 'published' }) // ✅ 只能看已发布的
-    can('read', 'Comment')
+    can('read', 'Article', { status: 'published' }) // 只能看已发布
   }
 
   return build()
 }
-```
 
-```typescript
-// 在 Service 中使用
+// 使用
 const ability = defineAbilityFor(currentUser)
 if (!ability.can('update', subject('Article', { authorId: 5 }))) {
   throw new ForbiddenException('你没有权限编辑此文章')
 }
 ```
 
-CASL 的精髓在于它的条件能力（Conditional Ability）——`{ authorId: user.id }` 这种基于资源属性的条件判断，这是纯 RBAC 做不到的。
+CASL 的精髓：条件能力 `{ authorId: user.id }` ——纯 RBAC 做不到。RBAC 和 CASL 不是替代关系，是互补。
 
 ---
 
-## 十三、定时任务与消息队列
+## 十三、定时任务和消息队列——别在请求里做重活
 
-### 13.1 NestJS Schedule
-
-NestJS 内置了基于 `node-cron` 的定时任务模块：
+### 13.1 定时任务
 
 ```bash
 pnpm add @nestjs/schedule
 ```
 
 ```typescript
-import { Cron, CronExpression, Interval, Timeout } from '@nestjs/schedule'
+@Cron('0 3 * * *', { name: 'cleanExpiredTokens', timeZone: 'Asia/Shanghai' })
+handleTokenCleanup() {
+  this.logger.log('开始清理过期 Token')
+}
 
-@Injectable()
-export class ScheduledTasksService {
-  private readonly logger = new Logger(ScheduledTasksService.name)
-
-  // 每天凌晨 3 点清理过期 Token
-  @Cron('0 3 * * *', {
-    name: 'cleanExpiredTokens',
-    timeZone: 'Asia/Shanghai',
-  })
-  handleTokenCleanup() {
-    this.logger.log('开始清理过期 Token')
-    // ...清理逻辑
-  }
-
-  // 或使用 CronExpression 枚举——可读性更好
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  handleDailyReport() {
-    this.logger.log('生成每日报表')
-  }
-
-  // 每 30 秒执行一次
-  @Interval(30000)
-  handleHealthCheck() {
-    // 心跳上报到监控系统
-  }
-
-  // 应用启动 5 秒后执行一次
-  @Timeout(5000)
-  handleStartupTask() {
-    this.logger.log('应用启动完成，执行初始化任务')
-  }
+@Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+handleDailyReport() {
+  this.logger.log('生成每日报表')
 }
 ```
 
-```typescript
-// 在 Module 中启用
-@Module({
-  imports: [ScheduleModule.forRoot()],
-  providers: [ScheduledTasksService],
-})
-export class AppModule {}
-```
+### 13.2 Bull 消息队列
 
-### 13.2 NestJS Bull（消息队列）
-
-定时任务适合简单的周期性工作，重量级的异步任务（发邮件、处理图片、数据报表）应该走消息队列：
+定时任务适合简单周期工作。重活——发邮件、处理图片、生成报表——走队列：
 
 ```bash
 pnpm add @nestjs/bull bull
 ```
 
 ```typescript
-// queue.module.ts
-import { BullModule } from '@nestjs/bull'
-
-@Module({
-  imports: [
-    BullModule.forRoot({
-      redis: {
-        host: process.env.REDIS_HOST,
-        port: parseInt(process.env.REDIS_PORT || '6379'),
-        password: process.env.REDIS_PASSWORD,
-      },
-    }),
-    BullModule.registerQueue(
-      { name: 'email' }, // 邮件队列
-      { name: 'thumbnail' }, // 缩略图生成队列
-    ),
-  ],
+BullModule.forRoot({
+  redis: { host: process.env.REDIS_HOST, port: parseInt(process.env.REDIS_PORT || '6379'), password: process.env.REDIS_PASSWORD },
 })
-export class QueueModule {}
-```
+BullModule.registerQueue({ name: 'email' }, { name: 'thumbnail' })
 
-```typescript
-// email.processor.ts —— 消费者（Worker）
-import { Processor, Process, OnQueueFailed } from '@nestjs/bull'
-import { Job } from 'bull'
-
+// 消费者
 @Processor('email')
 export class EmailProcessor {
-  constructor(private readonly mailService: MailService) {}
-
   @Process('welcome')
   async handleWelcomeEmail(job: Job<{ to: string; username: string }>) {
     await this.mailService.sendWelcomeEmail(job.data.to, job.data.username)
   }
 
-  @Process('resetPassword')
-  async handleResetPasswordEmail(job: Job<{ to: string; token: string }>) {
-    // ...发送重置密码邮件
-  }
-
   @OnQueueFailed()
   onFailed(job: Job, error: Error) {
-    console.error(`邮件任务失败: job ${job.id}, error: ${error.message}`)
-    // 可以在这里写入重试队列或发送告警
+    console.error(`邮件任务失败: ${job.id}, ${error.message}`)
   }
+}
+
+// 生产者
+async register(dto: RegisterDto) {
+  const user = await this.createUser(dto)
+  await this.emailQueue.add('welcome', { to: user.email, username: user.username }, {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 2000 },
+    removeOnComplete: true,
+  })
+  return user
 }
 ```
 
-```typescript
-// email.service.ts —— 生产者（在业务代码中添加任务）
-@Injectable()
-export class UserService {
-  constructor(@InjectQueue('email') private readonly emailQueue: Queue) {}
-
-  async register(dto: RegisterDto) {
-    const user = await this.createUser(dto)
-
-    // ✅ 异步任务，不阻塞注册流程
-    await this.emailQueue.add(
-      'welcome',
-      {
-        to: user.email,
-        username: user.username,
-      },
-      {
-        attempts: 3, // 失败重试 3 次
-        backoff: { type: 'exponential', delay: 2000 }, // 指数退避
-        removeOnComplete: true, // 成功自动清理
-      },
-    )
-
-    return user
-  }
-}
-```
-
-Bull 的核心价值：
-
-- **解耦**：用户注册和发邮件是两件事，不应该耦合在一个请求周期里
-- **削峰**：促销活动时大量用户注册，邮件服务器撑不住——队列帮你排队处理
-- **重试**：邮件发送失败了自动重试，不用人工介入
+Bull 解决三件事：解耦（注册和发邮件分开）、削峰（大促排队）、重试（失败自动重试）。
 
 ---
 
-## 十四、微服务（重点）
+## 十四、微服务——别一上来就拆
 
-前面十三章讲的都是单体应用。当你项目规模大到单体扛不住时，微服务是不可避免的路径。但微服务不是万能药——拆分不当比单体还糟糕。
+前面都是单体。当你项目大到单体扛不住——团队冲突、DB 扛不住、部署互相阻塞——才考虑微服务。
 
-### 14.1 微服务和分布式的区别
+但微服务不是万能药。拆错了比单体还难维护。
 
-很多人把"微服务"和"分布式"混着用。但这俩不是一个概念：
+### 14.1 先说清楚——分布式 vs 微服务
 
-- **分布式**是一个架构风格——一个系统被拆成多个节点，通过网络通信协作。这是"怎么部署"的问题。
-- **微服务**是分布式的一种具体实现——按业务边界拆分，每个服务独立部署、独立数据库、独立团队。这是"怎么拆分"的问题。
+- **分布式**：系统拆成多个节点，通过网络通信。这是"怎么部署"的问题
+- **微服务**：分布式的一种实现——按业务边界拆分，独立部署、独立数据库。这是"怎么拆分"的问题
 
-你可以有分布式的单体（同个代码库部署多个实例），也可以有单机的微服务（一个进程里跑多个 NestJS 应用）。关键在于**业务边界**。
+关键在业务边界，不在部署形式。
 
-### 14.2 服务拆分：最难的决策
+### 14.2 怎么拆——三个维度
 
-微服务最难的不是代码，而是**怎么拆**。拆错了比单体还难维护。
+| 维度   | 思路           | 例子                         |
+| ------ | -------------- | ---------------------------- |
+| 按业务 | 业务领域       | 用户服务、内容服务、订单服务 |
+| 按功能 | 横向共通能力   | 审计、通知、文件             |
+| 按资源 | 访问特征和负载 | 搜索（高频）、报表（批量）   |
 
-Martin Fowler 的《微服务架构模式》是必读书，但这里给你一个实操框架：
+### 14.3 微服务通信
 
-#### 按业务拆分
-
-| 服务     | 职责                     | 示例接口          |
-| -------- | ------------------------ | ----------------- |
-| 用户服务 | 注册、登录、用户信息管理 | /users, /auth     |
-| 内容服务 | 文章、评论、点赞         | /posts, /comments |
-| 消息服务 | 站内信、推送、邮件       | /notifications    |
-| 统计服务 | 用户行为分析、报表       | /analytics        |
-| 订单服务 | 下单、支付、退款         | /orders           |
-
-#### 按功能拆分
-
-有些逻辑横向贯穿多个服务，需要抽成公共能力：
-
-- **审计服务**：记录所有操作日志——任何服务的关键操作都写一条审计记录
-- **通知服务**：聚合所有需要通知的场景——用户注册、订单完成、评论回复都能复用
-- **文件服务**：统一管理文件上传、存储、CDN
-
-#### 按资源特征拆分
-
-| 特征     | 适合拆分出的独立服务                      |
-| -------- | ----------------------------------------- |
-| 高频访问 | 搜索服务（独立扩容、缓存策略不同）        |
-| 低频批量 | 数据导出服务（独立资源调度）              |
-| IO 密集  | 图片/视频处理服务（队列 + Worker）        |
-| 计算密集 | AI 推理服务、报表生成（GPU/CPU 独立调度） |
-
-### 14.3 服务治理全景
-
-一套成熟的微服务体系，除了业务服务本身，还需要一套治理基础设施。推荐关注 [CNCF 全景图](https://cncf.io)：
-
-| 功能           | 常用工具                  | 作用                               |
-| -------------- | ------------------------- | ---------------------------------- |
-| 服务注册与发现 | Consul / Etcd / Nacos     | "我的 IP 在哪？我能调到谁？"       |
-| 配置中心       | Nacos / Consul KV         | 配置集中管理，支持热更新           |
-| API 网关       | Kong / Traefik / Nginx    | 统一入口、限流、鉴权               |
-| 负载均衡       | Nginx / Envoy / 云厂商 LB | 流量分发                           |
-| 服务熔断       | Opossum / Resilience4j    | 下游挂了怎么办？快速失败不拖垮上游 |
-| 链路追踪       | SkyWalking / Jaeger       | 一个请求经过了哪些服务，哪里慢了   |
-| 日志采集       | ELK / Loki                | 分散在多个服务的日志如何统一查询   |
-| 监控告警       | Prometheus + Grafana      | 服务健康状态、资源使用             |
-
-### 14.4 NestJS 中的微服务通信
-
-NestJS 对微服务通信有一流的原生支持，支持多种传输层：
-
-#### 14.4.1 TCP 通信（适合内部低延迟场景）
-
-```typescript
-// 主服务 —— 启动一个混合应用（HTTP + 微服务）
-const app = await NestFactory.create(AppModule)
-const microservice = app.connectMicroservice<MicroserviceOptions>({
-  transport: Transport.TCP,
-  options: {
-    host: '0.0.0.0',
-    port: 8877,
-  },
-})
-await app.startAllMicroservices()
-await app.listen(3000)
-```
-
-```typescript
-// user-service —— 纯微服务应用
-const app = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
-  transport: Transport.TCP,
-  options: { host: '0.0.0.0', port: 8877 },
-})
-await app.listen()
-```
-
-#### 14.4.2 Redis 通信（发布/订阅模式，解耦更好）
-
-```typescript
-const app = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
-  transport: Transport.REDIS,
-  options: {
-    host: process.env.REDIS_HOST,
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-    password: process.env.REDIS_PASSWORD,
-  },
-})
-```
-
-#### 14.4.3 gRPC 通信（高性能，强类型）
-
-gRPC 是微服务通信的黄金标准——基于 HTTP/2，使用 Protocol Buffers 做序列化，双向流支持，强类型契约。
-
-```bash
-pnpm add @nestjs/microservices @grpc/grpc-js @grpc/proto-loader
-```
+**gRPC（推荐）**——HTTP/2 + Protocol Buffers + 强类型：
 
 ```protobuf
 // proto/user.proto
-syntax = "proto3";
-
-package user;
-
 service UserService {
   rpc FindOne (UserById) returns (User) {}
-  rpc FindAll (Empty) returns (UserList) {}
-}
-
-message UserById {
-  int32 id = 1;
-}
-
-message User {
-  int32 id = 1;
-  string email = 2;
-  string name = 3;
-}
-
-message UserList {
-  repeated User users = 1;
-}
-
-message Empty {}
-```
-
-```typescript
-// 生成 TypeScript 类型
-// npx grpc-tools -I ./proto --plugin=protoc-gen-ts=./node_modules/.bin/protoc-gen-ts --ts_out=./src/generated ./proto/*.proto
-```
-
-```typescript
-// NestJS gRPC 服务端
-@Controller()
-export class UserGrpcController {
-  constructor(private readonly userService: UserService) {}
-
-  @GrpcMethod('UserService', 'FindOne')
-  async findOne(data: { id: number }): Promise<User> {
-    return this.userService.findById(data.id)
-  }
 }
 ```
 
 ```typescript
-// NestJS gRPC 客户端
-@Injectable()
-export class UserGrpcClient implements OnModuleInit {
-  @Client({
-    transport: Transport.GRPC,
-    options: {
-      package: 'user',
-      protoPath: join(__dirname, '../proto/user.proto'),
-      url: 'localhost:50051',
-      // ✅ 生产环境加 SSL
-      // credentials: credentials.createSsl(),
-    },
-  })
-  private client: ClientGrpc
-
-  private userService: any
-
-  onModuleInit() {
-    this.userService = this.client.getService('UserService')
-  }
-
-  async findOne(id: number) {
-    return this.userService.FindOne({ id }).toPromise()
-  }
+// 服务端
+@GrpcMethod('UserService', 'FindOne')
+async findOne(data: { id: number }): Promise<User> {
+  return this.userService.findById(data.id)
 }
+
+// 客户端
+@Client({
+  transport: Transport.GRPC,
+  options: { package: 'user', protoPath: join(__dirname, '../proto/user.proto'), url: 'localhost:50051' },
+})
+private client: ClientGrpc
 ```
 
-gRPC 的 proto 文件和证书（certs）需要在服务之间共享——通常的做法是把它抽成独立的 npm 包或 git submodule，避免到处拷贝导致版本不一致。
+Proto 文件必须在服务间共享——抽成独立 npm 包或 git submodule。到处拷贝版本不一致，早晚吃大亏。
 
-**gRPC 健康检查**也很重要——NestJS 内置支持：
+**Redis Pub/Sub**——事件驱动，解耦更好：
 
 ```typescript
-import { HealthCheckService, GRPCHealthIndicator } from '@nestjs/terminus'
+this.eventBus.emit('user.registered', { userId: user.id, email: user.email })
 
-@Get('health')
-healthCheck() {
-  return this.health.check([
-    () => this.grpc.pingCheck('user-service', { service: 'user.UserService', url: 'localhost:50051' }),
-  ])
-}
-```
-
-#### 14.4.4 其他传输层
-
-| 传输层   | 使用场景                 |
-| -------- | ------------------------ |
-| MQTT     | IoT 设备通信             |
-| RabbitMQ | 需要复杂路由的异步消息   |
-| Kafka    | 高吞吐量的事件流处理     |
-| NATS     | 需要超低延迟的云原生架构 |
-
-### 14.5 合理的微服务工程目录
-
-```
-project/
-├── apps/
-│   ├── api-gateway/           # 网关服务
-│   │   ├── src/
-│   │   │   ├── main.ts
-│   │   │   ├── app.module.ts
-│   │   │   └── modules/
-│   │   └── tsconfig.json
-│   ├── user-service/           # 用户服务
-│   │   ├── src/
-│   │   │   ├── main.ts
-│   │   │   └── modules/
-│   │   └── tsconfig.json
-│   ├── content-service/        # 内容服务
-│   └── notification-service/   # 通知服务
-├── libs/
-│   ├── common/                 # 共享代码库
-│   │   ├── src/
-│   │   │   ├── filters/        # 公共异常过滤器
-│   │   │   ├── guards/         # 公共守卫
-│   │   │   ├── decorators/     # 公共装饰器
-│   │   │   ├── interceptors/   # 公共拦截器
-│   │   │   └── dto/            # 共享 DTO
-│   │   └── tsconfig.json
-│   └── proto/                  # gRPC proto 定义
-│       └── user.proto
-├── docker/
-│   ├── Dockerfile.api-gateway
-│   ├── Dockerfile.user-service
-│   └── docker-compose.yml
-├── nest-cli.json
-├── package.json
-└── tsconfig.base.json
-```
-
-NestJS 的 monorepo 模式天然支持这种结构——`nest generate app user-service` 就能在 `apps/` 下新建一个子应用。
-
-### 14.6 容器化打包与部署
-
-```dockerfile
-# Dockerfile.user-service
-# — 多阶段构建 —
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build user-service
-
-FROM node:20-alpine AS production
-WORKDIR /app
-COPY --from=builder /app/dist/apps/user-service ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/libs ./libs
-EXPOSE 3001
-CMD ["node", "dist/main.js"]
-```
-
-### 14.7 流式消息（Event-Based）
-
-事件驱动是微服务解耦的关键手段——一个服务发出事件，其他服务按需消费，完全解耦：
-
-```typescript
-// 发出事件
-@Injectable()
-export class UserService {
-  constructor(@Inject('EVENT_BUS') private readonly eventBus: ClientProxy) {}
-
-  async register(dto: RegisterDto) {
-    const user = await this.createUser(dto)
-    // ✅ 发射事件——谁关心谁处理，发送方不 care
-    this.eventBus.emit('user.registered', {
-      userId: user.id,
-      email: user.email,
-      timestamp: new Date().toISOString(),
-    })
-    return user
-  }
-}
-
-// 消费者 A：发欢迎邮件
 @EventPattern('user.registered')
 async handleWelcomeEmail(data: { userId: number; email: string }) {
   await this.mailService.sendWelcome(data.email)
 }
-
-// 消费者 B：初始化用户配置
-@EventPattern('user.registered')
-async handleInitConfig(data: { userId: number }) {
-  await this.configService.createDefaultConfig(data.userId)
-}
-
-// 消费者 C：写入审计日志
-@EventPattern('user.registered')
-async handleAuditLog(data: { userId: number; email: string }) {
-  await this.auditService.log('user', 'register', data.userId)
-}
 ```
 
-### 14.8 超时逻辑与异常处理
-
-微服务调用最怕"无响应"——下游挂了，上游傻等，等超时的时候上游自己也挂了。
+### 14.4 超时与降级
 
 ```typescript
-// 调用微服务时设置超时和重试
 this.userServiceClient.send('user.findOne', { id: 5 }).pipe(
-  timeout(3000), // ✅ 3 秒没响应就抛错
-  retry({
-    // ✅ 失败重试 2 次
-    count: 2,
-    delay: (error, retryCount) => {
-      console.warn(`重试第 ${retryCount} 次: ${error.message}`)
-      return timer(retryCount * 1000) // 线性退避
-    },
-  }),
+  timeout(3000),
+  retry({ count: 2, delay: (_, retryCount) => timer(retryCount * 1000) }),
   catchError((error) => {
-    // ✅ 熔断后的降级逻辑
     if (error instanceof TimeoutError) {
-      return of({ id: 5, name: '未知用户（缓存）', _fallback: true })
+      return of({ id: 5, name: '未知用户', _fallback: true })
     }
     throw error
   }),
 )
 ```
 
-### 14.9 高可用与故障转移：Consul
+微服务调用：超时、重试、降级——三者缺一不可。下游挂了下游的事，上游不能跟着死。
 
-服务注册与发现是微服务最基础也最重要的能力。推荐 **Consul**——它同时提供了服务注册、健康检查、KV 配置存储。
+### 14.5 服务治理
 
-```yaml
-# docker-compose.yml 中加入 Consul
-consul:
-  image: consul:1.15
-  ports:
-    - '8500:8500' # Web UI
-    - '8600:8600' # DNS
-  command: 'agent -dev -client=0.0.0.0'
+| 功能           | 工具                   |
+| -------------- | ---------------------- |
+| 服务注册与发现 | Consul / Etcd / Nacos  |
+| API 网关       | Kong / Traefik / Nginx |
+| 链路追踪       | SkyWalking / Jaeger    |
+| 日志采集       | ELK / Loki             |
+| 监控告警       | Prometheus + Grafana   |
+
+微服务不是把代码拆了就完。治理基础设施跟上了，才叫微服务。
+
+### 14.6 Monorepo 工程目录
+
+```
+project/
+├── apps/
+│   ├── api-gateway/
+│   ├── user-service/
+│   └── content-service/
+├── libs/
+│   ├── common/      # 共享过滤器、守卫、装饰器、DTO
+│   └── proto/       # gRPC proto 定义
+├── docker/
+│   └── docker-compose.yml
+├── nest-cli.json
+└── package.json
 ```
 
-```typescript
-// 在 NestJS 中使用 Consul 的服务发现
-// 通过 consul 包发现健康的 user-service 实例
-import Consul from 'consul'
+`nest generate app user-service` 就在 apps 下建一个子应用。
 
-const consul = new Consul({ host: 'localhost', port: '8500' })
-const services = await consul.health.service({ service: 'user-service', passing: true })
-// 从健康的服务实例中选取一个（结合简单的负载均衡）
-const healthyService = services[0].Service
-const userServiceUrl = `http://${healthyService.Address}:${healthyService.Port}`
-```
+### 14.7 本地开发——Multipass + K3s
 
-### 14.10 Multipass + K3s：本地微服务集群
-
-开发和测试微服务时，你不能每次都在集群上调试——本地搭建一个轻量级 K8s 环境是最佳实践。
-
-[Multipass](https://multipass.run) 是 Canonical 出的轻量级虚拟机管理工具，几秒钟就能在本地启动一个 Ubuntu 实例。[K3s](https://k3s.io) 是 Rancher 出的精简版 Kubernetes——去掉了云厂商相关的功能，只保留核心，内存占用从 2GB 降到 512MB。
+你不能每次调试都往集群部署。本地搭轻量级 K8s：
 
 ```bash
-# 安装 multipass
-brew install multipass # macOS
-# 或 snap install multipass # Linux
-
-# 创建一个 VM
+brew install multipass
 multipass launch --name k3s-master --cpus 2 --memory 4G --disk 20G
-
-# 在 VM 内安装 k3s
 multipass exec k3s-master -- bash -c "curl -sfL https://get.k3s.io | sh -"
-
-# 获取 kubeconfig
-multipass exec k3s-master -- sudo cat /etc/rancher/k3s/k3s.yaml > ~/.kube/k3s-config.yaml
-export KUBECONFIG=~/.kube/k3s-config.yaml
-
-# 验证集群
-kubectl get nodes
 ```
-
-把 NestJS 微服务部署到 K3s：
 
 ```yaml
 # k8s/user-service.yaml
@@ -2413,98 +1266,64 @@ kind: Deployment
 metadata:
   name: user-service
 spec:
-  replicas: 3 # ✅ 3 个副本，保证高可用
-  selector:
-    matchLabels:
-      app: user-service
+  replicas: 3
   template:
-    metadata:
-      labels:
-        app: user-service
     spec:
       containers:
         - name: user-service
           image: your-registry/user-service:latest
-          ports:
-            - containerPort: 3001
-          env:
-            - name: DATABASE_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: db-credentials
-                  key: host
-          livenessProbe: # ✅ 探活：进程是不是还活着
+          livenessProbe:
             httpGet:
               path: /health
               port: 3001
-            initialDelaySeconds: 10
-            periodSeconds: 15
-          readinessProbe: # ✅ 就绪：能不能接流量
+          readinessProbe:
             httpGet:
               path: /health/ready
               port: 3001
-            initialDelaySeconds: 5
-            periodSeconds: 10
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: user-service
-spec:
-  selector:
-    app: user-service
-  ports:
-    - port: 3001
-      targetPort: 3001
 ```
 
+`livenessProbe` 和 `readinessProbe` 必须配。一个管活没活，一个管能不能接流量。
+
 ---
 
-## 十五、总结：企业级 NestJS 架构的核心原则
+## 十五、你下次做决策时问自己这些问题
 
-### 15.1 配置与管理
+我不给你总结。总结没用。我给你一套问题——每次做决策时问自己：
 
-- **多环境配置**必须通过 `envFilePath` 区分，`Joi` 做启动校验——环境变量不对就炸掉，不要默默带 bug 上线
-- **日志**推荐 Pino（高性能结构化日志），生产环境输出 JSON 格式方便接入 ELK/Loki
-- **全局过滤器**统一错误响应格式，`HttpExceptionFilter` + `AllExceptionsFilter` 兜底——不要让框架的默认错误格式暴露给前端
+**关于架构**：
 
-### 15.2 数据与缓存
+1. 这个服务真的需要拆吗？一个人开发就先别拆
+2. 拆完调用延迟加了多少？数据一致性怎么保证？
+3. 团队有精力维护 Consul、K8s、链路追踪这些基础设施吗？
 
-- **缓存分层**：内存 LRU（进程内极快）+ Redis（跨进程共享），并**永远在写操作后主动 invalidate 缓存**
-- **ORM 选型**：Prisma（类型安全优先）或 TypeORM（NestJS 原生生态），关系型数据库必须关掉生产环境的 `synchronize`
-- **多数据库**场景用 `Map<string, DataSource>` 管理连接实例，`onApplicationShutdown` 中循环销毁
+**关于数据库**：
 
-### 15.3 认证与授权
+1. `synchronize` 关了吗？（这不是问答题——答案永远是"关了"）
+2. 连接池大小算过吗？`实例数 × max > 数据库上限`？
+3. 缓存失效策略：更新后立刻清还是等 TTL？
 
-- **密码存储**：唯一推荐 Argon2，不要再问"bcrypt 够不够"
-- **数据校验**：`ValidationPipe` + `whitelist: true` + DTO 的 `class-validator`——三层防护
-- **接口脱敏**：`@Exclude()` 装饰器或 `SerializeInterceptor`——绝不让密码出现在任何接口响应里
-- **权限控制**：RBAC 覆盖 80% 场景，CASL 解决剩下 20% 的属性级条件权限
+**关于安全**：
 
-### 15.4 异步与可靠性
+1. 密码存储用 Argon2 了吗？
+2. 接口响应里有密码字段吗？不放心的全局挂 SerializeInterceptor
+3. whitelist 开了吗？没开的现在去开
 
-- **RxJS** 处理数据库重试、防抖节流、异步流程编排——把它当成"异步事件的 Lodash"
-- **Bull** 消息队列解耦重任务（邮件、图片处理、报表生成），失败自动重试
-- **微服务超时**必须配置 `timeout` + `retry` + `catchError` 降级——下游挂了不能让上游也跟着死
+**关于可靠性**：
 
-### 15.5 微服务架构
+1. 微服务调用设超时了吗？
+2. 发邮件失败会不会阻止用户操作？
+3. 日志存没存敏感信息？
 
-- **服务拆分**从业务边界出发，辅以功能（审计、通知、文件）和资源特征（高频/低频/IO密集/计算密集）两个维度
-- **服务治理**关注注册发现（Consul）、配置中心、网关、链路追踪（SkyWalking）、日志采集、监控告警
-- **通信方式**：内部服务优先 gRPC（强类型 + 双向流），异步事件用 Redis Pub/Sub 或 Kafka
-- **Monorepo 目录**用 `apps/` + `libs/` 结构，proto 和公共代码严格共享，不拷贝
-- **本地开发**用 Multipass + K3s，生产部署关注 `livenessProbe` 和 `readinessProbe`
+最后一句话——我踩了三年坑之后最想说的：
 
-### 15.6 最后的建议
+**不要一上来就搞微服务。** 先写单体。NestJS 最大的好处不是让你写微服务，是你写成单体后，拆微服务只需把 Service 包成微服务端、调用方改成 ClientProxy——业务代码几乎不动。
 
-不要一上来就搞微服务。先写单体，当单体真的成为瓶颈（团队协作冲突、数据库扛不住、部署互相阻塞）时再拆。
+优先级：
 
-NestJS 好就好在你先写成单体，后面拆微服务只需要把 Service 包成微服务端，把调用方改成 ClientProxy——业务代码几乎不用动。这才是真正的"为拆分而生"。
+1. 配置 + 日志 + 异常处理（地基）
+2. 数据库 + 缓存 + 认证授权（业务核心）
+3. 消息队列 + 微服务（架构扩展）
 
-这篇文章涉及的技术栈很多，你不必一次性全掌握。我的建议是按优先级来：
+每搞定一层，验证在生产环境跑稳了，再进下一层。
 
-1. 先搞定**配置 + 日志 + 异常处理**（项目地基）
-2. 再搞定**数据库 + 缓存 + 认证授权**（业务核心）
-3. 最后搞**消息队列 + 微服务**（架构扩展）
-
-每搞定一层，验证它确实在生产环境跑得稳，再进下一层。
+现在，去看看你的代码里 `synchronize: true` 是不是还开着。如果是，先去改掉。

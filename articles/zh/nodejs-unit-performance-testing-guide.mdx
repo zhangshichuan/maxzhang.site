@@ -2,60 +2,68 @@
 title: 'Node.js 单元测试与性能测试指南'
 summary: '在软件开发生命周期中，测试是保证代码质量、提升系统稳定性的关键环节。对于 Node.js 应用而言，单元测试帮助我们验证模块的正确性，性能测试则确保系统在负载下仍能可靠运行。'
 category: 'Backend'
-tags: ['Node.js']
+tags: ['Node.js', '单元测试', '性能测试', 'Jest']
 author: 'Max Zhang'
-date: '2026-03-10'
+date: '2023-11-05'
 ---
 
 > 写给普通开发者的测试入门手册，看完终于不怕写测试了
 
-你是不是有这样的经历：代码写完了，自己测了测没问题，结果一上线就出 bug？或者系统搞活动的时候突然崩了，但本地压测明明好好的？
+那天凌晨三点，手机响了。
 
-这些问题背后，往往是测试没做到位。今天这篇文章，我用大白话讲清楚 Node.js 怎么写单元测试、怎么做性能测试，全文包含大量代码示例和图表，保证小白也能看懂。
+你从被窝里伸出手，迷迷糊糊摸到屏幕上的红色按钮——OnCall 告警。线上崩了。你盯着 Grafana 上的红色折线，CPU 打满，内存泄漏，错误率飙升到 40%。你心里想的第一句话是什么？操，这个接口我昨天才改过，本地明明跑得好好的。
 
----
+你翻日志，翻 commit 记录，翻那行代码。你发现一个同事在合并他的 feature 时改了一个共享工具函数的参数校验逻辑，你的模块挂了。没人发现。因为没人写测试。
 
-## 测试能帮你解决什么问题？
+你骂了一句，开始改。改完，上线，重启，告警消失。你躺在床上，睡不着。你问自己：这种事会不会还有第二次？
 
-- **防止代码退化**：改了一个地方，别的地方突然坏了——这种情况叫"回归"，自动化测试能第一时间发现
-- **减少调试时间**：测试失败时，失败信息直接告诉你哪里有问题，比 console.log 到处打印高效多了
-- **增强重构信心**：想优化代码但怕改坏？有了测试罩着，大胆重构
-- **充当活文档**：看测试代码就能知道这个函数是干嘛的，比注释靠谱多了
-
-**一个形象的比喻**：单元测试就像大楼的钢筋检测，确保每根钢筋都符合标准，整栋楼才安全。你不会住进一栋没经过检测的大楼吧？
+如果你想让这种事不再发生，这篇文章是写给你的。我不是来教你那些高大上的测试理论，我是来告诉你：作为一个普通程序员，你怎么用测试让你的代码活得久一点，让你睡得安稳一点。
 
 ---
 
-## 一、单元测试：最小单元的正确性保证
+## 先讲清楚一件事：测试到底解决什么问题
 
-### 1.1 什么是单元测试？
+很多人对测试的理解是歪的。
 
-单元测试是对软件中**最小可测试单元**进行检查和验证的代码。这个"最小单元"通常是：
+有人觉得测试就是"证明我的代码是对的"——错了，测试是来告诉你"你的代码可能在什么地方错"。有人觉得测试就是"写完代码走个过场"——也错了，测试是写给你六个月后的自己的。有人觉得测试就是"追求 100% 覆盖率"——更扯了，100% 覆盖率不等于代码没 bug。
 
-- 一个函数
-- 一个方法
-- 一个模块
+测试真正解决的是**信任问题**。
 
-注意：单元测试测的是**隔离**的单元，不依赖数据库、不依赖外部 API、不依赖其他模块。如果你的测试需要连数据库，那它已经不是"单元测试"了，叫"集成测试"更合适。
+你改了一行代码，你敢不敢点 "deploy"？你自己心里清楚——如果每次上线前你都得深吸一口气，在心里默念"应该没事吧"，那你他妈的就是在赌。
 
-```mermaid
-flowchart TD
-    subgraph 测试金字塔["📊 测试金字塔"]
-        A[🔺 单元测试] -->|最多，最底层| A1["基础要扎实"]
-        B[🔸 集成测试] -->|"中等数量"| B1["模块之间配合"]
-        C[🔵 E2E 测试] -->|最少，顶层| C1["模拟真实用户"]
-    end
+别赌。写测试。
 
-    style A fill:#4caf50,color:#fff
-    style B fill:#ff9800,color:#fff
-    style C fill:#f44336,color:#fff
-```
+具体来说，测试帮你做到这几件事：
 
-### 1.2 为什么需要单元测试？
+**防退化**。改了 A，B 挂了。这叫回归。自动化测试能在合并之前就告诉你。
 
-很多新手觉得"我代码逻辑很简单，不用测"，或者"测试太费时间，不如直接上线看看"。
+**省时间**。一个 assert 失败信息，比你满屏的 `console.log(response, 'response ===>')` 快多少？你想想你上个月花了多少时间在 console 里找 bug。
 
-这种想法很危险。让我给你算一笔账：
+**敢重构**。你盯着那坨 500 行的函数看了三个月了，你知道它能优化，但你不敢动。因为你不知道改动会影响到哪里。有了测试，你就有了安全网。
+
+**当文档**。代码注释会过期，但测试不会——测试跑不过就会报错，它逼着人维护。看测试代码比看注释靠谱得多。
+
+想象一下你装修房子。工人把水管电线走暗线，封上墙之前你得做验收吧？你不会等墙都抹好了、漆都刷了，才来检查水管是不是漏水。单元测试就是这个验收——在你还看得见的时候，确定每个部件是对的。
+
+---
+
+## 第一部分：单元测试——你代码的底裤
+
+### 什么叫单元测试？
+
+就是对你代码里**最小可用的那块东西**单独做检查。
+
+一般是啥？一个函数。一个方法。一个小模块。
+
+关键词是"单独"。如果你的测试需要连数据库、调外部 API、读 Redis，那它已经不算单元测试了——那叫集成测试，是另一回事。
+
+单元测试就像你买了一台冰箱，你插上电看看它制冷不制冷。你不会把冰箱搬到客户家里再试——那叫验收测试，中间的过程叫愚蠢。
+
+### 为什么得写？我给你算个账
+
+你可能觉得"我这个函数逻辑很简单，不用测"，或者"测试太费时间，直接上线吧"。
+
+来，看这张表：
 
 | 阶段         | 发现 bug 的成本 |
 | ------------ | --------------- |
@@ -65,108 +73,38 @@ flowchart TD
 | QA 测试发现  | 50x - 200x      |
 | 生产环境发现 | 200x - 1000x    |
 
-看到了吗？生产环境发现一个 bug 的成本，可能是编码时的 200 倍！
+生产环境发现一个 bug，成本是编码时的 200 倍。而且成本不只是钱——是你的时间，你的心情，你半夜被叫醒的那个电话。
 
-单元测试的价值体现在：
+单元测试的真正价值是**反馈速度**。代码刚写完，你脑子里逻辑还热乎着，这时候发现 bug，两分钟改完。等一个月后再发现——你连当时为什么那么写都忘了。
 
-- **及早发现问题**：代码刚写完就测试，脑子里还记得逻辑，修复起来快
-- **防止回归**：每次改代码都可能引入新 bug，自动化测试保证老功能不坏
-- **充当文档**：测试用例就是活的文档，说明这个函数接受什么输入、输出什么结果
-- **提高开发效率**：写测试的时候你会强迫自己思考边界条件，代码设计自然更好
+### 怎么写？AAA 模式
 
-### 1.3 如何编写单元测试：AAA 模式
+没那么多花里胡哨的，就三块：
 
-好，现在开始讲怎么写测试。最经典的模式叫 **AAA 模式**，把每个测试分成三部分：
+1. **Arrange（准备）**：把你要测的东西搭好。数据、mock、依赖。
+2. **Act（执行）**：调用那个函数。
+3. **Assert（断言）**：看结果对不对。不对就报警。
 
-**1. Arrange（准备）**
+这就是一个三明治——准备是面包，执行是肉，断言是另一片面包。缺一块就不能叫三明治。
 
-- 初始化测试需要的数据
-- 设置 mock（模拟对象）
-- 准备测试环境
+### 上手试试
 
-**2. Act（执行）**
-
-- 调用被测试的函数
-- 获取实际输出
-
-**3. Assert（断言）**
-
-- 判断实际输出是否符合预期
-- 不符合就测试失败
-
-```mermaid
-flowchart TD
-    subgraph AAA测试模式["🔧 AAA 测试模式"]
-        subgraph Stage1["📦 第一步：Arrange（准备）"]
-            A1["准备测试数据"]
-            A2["设置 Mock 对象"]
-            A3["初始化被测函数"]
-        end
-
-        subgraph Stage2["▶️ 第二步：Act（执行）"]
-            B1["调用被测函数"]
-            B2["获取返回值"]
-        end
-
-        subgraph Stage3["✅ 第三步：Assert（断言）"]
-            C1["判断返回值是否符合预期"]
-            C2["失败则测试不通过"]
-            C3["通过则测试成功"]
-        end
-
-        Stage1 --> Stage2 --> Stage3
-    end
-
-    style Stage1 fill:#e1f5e1,stroke:#4caf50
-    style Stage2 fill:#fff9c4,stroke:#ffc107
-    style Stage3 fill:#ffccbc,stroke:#ff5722
-```
-
-### 1.4 实战：从零开始写测试
-
-让我们从一个最简单的例子开始。
-
-**被测试的代码**（一个计算器模块）：
+假设你写了个计算器模块：
 
 ```javascript
 // math.js
-/**
- * 加法函数
- * @param {number} a - 第一个数
- * @param {number} b - 第二个数
- * @returns {number} 两数之和
- */
 export function add(a, b) {
   return a + b
 }
 
-/**
- * 减法函数
- * @param {number} a - 被减数
- * @param {number} b - 减数
- * @returns {number} 差
- */
 export function subtract(a, b) {
   return a - b
 }
 
-/**
- * 乘法函数
- * @param {number} a - 第一个数
- * @param {number} b - 第二个数
- * @returns {number} 积
- */
 export function multiply(a, b) {
   return a * b
 }
 
-/**
- * 除法函数
- * @param {number} a - 被除数
- * @param {number} b - 除数
- * @returns {number} 商
- * @throws {Error} 除数不能为0
- */
 export function divide(a, b) {
   if (b === 0) {
     throw new Error('除数不能为零')
@@ -175,7 +113,7 @@ export function divide(a, b) {
 }
 ```
 
-**测试代码**：
+下面是测试代码。注意看 AAA 结构：
 
 ```javascript
 // math.test.js
@@ -183,7 +121,6 @@ import assert from 'node:assert'
 import { add, subtract, multiply, divide } from '../math.js'
 
 describe('计算器模块测试', () => {
-  // ===== 加法测试 =====
   describe('add 函数', () => {
     it('应返回两个正数的和', () => {
       // Arrange
@@ -213,29 +150,7 @@ describe('计算器模块测试', () => {
     })
   })
 
-  // ===== 减法测试 =====
-  describe('subtract 函数', () => {
-    it('应返回两个数的差', () => {
-      assert.strictEqual(subtract(5, 3), 2)
-      assert.strictEqual(subtract(3, 5), -2)
-    })
-  })
-
-  // ===== 乘法测试 =====
-  describe('multiply 函数', () => {
-    it('应返回两个数的积', () => {
-      assert.strictEqual(multiply(3, 4), 12)
-      assert.strictEqual(multiply(-2, 3), -6)
-    })
-  })
-
-  // ===== 除法测试 =====
   describe('divide 函数', () => {
-    it('应返回两个数的商', () => {
-      assert.strictEqual(divide(10, 2), 5)
-    })
-
-    // 边界测试：除数不能为零
     it('除数为零时应抛出错误', () => {
       assert.throws(() => divide(10, 0), /除数不能为零/)
     })
@@ -252,111 +167,88 @@ describe('计算器模块测试', () => {
     ✓ 应正确处理负数
     ✓ 应正确处理零
     ✓ 应正确处理小数
-  subtract 函数
-    ✓ 应返回两个数的差
-  multiply 函数
-    ✓ 应返回两个数的积
   divide 函数
-    ✓ 应返回两个数的商
     ✓ 除数为零时应抛出错误
 
-8 passing (15ms)
+5 passing (15ms)
 ```
 
-### 1.5 什么是好的测试？
+15 毫秒，5 个测试全过。这就是你以后每次改代码都能跑一遍的东西。
 
-不是写了测试就够了，测试也有好坏之分。好的测试应该满足 **FIRST** 原则：
+注意：除数是零这种情况，是你写代码时最容易漏掉的。测试逼着你把边界条件想清楚。这就是为什么说"写测试帮你设计更好的代码"——不是玄学，是你真的会多想想。
 
-- **Fast（快速）**：单元测试要快，一个功能可能几百个测试，如果每个都要跑几秒钟，谁受得了？
-- **Independent（独立）**：每个测试用例要独立，不能依赖其他测试的执行结果
-- **Repeatable（可重复）**：无论跑多少次，结果应该一致。环境相关的问题（比如时间、网络）要 mock 掉
-- **Self-Validating（自验证）**：测试结果要明确——要么 pass，要么 fail，不需要人工判断
-- **Timely（及时）**：测试要在代码写完之后立刻写，不能拖到后面补
+### 什么样的测试算好？FIRST 原则
 
-### 1.6 测试覆盖率：你的代码被测到了多少？
+不是写了就有用。坏的测试比不写还糟——它给你虚假的安全感。
 
-测试覆盖率衡量你的测试到底测了多少代码。常见的指标有：
+记住 FIRST：
 
-| 指标         | 含义                        | 例子                                                               |
-| ------------ | --------------------------- | ------------------------------------------------------------------ |
-| **语句覆盖** | 每行代码是否执行过          | `if (x) { doSomething(); }` —— 如果 x 一直是 false，这行就不算覆盖 |
-| **分支覆盖** | 每个 if-else 分支都走过吗？ | 同上，true 和 false 分支都要测试                                   |
-| **函数覆盖** | 每个函数都调用过吗？        | 总不能有的函数完全没测试                                           |
-| **行覆盖**   | 每行代码都执行过吗？        | 和语句覆盖类似                                                     |
+**Fast（快）**。单元测试要快。你一个项目几百个测试用例，如果每个跑几秒，你就不想跑了。你不跑，就白写了。
 
-**覆盖率报告示例**（使用 Istanbul/NYC）：
+**Independent（独立）**。每个测试各管各的，别他妈串一起。A 挂了不影响 B 跑。测试之间不能有依赖顺序。
 
-```bash
---------------|---------|----------|---------|---------|-------------------
-File          | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
---------------|---------|----------|---------|---------|-------------------
-All files     |   85.71 |       75 |     100 |   85.71 |
- math.js      |   85.71 |       75 |     100 |   85.71 | 5-6
- user.js      |   90.00 |       80 |     100 |   90.00 | 12, 45-47
---------------|---------|----------|---------|---------|-------------------
+**Repeatable（可重复）**。跑一百次结果都一样。跟时间相关的东西要 mock 掉，跟网络相关的要 mock 掉。你不能因为今天是 5 月 1 号就测试失败。
+
+**Self-Validating（自验证）**。结果必须明确——过了就是过了，挂了就是挂了。不要搞什么"输出一个报告让 leader 确认"。
+
+**Timely（及时）**。写完代码立刻写测试，别拖。拖了一周你再写，你连那个函数叫什么名字都要去查 git blame。
+
+### 覆盖率：80% 就够了，不用纠结 100%
+
+覆盖率衡量的是你的测试到底跑了多少代码。四个常用指标：
+
+| 指标         | 含义                      | 例子                                                               |
+| ------------ | ------------------------- | ------------------------------------------------------------------ |
+| **语句覆盖** | 每行代码是否执行过        | `if (x) { doSomething(); }` —— 如果 x 永远是 false，这行就不算覆盖 |
+| **分支覆盖** | 每个 if-else 分支都走了吗 | 拿到 true 和 false 两种结果才算                                    |
+| **函数覆盖** | 每个函数都调用过吗        | 别留孤岛函数                                                       |
+| **行覆盖**   | 每行都执行过              | 和语句覆盖差不多                                                   |
+
+覆盖率报告长这样：
+
+```
+File          | % Stmts | % Branch | % Funcs | % Lines
+ math.js      |   85.71 |       75 |     100 |   85.71
+ user.js      |   90.00 |       80 |     100 |   90.00
 ```
 
-怎么看？拿 `math.js` 来说：
+`math.js` 的语句覆盖率 85.71%，分支覆盖率 75%。什么意思？有 25% 的分支没测到，可能藏着雷。
 
-- 语句覆盖率 85.71%：还有 14% 的代码没跑到
-- 分支覆盖率 75%：有 25% 的分支没测试到
-- 函数覆盖率 100%：每个函数都测了
-- 行覆盖率 85.71%：第 5-6 行没覆盖到
+但覆盖率是不是越高越好？
 
-**覆盖率是不是越高越好？**
+**不是。** 覆盖率数字是副产品，不是目标。
 
-不一定！覆盖率只是个参考，不是目标。关键是测试**有价值的场景**，而不是为了凑数字。
+我见过为了 100% 覆盖率写的测试——全是 `expect(1 + 1).toBe(2)` 这种狗屁。数字好看了，但你核心逻辑的边界条件一个没测。这叫自欺欺人。
 
-常见误区：
+我的建议：
 
-- 覆盖率 100% 但没测边界条件 —— 没用
-- 只测简单路径，复杂逻辑不测 —— 白搭
-- 为了覆盖率测一堆无意义的断言 —— 浪费时间
+- 核心业务逻辑追 80% 以上
+- 边界条件、异常处理，必须测
+- 简单 getter/setter、模板代码，不用测
+- 不要为了凑数写没意义的 assert
 
-**建议**：
+### Node.js 测试框架：三家分晋
 
-- 核心业务逻辑追求 80%+ 覆盖率
-- 边界条件、异常处理一定要测
-- 简单 getter/setter 可以不测
+测试框架选哪个？市面上三巨头：**Mocha**、**Jest**、**Vitest**。给你一个快速指南：
 
-### 1.7 Node.js 测试框架对比
+| 特性       | Mocha              | Jest       | Vitest                  |
+| ---------- | ------------------ | ---------- | ----------------------- |
+| 断言库     | 需要自己装（Chai） | 内置       | 内置                    |
+| Mock/Stub  | 需要 Sinon         | 内置       | 内置                    |
+| 并行执行   | 需要配置           | 自动       | 自动（基于 Vite，极快） |
+| ESM 支持   | 需要配置           | 基本支持   | 原生支持                |
+| TypeScript | 需要配置           | 内置       | 内置                    |
+| 适合谁     | 老项目、爱折腾的   | React 项目 | Vue/Vite 项目、新项目   |
 
-Node.js 生态里测试框架很多，但主流的就三个：**Mocha**、**Jest**、**Vitest**。让我给你详细对比一下：
+简单做个判断：新项目直接 Vitest，React 项目 Jest，老项目或者框架自定义需求高的用 Mocha。
 
-```mermaid
-flowchart LR
-    subgraph 框架选择["🎯 框架选择指南"]
-        direction TB
-        A{你的项目用？}
-        A -->|React| B[Jest]
-        A -->|Vue/Vite| C[Vitest]
-        A -->|其他框架| D[Mocha]
-    end
+下面分别看实战。
 
-    style A fill:#e3f2fd,stroke:#1976d2
-    style B fill:#e8f5e9,stroke:#388e3c
-    style C fill:#fff3e0,stroke:#f57c00
-    style D fill:#f3e5f5,stroke:#7b1fa2
-```
+#### Mocha + Chai + Sinon：老派组合，灵活但折腾
 
-#### 功能对比表
+Mocha 本身只是个测试运行器。断言、Mock 都要自己搭。适合那种"我就想自己控制每一个环节"的团队。
 
-| 特性           | Mocha                | Jest               | Vitest                  |
-| -------------- | -------------------- | ------------------ | ----------------------- |
-| **断言库**     | 需要单独安装（Chai） | 内置               | 内置（兼容 Jest）       |
-| **Mock/Stub**  | 需要 Sinon           | 内置               | 内置                    |
-| **快照测试**   | 需要插件             | 内置               | 内置                    |
-| **并行执行**   | 需要配置             | 自动               | 自动（基于 Vite，极快） |
-| **ESM 支持**   | 需要配置             | 良好               | 原生支持                |
-| **TypeScript** | 需要配置             | 内置               | 内置                    |
-| **学习曲线**   | 较陡（需要自己组合） | 平缓               | 平缓                    |
-| **配置复杂度** | 高（灵活）           | 低（约定大于配置） | 低                      |
-
-#### 1.7.1 Mocha + Chai + Sinon：老牌组合
-
-Mocha 本身只是个测试运行器，断言、Mock 都需要自己配。适合需要高度定制的项目。
-
-**示例：测试 API 调用**
+测试一个 API 调用函数：
 
 ```javascript
 // api.js
@@ -375,53 +267,41 @@ import sinon from 'sinon'
 import axios from 'axios'
 import { fetchUser } from './api.js'
 
-// Mock axios
 describe('fetchUser', () => {
   let stub
 
   beforeEach(() => {
-    // 每个测试前创建新的 stub
     stub = sinon.stub(axios, 'get')
   })
 
   afterEach(() => {
-    // 每个测试后恢复 stub
     stub.restore()
   })
 
   it('应成功获取用户数据', async () => {
-    // Arrange：设置 mock 返回值
     const mockUser = { id: 1, name: '张三' }
     stub.resolves({ data: mockUser })
 
-    // Act
     const result = await fetchUser(1)
 
-    // Assert
     expect(result).to.deep.equal(mockUser)
     expect(stub.calledOnce).to.be.true
     expect(stub.calledWith('/api/users/1')).to.be.true
   })
 
-  it('用户不存在时应返回 null', async () => {
-    // Arrange：模拟 404 响应
+  it('用户不存在时应抛出错误', async () => {
     const error = new Error('Request failed with status 404')
     error.response = { status: 404 }
     stub.rejects(error)
 
-    // Act & Assert
     await expect(fetchUser(999)).to.eventually.be.rejected
   })
 })
 ```
 
-运行命令：`npx mocha test/**/*.test.js`
+#### Jest：开箱即用，React 亲儿子
 
-#### 1.7.2 Jest：Facebook 出品的零配置框架
-
-Jest 最大的优点是**开箱即用**——断言、Mock、覆盖率、watch 模式全内置。React 项目首选。
-
-**示例：测试用户创建函数**
+Jest 最大的好处是零配置。断言有了，mock 有了，覆盖率有了，watch 模式也有了。Faceboook 出的，跟 React 绑得最紧。
 
 ```javascript
 // user.js
@@ -446,7 +326,6 @@ describe('createUser', () => {
   test('应返回包含 id、name、email 的对象', () => {
     const user = createUser('张三', 'zhangsan@example.com')
 
-    // Jest 内置的 matchers
     expect(user).toHaveProperty('id')
     expect(user).toHaveProperty('name', '张三')
     expect(user).toHaveProperty('email', 'zhangsan@example.com')
@@ -463,13 +342,9 @@ describe('createUser', () => {
 })
 ```
 
-运行命令：`npx jest` 或在 package.json 配置脚本。
+#### Vitest：新一代，快得离谱
 
-#### 1.7.3 Vitest：Vite 时代的测试新选择
-
-Vitest 号称"基于 Vite 的下一代测试框架"，兼容 Jest API，但启动和运行速度更快。如果你用 Vue/Vite，一定试试。
-
-**示例：测试数组操作**
+Vitest 兼容 Jest 的 API 但底层跑在 Vite 上。启动速度、热更新、watch 模式的体验都甩 Jest 一截。如果你用 Vue 或者 Vite 做构建工具，没理由不用。
 
 ```javascript
 // arrayUtils.js
@@ -480,9 +355,7 @@ export function filterByStatus(items, status) {
 export function groupByCategory(items) {
   return items.reduce((acc, item) => {
     const key = item.category
-    if (!acc[key]) {
-      acc[key] = []
-    }
+    if (!acc[key]) acc[key] = []
     acc[key].push(item)
     return acc
   }, {})
@@ -495,7 +368,7 @@ import { describe, it, expect } from 'vitest'
 import { filterByStatus, groupByCategory } from './arrayUtils.js'
 
 describe('数组工具函数', () => {
-  const mockItems = [
+  const items = [
     { id: 1, status: 'active', category: 'A' },
     { id: 2, status: 'inactive', category: 'A' },
     { id: 3, status: 'active', category: 'B' },
@@ -503,38 +376,35 @@ describe('数组工具函数', () => {
 
   describe('filterByStatus', () => {
     it('应筛选出指定状态的项', () => {
-      const result = filterByStatus(mockItems, 'active')
+      const result = filterByStatus(items, 'active')
       expect(result).toHaveLength(2)
       expect(result.every((item) => item.status === 'active')).toBe(true)
     })
 
     it('无匹配时应返回空数组', () => {
-      const result = filterByStatus(mockItems, 'deleted')
+      const result = filterByStatus(items, 'deleted')
       expect(result).toHaveLength(0)
     })
   })
 
   describe('groupByCategory', () => {
     it('应按分类分组', () => {
-      const result = groupByCategory(mockItems)
+      const result = groupByCategory(items)
       expect(result).toHaveProperty('A')
       expect(result).toHaveProperty('B')
-      expect(result['A']).toHaveLength(2)
-      expect(result['B']).toHaveLength(1)
+      expect(result.A).toHaveLength(2)
+      expect(result.B).toHaveLength(1)
     })
   })
 })
 ```
 
-运行命令：`npx vitest`
+### 异步测试和钩子函数
 
-#### 1.7.4 异步测试与钩子函数
-
-实际开发中经常要测试异步代码（数据库查询、API 调用等）。所有框架都支持 `async/await`。
-
-**Mocha 异步测试**：
+真实项目里大部分代码都是异步的——查数据库、调 API、读文件。框架都支持 `async/await`，写法很简单：
 
 ```javascript
+// Mocha 异步测试
 it('应异步获取用户列表', async () => {
   const users = await getUsers()
   expect(users).to.be.an('array')
@@ -542,35 +412,25 @@ it('应异步获取用户列表', async () => {
 })
 ```
 
-**钩子函数**：用于在测试前/后做一些准备工作和清理。
+钩子函数让你在测试前后做准备工作：
 
 ```javascript
 describe('数据库相关测试', () => {
-  // 所有测试开始前执行一次
   before(async () => {
-    console.log('连接数据库...')
+    // 所有测试开始前，连一次数据库
     await db.connect()
   })
 
-  // 所有测试结束后执行一次
   after(async () => {
-    console.log('关闭数据库连接...')
+    // 所有测试结束后，断开连接
     await db.close()
   })
 
-  // 每个测试开始前执行
   beforeEach(() => {
-    console.log('清空测试数据...')
+    // 每个测试前，清空数据，保证独立
     db.clear()
   })
 
-  // 每个测试结束后执行
-  afterEach(() => {
-    console.log('清理测试产生的临时文件...')
-    cleanupTempFiles()
-  })
-
-  // 真正的测试用例
   it('应正确创建用户', async () => {
     const user = await db.users.create({ name: '测试用户' })
     expect(user.id).to.exist
@@ -578,47 +438,24 @@ describe('数据库相关测试', () => {
 })
 ```
 
-### 1.8 Mock 和 Stub：隔离依赖的艺术
+### Mock 和 Stub：不用真调也能测
 
-写单元测试最难的部分是什么？是**如何隔离依赖**。
+单元测试最大的难点不是怎么写 assert，而是**怎么隔离依赖**。
 
-比如你要测试一个订单处理函数，它依赖：
+你的订单处理函数依赖数据库、缓存、支付接口、发短信的第三方 API。如果你每个测试都去真实调用这些东西：
 
-- 数据库（查询用户、查询商品、保存订单）
-- 缓存（检查库存）
-- 支付接口（发起支付）
+1. 慢。数据库查询几十毫秒，积少成多。
+2. 不稳定。外部 API 挂了你的测试也挂，但你代码没问题。
+3. 没法测异常。你怎么让支付宝真的返回一个"余额不足"？
 
-如果每个测试都要真实调这些服务，那：
+这时候你需要 Mock 和 Stub。
 
-1. 速度慢
-2. 可能调用外部 API 失败
-3. 每次运行结果可能不一样
-4. 没法测试异常情况
+**区别很简单**：
 
-这时候就需要 **Mock**（模拟）和 **Stub**（桩）了。
+- **Stub**：替换一个函数，让它返回你指定的值。像考试时你抄了一份标准答案。
+- **Mock**：不仅替换返回值，还能验证这个函数被调用了几次、传了什么参数。像找了一个替考，考完还能告诉你他是什么时候交卷的。
 
-**概念区分**：
-
-- **Stub**：替换一个函数，返回预设的值
-- **Mock**：更高级，可以验证函数被调用的次数、参数等
-
-```mermaid
-flowchart TD
-    subgraph 依赖类型["🔌 测试中的依赖处理"]
-        subgraph 真实依赖["❌ 真实调用（不可取）"]
-            A[被测代码] --> B[数据库]
-            A --> C[API]
-            A --> D[缓存]
-        end
-
-        subgraph Mock隔离["✅ Mock 隔离（推荐）"]
-            E[被测代码] --> F[Mock 函数]
-            F -.->|"返回预设值"| G[可控]
-        end
-    end
-```
-
-**实战：Mock API 调用**
+来，实战一个：
 
 ```javascript
 // userService.js
@@ -634,12 +471,11 @@ export async function getUserWithPosts(userId) {
 import { getUserWithPosts } from './userService.js'
 import { fetchUser, fetchPosts } from './api.js'
 
-// Mock API 模块
 jest.mock('./api.js')
 
 describe('getUserWithPosts', () => {
   beforeEach(() => {
-    jest.clearAllMocks() // 每次测试前清空 mock 记录
+    jest.clearAllMocks()
   })
 
   it('应返回用户及其文章', async () => {
@@ -652,19 +488,9 @@ describe('getUserWithPosts', () => {
     expect(result.user.name).toBe('张三')
     expect(result.posts).toHaveLength(1)
 
-    // 验证函数被调用
+    // Mock验证：调用参数对不对
     expect(fetchUser).toHaveBeenCalledWith(1)
     expect(fetchPosts).toHaveBeenCalledWith(1)
-  })
-
-  it('用户不存在时应返回 null', async () => {
-    fetchUser.mockResolvedValue(null)
-    fetchPosts.mockResolvedValue([])
-
-    const result = await getUserWithPosts(999)
-
-    expect(result.user).toBeNull()
-    expect(result.posts).toHaveLength(0)
   })
 
   it('API 错误时应抛出异常', async () => {
@@ -675,332 +501,154 @@ describe('getUserWithPosts', () => {
 })
 ```
 
+看到了吗？Mock 让你可以模拟任何场景。API 成功、API 失败、返回空数据、超时——所有异常路径都能测到，不用真的去拔网线。
+
 ---
 
-## 二、性能测试：让系统在压力下也能稳住
+## 第二部分：性能测试——你的系统能不能扛住
 
-### 2.1 什么是性能测试？
+### 单元测试管对错，性能测试管生死
 
-单元测试回答的问题是：**代码逻辑对不对？**
+单元测试问你：这个函数逻辑对不对？
 
-性能测试回答的问题是：**代码跑得快不快？稳不稳？**
+性能测试问你：这个系统扛不扛得住？
 
-性能测试通过自动化工具模拟多种负载，测量系统各项指标：
+想象你造了一辆车。单元测试是确保四个轮子能转、刹车能停、方向盘能打。性能测试是把它开到高速上，油门踩到底，看看水箱会不会炸。
 
-- **响应时间**：一个请求要等多长时间
-- **吞吐量（TPS/QPS）**：每秒能处理多少请求
-- **资源利用率**：CPU、内存、磁盘、网络的使用情况
-- **错误率**：多少请求失败了
+性能测试通过模拟大量请求，测量四个核心指标：
 
-它帮助我们回答：
+- **响应时间**：一个请求等多久。看 P50、P90、P99 —— 不是你测两次取平均值，而是看最慢的那批。
+- **吞吐量（TPS/QPS）**：每秒能处理多少请求。
+- **资源利用率**：CPU 吃多少，内存吃多少，网卡跑满没有。
+- **错误率**：有多少请求直接挂了。
 
-- 系统能承受多少并发用户？
-- 响应时间是否满足 SLA（服务等级协议）？
-- 长时间运行会否内存泄漏？
-- 峰值流量下会不会崩溃？
+它回答几个致命问题：
 
-```mermaid
-flowchart TD
-    subgraph 性能测试目标["🎯 性能测试要回答的问题"]
-        Q1["系统能承受多少并发？"] --> A1["容量测试"]
-        Q2["响应时间满足 SLA 吗？"] --> A2["响应时间测试"]
-        Q3["长时间运行稳不稳？"] --> A3["稳定性测试"]
-        Q4["突发流量能扛住吗？"] --> A4["压力测试"]
-    end
+- 系统能撑多少并发用户？1000 个还是 100 个？
+- 大促时候会不会崩？
+- 跑着跑着内存是不是在涨？——这就是内存泄漏。
+- 高峰流量过了之后系统能恢复吗？
 
-    style Q1 fill:#e3f2fd
-    style Q2 fill:#e8f5e9
-    style Q3 fill:#fff3e0
-    style Q4 fill:#fce4ec
-```
+### 性能测试不是一种，是四种
 
-### 2.2 性能测试的四种类型
+很多人说"做压测"，其实说的就是一顿乱打。真正的性能测试有四种，每一种目的不同：
 
-性能测试不是一种测试，而是四种。每种测试的目的不同，施加的负载也不一样。
+#### 第一，基准测试（Baseline）
 
-#### 2.2.1 基准性能测试（Baseline Test）
+**干啥的**：在低负载下跑一次，拿到一个"正常情况"的数据。以后每次发版跑一次，对比一下。如果数字变差了，说明你这版代码引入了性能退化。
 
-**目的**：在低负载下获取系统性能基准数据，作为后续比较的参考线。
+**怎么跑**：单用户或几个用户，跑 5-10 分钟。
 
-**什么时候用**：
+**看什么**：单用户平均响应时间、基础资源消耗。
 
-- 每次版本发布后，对比基准数据判断性能是否下降
-- 新系统上线前，获取一个"正常情况下是什么样"的参考
+#### 第二，容量测试（Load Test）
 
-**负载模型**：单用户或少量用户，持续短时间（如 5-10 分钟）
+**干啥的**：这就是真正的"压测"。从低负载开始，逐步加大并发，找到系统的天花板。
 
-**输出指标**：
+**什么时候做**：大促前、新功能上线前、想知道你系统到底能撑多少用户。
 
-- 单用户平均响应时间
-- 单用户 TPS
-- 基础资源消耗
+**怎么跑**：一步步加并发。比如从 10 用户开始，每 30 秒加 10 个，直到响应时间突然暴涨或者错误率飙升。那个点就是你的**性能拐点**。
 
-#### 2.2.2 容量性能测试（Capacity Test / Load Test）
+**看什么**：最大 TPS、不同并发下的响应时间分布、拐点在哪里。
 
-**目的**：测试系统在预期负载下的表现，验证是否满足性能需求。
+#### 第三，稳定性测试（Endurance Test）
 
-这是最常见的性能测试，"压测"通常指的就是这个。
+**干啥的**：让系统在 80% 容量的负载下，连续跑 8 小时、24 小时、甚至 7 天。目的是抓慢性病——内存泄漏、连接泄漏、GC 异常。
 
-**什么时候用**：
+**什么时候做**：你的服务是 7x24 小时运行的。你说你代码没问题——跑三天看看，内存曲线是不是悄悄往上爬。
 
-- 电商大促前
-- 新功能上线前评估容量
-- 想知道系统极限在哪
+**必须盯着的指标**：
 
-**负载模型**：逐步增加并发用户/请求，直至达到目标 TPS 或并发数。
+- 内存使用趋势：是不是在涨？涨了就是泄漏。
+- CPU 使用趋势：是不是稳定？突然飙高说明有定时任务或批处理有问题。
+- 句柄数：是不是在涨？涨了就是你没关连接。
+- GC 频率：是不是越来越频繁？说明内存管理出问题了。
+- 错误日志：是不是在缓慢累加？
 
-**负载曲线示意图**：
+#### 第四，异常测试（Stress Test / Spike Test）
 
-```mermaid
-flowchart TD
-    subgraph 容量测试过程["📈 容量测试：逐步加压"]
-        direction TB
+**干啥的**：模拟突发流量。比如秒杀开始那一刻，流量瞬间飙升 10 倍。
 
-        A[开始：低并发] --> B[正常响应]
-        B --> C[逐步增加并发]
-        C --> D{达到目标 TPS？}
-        D -->|是| E[记录最大容量]
-        D -->|否| F{性能明显下降？}
-        F -->|否| C
-        F -->|是| G[找到拐点，停止加压]
-    end
+**什么时候做**：秒杀活动前、抢票系统、或者你想验证你的限流降级机制到底有没有用。
 
-    subgraph 关键指标["📊 关键指标解读"]
-        H["TPS：每秒事务数"]
-        I["响应时间：P50/P90/P99"]
-        J["错误率：失败请求占比"]
-    end
-```
+**怎么跑**：从正常负载瞬间拉到峰值，持续几秒，再降下来。看系统能不能扛住峰值（或者优雅降级），峰值过后能不能恢复。
 
-**输出**：
+### 什么场景必须做性能测试？
 
-- 最大 TPS
-- 不同并发下的响应时间分布
-- 性能拐点位置
+不是每个项目都需要完整的四类测试，但下面这些场景，不做就是在拿上线当天赌命：
 
-#### 2.2.3 稳定性性能测试（Stability Test / Endurance Test）
-
-**目的**：验证系统在长时间运行下的稳定性，检查内存泄漏、连接泄漏等慢性问题。
-
-**什么时候用**：
-
-- 7x24 小时运行的服务
-- 担心内存泄漏
-- 想知道系统在持续负载下会不会"越跑越慢"
-
-**负载模型**：恒定负载（如 80% 容量），持续长时间（8 小时、24 小时、甚至 7 天）。
-
-**必须监控的指标**：
-
-| 指标         | 关注点                     |
-| ------------ | -------------------------- |
-| **内存**     | 是否有泄漏（内存持续增长） |
-| **CPU**      | 是否持续高占用             |
-| **句柄数**   | 是否有连接/文件句柄泄漏    |
-| **GC**       | GC 频率是否异常            |
-| **错误日志** | 是否有缓慢累积的错误       |
-
-**稳定性测试监控图**：
-
-```mermaid
-flowchart TD
-    subgraph 稳定性测试["⏱️ 稳定性测试：持续监控"]
-        direction TB
-        A[开始测试] --> B[持续 8-24 小时]
-        B --> C[监控系统指标]
-        C --> D{指标异常？}
-        D -->|否| C
-        D -->|是| E[记录异常，排查问题]
-    end
-
-    subgraph 关注指标["📉 需要关注的趋势"]
-        M1["内存使用量趋势图"]
-        M2["响应时间趋势图"]
-        M3["CPU 使用率趋势图"]
-        M4["错误率趋势图"]
-    end
-```
-
-#### 2.2.4 异常性能测试（Stress Test / Spike Test）
-
-**目的**：测试系统在突发极端负载下的行为，以及恢复能力。
-
-**什么时候用**：
-
-- "秒杀"活动前
-- 想知道系统在极端情况下的表现
-- 验证限流、降级机制是否生效
-
-**负载模型**：瞬间高并发，或负载突增突降。
-
-**异常测试图解**：
-
-```mermaid
-flowchart TD
-    subgraph 压力测试["💪 压力测试：突发流量"]
-        direction LR
-        A[正常负载] -->|瞬间飙升| B["🔥 峰值负载<br/>(10x 正常流量)"]
-        B -->|持续几秒| C[观察系统表现]
-        C --> D[负载回落]
-        D --> E{系统恢复？}
-        E -->|是| F[✅ 通过]
-        E -->|否| G[❌ 需要优化]
-    end
-
-    subgraph 关注点["🎯 压力测试关注什么？"]
-        P1["会不会直接崩溃？"]
-        P2["限流是否生效？"]
-        P3["降级策略是否触发？"]
-        P4["恢复后是否正常？"]
-    end
-```
-
-### 2.3 性能测试完整流程
-
-一个规范的性能测试应该遵循以下流程：
-
-```mermaid
-flowchart TD
-    subgraph 性能测试流程["🔄 性能测试完整流程"]
-        direction TB
-        1[📋 需求指标<br/>明确性能目标] --> 2[📊 性能模型<br/>设计负载场景]
-        2 --> 3[⚙️ 性能方案<br/>选择工具，准备环境]
-        3 --> 4[📈 性能监控<br/>部署监控体系]
-        4 --> 5[▶️ 场景执行<br/>运行测试，逐步加压]
-        5 --> 6[📝 结果报告<br/>分析数据，输出建议]
-        6 -->|不达标| 7[🔧 优化<br/>代码/架构调优]
-        7 --> 2
-        6 -->|达标| 8[✅ 通过<br/>可以上线]
-    end
+| 场景         | 为什么必须做                                 |
+| ------------ | -------------------------------------------- |
+| 新应用上线   | 你不知道它能撑多少量——你的估算大概率是错的   |
+| 核心高频服务 | 支付、订单、秒杀。挂了就是钱                 |
+| 大促活动     | 双十一、演唱会抢票。不提前压测就是开盲盒     |
+| 架构调整后   | 微服务拆分、数据库迁移。架构改了性能一定会变 |
+| 长期运行服务 | 内存泄漏这种慢性病，不跑稳定性测试发现不了   |
 
-    style 1 fill:#e3f2fd,stroke:#1976d2
-    style 2 fill:#e8f5e9,stroke:#388e3c
-    style 3 fill:#fff3e0,stroke:#f57c00
-    style 4 fill:#fce4ec,stroke:#e91e63
-    style 5 fill:#e1f5e1,stroke:#4caf50
-    style 6 fill:#fff8e1,stroke:#ffc107
-    style 7 fill:#f3e5f5,stroke:#9c27b0
-    style 8 fill:#e8f5e9,stroke:#388e3c
-```
+说几个血淋淋的例子：
 
-**每一步详解**：
+- 某电商双十一没压测，开卖第一分钟数据库直接打满，整个平台瘫痪 20 分钟。
+- 某银行系统升级后没做稳定性测试，运行三天后内存泄漏导致重启，丢了几百笔交易。
+- 某抢票系统最火的时候崩了，直接损失几百万。
 
-**1. 需求指标**
+这些团队不是因为技术不行，是因为偷懒。
 
-- 明确性能目标，如：
-  - TPS ≥ 1000
-  - P95 响应时间 ≤ 200ms
-  - 可用性 ≥ 99.9%
-- 参考行业标准或历史数据
-- 与业务方确认 SLA
+### 性能测试的完整流程
 
-**2. 性能模型**
+做性能测试别一上来就 `artillery run`。先想清楚你要测什么、怎么测、怎么判断结果。
 
-- 分析用户行为，设计负载场景
-- 确定各场景比例（如：80% 浏览，15% 下单，5% 搜索）
-- 定义测试脚本的数据集
+**第一步：定目标**
 
-**3. 性能方案**
+你要 TPS 多少？P95 响应时间多少毫秒？错误率多少以下？不知道就去跟业务确认。没有目标的测试是瞎跑。
 
-- 选择测试工具（Artillery、k6、Locust）
-- 准备测试环境（最好与生产环境 1:1）
-- 设计测试脚本
+**第二步：建模型**
 
-**4. 性能监控**
+不是随便打几个请求就叫压测了。你得想清楚你的用户都在干嘛：
 
-- 部署监控系统
-- 收集服务器指标（CPU、内存、磁盘、网络）
-- 收集应用指标（响应时间、错误率、TPS）
-- 常用工具：Prometheus + Grafana
+- 80% 的人在浏览商品
+- 15% 的人在下单
+- 5% 的人在搜索
 
-**5. 场景执行**
+按这个比例设计你的测试脚本。用真实数据分布，别用 `"username": "test"` 这种假数据——生产环境的数据量级和分布完全不一样。
 
-- 按计划执行测试
-- 逐步加压，观察指标变化
-- 记录异常情况
+**第三步：选工具**
 
-**6. 结果报告**
+下面马上讲工具对比。
 
-- 分析数据，定位瓶颈
-- 输出优化建议
-- 与目标对比，判断是否通过
+**第四步：架上监控**
 
-### 2.4 什么场景必须做性能测试？
+压测工具告诉你"系统慢了"，但它不告诉你"哪里慢"。你需要 Prometheus + Grafana 来看 CPU、内存、网络、磁盘。最好加上 APM（应用性能监控）来看是哪个函数慢、哪个 SQL 慢。
 
-很多团队不做性能测试，理由是"没时间"或"应该没问题"。但下面这些场景，**必须做**：
+**第五步：执行**
 
-| 场景             | 原因                                   |
-| ---------------- | -------------------------------------- |
-| **新应用上线**   | 估算上线后 QPS，验证能否支撑           |
-| **核心高频服务** | 支付、订单、秒杀，性能问题直接导致损失 |
-| **大促/活动前**  | 电商抢购、演唱会抢票，必须提前压测     |
-| **架构调整后**   | 微服务拆分、数据库迁移，必须验证性能   |
-| **长期运行服务** | 检测内存泄漏、连接池耗尽等慢性问题     |
+从低负载开始，慢慢加。别一上来就打满。每一步都要观察指标，发现异常立刻记录位置。
 
-**血的教训**：
+**第六步：分析输出报告**
 
-- 某电商双十一前没做压测，开卖第一分钟数据库直接打满
-- 某银行系统升级后没测，结果运行三天后内存泄漏导致重启
-- 某抢票系统在高峰期崩溃，直接损失几百万票房
+对比目标和实际结果。定位瓶颈。给出优化建议。如果没达标，优化后重新跑。如果达标了，记录结果作为下次的基准。
 
-### 2.5 性能测试工具对比
+### 工具选谁：Artillery vs k6
 
-目前主流的性能测试工具有这些：
+性能测试工具也很多，但 Node.js 生态里最常用的就两个。
 
-```mermaid
-flowchart LR
-    subgraph 工具选择["🛠️ 工具选择"]
-        A{需求？} -->|简单 HTTP| B["Artillery / k6"]
-        A -->|复杂协议| C["Locust / JMeter"]
-        A -->|云原生| D["k6 Cloud"]
-    end
+#### Artillery：Node.js 亲生的
 
-    style A fill:#e3f2fd
-    style B fill:#e8f5e9
-    style C fill:#fff3e0
-    style D fill:#fce4ec
-```
-
-#### 2.5.1 Artillery：Node.js 亲儿子
-
-Artillery 是一个现代化的性能测试工具，基于 Node.js，天生适合测 Node.js 服务。
-
-**支持的协议**：
-
-- HTTP/HTTPS
-- WebSocket
-- Socket.io
-- 其他自定义协议
-
-**优点**：
-
-- 配置简单，YAML/JSON 格式
-- 丰富的报告功能
-- 支持场景编排
-- 支持参数化测试数据
-
-**安装**：
+Artillery 用 YAML 写测试场景，配置简单到你觉得不真实。但就是好用。
 
 ```bash
 npm install -g artillery
 ```
 
-**基础示例**：测试一个简单的 GET 接口
+一个基础配置长这样：
 
 ```yaml
 # test.yml
 config:
-  target: 'http://localhost:3000' # 目标地址
+  target: 'http://localhost:3000'
   phases:
-    # 预热阶段：10 秒内，逐渐增加到 5 用户
-    - duration: 10
-      arrivalRate: 5
-      name: 'Warm up'
-    # 正式测试：60 秒，维持 20 用户
     - duration: 60
       arrivalRate: 20
       name: 'Sustained load'
-  processor: './scenarios.js' # 自定义处理器
 
 scenarios:
   - name: '获取用户列表'
@@ -1014,59 +662,31 @@ scenarios:
           url: '/api/users/{{ userId }}'
 ```
 
-运行：
-
 ```bash
 artillery run test.yml
 ```
 
-**输出报告**：
+输出报告会告诉你：请求发了多少、平均响应时间多少、P95 多少、P99 多少。一目了然。
 
-```
-Report @ 00:00:05 (+05000ms)
---------------------------------------------------
-  Period: "Warm up"
-  Scenarios launched:  50
-  Scenarios completed:  48
-  Requests completed:   98
-  Mean response time:  45.23 ms
-  Min response time:   12.10 ms
-  Max response time:  156.78 ms
-  RPS sent: 9.71
-  Request latency:
-    min: 12.10 ms
-    max: 156.78 ms
-    median: 38.45 ms
-    p95: 95.12 ms
-    p99: 134.56 ms
---------------------------------------------------
-```
-
-**高级示例**：参数化 + 思考时间 + 自定义检查
+高级用法支持 CSV 参数化、思考时间（模拟用户在页面上发呆）、自定义断言（确保返回了 200）。
 
 ```yaml
-# advanced-test.yml
 config:
   target: 'http://my-api.com'
   phases:
-    # 5 分钟测试，逐渐加压到 50 用户
     - duration: 300
       arrivalRate: 20
       rampTo: 50
-  # 从 CSV 文件读取测试数据
   payload:
     path: 'users.csv'
     fields:
       - 'userId'
       - 'token'
     order: 'random'
-  # 自定义处理器
-  processor: './scenarios.js'
 
 scenarios:
   - name: '完整用户流程'
     flow:
-      # 1. 登录（带参数）
       - post:
           url: '/api/auth/login'
           json:
@@ -1077,60 +697,16 @@ scenarios:
               as: 'authToken'
           expect:
             - statusCode: 200
-
-      # 2. 思考时间：模拟用户思考
       - think: 2
-
-      # 3. 获取用户信息
       - get:
           url: '/api/users/me'
           headers:
             Authorization: 'Bearer {{ authToken }}'
-
-      # 4. 获取用户订单列表
-      - get:
-          url: '/api/orders'
-          headers:
-            Authorization: 'Bearer {{ authToken }}'
 ```
 
-```javascript
-// scenarios.js
-const fs = require('fs')
+#### k6：用 JavaScript 写压测脚本
 
-module.exports = {
-  // 自定义处理器：在请求前执行
-  onRequest: (request, userContext, events, done) => {
-    // 添加随机延迟模拟真实用户
-    const delay = Math.random() * 1000
-    setTimeout(() => done(), delay)
-  },
-
-  // 自定义处理器：响应后执行
-  afterResponse: (request, response, userContext, events, done) => {
-    // 记录响应时间
-    events.log({
-      type: 'custom',
-      message: `Response time: ${response.elapsedTime}ms`,
-    })
-    done()
-  },
-}
-```
-
-#### 2.5.2 k6：开发人员友好的压测工具
-
-k6 是用 Go 编写的，性能极好，支持 JavaScript 编写测试脚本。强调**开发者体验**，脚本简洁易懂。
-
-**优点**：
-
-- 性能强大（用 Go 写的）
-- 脚本简单，用 JavaScript
-- 输出友好，支持多种格式
-- 天然支持 CI/CD 集成
-- 云服务可用（k6 Cloud）
-
-**安装**（Linux/macOS）：
+k6 是用 Go 写的，性能强。脚本用 JavaScript 写，上手门槛极低。
 
 ```bash
 # macOS
@@ -1141,315 +717,123 @@ curl -s https://github.com/grafana/k6/releases/latest/download/k6-latest-linux-a
 sudo dpkg -i k6.deb
 ```
 
-**基础示例**：
+一个最小脚本：
 
 ```javascript
-// script.js
 import http from 'k6/http'
 import { check, sleep } from 'k6'
 
-// 测试配置
 export const options = {
   stages: [
-    // 1 分钟内逐渐增加到 10 用户
-    { duration: '1m', target: 10 },
-    // 维持 3 分钟
-    { duration: '3m', target: 10 },
-    // 1 分钟内降到 0
-    { duration: '1m', target: 0 },
+    { duration: '1m', target: 10 }, // 1 分钟加到 10 用户
+    { duration: '3m', target: 10 }, // 维持 3 分钟
+    { duration: '1m', target: 0 }, // 1 分钟降到 0
   ],
   thresholds: {
-    // P95 响应时间要小于 500ms
-    http_req_duration: ['p(95)<500'],
-    // 失败率要小于 1%
-    http_req_failed: ['rate<0.01'],
+    http_req_duration: ['p(95)<500'], // P95 小于 500ms
+    http_req_failed: ['rate<0.01'], // 错误率低于 1%
   },
 }
 
 export default function () {
-  // 发送 GET 请求
   const res = http.get('http://localhost:3000/api/users')
 
-  // 检查响应状态
   check(res, {
     'status is 200': (r) => r.status === 200,
-    'response has users': (r) => r.json('data').length > 0,
   })
 
-  // 思考时间：等待 1 秒
   sleep(1)
 }
 ```
 
-运行：
+跑起来：
 
 ```bash
 k6 run script.js
 ```
 
-**输出示例**：
+输出是终端里的实时表格——current TPS、平均响应时间、P95、错误数。看着它跑，有种开赛车的感觉。
 
-```
-     ✓ status is 200
-     ✓ response has users
+k6 还能接 InfluxDB + Grafana 做实时仪表盘。压测的时候打开 Grafana，看着曲线往上爬，等拐点出现的那一刻——你就知道你的系统上限在哪了。
 
-     checks.........................: 100.00% ✓ 4523      ✗ 0
-     data_received..................: 3.5 MB  45 kB/s
-     data_sent......................: 1.2 MB  15 kB/s
-     http_req_blocked...............: avg=4.8ms   min=2µs    med=6µs    max=1.2s
-     http_req_connecting............: avg=2.1ms   min=0s     med=0s     max=1.1s
-     http_req_duration..............: avg=123.4ms min=12ms   med=98ms   max=1.5s
-       { expected_response:true }...: avg=123.4ms min=12ms   med=98ms   max=1.5s
-     http_req_failed................: 0.00%   ✓ 0         ✗ 4523
-     http_reqs......................: 4523    58.2/s
-     iteration_duration.............: avg=1.12s   min=1.01s  med=1.09s  max=2.5s
-     iterations.....................: 4523    58.2/s
-     vus............................: 10      min=10     max=10
-     vus_max........................: 10      min=10     max=10
-```
+#### 我怎么选？
 
-**进阶示例**：完整用户流程 + 参数化
+- 简单的 HTTP 接口压测、团队里会写 YAML 的比会写 JS 的多——选 Artillery。
+- 需要复杂场景编排、自定义指标、CI/CD 集成——选 k6。
+- 两个都不难，花半天就能上手。
 
-```javascript
-// advanced-script.js
-import http from 'k6/http'
-import { check, sleep } from 'k6'
-import { Rate, Trend } from 'k6/metrics'
+### 加上 APM：知道"哪里慢"
 
-// 自定义指标
-const loginDuration = new Trend('login_duration')
-const orderDuration = new Trend('order_duration')
-const errorRate = new Rate('errors')
+压测工具告诉你了"P95 响应时间 850ms，太慢了"。然后呢？你盯着日志，不知道哪里慢。
 
-// 测试配置
-export const options = {
-  stages: [
-    { duration: '2m', target: 50 }, // 2 分钟加到 50 用户
-    { duration: '5m', target: 50 }, // 维持 5 分钟
-    { duration: '2m', target: 0 }, // 2 分钟降到 0
-  ],
-  thresholds: {
-    http_req_duration: ['p(95)<200'], // P95 < 200ms
-    login_duration: ['p(95)<100'], // 登录 P95 < 100ms
-    order_duration: ['p(95)<500'], // 下单 P95 < 500ms
-    errors: ['rate<0.05'], // 错误率 < 5%
-  },
-}
+这时候你需要 APM。它给你的请求画一张"账本"——从进来到出去，每一步花了多久。
 
-// 从环境变量读取配置
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000'
+比方说：
 
-// 测试场景
-export default function () {
-  // ===== 场景1：用户登录 =====
-  const loginRes = http.post(
-    `${BASE_URL}/api/auth/login`,
-    JSON.stringify({
-      username: `user${__VU}`, // __VU 是虚拟用户 ID
-      password: 'test123',
-    }),
-    {
-      headers: { 'Content-Type': 'application/json' },
-      tags: { name: 'login' },
-    },
-  )
+- API Gateway 花了 10ms
+- 你的 Node.js 服务 花了 50ms
+- 数据库查询花了 800ms
 
-  loginDuration.add(loginRes.timings.duration)
+看到了吧。问题根本不在你的代码，而是数据库没有索引。
 
-  check(loginRes, {
-    'login successful': (r) => r.status === 200,
-    'has token': (r) => r.json('token') !== undefined,
-  }) || errorRate.add(1)
+常用 APM 工具：
 
-  const token = loginRes.json('token')
-  const headers = {
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  }
+| 工具                       | 类型 | 特点                   |
+| -------------------------- | ---- | ---------------------- |
+| New Relic                  | 商业 | 全面，端到端追踪，贵   |
+| Datadog                    | 商业 | 云原生，集成能力强     |
+| Elastic APM                | 开源 | 跟 ELK 栈绑在一起      |
+| Prometheus + OpenTelemetry | 开源 | 完全自己搭，免费但费人 |
 
-  sleep(1)
+如果你刚开始搞，用 New Relic 或者 Datadog 的免费 tier 就行。先把流程跑通，再考虑自建。
 
-  // ===== 场景2：获取商品列表 =====
-  const productsRes = http.get(`${BASE_URL}/api/products`, {
-    headers,
-    tags: { name: 'products' },
-  })
+### 性能测试 Checklist
 
-  check(productsRes, {
-    'products loaded': (r) => r.status === 200,
-    'has products': (r) => r.json('data').length > 0,
-  }) || errorRate.add(1)
-
-  // 随机选择一个商品
-  const products = productsRes.json('data')
-  const randomProduct = products[Math.floor(Math.random() * products.length)]
-
-  sleep(1)
-
-  // ===== 场景3：创建订单 =====
-  const orderRes = http.post(
-    `${BASE_URL}/api/orders`,
-    JSON.stringify({
-      productId: randomProduct.id,
-      quantity: Math.floor(Math.random() * 3) + 1,
-    }),
-    {
-      headers,
-      tags: { name: 'order' },
-    },
-  )
-
-  orderDuration.add(orderRes.timings.duration)
-
-  check(orderRes, {
-    'order created': (r) => r.status === 201,
-    'has orderId': (r) => r.json('orderId') !== undefined,
-  }) || errorRate.add(1)
-
-  // 思考时间
-  sleep(2)
-}
-```
-
-**输出到 InfluxDB + Grafana**（实时监控）：
-
-```bash
-# 启动时指定输出
-k6 run --out influxdb=http://localhost:8086/k6 script.js
-```
-
-然后在 Grafana 中导入 k6 模板，就能看到实时仪表盘：
-
-```mermaid
-flowchart TD
-    subgraph 监控架构["📊 k6 + InfluxDB + Grafana 监控"]
-        K6[k6 运行测试] -->|"写入"| InfluxDB[(InfluxDB<br/>时序数据库)]
-        InfluxDB --> Grafana[Grafana 仪表盘]
-        Grafana --> D1[实时响应时间]
-        Grafana --> D2[实时 TPS]
-        Grafana --> D3[错误率趋势]
-    end
-```
-
-### 2.6 结合 APM 工具：定位代码级瓶颈
-
-性能测试工具告诉你"系统慢"，APM 工具告诉你"**哪里**慢、**为什么**慢"。
-
-**APM 能做什么**：
-
-- 追踪每个请求的完整调用链
-- 显示每个环节耗时
-- 识别数据库慢查询
-- 发现外部 API 延迟
-- 定位内存泄漏
-
-**常用 APM 工具**：
-
-| 工具                           | 类型 | 特点                 |
-| ------------------------------ | ---- | -------------------- |
-| **New Relic**                  | 商业 | 功能全面，端到端追踪 |
-| **Datadog**                    | 商业 | 云原生，集成能力强   |
-| **Elastic APM**                | 开源 | 与 ELK 栈集成        |
-| **Prometheus + OpenTelemetry** | 开源 | 可自建，完全可控     |
-
-**典型使用场景**：
-
-```mermaid
-flowchart TD
-    subgraph 压测加APM流程["🔍 压测 + APM 定位瓶颈"]
-        P[压测工具<br/>k6/Artillery] -->|持续加压| API[API Gateway]
-        API --> S[Node.js 服务]
-        S --> DB[(数据库)]
-        S --> Cache[(Redis 缓存)]
-        S -->|HTTP| External[第三方 API]
-
-        S -.->|"追踪"| APM[APM 工具]
-        DB -.->|"监控"| APM
-        Cache -.->|"监控"| APM
-    end
-
-    APM -->|"发现"| SlowQuery[慢查询：用户列表 800ms]
-    APM -->|"发现"| CacheMiss[缓存命中率低 40%]
-```
-
-**实战：定位一个性能问题**
-
-假设压测发现 P95 响应时间达到 1 秒，但应该 < 200ms。
-
-1. 查看 APM 追踪记录，找到慢请求
-2. APM 显示：数据库查询占用 800ms
-3. 查看具体 SQL：发现没有索引
-4. 添加索引
-5. 重新压测：P95 降到 150ms
-
-### 2.7 性能测试 checklist
-
-每次做性能测试前，检查一下：
+每次做之前，过一遍：
 
 **测试前准备**
 
-- [ ] 明确性能目标（TPS、响应时间、错误率）
-- [ ] 准备好测试数据（真实分布，不要用假数据）
-- [ ] 测试环境与生产环境尽量一致
-- [ ] 监控系统已部署并可用
-- [ ] 测试脚本已编写并审查
+- [ ] 明确性能目标（TPS、响应时间、错误率）——别上来就跑
+- [ ] 准备真实测试数据——不要用假数据
+- [ ] 测试环境尽量接近生产环境——机器的差异会骗你
+- [ ] 部署好监控系统——跑完不知道结果等于白跑
+- [ ] 编写并审查测试脚本——脚本写错了测出来的数据没意义
 
 **测试执行**
 
-- [ ] 从低负载开始，逐步加压
-- [ ] 每个阶段观察指标变化
-- [ ] 记录异常情况
-- [ ] 多次测试验证结果一致性
+- [ ] 从低负载开始，逐步加压——别一上来打满
+- [ ] 每一步都观察指标变化——找拐点
+- [ ] 记录每一次异常——回头看的时候有用
+- [ ] 多跑几次验证一致性——排除偶发因素
 
 **测试后分析**
 
-- [ ] 对比目标与实际结果
-- [ ] 定位瓶颈点
-- [ ] 输出优化建议
-- [ ] 记录测试结果作为基准
+- [ ] 对比目标与实际——过没过
+- [ ] 定位瓶颈——哪里卡了
+- [ ] 输出优化建议——怎么改
+- [ ] 存档作为基准——下次发版回来比
 
 ---
 
-## 三、CI/CD 中的测试：从手动到自动化
+## 第三部分：把测试塞进 CI/CD
 
-### 3.1 为什么要把测试加入 CI/CD？
+### 本地跑了还不够
 
 你可能会问："我本地测过了，为啥还要在 CI 里跑？"
 
-因为：
+因为你自己不能代表所有人。别人改了一行代码，合并进来，你的模块挂了。你自己不知道，因为你没拉最新代码。但 CI 会知道——它会在合并的入口挡下来。
 
-- **防止合并破坏代码**：别人改了代码可能影响你的模块
-- **强制要求**：CI 不通过就不能合并，保证质量底线
-- **持续监控**：每次代码变更都在测，及时发现问题
+把测试放进 CI 的三层意义：
 
-```mermaid
-flowchart TD
-    subgraph CI流程["🔄 CI/CD 中的测试流程"]
-        Code[编写代码] --> Push[推送到 Git]
-        Push --> CI[CI 服务]
-        CI --> Lint[代码检查]
-        Lint --> UnitTest[单元测试]
-        UnitTest --> IntegrationTest[集成测试]
-        IntegrationTest --> Build[构建镜像]
-        Build --> Deploy[部署]
-        Deploy --> Monitor[监控]
+- **拦截**：CI 不过就不能合，守住质量底线。
+- **监控**：每次 push 都在跑，代码变更跟测试结果强绑定。
+- **解放**：你不用每次在本地跑全套测试了，CI 帮你跑，你去看结果就行。
 
-        Lint -->|失败| Reject1[❌ 拒绝合并]
-        UnitTest -->|失败| Reject2[❌ 拒绝合并]
-        IntegrationTest -->|失败| Reject3[❌ 拒绝合并]
-    end
+### GitHub Actions 配置
 
-    style Lint fill:#e3f2fd
-    style UnitTest fill:#e8f5e9
-    style IntegrationTest fill:#fff3e0
-    style Build fill:#fce4ec
-    style Deploy fill:#f3e5f5
-```
-
-### 3.2 GitHub Actions 示例
+一个最简配置，扔在 `.github/workflows/test.yml` 里：
 
 ```yaml
-# .github/workflows/test.yml
 name: Tests
 
 on:
@@ -1475,7 +859,7 @@ jobs:
 
   performance-test:
     runs-on: ubuntu-latest
-    needs: unit-test # 单元测试通过后才运行
+    needs: unit-test
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -1486,50 +870,36 @@ jobs:
       - run: npx k6 run tests/performance.js
 ```
 
+注意：单元测试过了才跑性能测试（`needs: unit-test`）。如果代码逻辑都错了，压测没意义。
+
 ---
 
-## 四、总结
+## 给你一套判断框架
 
-单元测试和性能测试是保障 Node.js 应用质量的两大支柱。
+写到这儿，我不再重复前面说过的东西了。你不需要总结，你需要的是：以后每次面对测试问题的时候，自己能判断该怎么做。下面几个问题你掂量一下：
 
-**单元测试解决"代码对不对"的问题**：
+**单元测试方面：**
 
-- 用 AAA 模式组织测试
-- 追求有意义的覆盖率，而不是数字
-- 选择合适的框架（Mocha/Jest/Vitest）
-- 用 Mock 隔离外部依赖
+1. 这个函数是不是核心路径？如果它坏了，会不会导致线上崩？——会，就测。
+2. 这个函数的边界条件我想过吗？——没想过，写完测试你就想过了。
+3. 我敢不敢直接改这段代码然后上线？——不敢，说明你缺测试。
+4. 覆盖率 85% 了，但剩下的 15% 是不是真的重要？——不重要就别追，数字是瞎的。
+5. 我是用什么框架写的？Vite 就用 Vitest，React 用 Jest，老项目用 Mocha。别纠结。
 
-**性能测试解决"系统扛不扛得住"的问题**：
+**性能测试方面：**
 
-- 四种测试类型，各有用途
-- Artillery 和 k6 是好用的工具
-- 结合 APM 定位代码级瓶颈
-- 把测试加入 CI/CD，持续监控
+1. 我的系统要面对多少用户？有没有高峰期？——不知道就去问。有高峰期就压测。
+2. 什么时候做测试？——上线前、大促前、架构改动后。这三次必须做。
+3. 做哪种？——基准测试每次都跑，容量测试上线前跑，稳定性测试长期服务跑，异常测试秒杀场景跑。
+4. 用什么工具？——简单用 Artillery，复杂用 k6。
+5. 慢在哪儿？——工具只告诉你"慢了"，APM 告诉你"哪儿慢了"。
 
-**最后一张图总结全文**：
+**流程方面：**
 
-```mermaid
-flowchart TD
-    subgraph 测试体系["🛡️ Node.js 完整测试体系"]
-        UT[单元测试] -->|保证| Correct[代码正确性]
-        PT[性能测试] -->|保证| Performance[系统性能]
-        Correct -->|进入| CI[CI/CD 流水线]
-        Performance -->|进入| CI
-        CI -->|触发| Deploy[自动化部署]
-        Deploy -->|部署到| Prod[生产环境]
-        Prod -->|监控| APM[APM 工具]
-        APM -->|反馈| Improve[持续优化]
-        Improve --> UT
-    end
+1. 测试进 CI 了吗？——没进的话，你本地的测试等于摆设。
+2. CI 不过能合并吗？——能合并的话，CI 等于摆设。
+3. 上一次压测的结果在哪儿？——找不到的话，你这次跑了也白跑。
 
-    style UT fill:#4caf50,color:#fff
-    style PT fill:#ff9800,color:#fff
-    style CI fill:#2196f3,color:#fff
-    style Deploy fill:#9c27b0,color:#fff
-    style Prod fill:#f44336,color:#fff
-    style APM fill:#607d8b,color:#fff
-```
+测试不是仪式。测试是你对这个系统的信任。信任不是靠感觉建立的，是靠每次代码变更后那排绿色的 ✓。
 
-测试不是一次性的工作，而应融入开发文化，成为每一天的习惯。只有持续测试、持续优化，才能构建出可靠、高效的 Node.js 应用。
-
-祝你写出高质量的代码，跑出漂亮的测试！
+把测试写好，不是为了老板，是为了将来那个凌晨三点在被窝里不用接电话的你。

