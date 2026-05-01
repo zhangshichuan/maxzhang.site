@@ -4,7 +4,7 @@ summary: '如何确保你的 API 从数据库到浏览器都拥有"坚不可摧"
 category: 'Backend'
 tags: ['TypeScript', 'Prisma']
 author: 'Max Zhang'
-date: '2024-02-26'
+date: '2024-12-26'
 ---
 
 ## 那天下午，产品经理又来了
@@ -23,7 +23,7 @@ date: '2024-02-26'
 
 第二个是后端的 Zod schema 文件。`src/shared/schemas/user.schema.ts`。`.max(20)` 改成 `.max(30)`，`.min(6)` 改成 `.min(8)`，把 `email` 的 `.optional()` 删掉。
 
-第三个是前端表单组件。`src/components/RegisterForm.tsx`。找到 `maxLength={20}` 改成 `maxLength={30}`，找到密码提示文字"最少6个字符"改成"最少8个字符"。
+第三个是前端表单组件。`src/components/RegisterForm.tsx`。找到 `maxLength=\{20\}` 改成 `maxLength=\{30\}`，找到密码提示文字"最少6个字符"改成"最少8个字符"。
 
 改完了。运行。测了一下。通了。
 
@@ -190,9 +190,9 @@ if (!result.success) {
 
 你的数据和数据库之间，本来隔着一层语言障碍。
 
-数据库说的是 SQL：CREATE TABLE、INSERT INTO、SELECT FROM。你的代码说的是 TypeScript：const user = { username: 'foo' }。
+数据库说的是 SQL：CREATE TABLE、INSERT INTO、SELECT FROM。你的代码说的是 TypeScript：const user = \{ username: 'foo' \}。
 
-传统的做法是你在中间当翻译。你脑子里有一张"Users 表有哪些字段、每个字段是什么类型"的账本，然后在 TypeScript 里手动写 `interface User { username: string }`，手动写 SQL 查询，手动给每个字段标注类型。
+传统的做法是你在中间当翻译。你脑子里有一张"Users 表有哪些字段、每个字段是什么类型"的账本，然后在 TypeScript 里手动写 `interface User \{ username: string \}`，手动写 SQL 查询，手动给每个字段标注类型。
 
 翻译翻多了，迟早会翻错。
 
@@ -412,7 +412,7 @@ const userWithAddressSchema = z.object({
 })
 ```
 
-在 Ant Design 里，你用 `Form.Item name={['address', 'city']}` 来绑定嵌套路径。
+在 Ant Design 里，你用 `Form.Item name=\{['address', 'city']\}` 来绑定嵌套路径。
 
 适配器需要能递归处理这种情况。核心改动是在遍历 schema.shape 时判断：如果某个字段本身也是一个 ZodObject，就递归进去：
 
@@ -585,7 +585,7 @@ export async function POST(request: Request) {
 
 `parse` 在验证失败的时候会直接抛异常。你的错误处理逻辑要放进 try-catch 里，和网络异常、数据库异常混在一起。
 
-`safeParse` 不抛异常。它返回一个结果对象：`{ success: true, data: {...} }` 或 `{ success: false, error: {...} }`。你可以用 if 分支处理验证失败的情况，和业务异常分开。
+`safeParse` 不抛异常。它返回一个结果对象：`\{ success: true, data: \{...\} \}` 或 `\{ success: false, error: \{...\} \}`。你可以用 if 分支处理验证失败的情况，和业务异常分开。
 
 这是小细节，但在真实项目里它让你的错误处理逻辑干净很多。
 
@@ -721,7 +721,7 @@ describe('userSchema', () =&gt; {
 
 **第二个坑：嵌套对象需要扩展适配器。**
 
-上面给的那个 `createZodFormValidator` 能处理扁平结构。如果你的表单里嵌套了对象——比如用户的 address 字段是一个 `{ city, street, zipCode }` 对象——你需要让适配器能递归处理。
+上面给的那个 `createZodFormValidator` 能处理扁平结构。如果你的表单里嵌套了对象——比如用户的 address 字段是一个 `\{ city, street, zipCode \}` 对象——你需要让适配器能递归处理。
 
 不复杂，但需要你自己写。我没办法给你一个适配所有 UI 框架的万能适配器。
 

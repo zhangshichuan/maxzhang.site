@@ -4,7 +4,7 @@ summary: 'How do you make sure your API has "bulletproof" type protection from t
 category: 'Backend'
 tags: ['TypeScript', 'Prisma']
 author: 'Max Zhang'
-date: '2024-02-26'
+date: '2024-12-26'
 ---
 
 ## That afternoon, the product manager showed up again
@@ -25,7 +25,7 @@ First, `schema.prisma`. Found the User model. Changed `@db.VarChar(20)` to `@db.
 
 Second, the backend Zod schema file. `src/shared/schemas/user.schema.ts`. `.max(20)` to `.max(30)`. `.min(6)` to `.min(8)`. Delete `.optional()` from `email`.
 
-Third, the frontend form component. `src/components/RegisterForm.tsx`. `maxLength={20}` to `maxLength={30}`. "Minimum 6 characters" to "Minimum 8 characters". The email field now needs a red asterisk.
+Third, the frontend form component. `src/components/RegisterForm.tsx`. `maxLength=\{20\}` to `maxLength=\{30\}`. "Minimum 6 characters" to "Minimum 8 characters". The email field now needs a red asterisk.
 
 Done. Ran it. Tested it. Works.
 
@@ -190,9 +190,9 @@ But Zod has limits. It doesn't care where data gets stored. It doesn't care how 
 
 There's a language barrier between your data and your database.
 
-The database speaks SQL: `CREATE TABLE`, `INSERT INTO`, `SELECT FROM`. Your code speaks TypeScript: `const user = { username: 'foo' }`.
+The database speaks SQL: `CREATE TABLE`, `INSERT INTO`, `SELECT FROM`. Your code speaks TypeScript: `const user = \{ username: 'foo' \}`.
 
-The traditional approach is that you stand in the middle, playing translator. You keep a mental ledger of which fields exist in the `Users` table and what types they are, then manually write `interface User { username: string }` in TypeScript, manually write SQL queries, manually annotate every field with its type.
+The traditional approach is that you stand in the middle, playing translator. You keep a mental ledger of which fields exist in the `Users` table and what types they are, then manually write `interface User \{ username: string \}` in TypeScript, manually write SQL queries, manually annotate every field with its type.
 
 Translate long enough, you're going to screw something up eventually.
 
@@ -410,7 +410,7 @@ const userWithAddressSchema = z.object({
 })
 ```
 
-In Ant Design, you bind nested paths with `Form.Item name={['address', 'city']}`.
+In Ant Design, you bind nested paths with `Form.Item name=\{['address', 'city']\}`.
 
 The adapter needs to handle this recursively. The core change: when iterating over `schema.shape`, check if a field is itself a `ZodObject`. If it is, recurse into it:
 
@@ -584,7 +584,7 @@ Notice one detail: use `safeParse`, not `parse`.
 
 `parse` throws an exception when validation fails. Your error handling ends up mixed into a try-catch block alongside network failures and database exceptions.
 
-`safeParse` never throws. It returns a result object: either `{ success: true, data: {...} }` or `{ success: false, error: {...} }`. You handle validation failures with a simple if branch, cleanly separated from business exceptions.
+`safeParse` never throws. It returns a result object: either `\{ success: true, data: \{...\} \}` or `\{ success: false, error: \{...\} \}`. You handle validation failures with a simple if branch, cleanly separated from business exceptions.
 
 It's a small detail. In a real project, it makes your error handling noticeably cleaner.
 
@@ -720,7 +720,7 @@ The first time you hit this error, you'll need patience to parse through the gen
 
 **Landmine two: nested objects require extending the adapter.**
 
-The `createZodFormValidator` I showed above handles flat structures. If your form has nested objects -- say, an `address` field that is `{ city, street, zipCode }` -- you need to make the adapter recursive.
+The `createZodFormValidator` I showed above handles flat structures. If your form has nested objects -- say, an `address` field that is `\{ city, street, zipCode \}` -- you need to make the adapter recursive.
 
 Not complicated, but you have to write it yourself. I can't give you a universal adapter that works with every UI framework.
 
