@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { FadeIn } from '@/src/shared/components'
 import { Button } from '@/src/shared/components/ui'
-import { ArrowRight, Sparkles } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { Link } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
 
@@ -21,33 +21,6 @@ export function HomeHero() {
   "
     >
       {/* 浮动勋章 */}
-      <FadeIn delay={0.1}>
-        <div
-          className="
-     absolute -top-4 right-10 hidden rotate-12
-     lg:block
-   "
-        >
-          <div className="group relative">
-            <div
-              className="
-       absolute inset-0 rounded-2xl bg-accent shadow-[4px_4px_0px_#000]
-       transition-transform duration-500
-       group-hover:rotate-6
-     "
-            ></div>
-            <div
-              className="
-       relative flex items-center gap-2 rounded-2xl border-2 border-border
-       bg-secondary p-4
-     "
-            >
-              <Sparkles className="h-5 w-5 animate-pulse text-primary" />
-              <span className="text-sm font-black tracking-widest uppercase">Available for Hire</span>
-            </div>
-          </div>
-        </div>
-      </FadeIn>
 
       <div className="flex max-w-full flex-col gap-4">
         <h1
@@ -119,7 +92,7 @@ export function HomeHero() {
       <FadeIn className="flex flex-wrap gap-6" delay={1.2}>
         <Link href="/posts">
           <Button size="xl" className="cursor-pointer bg-primary text-lg font-black">
-            {t('readArticles')} {/* HomePage/hero/readArticles 阅读文章 */} <ArrowRight className="ml-2 h-5 w-5" />
+            {t('readArticles')} {/* HomePage/hero/readArticles 阅读文章 */} <ArrowRight className="ml-2 size-5" />
           </Button>
         </Link>
         <Link href="/about">

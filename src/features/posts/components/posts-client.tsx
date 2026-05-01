@@ -1,11 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import { PostItem } from '@/src/features/posts/components'
 import type { PostSummaryWithViews } from '@/src/features/posts/model'
-import { Link } from '@/i18n/routing'
+import { Link, useRouter } from '@/i18n/routing'
 import { GlassCard } from '@/src/shared/components'
 import { FadeIn, StaggerContainer, StaggerItem } from '@/src/shared/components'
-import { ArrowRight, Folder } from 'lucide-react'
+import { ArrowRight, Folder, Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 interface PostsClientProps {
@@ -16,6 +17,14 @@ interface PostsClientProps {
 
 export function PostsClient({ posts, allTags, allCategories }: PostsClientProps) {
   const t = useTranslations('PostsPage')
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+
+  const handleNavigate = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault()
+    setLoading(true)
+    router.push(href)
+  }
 
   return (
     <div className="container mx-auto max-w-screen-2xl px-4 py-10">
@@ -72,78 +81,106 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
             delay={0.4}
           >
             {/* 热门分类模块 */}
-            <GlassCard className="p-8">
-              <h3 className="mb-6 flex items-center gap-2 text-xl font-black">
-                {t('categories')} {/* PostsPage/categories 热门分类 */}
-              </h3>
-              <div className="flex flex-col gap-3">
-                {allCategories.map((category) => (
-                  <Link
-                    key={category}
-                    prefetch={false}
-                    href={`/search?category=${encodeURIComponent(category)}`}
-                    className="
-            flex items-center justify-between rounded-xl border-2
+            <div className="relative">
+              <GlassCard className="p-8">
+                <h3 className="mb-6 flex items-center gap-2 text-xl font-black">
+                  {t('categories')} {/* PostsPage/categories 热门分类 */}
+                </h3>
+                <div className="flex flex-col gap-3">
+                  {allCategories.map((category) => {
+                    const href = `/search?category=${encodeURIComponent(category)}`
+                    return (
+                      <Link
+                        key={category}
+                        href={href}
+                        onClick={(e) => handleNavigate(e, href)}
+                        className="
+            group flex cursor-pointer items-center justify-between rounded-xl border-2
             border-transparent p-3 text-base font-bold transition-all
             hover:border-border hover:bg-secondary/20 hover:text-primary
           "
-                  >
-                    <span className="flex items-center gap-3">
-                      <Folder className="h-5 w-5 text-primary" />
-                      {category}
-                    </span>
-                    <ArrowRight
-                      className="
+                      >
+                        <span className="flex items-center gap-3">
+                          <Folder className="h-5 w-5 text-primary" />
+                          {category}
+                        </span>
+                        <ArrowRight
+                          className="
             size-4 opacity-0 transition-opacity
             group-hover:opacity-100
           "
-                    />
-                  </Link>
-                ))}
-                {allCategories.length === 0 && (
-                  <p
-                    className="
+                        />
+                      </Link>
+                    )
+                  })}
+                  {allCategories.length === 0 && (
+                    <p
+                      className="
           text-sm font-medium text-muted-foreground italic
         "
-                  >
-                    {t('noCategories')} {/* PostsPage/noCategories 暂无分类 */}
-                  </p>
-                )}
-              </div>
-            </GlassCard>
+                    >
+                      {t('noCategories')} {/* PostsPage/noCategories 暂无分类 */}
+                    </p>
+                  )}
+                </div>
+              </GlassCard>
+
+              {loading && (
+                <div className="bg-card/60 absolute inset-0 z-20 flex items-center justify-center rounded-[--radius] backdrop-blur-[2px]">
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-sm font-black tracking-widest text-muted-foreground uppercase">Loading</span>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* 热门标签模块 */}
-            <GlassCard className="p-8">
-              <h3 className="mb-6 flex items-center gap-2 text-xl font-black">
-                {t('tags')} {/* PostsPage/tags 热门标签 */}
-              </h3>
-              <div className="flex flex-wrap gap-3">
-                {allTags.map((tag) => (
-                  <Link
-                    prefetch={false}
-                    key={tag}
-                    href={`/search?tag=${encodeURIComponent(tag)}`}
-                    className="
-            bg-card inline-flex items-center rounded-xl border-2 border-border
+            <div className="relative">
+              <GlassCard className="p-8">
+                <h3 className="mb-6 flex items-center gap-2 text-xl font-black">
+                  {t('tags')} {/* PostsPage/tags 热门标签 */}
+                </h3>
+                <div className="flex flex-wrap gap-3">
+                  {allTags.map((tag) => {
+                    const href = `/search?tag=${encodeURIComponent(tag)}`
+                    return (
+                      <Link
+                        key={tag}
+                        href={href}
+                        onClick={(e) => handleNavigate(e, href)}
+                        className="
+            bg-card inline-flex cursor-pointer items-center rounded-xl border-2 border-border
             px-4 py-1.5 text-xs font-black text-foreground
             shadow-[3px_3px_0px_var(--border)] transition-all
             hover:translate-px hover:shadow-none
           "
-                  >
-                    {tag}
-                  </Link>
-                ))}
-                {allTags.length === 0 && (
-                  <p
-                    className="
+                      >
+                        {tag}
+                      </Link>
+                    )
+                  })}
+                  {allTags.length === 0 && (
+                    <p
+                      className="
           text-sm font-medium text-muted-foreground italic
         "
-                  >
-                    {t('noTags')} {/* PostsPage/noTags 暂无标签 */}
-                  </p>
-                )}
-              </div>
-            </GlassCard>
+                    >
+                      {t('noTags')} {/* PostsPage/noTags 暂无标签 */}
+                    </p>
+                  )}
+                </div>
+              </GlassCard>
+
+              {loading && (
+                <div className="bg-card/60 absolute inset-0 z-20 flex items-center justify-center rounded-[--radius] backdrop-blur-[2px]">
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-sm font-black tracking-widest text-muted-foreground uppercase">Loading</span>
+                  </div>
+                </div>
+              )}
+            </div>
           </FadeIn>
         </aside>
       </div>

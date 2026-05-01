@@ -1,8 +1,7 @@
 import { Comment, ViewCounter, getCommentCount } from '@/src/features/engagement'
 import { getPostBySlug, getPostSlugs } from '@/src/features/posts'
-import { BackToTop, Mermaid } from '@/src/shared/components'
-import { Link } from '@/i18n/routing'
-import { ArrowLeft, Calendar, Clock, Folder, User } from 'lucide-react'
+import { BackToPosts, BackToTop, Mermaid } from '@/src/shared/components'
+import { Calendar, Clock, Folder, User } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import * as React from 'react'
@@ -107,23 +106,7 @@ export default async function PostPage({ params }: Props) {
     <>
       <article className="container mx-auto max-w-4xl px-4 py-12 md:px-6">
         {/* 返回链接 */}
-        <Link
-          href="/posts"
-          className="
-      group mb-10 inline-flex items-center rounded-xl border-2
-      border-transparent bg-secondary/10 px-4 py-2 text-sm font-black
-      tracking-widest text-muted-foreground uppercase transition-all
-      hover:border-border hover:text-primary
-    "
-        >
-          <ArrowLeft
-            className="
-      mr-2 size-5 transition-transform
-      group-hover:-translate-x-1
-    "
-          />
-          {tPosts('back')}
-        </Link>
+        <BackToPosts label={tPosts('back')} />
 
         <header className="mb-16 space-y-8">
           {/* 文章标题 */}
