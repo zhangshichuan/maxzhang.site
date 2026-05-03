@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { CommentDisplay } from '@/src/features/engagement/components'
 import { ViewDisplay } from '@/src/features/engagement/components'
 import type { PostSummaryWithViews } from '@/src/features/posts/model'
-import { ArrowRight, Calendar, Clock, Loader2 } from 'lucide-react'
+import { Calendar, Clock, Loader2 } from 'lucide-react'
 import { Link, useRouter } from '@/i18n/routing'
 import { cn } from '@/src/shared/utils'
 import { GlassCard } from '@/src/shared/components'
@@ -19,13 +19,7 @@ function FeaturedCard({ post, idx }: { post: PostSummaryWithViews; idx: number }
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
-  const tagColors = [
-    'bg-secondary text-secondary-foreground border-border',
-    'bg-primary text-primary-foreground border-border',
-    'bg-accent text-accent-foreground border-border',
-    'bg-blue-400 text-white border-border',
-    'bg-emerald-400 text-white border-border',
-  ]
+  const accentColors = ['border-l-primary', 'border-l-secondary', 'border-l-accent']
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault()
@@ -38,64 +32,34 @@ function FeaturedCard({ post, idx }: { post: PostSummaryWithViews; idx: number }
       <GlassCard
         hoverEffect={!loading}
         className={cn(
-          'flex h-full flex-col justify-between space-y-6 p-8',
+          'flex h-full flex-col justify-between space-y-5 border-l-[3px] p-6',
+          accentColors[idx % accentColors.length],
           loading && 'pointer-events-none opacity-80',
         )}
       >
-        <div className="space-y-4">
-          <div
-            className="
-        flex flex-wrap items-center gap-3 text-xs font-bold tracking-widest
-        text-muted-foreground uppercase
-      "
-          >
-            <span
-              className="
-          flex items-center gap-1.5 rounded-md bg-muted px-2 py-1
-        "
-            >
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-3 text-xs tracking-wide text-muted-foreground">
+            <span className="flex items-center gap-1.5 font-sans">
               <Calendar className="size-3.5" />
               {post.date}
             </span>
-            <span
-              className="
-          flex items-center gap-1.5 rounded-md bg-muted px-2 py-1
-        "
-            >
+            <span className="flex items-center gap-1.5 font-sans">
               <Clock className="size-3.5" />
               {post.readTime.text}
             </span>
             <ViewDisplay views={post.views} />
             <CommentDisplay comments={post.comments} />
           </div>
-          <h3
-            className="
-         line-clamp-2 text-2xl/tight font-black transition-colors
-         group-hover:text-primary
-       "
-          >
+          <h3 className="line-clamp-2 font-serif text-xl/snug font-bold transition-colors group-hover:text-primary">
             {post.title}
           </h3>
-          <p
-            className="
-         line-clamp-3 leading-relaxed font-medium text-muted-foreground
-       "
-          >
-            {post.summary}
-          </p>
+          <p className="line-clamp-3 font-serif text-sm/relaxed text-muted-foreground">{post.summary}</p>
         </div>
-        <div className="flex flex-wrap gap-2 pt-4">
-          {post.tags.map((tag, tIdx) => (
+        <div className="flex flex-wrap gap-1.5 pt-2">
+          {post.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className={cn(
-                `
-            inline-flex items-center rounded-lg border-2 px-3 py-1 text-xs
-            font-black tracking-tight uppercase
-            shadow-[2px_2px_0px_rgba(0,0,0,1)]
-          `,
-                tagColors[(idx + tIdx) % tagColors.length],
-              )}
+              className="inline-flex items-center rounded-sm border border-border/60 bg-muted/50 px-2 py-0.5 font-sans text-[10px] font-medium tracking-wide text-muted-foreground uppercase"
             >
               {tag}
             </span>
@@ -104,11 +68,8 @@ function FeaturedCard({ post, idx }: { post: PostSummaryWithViews; idx: number }
       </GlassCard>
 
       {loading && (
-        <div className="bg-card/60 absolute inset-0 z-20 flex items-center justify-center rounded-[--radius] backdrop-blur-[2px]">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="text-sm font-black tracking-widest text-muted-foreground uppercase">Loading</span>
-          </div>
+        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-[--radius] bg-card/60 backdrop-blur-[1px]">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       )}
     </Link>
@@ -127,52 +88,27 @@ export function FeaturedPosts({ posts }: FeaturedPostsProps) {
   }
 
   return (
-    <section className="space-y-10">
-      <FadeIn
-        className="
-     flex items-end justify-between border-b-4 border-border pb-4
-   "
-        delay={0.4}
-      >
+    <section className="space-y-8">
+      <FadeIn className="flex items-end justify-between border-b border-border/40 pb-3" delay={0.4}>
         <div className="space-y-1">
-          <h2 className="text-3xl font-black tracking-tight">
-            {t('title')} {/* HomePage/featuredPosts/title 最新文章 */}
-          </h2>
-          <p className="font-medium text-muted-foreground">
-            {t('description')} {/* HomePage/featuredPosts/description 探索技术与创意的边界 */}
-          </p>
+          <h2 className="font-serif text-2xl font-bold tracking-tight">{t('title')}</h2>
+          <p className="font-serif text-sm text-muted-foreground italic">{t('description')}</p>
         </div>
         <Link
           href="/posts"
           onClick={handleViewAll}
-          className="
-      group flex items-center gap-2 text-sm font-black tracking-widest
-      text-primary uppercase transition-colors
-      hover:text-accent
-    "
+          className="group flex items-center gap-1.5 font-sans text-xs font-medium tracking-wider text-primary uppercase transition-colors hover:text-accent"
         >
-          {t('viewAll')} {/* HomePage/featuredPosts/viewAll 查看全部 */}{' '}
+          {t('viewAll')}
           {viewAllLoading ? (
-            <Loader2 className="size-4 animate-spin" />
+            <Loader2 className="size-3 animate-spin" />
           ) : (
-            <ArrowRight
-              className="
-       size-4 transition-transform
-       group-hover:translate-x-1
-     "
-            />
+            <span className="transition-transform group-hover:translate-x-0.5">&rarr;</span>
           )}
         </Link>
       </FadeIn>
 
-      <StaggerContainer
-        className="
-     grid gap-8
-     sm:grid-cols-2
-     lg:grid-cols-3
-   "
-        delay={0.5}
-      >
+      <StaggerContainer className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" delay={0.5}>
         {posts.map((post, idx) => (
           <StaggerItem key={post.slug}>
             <FeaturedCard post={post} idx={idx} />

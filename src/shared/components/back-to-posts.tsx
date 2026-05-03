@@ -18,22 +18,12 @@ export function BackToPosts({ label }: { label: string }) {
     <Link
       href="/posts"
       onClick={handleClick}
-      className="
-        group mb-10 inline-flex items-center rounded-xl border-2
-        border-transparent bg-secondary/10 px-4 py-2 text-sm font-black
-        tracking-widest text-muted-foreground uppercase transition-all
-        hover:border-border hover:text-primary
-      "
+      className="group mb-8 inline-flex items-center gap-2 font-serif text-sm tracking-wide text-muted-foreground transition-colors hover:text-primary"
     >
       {loading ? (
-        <Loader2 className="mr-2 size-5 animate-spin text-primary" />
+        <Loader2 className="size-4 animate-spin text-primary" />
       ) : (
-        <ArrowLeft
-          className="
-            mr-2 size-5 transition-transform
-            group-hover:-translate-x-1
-          "
-        />
+        <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
       )}
       {label}
     </Link>

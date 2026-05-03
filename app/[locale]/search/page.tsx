@@ -8,7 +8,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const t = await getTranslations({ locale, namespace: 'SearchPage' })
 
   return {
-    title: `${t('title')} - Max Zhang`, // SearchPage/title 搜索文章
+    title: `${t('title')} - Max Zhang`,
     description: 'Search through my articles by keyword, tag, or category.',
   }
 }
@@ -19,15 +19,14 @@ export default async function SearchPage({ params }: { params: Promise<{ locale:
   const t = await getTranslations('SearchPage')
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-10">
-      <h1 className="mb-8 text-3xl font-bold">
-        {t('title')} {/* SearchPage/title 搜索文章 */}
-      </h1>
+    <div className="container mx-auto max-w-3xl px-6 py-10 md:px-8">
+      <div className="mb-8 border-b border-border/40 pb-6">
+        <p className="font-sans text-xs font-medium tracking-[0.3em] text-muted-foreground uppercase">{t('title')}</p>
+        <h1 className="mt-2 font-serif text-4xl font-bold tracking-tight">{t('title')}</h1>
+      </div>
       <Suspense
         fallback={
-          <div className="py-20 text-center text-muted-foreground">
-            {t('loading')} {/* SearchPage/loading 加载搜索组件... */}
-          </div>
+          <div className="py-20 text-center font-serif text-lg text-muted-foreground italic">{t('loading')}</div>
         }
       >
         <SearchClient posts={posts} />

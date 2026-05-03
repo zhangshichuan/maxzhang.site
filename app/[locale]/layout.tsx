@@ -48,9 +48,9 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} className="scroll-pt-16" suppressHydrationWarning>
-      <body className="flex min-h-screen flex-col pt-16 font-sans antialiased">
+      <body className="flex min-h-screen flex-col pt-16 antialiased">
         <NextIntlClientProvider messages={messages}>
-          <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
+          <ThemeProvider attribute="class" defaultTheme="system" disableTransitionOnChange>
             <Navbar />
             <main className="flex-1">
               {/* 静态滚动锚点：防止 Framer Motion 动画导致刷新时滚动条跳动 */}

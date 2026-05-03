@@ -103,7 +103,7 @@ function CommentItem({
 
       {/* 【评论卡片主体】根据深度应用左侧缩进 */}
       <div
-        className="bg-card rounded-lg border border-border p-4"
+        className="rounded-lg border border-border bg-card p-4"
         style={{ marginLeft: depth > 0 ? `${indentPx}px` : '0' }}
       >
         {/* 评论元信息：指纹（后10位）+ 格式化时间 */}

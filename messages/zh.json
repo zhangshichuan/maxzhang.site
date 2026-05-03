@@ -14,18 +14,18 @@
     }
   },
   "Comment": {
-    "title": "评论",
-    "placeholder": "分享你的想法...",
-    "submit": "发表评论",
-    "submitting": "发送中...",
-    "error": "评论发送失败，请重试",
-    "success": "评论发表成功！",
-    "empty": "暂无评论，快来抢沙发！",
-    "remaining": "今日还可评论 {count} 条",
-    "noRemaining": "今日评论次数已用完",
+    "title": "读者来信",
+    "placeholder": "写下你的想法...",
+    "submit": "投递",
+    "submitting": "投递中...",
+    "error": "投递失败，请重试",
+    "success": "投递成功！",
+    "empty": "暂无来信，期待你的分享。",
+    "remaining": "今日还可投递 {count} 条",
+    "noRemaining": "今日投递次数已用完",
     "reply": "回复",
     "replyPlaceholder": "写下你的回复...",
-    "replySuccess": "回复发表成功！",
+    "replySuccess": "回复投递成功！",
     "cancel": "取消"
   },
   "Chat": {
@@ -44,13 +44,13 @@
   },
   "HomePage": {
     "hero": {
-      "readArticles": "阅读文章",
+      "readArticles": "翻阅文章",
       "aboutMe": "关于我"
     },
     "featuredPosts": {
       "title": "最新文章",
-      "description": "探索技术与创意的边界",
-      "viewAll": "查看全部"
+      "description": "技术与创意的交汇之处",
+      "viewAll": "浏览全部"
     }
   },
   "AboutPage": {
@@ -124,18 +124,18 @@
     "interestList": ["开源", "UI/UX 设计", "全栈开发", "人工智能"]
   },
   "PostsPage": {
-    "title": "文章库",
-    "description": "探索技术、设计与生活的交汇点。",
-    "categories": "热门分类",
-    "tags": "热门标签",
+    "title": "故事会",
+    "description": "技术、设计与生活的交汇之地。",
+    "categories": "分类浏览",
+    "tags": "标签索引",
     "noPosts": "暂无文章，敬请期待。",
     "noCategories": "暂无分类",
     "noTags": "暂无标签",
-    "back": "返回文章列表"
+    "back": "返回故事会"
   },
   "SearchPage": {
-    "title": "搜索文章",
-    "loading": "加载搜索组件...",
+    "title": "检索文章",
+    "loading": "加载中...",
     "placeholder": "搜索文章标题、内容、标签...",
     "category": "分类",
     "tag": "标签",
@@ -148,6 +148,6 @@
   },
   "Mermaid": {
     "clickToZoom": "点击查看高清大图",
-    "zoomInstruction": "使用上方工具栏缩放 • 移动端可双指操作"
+    "zoomInstruction": "使用上方工具栏缩放 · 移动端可双指操作"
   }
 }

@@ -14,11 +14,6 @@ interface Props {
   }>
 }
 
-/**
- * 生成静态路由参数 (SSG)
- * Next.js 在构建时会运行此函数，获取所有文章的 slug，
- * 并预渲染每篇文章的 HTML 页面。
- */
 export async function generateStaticParams() {
   const locales = ['en', 'zh']
 
@@ -35,10 +30,6 @@ export async function generateStaticParams() {
   return params
 }
 
-/**
- * 生成动态 Metadata (SEO)
- * 根据 URL 中的 slug 获取文章标题和摘要，用于页面 <head> 中的 meta标签。
- */
 export async function generateMetadata({ params }: Props) {
   const { slug, locale } = await params
   const post = getPostBySlug(slug, locale, false)
@@ -58,7 +49,6 @@ export async function generateMetadata({ params }: Props) {
 
 const components = {
   pre: ({ children, ...props }: React.ComponentPropsWithoutRef<'pre'>) => {
-    // 检查子元素是否是 code，且类名为 language-mermaid
     if (
       React.isValidElement(children) &&
       typeof children.props === 'object' &&
@@ -92,106 +82,73 @@ export default async function PostPage({ params }: Props) {
   try {
     post = getPostBySlug(slug, locale)
   } catch {
-    // 核心逻辑：如果当前文章没有对应语言的版本，
-    // 不报 404，而是优雅地跳转回该语言的文章列表页
     console.warn(`Post not found: ${slug} for locale: ${locale}. Redirecting...`)
     redirect(`/${locale}/posts`)
   }
 
-  // 格式化阅读时间
   const readingTime = Math.ceil(post.readTime.minutes)
   const commentCount = await getCommentCount(slug)
 
   return (
     <>
-      <article className="container mx-auto max-w-4xl px-4 py-12 md:px-6">
+      <article className="container mx-auto max-w-3xl px-6 py-12 md:px-8">
         {/* 返回链接 */}
         <BackToPosts label={tPosts('back')} />
 
-        <header className="mb-16 space-y-8">
-          {/* 文章标题 */}
-          <h1
-            className="
-      text-4xl leading-[1.1] font-black tracking-tight text-foreground underline
-      decoration-primary/20 decoration-8 underline-offset-8
-      sm:text-5xl
-      lg:text-7xl
-    "
-          >
+        {/* 文章头部 */}
+        <header className="mb-12 space-y-6">
+          {/* 装饰线 */}
+          <div className="ornament-divider">&#9670;</div>
+
+          <h1 className="font-serif text-4xl leading-[1.2] font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             {post.title}
           </h1>
 
-          {/* 文章元信息 */}
-          <div
-            className="
-      flex flex-wrap items-center gap-6 text-sm font-bold tracking-wider
-      text-muted-foreground uppercase
-    "
-          >
-            <time
-              dateTime={post.date}
-              className="
-       flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5
-     "
-            >
-              <Calendar className="size-5 text-primary" />
+          {/* 元信息 */}
+          <div className="flex flex-wrap items-center gap-4 font-sans text-sm tracking-wide text-muted-foreground">
+            <time dateTime={post.date} className="flex items-center gap-1.5">
+              <Calendar className="size-4 text-primary/60" />
               {post.date}
             </time>
-            <span className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
-              <Clock className="size-5 text-accent" />
+            <span className="flex items-center gap-1.5">
+              <Clock className="size-4 text-primary/60" />
               {t('readingTime', { minutes: readingTime })}
             </span>
             <ViewCounter slug={slug} locale={locale} />
             <a
               href="#comments"
-              className="flex cursor-pointer items-center gap-2 rounded-lg bg-muted px-3 py-1.5 transition-colors hover:bg-muted/80"
+              className="flex cursor-pointer items-center gap-1.5 transition-colors hover:text-primary"
             >
-              <MessageCircle className="size-5 text-primary" />
+              <MessageCircle className="size-4 text-primary/60" />
               <span>{commentCount}</span>
             </a>
-            <span className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
-              <User className="size-5 text-primary" />
+            <span className="flex items-center gap-1.5">
+              <User className="size-4 text-primary/60" />
               {post.author}
             </span>
-            <span
-              className="
-       flex items-center gap-2 rounded-lg border-2 border-primary/10
-       bg-primary/10 px-3 py-1.5 text-primary
-     "
-            >
-              <Folder className="size-5" />
+            <span className="flex items-center gap-1.5 rounded-sm bg-muted/50 px-2 py-0.5 text-primary">
+              <Folder className="size-4" />
               {post.category}
             </span>
-
-            <div className="ml-auto flex flex-wrap gap-2">
-              {post.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="
-          bg-card inline-flex items-center rounded-lg border-2 border-border
-          px-3 py-1 text-[10px] font-black shadow-[3px_3px_0px_var(--border)]
-        "
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
           </div>
+
+          {/* 标签 */}
+          <div className="flex flex-wrap gap-2">
+            {post.tags.map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center rounded-sm border border-border/40 bg-card px-2.5 py-0.5 font-sans text-[10px] font-medium tracking-wide text-muted-foreground uppercase"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          <div className="ornament-divider">&#9670;</div>
         </header>
 
-        {/* MDX 内容渲染区域 */}
-        <div
-          className="
-     prose max-w-none prose-zinc
-     dark:prose-invert
-     prose-h2:text-4xl prose-h2:font-black
-     prose-h3:text-2xl prose-h3:font-black
-     prose-p:text-lg/relaxed
-     prose-a:text-accent prose-a:no-underline
-     hover:prose-a:underline
-     prose-strong:text-primary
-   "
-        >
+        {/* MDX 内容 - 首字下沉 */}
+        <div className="drop-cap article-prose">
           <MDXRemote
             source={post.content}
             components={components}
@@ -203,8 +160,11 @@ export default async function PostPage({ params }: Props) {
           />
         </div>
 
+        {/* 文章底部装饰 */}
+        <div className="ornament-divider mt-16">&#9743;</div>
+
         {/* 评论区域 */}
-        <div id="comments">
+        <div id="comments" className="mt-12">
           <Comment slug={slug} locale={locale} />
         </div>
       </article>

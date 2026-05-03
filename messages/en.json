@@ -4,7 +4,7 @@
     "readingTime": "{minutes} min read",
     "nav": {
       "home": "Home",
-      "posts": "Posts",
+      "posts": "Journal",
       "chat": "Chat",
       "about": "About",
       "switchLanguage": "Switch to Chinese"
@@ -14,18 +14,18 @@
     }
   },
   "Comment": {
-    "title": "Comments",
+    "title": "Letters",
     "placeholder": "Share your thoughts...",
-    "submit": "Post Comment",
+    "submit": "Send Letter",
     "submitting": "Sending...",
-    "error": "Failed to submit comment. Please try again.",
-    "success": "Comment added successfully!",
-    "empty": "No comments yet. Be the first to share your thoughts!",
-    "remaining": "{count} comment(s) remaining today",
-    "noRemaining": "No comments remaining today",
+    "error": "Failed to send. Please try again.",
+    "success": "Letter sent successfully!",
+    "empty": "No letters yet. We'd love to hear from you.",
+    "remaining": "{count} letter(s) remaining today",
+    "noRemaining": "No letters remaining today",
     "reply": "Reply",
     "replyPlaceholder": "Write your reply...",
-    "replySuccess": "Reply added successfully!",
+    "replySuccess": "Reply sent successfully!",
     "cancel": "Cancel"
   },
   "Chat": {
@@ -44,12 +44,12 @@
   },
   "HomePage": {
     "hero": {
-      "readArticles": "Read Articles",
+      "readArticles": "Browse Journal",
       "aboutMe": "About Me"
     },
     "featuredPosts": {
-      "title": "Latest Posts",
-      "description": "Exploring boundaries between tech and creativity",
+      "title": "Latest Entries",
+      "description": "Where technology meets creativity",
       "viewAll": "View All"
     }
   },
@@ -124,18 +124,18 @@
     "interestList": ["Open Source", "UI/UX Design", "Full Stack Development", "Artificial Intelligence"]
   },
   "PostsPage": {
-    "title": "Article Vault",
+    "title": "Journal",
     "description": "Where technology, design, and life intersect.",
-    "categories": "Popular Categories",
-    "tags": "Popular Tags",
+    "categories": "Categories",
+    "tags": "Tags",
     "noPosts": "No articles yet, stay tuned.",
     "noCategories": "No categories",
     "noTags": "No tags",
-    "back": "Back to Posts"
+    "back": "Back to Journal"
   },
   "SearchPage": {
     "title": "Search Articles",
-    "loading": "Loading search component...",
+    "loading": "Loading...",
     "placeholder": "Search by title, content, or tags...",
     "category": "Category",
     "tag": "Tag",

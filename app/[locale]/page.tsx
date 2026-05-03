@@ -6,7 +6,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   const posts = await getAllPostsWithViews(locale).then((p) => p.slice(0, 3))
 
   return (
-    <div className="container mx-auto max-w-screen-2xl space-y-20 px-4 py-10">
+    <div className="container mx-auto max-w-screen-2xl space-y-16 px-6 py-10 md:px-8">
       <HomeHero />
       <FeaturedPosts posts={posts} />
     </div>

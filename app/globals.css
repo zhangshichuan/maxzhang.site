@@ -7,9 +7,10 @@
   --font-sans:
     system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif,
     'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-serif: Georgia, 'Times New Roman', 'Noto Serif SC', 'SimSun', 'STSong', serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 
-  /* 核心色彩映射 - Tailwind v4 使用 --color-* */
+  /* 核心色彩映射 */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
@@ -26,60 +27,68 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 }
 
+/* ===== 浅色模式：象牙白纸媒调色板 ===== */
 :root {
-  --background: #fdfcf0;
-  --foreground: #1a1a1a;
-  --card: #ffffff;
-  --card-foreground: #1a1a1a;
-  --popover: #ffffff;
-  --popover-foreground: #1a1a1a;
-  --primary: #4755f4;
-  --primary-foreground: #ffffff;
-  --secondary: #fbe332;
-  --secondary-foreground: #1a1a1a;
-  --muted: #f1f1e6;
-  --muted-foreground: #666666;
-  --accent: #ff61d8;
-  --accent-foreground: #ffffff;
-  --destructive: #ff4747;
-  --destructive-foreground: #ffffff;
-  --border: #1a1a1a;
-  --input: #f1f1e6;
-  --ring: #4755f4;
-  --radius: 0.75rem;
-  --shadow-pop: 4px 4px 0px #1a1a1a;
-  --shadow-pop-hover: 6px 6px 0px #1a1a1a;
+  --background: #faf8f2;
+  --foreground: #3d2e1f;
+  --card: #fffef9;
+  --card-foreground: #3d2e1f;
+  --popover: #fffef9;
+  --popover-foreground: #3d2e1f;
+  --primary: #a63c3c;
+  --primary-foreground: #fefdf7;
+  --secondary: #b8952e;
+  --secondary-foreground: #fefdf7;
+  --muted: #ede6d8;
+  --muted-foreground: #6b5e4f;
+  --accent: #3d5a4a;
+  --accent-foreground: #fefdf7;
+  --destructive: #b53b3b;
+  --destructive-foreground: #fefdf7;
+  --border: #d4c9b8;
+  --input: #ede6d8;
+  --ring: #a63c3c;
+  --radius: 0.5rem;
+  --shadow-card: 0 1px 3px rgba(61, 46, 31, 0.08), 0 1px 2px rgba(61, 46, 31, 0.04);
+  --shadow-card-hover: 0 4px 12px rgba(61, 46, 31, 0.1), 0 2px 4px rgba(61, 46, 31, 0.06);
 }
 
+/* ===== 暗色模式：深棕暖灰调板 ===== */
 .dark {
-  --background: #0b0b10;
-  --foreground: #f0f0f0;
-  --card: #161620;
-  --card-foreground: #f0f0f0;
-  --popover: #161620;
-  --popover-foreground: #f0f0f0;
-  --primary: #6366f1;
-  --primary-foreground: #ffffff;
-  --secondary: #eab308;
-  --secondary-foreground: #000000;
-  --muted: #1e1e2d;
-  --muted-foreground: #a0a0b0;
-  --accent: #d946ef;
-  --accent-foreground: #ffffff;
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  --border: #2e2e3e;
-  --input: #1e1e2d;
-  --ring: #6366f1;
-  --shadow-pop: 4px 4px 0px #000000;
-  --shadow-pop-hover: 6px 6px 0px #000000;
+  --background: #1e1810;
+  --foreground: #e8dcc8;
+  --card: #2a2319;
+  --card-foreground: #e8dcc8;
+  --popover: #2a2319;
+  --popover-foreground: #e8dcc8;
+  --primary: #c86464;
+  --primary-foreground: #1e1810;
+  --secondary: #d4b84e;
+  --secondary-foreground: #1e1810;
+  --muted: #2d2620;
+  --muted-foreground: #9e8e7a;
+  --accent: #5a7a6a;
+  --accent-foreground: #1e1810;
+  --destructive: #e05555;
+  --destructive-foreground: #fefdf7;
+  --border: #3d3428;
+  --input: #2d2620;
+  --ring: #c86464;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
+/* ===== 全局基础 ===== */
 html,
 body {
   overflow-x: hidden;
@@ -91,60 +100,223 @@ body {
   transition:
     background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
     color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  background-image: radial-gradient(var(--muted) 1px, transparent 1px);
-  background-size: 24px 24px;
+  font-family: var(--font-serif);
+}
+
+/* 纸张纹理 - 浅色模式 */
+body {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(139, 119, 90, 0.03) 2px,
+      rgba(139, 119, 90, 0.03) 4px
+    ),
+    radial-gradient(ellipse at 20% 50%, rgba(139, 119, 90, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 50%, rgba(139, 119, 90, 0.04) 0%, transparent 50%);
+  background-size:
+    100% 4px,
+    100% 100%,
+    100% 100%;
+}
+
+.dark body {
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.015) 2px,
+    rgba(255, 255, 255, 0.015) 4px
+  );
+  background-size: 100% 4px;
 }
 
 main {
   min-height: calc(100vh - 4rem - 6rem);
 }
 
-/* ===== Hero 动画 ===== */
-
-@keyframes shimmer {
-  0%,
-  100% {
-    background-position: -200% center;
-  }
-  50% {
-    background-position: 200% center;
-  }
+/* ===== 首字下沉 (Drop Cap) ===== */
+.drop-cap > p:first-of-type::first-letter {
+  float: left;
+  font-family: Georgia, 'Times New Roman', 'Noto Serif SC', serif;
+  font-size: 4.5rem;
+  font-weight: 700;
+  line-height: 0.75;
+  margin: 0.12em 0.12em 0 0;
+  color: var(--primary);
+  text-shadow: 1px 1px 0 var(--border);
 }
 
-@keyframes blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
+/* ===== 装饰性分隔线 ===== */
+.ornament-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: var(--border);
+  font-size: 1.25rem;
+  letter-spacing: 1rem;
+  user-select: none;
 }
 
-.hero-name-shimmer {
-  background: linear-gradient(
-    90deg,
-    var(--primary) 0%,
-    var(--accent) 25%,
-    var(--secondary) 40%,
-    #ffffff 50%,
-    var(--secondary) 60%,
-    var(--accent) 75%,
-    var(--primary) 100%
-  );
-  background-size: 300% 100%;
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-  animation: shimmer 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+.ornament-divider::before,
+.ornament-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border), transparent);
 }
 
-.hero-cursor {
-  display: inline-block;
-  width: 3px;
-  height: 0.85em;
+/* ===== 杂志引用块 ===== */
+.magazine-quote {
+  border-left: 3px solid var(--primary);
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+  color: var(--muted-foreground);
+  background: linear-gradient(to right, var(--muted), transparent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* ===== 纸质卡片悬浮阴影 ===== */
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+.hover\:shadow-card-hover:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* ===== 文章排版增强 ===== */
+.article-prose {
+  font-family: var(--font-serif);
+  line-height: 1.85;
+  color: var(--foreground);
+}
+
+.article-prose h2 {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 1.75rem;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--border);
+  color: var(--foreground);
+  letter-spacing: -0.01em;
+}
+
+.article-prose h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1.35rem;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  color: var(--foreground);
+}
+
+.article-prose p {
+  margin-bottom: 1.25rem;
+  text-align: justify;
+  hyphens: auto;
+}
+
+.article-prose a {
+  color: var(--primary);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--primary);
+  transition: border-color 0.2s;
+}
+
+.article-prose a:hover {
+  border-bottom-style: solid;
+}
+
+.article-prose strong {
+  color: var(--foreground);
+  font-weight: 700;
+}
+
+.article-prose code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: var(--muted);
+  padding: 0.15em 0.35em;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+}
+
+.article-prose pre {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  overflow-x: auto;
+  box-shadow: var(--shadow-card);
+}
+
+.article-prose blockquote {
+  border-left: 3px solid var(--primary);
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+  color: var(--muted-foreground);
+  background: linear-gradient(to right, var(--muted), transparent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.article-prose img {
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+}
+
+.article-prose ul,
+.article-prose ol {
+  padding-left: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.article-prose li {
+  margin-bottom: 0.5rem;
+}
+
+/* ===== 导航链接底部装饰线 ===== */
+.nav-underline {
+  position: relative;
+}
+
+.nav-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
   background: var(--primary);
-  vertical-align: -0.05em;
-  margin-left: 2px;
-  animation: blink 0.9s ease-in-out infinite;
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+  transform-origin: center;
+}
+
+.nav-underline:hover::after,
+.nav-underline.active::after {
+  transform: scaleX(1);
+}
+
+/* ===== 页面过渡动画 ===== */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out forwards;
 }

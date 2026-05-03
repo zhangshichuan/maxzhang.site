@@ -159,8 +159,8 @@ export default function Mermaid({ chart }: MermaidProps) {
         <div
           onClick={toggleLightbox}
           className="
-       not-prose bg-card flex max-h-150 w-full items-center justify-center
-       overflow-hidden rounded-2xl border border-border p-6 shadow-sm
+       not-prose flex max-h-150 w-full items-center justify-center overflow-hidden
+       rounded-2xl border border-border bg-card p-6 shadow-sm
        transition-all
        hover:ring-4 hover:ring-primary/10
        md:p-10
@@ -211,8 +211,8 @@ export default function Mermaid({ chart }: MermaidProps) {
             <button
               onClick={toggleLightbox}
               className="
-         bg-card group absolute top-6 left-6 z-110 rounded-xl border-2
-         border-border p-3 shadow-xl transition-all
+         group absolute top-6 left-6 z-110 rounded-xl border-2 border-border
+         bg-card p-3 shadow-xl transition-all
          hover:bg-muted
        "
             >
@@ -226,8 +226,8 @@ export default function Mermaid({ chart }: MermaidProps) {
 
             <div
               className="
-        bg-card absolute top-6 right-6 z-110 flex items-center gap-2 rounded-2xl
-        border-2 border-border p-1.5 shadow-2xl
+        absolute top-6 right-6 z-110 flex items-center gap-2 rounded-2xl border-2
+        border-border bg-card p-1.5 shadow-2xl
       "
             >
               <button

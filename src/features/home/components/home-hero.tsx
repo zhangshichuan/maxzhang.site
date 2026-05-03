@@ -1,113 +1,100 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { FadeIn } from '@/src/shared/components'
 import { Button } from '@/src/shared/components/ui'
-import { ArrowRight } from 'lucide-react'
-import { Link } from '@/i18n/routing'
+import { BookOpen, Loader2, User } from 'lucide-react'
+import { Link, useRouter } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
 
 const tagline = ['Build', 'with', 'Purpose.', 'Power', 'with', 'AI.']
 
 export function HomeHero() {
   const t = useTranslations('HomePage.hero')
+  const router = useRouter()
+  const [postsLoading, setPostsLoading] = useState(false)
+  const [aboutLoading, setAboutLoading] = useState(false)
+
+  const handlePostsClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
+    setPostsLoading(true)
+    router.push('/posts')
+  }
+
+  const handleAboutClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
+    setAboutLoading(true)
+    router.push('/about')
+  }
 
   return (
-    <section
-      className="
-    relative flex flex-col items-start gap-8 pt-10
-    md:pt-20
-    lg:pt-32
-  "
-    >
-      {/* 浮动勋章 */}
+    <section className="relative flex flex-col items-center gap-10 pt-12 md:pt-20 lg:pt-28">
+      {/* 装饰性顶线 */}
+      <div className="ornament-divider w-full max-w-md">&#9670;</div>
 
-      <div className="flex max-w-full flex-col gap-4">
-        <h1
-          className="
-      max-w-full text-4xl leading-[1.2] font-black tracking-tight text-foreground
-      sm:text-6xl
-      xl:text-8xl/none
-    "
-        >
+      <div className="flex flex-col items-center gap-6 text-center">
+        {/* 杂志刊头 */}
+        <FadeIn delay={0.1}>
+          <p className="font-sans text-xs font-medium tracking-[0.3em] text-muted-foreground uppercase">
+            {new Date().getFullYear()} &middot; Personal Journal
+          </p>
+        </FadeIn>
+
+        <h1 className="max-w-full text-5xl leading-[1.15] font-bold tracking-tight text-foreground sm:text-7xl xl:text-8xl/none">
           <motion.span
-            className="inline-block"
-            initial={{ x: -30, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.6, ease: [0.25, 0.4, 0.25, 1] }}
-          >
-            Hi, I&apos;m{' '}
-          </motion.span>
-          <motion.span
-            className="hero-name-shimmer inline-block pb-3.5"
-            initial={{ scale: 0.85, opacity: 0, filter: 'blur(4px)' }}
-            animate={{ scale: 1, opacity: 1, filter: 'blur(0px)' }}
-            transition={{ duration: 0.8, delay: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
+            className="inline-block font-serif"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: [0.25, 0.4, 0.25, 1] }}
           >
             Max Zhang
           </motion.span>
         </h1>
 
-        <motion.p
-          className="
-      max-w-180 leading-relaxed font-medium text-muted-foreground
-      md:text-2xl
-    "
-          initial="hidden"
-          animate="visible"
-          aria-label="Build with Purpose. Power with AI."
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="flex flex-col items-center gap-3"
         >
-          {tagline.map((word, i) => (
-            <motion.span
-              key={word + i}
-              className="inline-block"
-              variants={{
-                hidden: { opacity: 0, y: 16, rotateX: -15 },
-                visible: {
-                  opacity: 1,
-                  y: 0,
-                  rotateX: 0,
-                  transition: {
-                    duration: 0.5,
-                    delay: 0.6 + i * 0.08,
-                    ease: [0.34, 1.56, 0.64, 1],
-                  },
-                },
-              }}
-            >
-              {word}
-              {i < tagline.length - 1 ? '\u00A0' : ''}
-            </motion.span>
-          ))}
-          <motion.span
-            className="hero-cursor mt-0.5"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.3, duration: 0.3 }}
-            aria-hidden="true"
-          />
-        </motion.p>
+          <div className="h-px w-16 bg-border" />
+          <p className="max-w-lg font-serif text-xl/relaxed text-muted-foreground italic md:text-2xl">
+            {tagline.map((word, i) => (
+              <motion.span
+                key={word + i}
+                className="inline-block"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 + i * 0.06, duration: 0.4 }}
+              >
+                {word}
+                {i < tagline.length - 1 ? '\u00A0' : ''}
+              </motion.span>
+            ))}
+          </p>
+          <div className="h-px w-16 bg-border" />
+        </motion.div>
       </div>
 
-      <FadeIn className="flex flex-wrap gap-6" delay={1.2}>
-        <Link href="/posts">
-          <Button size="xl" className="cursor-pointer bg-primary text-lg font-black">
-            {t('readArticles')} {/* HomePage/hero/readArticles 阅读文章 */} <ArrowRight className="ml-2 size-5" />
+      {/* CTA 按钮 */}
+      <FadeIn className="flex flex-wrap items-center gap-4" delay={1}>
+        <Link href="/posts" onClick={handlePostsClick}>
+          <Button size="lg" className="gap-2 font-serif text-base" disabled={postsLoading}>
+            {postsLoading ? <Loader2 className="size-4 animate-spin" /> : <BookOpen className="size-4" />}
+            {t('readArticles')}
           </Button>
         </Link>
-        <Link href="/about">
-          <Button
-            variant="outline"
-            size="xl"
-            className="
-        cursor-pointer border-2 border-border text-lg font-black
-        shadow-[6px_6px_0px_var(--muted)]
-      "
-          >
-            {t('aboutMe')} {/* HomePage/hero/aboutMe 关于我 */}
+        <Link href="/about" onClick={handleAboutClick}>
+          <Button variant="outline" size="lg" className="gap-2 font-serif text-base" disabled={aboutLoading}>
+            {aboutLoading ? <Loader2 className="size-4 animate-spin" /> : <User className="size-4" />}
+            {t('aboutMe')}
           </Button>
         </Link>
       </FadeIn>
+
+      {/* 底部装饰线 */}
+      <div className="ornament-divider w-full max-w-md">&#9670;</div>
     </section>
   )
 }

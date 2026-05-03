@@ -1,8 +1,7 @@
 /**
  * 关于页面组件
  *
- * 显示个人简介、工作经历、教育背景、技术栈和兴趣爱好的页面
- * 使用国际化翻译和动画效果增强用户体验
+ * 杂志风格个人介绍页
  */
 
 'use client'
@@ -16,84 +15,70 @@ import { FadeIn, GlassCard, StaggerContainer, StaggerItem } from '@/src/shared/c
 import { Button } from '@/src/shared/components/ui'
 import Avatar from '../avatar.jpg'
 
-/** 工作经历数据接口 */
 interface Experience {
-  role: string // 职位名称
-  company: string // 公司名称
-  department: string // 部门名称
-  period: string // 工作期间
-  tags: string[] // 技能标签
-  points: string[] // 工作要点描述
+  role: string
+  company: string
+  department: string
+  period: string
+  tags: string[]
+  points: string[]
 }
 
-/** 教育背景数据接口 */
 interface Education {
-  school: string // 学校名称
-  period: string // 在校期间
-  degree: string // 学位/专业
+  school: string
+  period: string
+  degree: string
 }
 
-/**
- * 关于页面主组件
- *
- * @returns 渲染关于页面内容，包括个人信息、工作经历、教育背景、技术栈和兴趣爱好
- */
 export function AboutPage() {
-  // 使用国际化翻译
   const t = useTranslations('AboutPage')
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-10">
+    <div className="container mx-auto max-w-4xl px-6 py-10 md:px-8">
       <FadeIn className="mb-16 flex flex-col items-start gap-10 md:flex-row">
-        <div
-          className="
-      group relative flex size-32 shrink-0 items-center justify-center
-      overflow-hidden rounded-full border-4 border-border bg-secondary
-      shadow-[8px_8px_0px_var(--primary)] transition-transform
-      hover:scale-105
-      md:size-48
-    "
-        >
-          <div className="absolute inset-0 z-10 bg-primary/10 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-          <Image src={Avatar} alt="Max Zhang" className="rounded-full object-cover" priority />
+        {/* 头像 */}
+        <div className="group relative flex size-28 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-border/40 bg-muted/30 md:size-44">
+          <Image src={Avatar} alt="Max Zhang" className="object-cover grayscale-30" priority />
         </div>
 
-        <div className="flex-1 space-y-6">
+        <div className="flex-1 space-y-5">
           <div>
-            <h1 className="mb-2 text-5xl font-black tracking-tight text-foreground">Max Zhang</h1>
-            <p className="flex items-center gap-2 text-xl font-bold text-primary">
-              <Briefcase className="size-5" /> {t('role')}
+            <p className="font-sans text-xs font-medium tracking-[0.3em] text-muted-foreground uppercase">
+              {t('role')}
             </p>
-            <p className="mt-1 flex items-center gap-2 font-medium text-muted-foreground">
-              <MapPin className="size-4" /> {t('location')}
+            <h1 className="mt-1 mb-2 font-serif text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              Max Zhang
+            </h1>
+            <p className="flex items-center gap-1.5 font-serif text-base text-muted-foreground italic">
+              <MapPin className="size-4 text-primary/60" /> {t('location')}
             </p>
           </div>
 
-          <p className="text-xl/relaxed font-medium text-foreground/90">
+          <p className="font-serif text-lg/relaxed text-foreground/85">
             {t.rich('description', {
-              primary: (chunks) => <span className="font-black text-primary">{chunks}</span>,
-              accent: (chunks) => <span className="font-black text-accent">{chunks}</span>,
+              primary: (chunks) => <span className="font-bold text-primary">{chunks}</span>,
+              accent: (chunks) => <span className="font-bold text-accent">{chunks}</span>,
               secondary: (chunks) => (
-                <span className="font-black text-secondary underline decoration-secondary/30 decoration-4 underline-offset-4">
+                <span className="font-bold text-secondary underline decoration-secondary/30 decoration-2 underline-offset-4">
                   {chunks}
                 </span>
               ),
             })}
           </p>
 
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-3">
             <Link href="https://github.com/zhangshichuan" target="_blank">
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button variant="outline" size="sm" className="gap-2 font-serif">
                 <Github className="size-4" /> GitHub
               </Button>
             </Link>
             <Link href="mailto:zsc.guru@qq.com">
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button variant="outline" size="sm" className="gap-2 font-serif">
                 <Mail className="size-4" /> Email
               </Button>
             </Link>
             <Link href="https://www.linkedin.com/in/maxzhang1010" target="_blank">
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button variant="outline" size="sm" className="gap-2 font-serif">
                 <Linkedin className="size-4" /> LinkedIn
               </Button>
             </Link>
@@ -102,47 +87,44 @@ export function AboutPage() {
       </FadeIn>
 
       <div className="grid gap-12 md:grid-cols-[2fr_1fr]">
+        {/* 左侧：工作经历 + 教育 */}
         <StaggerContainer className="space-y-12" delay={0.2}>
           <StaggerItem>
-            <h2 className="mb-8 flex items-center gap-3 text-3xl font-black">
-              <Briefcase className="h-8 w-8 text-primary" /> {t('workExperience')}
+            <h2 className="mb-6 flex items-center gap-2.5 font-serif text-2xl font-bold tracking-tight">
+              <Briefcase className="size-6 text-primary/70" /> {t('workExperience')}
             </h2>
-            <GlassCard className="space-y-8 p-8" hoverEffect={false}>
-              <div className="relative space-y-12 border-l-4 border-border/30 pl-8">
+            <GlassCard className="space-y-8 p-6 md:p-8" hoverEffect={false}>
+              <div className="relative space-y-10 border-l-2 border-border/30 pl-6">
                 {(t.raw('experience') as Experience[]).map((experience, index) => (
                   <div key={index} className="relative">
                     <span
-                      className={`
-             absolute top-1 -left-9.5 size-6 rounded-full border-4
-             border-background shadow-[2px_2px_0px_#000]
-             ${index === 0 ? `bg-primary` : `bg-secondary`}
-           `}
+                      className={`absolute top-1.5 -left-[29px] size-3 rounded-full border-2 border-card ${
+                        index === 0 ? 'bg-primary' : 'bg-secondary'
+                      }`}
                     />
-                    <div className="mb-2 flex flex-col">
-                      <h3 className="text-xl font-black text-foreground">
-                        {experience.role} • {experience.company}
-                      </h3>
-                      <p className="text-sm font-bold tracking-wider text-muted-foreground uppercase">
-                        {experience.department} • {experience.period}
+                    <div className="mb-2 flex flex-col gap-1">
+                      <h3 className="font-serif text-lg font-bold text-foreground">{experience.role}</h3>
+                      <p className="font-serif text-sm text-muted-foreground italic">
+                        {experience.company} &middot; {experience.department}
                       </p>
+                      <p className="font-sans text-xs tracking-wide text-muted-foreground/70">{experience.period}</p>
                     </div>
-                    <div className="my-3 flex flex-wrap gap-2">
+                    <div className="my-3 flex flex-wrap gap-1.5">
                       {experience.tags.map((tag) => (
                         <span
                           key={tag}
-                          className={`
-               rounded-lg border-2 px-3 py-1 text-xs font-black
-               shadow-[2px_2px_0px_rgba(0,0,0,0.1)]
-               ${index === 0 ? `border-primary/20 bg-primary/10` : `border-secondary/20 bg-secondary/10`}
-             `}
+                          className="inline-flex items-center rounded-sm border border-border/40 bg-muted/30 px-2 py-0.5 font-sans text-[10px] font-medium tracking-wide text-muted-foreground"
                         >
                           {tag}
                         </span>
                       ))}
                     </div>
-                    <ul className="mt-4 ml-4 list-outside list-disc space-y-3 text-base font-medium text-foreground/80">
+                    <ul className="mt-3 space-y-2 font-serif text-sm/relaxed text-foreground/75">
                       {experience.points.map((point, pointIndex) => (
-                        <li key={pointIndex}>{point}</li>
+                        <li key={pointIndex} className="flex gap-2">
+                          <span className="mt-1.5 block size-1.5 shrink-0 rounded-full bg-primary/30" />
+                          <span>{point}</span>
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -152,16 +134,16 @@ export function AboutPage() {
           </StaggerItem>
 
           <StaggerItem>
-            <h2 className="mb-8 flex items-center gap-3 text-3xl font-black">
-              <GraduationCap className="h-8 w-8 text-accent" /> {t('education')}
+            <h2 className="mb-6 flex items-center gap-2.5 font-serif text-2xl font-bold tracking-tight">
+              <GraduationCap className="size-6 text-accent/70" /> {t('education')}
             </h2>
-            <GlassCard className="p-8" hoverEffect={false}>
-              <div className="relative space-y-8 border-l-4 border-border/30 pl-8">
+            <GlassCard className="p-6 md:p-8" hoverEffect={false}>
+              <div className="relative space-y-8 border-l-2 border-border/30 pl-6">
                 {(t.raw('educationList') as Education[]).map((education, index) => (
                   <div key={index} className="relative">
-                    <span className="absolute top-1 -left-9.5 size-6 rounded-full border-4 border-background bg-accent shadow-[2px_2px_0px_#000]" />
-                    <h3 className="text-xl font-black text-foreground">{education.school}</h3>
-                    <p className="font-bold tracking-wider text-muted-foreground uppercase">{education.degree}</p>
+                    <span className="absolute top-1.5 -left-[29px] size-3 rounded-full border-2 border-card bg-accent" />
+                    <h3 className="font-serif text-lg font-bold text-foreground">{education.school}</h3>
+                    <p className="font-serif text-sm text-muted-foreground italic">{education.degree}</p>
                   </div>
                 ))}
               </div>
@@ -169,11 +151,12 @@ export function AboutPage() {
           </StaggerItem>
         </StaggerContainer>
 
+        {/* 右侧：技术栈 + 兴趣 */}
         <StaggerContainer className="space-y-8" delay={0.4}>
           <StaggerItem>
-            <GlassCard className="p-6">
-              <h3 className="mb-6 flex items-center gap-2 text-xl font-black">{t('techStack')}</h3>
-              <div className="flex flex-wrap gap-2">
+            <GlassCard className="p-6" hoverEffect={false}>
+              <h3 className="mb-5 font-serif text-lg font-bold tracking-tight">{t('techStack')}</h3>
+              <div className="flex flex-wrap gap-1.5">
                 {[
                   'TypeScript',
                   'Python',
@@ -198,12 +181,7 @@ export function AboutPage() {
                 ].map((skill) => (
                   <span
                     key={skill}
-                    className="
-            bg-card inline-flex items-center rounded-xl border-2 border-border
-            px-3 py-1.5 text-xs font-black text-foreground
-            shadow-[2px_2px_0px_var(--border)] transition-all
-            hover:translate-px hover:shadow-none
-          "
+                    className="inline-flex items-center rounded-sm border border-border/40 bg-card px-2.5 py-1 font-sans text-[11px] font-medium tracking-wide text-muted-foreground"
                   >
                     {skill}
                   </span>
@@ -213,17 +191,16 @@ export function AboutPage() {
           </StaggerItem>
 
           <StaggerItem>
-            <GlassCard className="p-6">
-              <h3 className="mb-6 flex items-center gap-2 text-xl font-black">{t('interests')}</h3>
-              <ul className="space-y-3 text-base font-bold text-muted-foreground">
-                {t.raw('interestList').map((interest: string, index: number) => (
-                  <li key={index} className="flex items-center gap-2">
+            <GlassCard className="p-6" hoverEffect={false}>
+              <h3 className="mb-5 font-serif text-lg font-bold tracking-tight">{t('interests')}</h3>
+              <ul className="space-y-2.5">
+                {(t.raw('interestList') as string[]).map((interest, index) => (
+                  <li key={index} className="flex items-center gap-2.5 font-serif text-sm text-foreground/80">
                     <span
-                      className={`
-             size-2 rounded-full
-             ${index % 3 === 0 ? 'bg-primary' : index % 3 === 1 ? `bg-accent` : `bg-secondary`}
-           `}
-                    />{' '}
+                      className={`size-2 rounded-full ${
+                        index % 3 === 0 ? 'bg-primary/60' : index % 3 === 1 ? 'bg-accent/60' : 'bg-secondary/60'
+                      }`}
+                    />
                     {interest}
                   </li>
                 ))}

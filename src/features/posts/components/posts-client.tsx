@@ -6,7 +6,7 @@ import type { PostSummaryWithViews } from '@/src/features/posts/model'
 import { Link, useRouter } from '@/i18n/routing'
 import { GlassCard } from '@/src/shared/components'
 import { FadeIn, StaggerContainer, StaggerItem } from '@/src/shared/components'
-import { ArrowRight, Folder, Loader2 } from 'lucide-react'
+import { Folder, Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 interface PostsClientProps {
@@ -27,36 +27,18 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
   }
 
   return (
-    <div className="container mx-auto max-w-screen-2xl px-4 py-10">
-      {/* 页面标题区域 */}
-      <FadeIn
-        className="
-     mb-12 flex flex-col items-start gap-4 border-b-4 border-border pb-12
-   "
-      >
-        <h1
-          className="
-      text-5xl font-black tracking-tight
-      sm:text-6xl
-    "
-        >
-          {t('title')} {/* PostsPage/title 文章库 */}
-        </h1>
-        <p className="text-xl font-medium text-muted-foreground">
-          {t('description')} {/* PostsPage/description 探索技术、设计与生活的交汇点。 */}
-        </p>
+    <div className="container mx-auto max-w-screen-2xl px-6 py-10 md:px-8">
+      {/* 页面标题 */}
+      <FadeIn className="mb-12 flex flex-col items-start gap-3 border-b border-border/40 pb-8">
+        <p className="font-sans text-xs font-medium tracking-[0.3em] text-muted-foreground uppercase">{t('title')}</p>
+        <h1 className="font-serif text-5xl font-bold tracking-tight sm:text-6xl">{t('title')}</h1>
+        <p className="font-serif text-lg text-muted-foreground italic">{t('description')}</p>
       </FadeIn>
 
       {/* 主内容区域 */}
-      <div
-        className="
-     grid gap-12
-     sm:grid-cols-1
-     lg:grid-cols-[2fr_1fr]
-   "
-      >
+      <div className="grid gap-12 lg:grid-cols-[2fr_1fr]">
         {/* 左侧：文章列表 */}
-        <StaggerContainer className="space-y-10" delay={0.2}>
+        <StaggerContainer className="space-y-6" delay={0.2}>
           {posts.map((post) => (
             <StaggerItem key={post.slug}>
               <PostItem post={post} />
@@ -64,29 +46,19 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
           ))}
           {posts.length === 0 && (
             <GlassCard className="p-12 text-center">
-              <p className="text-xl font-bold text-muted-foreground">
-                {t('noPosts')} {/* PostsPage/noPosts 暂无文章，敬请期待。 */}
-              </p>
+              <p className="font-serif text-lg text-muted-foreground italic">{t('noPosts')}</p>
             </GlassCard>
           )}
         </StaggerContainer>
 
         {/* 右侧：侧边栏 */}
-        <aside className="space-y-10">
-          <FadeIn
-            className="
-       sticky top-24 hidden space-y-10
-       lg:block
-     "
-            delay={0.4}
-          >
-            {/* 热门分类模块 */}
+        <aside className="space-y-8">
+          <FadeIn className="sticky top-24 hidden space-y-8 lg:block" delay={0.4}>
+            {/* 分类模块 */}
             <div className="relative">
-              <GlassCard className="p-8">
-                <h3 className="mb-6 flex items-center gap-2 text-xl font-black">
-                  {t('categories')} {/* PostsPage/categories 热门分类 */}
-                </h3>
-                <div className="flex flex-col gap-3">
+              <GlassCard className="p-6" hoverEffect={false}>
+                <h3 className="mb-5 font-serif text-lg font-bold tracking-tight">{t('categories')}</h3>
+                <div className="flex flex-col gap-1">
                   {allCategories.map((category) => {
                     const href = `/search?category=${encodeURIComponent(category)}`
                     return (
@@ -94,54 +66,27 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
                         key={category}
                         href={href}
                         onClick={(e) => handleNavigate(e, href)}
-                        className="
-            group flex cursor-pointer items-center justify-between rounded-xl border-2
-            border-transparent p-3 text-base font-bold transition-all
-            hover:border-border hover:bg-secondary/20 hover:text-primary
-          "
+                        className="group flex cursor-pointer items-center justify-between rounded-sm px-3 py-2.5 text-sm font-medium transition-colors hover:bg-muted/50"
                       >
-                        <span className="flex items-center gap-3">
-                          <Folder className="h-5 w-5 text-primary" />
-                          {category}
+                        <span className="flex items-center gap-2.5">
+                          <Folder className="size-4 text-primary/60" />
+                          <span className="font-serif">{category}</span>
                         </span>
-                        <ArrowRight
-                          className="
-            size-4 opacity-0 transition-opacity
-            group-hover:opacity-100
-          "
-                        />
                       </Link>
                     )
                   })}
                   {allCategories.length === 0 && (
-                    <p
-                      className="
-          text-sm font-medium text-muted-foreground italic
-        "
-                    >
-                      {t('noCategories')} {/* PostsPage/noCategories 暂无分类 */}
-                    </p>
+                    <p className="px-3 py-2 font-serif text-sm text-muted-foreground italic">{t('noCategories')}</p>
                   )}
                 </div>
               </GlassCard>
-
-              {loading && (
-                <div className="bg-card/60 absolute inset-0 z-20 flex items-center justify-center rounded-[--radius] backdrop-blur-[2px]">
-                  <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <span className="text-sm font-black tracking-widest text-muted-foreground uppercase">Loading</span>
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* 热门标签模块 */}
+            {/* 标签模块 */}
             <div className="relative">
-              <GlassCard className="p-8">
-                <h3 className="mb-6 flex items-center gap-2 text-xl font-black">
-                  {t('tags')} {/* PostsPage/tags 热门标签 */}
-                </h3>
-                <div className="flex flex-wrap gap-3">
+              <GlassCard className="p-6" hoverEffect={false}>
+                <h3 className="mb-5 font-serif text-lg font-bold tracking-tight">{t('tags')}</h3>
+                <div className="flex flex-wrap gap-2">
                   {allTags.map((tag) => {
                     const href = `/search?tag=${encodeURIComponent(tag)}`
                     return (
@@ -149,37 +94,17 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
                         key={tag}
                         href={href}
                         onClick={(e) => handleNavigate(e, href)}
-                        className="
-            bg-card inline-flex cursor-pointer items-center rounded-xl border-2 border-border
-            px-4 py-1.5 text-xs font-black text-foreground
-            shadow-[3px_3px_0px_var(--border)] transition-all
-            hover:translate-px hover:shadow-none
-          "
+                        className="inline-flex cursor-pointer items-center rounded-sm border border-border/40 bg-card px-3 py-1 font-sans text-xs font-medium tracking-wide text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
                       >
                         {tag}
                       </Link>
                     )
                   })}
                   {allTags.length === 0 && (
-                    <p
-                      className="
-          text-sm font-medium text-muted-foreground italic
-        "
-                    >
-                      {t('noTags')} {/* PostsPage/noTags 暂无标签 */}
-                    </p>
+                    <p className="font-serif text-sm text-muted-foreground italic">{t('noTags')}</p>
                   )}
                 </div>
               </GlassCard>
-
-              {loading && (
-                <div className="bg-card/60 absolute inset-0 z-20 flex items-center justify-center rounded-[--radius] backdrop-blur-[2px]">
-                  <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <span className="text-sm font-black tracking-widest text-muted-foreground uppercase">Loading</span>
-                  </div>
-                </div>
-              )}
             </div>
           </FadeIn>
         </aside>

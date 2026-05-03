@@ -1,8 +1,7 @@
 /**
  * 导航栏组件
  *
- * 网站顶部导航栏，包含Logo、导航链接、搜索按钮、语言切换和主题切换功能
- * 支持响应式设计，在移动端显示汉堡菜单
+ * 杂志风格顶部导航栏，简洁优雅
  */
 
 'use client'
@@ -10,18 +9,11 @@
 import { Link, usePathname, useRouter } from '@/i18n/routing'
 import { ThemeToggle } from '@/src/shared/components'
 import { cn } from '@/src/shared/utils'
-import { motion } from 'framer-motion'
 import { Languages, Menu, Search, X } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import * as React from 'react'
 
-/**
- * 导航栏主组件
- *
- * @returns 渲染响应式导航栏，包含桌面和移动端两种布局
- */
 export function Navbar() {
-  // 国际化翻译
   const t = useTranslations('Common.nav')
   const locale = useLocale()
   const pathname = usePathname()
@@ -29,166 +21,87 @@ export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
 
   const navItems = [
-    // Common/nav/home 首页
     { name: t('home'), path: '/' },
-    // Common/nav/posts 文章
     { name: t('posts'), path: '/posts' },
-    // Common/nav/chat 聊天
-    // { name: t('chat'), path: '/chat' },
-    // Common/nav/about 关于
     { name: t('about'), path: '/about' },
   ]
 
-  // 切换语言
   const toggleLanguage = () => {
     const nextLocale = locale === 'zh' ? 'en' : 'zh'
     router.replace(pathname, { locale: nextLocale })
   }
 
   return (
-    <header
-      className="
-	fixed top-0 z-50 w-full border-b-2 border-border/10 bg-background/95
-	backdrop-blur-md
-	"
-    >
-      <div
-        className="
-     container mx-auto flex h-16 max-w-screen-2xl items-center px-4 md:px-6
-   "
-      >
-        {/* Logo 网站 Logo */}
-        <div className="flex gap-6">
-          <Link href="/" className="flex shrink-0 items-center space-x-2">
-            <motion.span
-              whileHover={{ scale: 1.05, rotate: -2 }}
-              className="
-         inline-block bg-linear-to-r from-primary to-accent bg-clip-text pb-1
-         text-2xl font-black tracking-tighter whitespace-nowrap text-transparent
-       "
-            >
-              <span className="hidden md:inline">Max Zhang</span>
-              <span className="md:hidden">Max</span>
-            </motion.span>
-          </Link>
+    <header className="fixed top-0 z-50 w-full border-b border-border/40 bg-background/90 backdrop-blur-sm">
+      <div className="container mx-auto flex h-16 max-w-screen-2xl items-center px-6 md:px-8">
+        {/* Logo */}
+        <Link href="/" className="flex shrink-0 items-center">
+          <span className="font-serif text-2xl font-bold tracking-tight text-foreground">
+            <span className="hidden md:inline">Max Zhang</span>
+            <span className="md:hidden">Max</span>
+          </span>
+        </Link>
 
-          {/* Desktop Nav - 动感药丸风格 */}
-          <nav
-            className="
-       hidden items-center gap-3 text-sm font-bold
-       md:flex
-     "
+        {/* Desktop Nav */}
+        <nav className="ml-12 hidden items-center gap-1 md:flex">
+          {navItems.map((item) => (
+            <Link
+              key={item.path}
+              href={item.path}
+              className={cn(
+                'nav-underline px-4 py-2 text-sm font-medium tracking-wide transition-colors duration-200',
+                pathname === item.path ? 'active text-primary' : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {item.name}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Right Actions */}
+        <div className="flex flex-1 items-center justify-end gap-1">
+          <Link
+            href="/search"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                href={item.path}
-                className={cn(
-                  `
-           relative overflow-hidden rounded-full px-4 py-2 transition-all
-           duration-300
-         `,
-                  pathname === item.path
-                    ? 'bg-primary text-primary-foreground shadow-(--shadow-pop)'
-                    : `
-            text-muted-foreground
-            hover:bg-secondary/20 hover:text-foreground
-          `,
-                )}
-              >
-                {item.name}
-              </Link>
-            ))}
-          </nav>
-        </div>
-
-        {/* Right Actions 右侧操作按钮 */}
-        <div className="flex flex-1 items-center justify-end space-x-1 md:space-x-2">
-          <Link href="/search">
-            <motion.div
-              whileHover={{ scale: 1.1, rotate: 5 }}
-              className="
-         inline-flex h-10 w-10 items-center justify-center rounded-full border-2
-         border-border/10 transition-colors
-         hover:border-primary/50 hover:bg-secondary/20
-       "
-            >
-              <Search className="size-5" />
-              <span className="sr-only">搜索</span>
-            </motion.div>
+            <Search className="size-5" />
+            <span className="sr-only">搜索</span>
           </Link>
 
-          <nav className="flex items-center space-x-1 md:space-x-2">
-            <motion.button
-              whileHover={{ scale: 1.1, rotate: 12 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={toggleLanguage}
-              className="
-							inline-flex
-         h-10 w-10 cursor-pointer items-center justify-center rounded-full border-2
-         border-border/10 transition-colors
-         hover:border-primary/50 hover:bg-secondary/20
-       "
-              title={t('switchLanguage')} // Common/nav/switchLanguage 切换至英文
-            >
-              <Languages className="size-5" />
-              <span className="sr-only">语言</span>
-            </motion.button>
+          <button
+            onClick={toggleLanguage}
+            className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            title={t('switchLanguage')}
+          >
+            <Languages className="size-5" />
+            <span className="sr-only">语言</span>
+          </button>
 
-            <ThemeToggle
-              className="
-        h-10 w-10 cursor-pointer border-2 border-border/10 bg-background
-        shadow-none
-        hover:border-primary/50
-      "
-            />
+          <ThemeToggle className="h-9 w-9 cursor-pointer rounded-md text-muted-foreground transition-colors hover:bg-muted" />
 
-            {/* Mobile Menu Toggle 移动端菜单开关 */}
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              className="
-         inline-flex h-10 w-10 items-center justify-center rounded-full border-2
-         border-border/10 transition-colors
-         hover:bg-secondary
-         md:hidden
-       "
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              {isMobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-            </motion.button>
-          </nav>
+          {/* Mobile Menu Toggle */}
+          <button
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted md:hidden"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+          </button>
         </div>
       </div>
 
-      {/* Mobile Menu 移动端抽屉菜单 */}
+      {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="
-       border-b-4 border-border bg-background shadow-xl
-       md:hidden
-     "
-        >
-          <div className="container space-y-2 px-6 py-6">
+        <div className="border-b border-border/40 bg-card md:hidden">
+          <div className="container space-y-1 px-6 py-4">
             {navItems.map((item) => (
               <Link
                 key={item.path}
                 href={item.path}
                 className={cn(
-                  `
-           block rounded-2xl border-2 border-transparent px-6 py-4 text-base
-           font-black transition-all
-         `,
+                  'block rounded-md px-4 py-3 text-base font-medium transition-colors',
                   pathname === item.path
-                    ? `
-            border-border bg-primary text-primary-foreground
-            shadow-[4px_4px_0px_#1a1a1a]
-          `
-                    : `
-            text-muted-foreground
-            hover:border-border/10 hover:bg-secondary/30
-          `,
+                    ? 'bg-muted text-primary'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                 )}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
@@ -196,7 +109,7 @@ export function Navbar() {
               </Link>
             ))}
           </div>
-        </motion.div>
+        </div>
       )}
     </header>
   )
