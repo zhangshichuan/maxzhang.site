@@ -55,25 +55,39 @@
   },
   "AboutPage": {
     "title": "About Me - Max Zhang",
-    "role": "AI Full-Stack Engineer / AI Application Engineer",
+    "role": "AI Full-Stack Engineer / Multi-Agent System Conductor",
     "location": "Chengdu, China",
-    "description": "I am an <primary>AI full-stack engineer with 10 years of frontend and full-stack experience</primary>, building complex business systems, platform products, and AI applications from 0 to 1 and through continuous evolution. I use <accent>TypeScript</accent>, <accent>Python</accent>, Next.js, and Node.js to turn <secondary>model capability into deliverable, operable product workflows</secondary> across video generation, marketing automation, AI-native engineering, and platform governance.",
+    "description": "Building complex, reliable systems — that's the eternal core competency of every developer. A decade ago it meant compiling the SMB protocol into PHP7, forcing two worlds that were never meant to meet to interoperate. Today it means weaving MCP, A2A, ReAct, and RAG into a collaborative legion of expert Agents — each a best-in-class unit, together a capability superset.\n\nAI's evolution is short: from expert systems that could only recite from the book, to reinforcement learning that dominates one narrow lane, to LLM Agents that understand, plan, invoke tools, and execute autonomously. It doesn't replace your work — it's your capability lever, letting one person's output drive a team's throughput.\n\nWhat I'm building isn't a chat interface. It's living systems — systems that perceive, decide, act. A new paradigm of human-machine collaboration: you set the direction, Agents execute autonomously. The next-generation digital productivity engine for every industry.\n\nNot writing code. Writing the productivity infrastructure of the next decade.",
     "workExperience": "Work Experience",
     "education": "Education",
     "techStack": "Tech Stack",
+    "learning": "Currently Studying",
     "interests": "Interests",
     "experience": [
       {
-        "role": "Frontend Lead / AI Full-Stack Engineer",
+        "role": "Frontend Lead / AI Full-Stack Engineer / MAS Conductor",
         "company": "Chengdu Ruisheng Tianhe Media Technology Co., Ltd.",
         "department": "Product R&D Department",
         "period": "Feb 2021 - Dec 2025",
-        "tags": ["AI Applications", "Next.js", "Node.js", "Prisma", "PostgreSQL", "BullMQ"],
+        "tags": [
+          "Multi-Agent Systems",
+          "MCP Protocol",
+          "A2A Protocol",
+          "ReAct Agent",
+          "Docker Sandbox",
+          "Playwright",
+          "FastAPI",
+          "Next.js",
+          "Prisma",
+          "PostgreSQL",
+          "BullMQ"
+        ],
         "points": [
-          "Led the company's digital advertising platform, connecting asset production, approvals, campaign delivery, and data feedback into an online workflow and improving cross-team collaboration efficiency by more than 80%.",
-          "Designed and built the core architecture for an AI video remixing and batch delivery platform covering asset understanding, script generation, TTS, poster editing, scheduling, and campaign execution, supporting 100,000 videos and 30,000+ images per month.",
-          "Optimized model routing and generation workflows, reducing per-video generation cost from RMB 2.5-3 to RMB 0.5-1 while raising generation success rate to 98%.",
-          "Explored AI-native engineering workflows with Codex, Claude, and in-house MCP integrations to connect requirement drafting, task breakdown, execution, testing, and automated bug fixing.",
+          "Designed and built a multi-agent collaboration system around ReAct planning-execution architecture, enabling task decomposition, tool orchestration, and context management with dynamic MCP tool integration.",
+          "Built A2A distributed agent networks, connecting planning and execution agents for task dispatch and result aggregation.",
+          "Developed Docker sandbox isolation environments for secure code execution — Shell commands, Python scripts, and Playwright browser automation run in isolated containers.",
+          "Led the company's digital advertising platform, connecting asset production, approvals, campaign delivery, and data feedback into an online workflow, supporting 100,000 videos and 30,000+ images per month with 80%+ efficiency gains.",
+          "Pioneered AI-native engineering workflows — integrated Codex, Claude, and in-house MCP to automate requirement drafting, task breakdown, execution validation, and bug fixing, reducing per-video generation cost from RMB 2.5–3 to RMB 0.5–1.",
           "Led engineering governance for multiple legacy internal systems, including build upgrades, component refactoring, monorepo restructuring, and team-wide standards."
         ]
       },
@@ -121,7 +135,16 @@
         "degree": "Master of Computer Information Technology"
       }
     ],
-    "interestList": ["Open Source", "UI/UX Design", "Full Stack Development", "Artificial Intelligence"]
+    "learningList": [
+      "Multi-Agent System (MAS) architecture design",
+      "ReAct planning & execution Agent development",
+      "MCP protocol — unified LLM tool-calling standard",
+      "A2A protocol — Agent-to-Agent distributed collaboration",
+      "Sandbox isolation — secure code execution in Docker",
+      "Playwright browser automation — CDP protocol",
+      "Context engineering — memory persistence & session state"
+    ],
+    "interestList": ["Open Source", "UI/UX Design", "Full Stack Development", "AI Agent Applications"]
   },
   "PostsPage": {
     "title": "Journal",

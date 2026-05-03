@@ -1,78 +1,63 @@
 /**
  * 语音播报组件
  *
- * 播放预生成的 TTS 音频文件，支持进度条、快进退、语速调节
+ * 中文文章 → xiaoxiao.mp3，英文文章 → jenny.mp3
  */
 
 'use client'
 
 import { cn } from '@/src/shared/utils'
-import { Loader2, Pause, SkipBack, SkipForward, Volume2 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Pause, SkipBack, SkipForward, Volume2 } from 'lucide-react'
+import { useCallback, useRef, useState } from 'react'
 
 interface AudioPlayerProps {
   slug: string
+  lang: string
   className?: string
 }
 
-async function findAudioFile(slug: string): Promise<string | null> {
-  const voices = ['xiaoxiao', 'yunxi', 'yunjian', 'jenny', 'guy']
-  const checks = await Promise.all(
-    voices.map(async (v) => {
-      try {
-        const res = await fetch(`/audio/${slug}/${v}.mp3`, { method: 'HEAD' })
-        return res.ok ? v : null
-      } catch {
-        return null
-      }
-    }),
-  )
-  return checks.find((v) => v !== null) ?? null
-}
-
-export function AudioPlayer({ slug, className }: AudioPlayerProps) {
-  const [audioUrl, setAudioUrl] = useState<string | null>(null)
-  const [isLoaded, setIsLoaded] = useState(false)
+export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [rate, setRate] = useState(1)
+  const [show, setShow] = useState(true)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const durationSet = useRef(false)
 
-  useEffect(() => {
-    let cancelled = false
-    async function init() {
-      const voice = await findAudioFile(slug)
-      if (cancelled) return
-      if (voice) {
-        setAudioUrl(`/audio/${slug}/${voice}.mp3`)
-      }
-      setIsLoaded(true)
-    }
-    init()
-    return () => {
-      cancelled = true
-    }
-  }, [slug])
+  const voice = lang === 'zh' ? 'xiaoxiao' : 'jenny'
 
-  const handleTimeUpdate = useCallback(() => {
-    const audio = audioRef.current
-    if (audio) setCurrentTime(audio.currentTime)
-  }, [])
-
+  const handleError = useCallback(() => setShow(false), [])
   const handleLoadedMetadata = useCallback(() => {
     const audio = audioRef.current
-    if (audio) setDuration(audio.duration)
+    if (audio && audio.duration && isFinite(audio.duration)) {
+      durationSet.current = true
+      setDuration(audio.duration)
+    }
   }, [])
 
-  const handleEnded = useCallback(() => {
-    setIsPlaying(false)
+  // 兜底：有些 MP3 不触发 onLoadedMetadata，在首次 timeupdate 或 canplay 时捕获时长
+  const handleCanPlay = useCallback(() => {
+    const audio = audioRef.current
+    if (audio && !durationSet.current && audio.duration && isFinite(audio.duration)) {
+      durationSet.current = true
+      setDuration(audio.duration)
+    }
   }, [])
+  const handleTimeUpdate = useCallback(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    setCurrentTime(audio.currentTime)
+    if (!durationSet.current && audio.duration && isFinite(audio.duration)) {
+      durationSet.current = true
+      setDuration(audio.duration)
+    }
+  }, [])
+  const handleEnded = useCallback(() => setIsPlaying(false), [])
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current
     if (!audio) return
-
     if (audio.paused) {
       audio.playbackRate = rate
       audio.play()
@@ -85,9 +70,7 @@ export function AudioPlayer({ slug, className }: AudioPlayerProps) {
 
   const handleRateChange = useCallback((newRate: number) => {
     setRate(newRate)
-    if (audioRef.current) {
-      audioRef.current.playbackRate = newRate
-    }
+    if (audioRef.current) audioRef.current.playbackRate = newRate
   }, [])
 
   const skip = useCallback((seconds: number) => {
@@ -103,21 +86,10 @@ export function AudioPlayer({ slug, className }: AudioPlayerProps) {
     return `${m}:${s.toString().padStart(2, '0')}`
   }
 
-  if (!isLoaded) {
-    return (
-      <div className={cn('inline-flex items-center gap-2 font-sans', className)}>
-        <div className="flex items-center gap-2 rounded-sm border border-border/40 bg-card px-3 py-1.5">
-          <Loader2 className="size-4 animate-spin text-muted-foreground" />
-        </div>
-      </div>
-    )
-  }
-
-  if (!audioUrl) return null
+  if (!show) return null
 
   return (
     <div className={cn('inline-flex flex-wrap items-center gap-2 font-sans', className)}>
-      {/* 播放按钮 */}
       <button
         onClick={togglePlay}
         className={cn(
@@ -131,9 +103,8 @@ export function AudioPlayer({ slug, className }: AudioPlayerProps) {
         <span className="hidden sm:inline">{isPlaying ? '暂停' : '收听'}</span>
       </button>
 
-      {/* 进度条 */}
       {duration > 0 && (
-        <div className="hidden items-center gap-2 sm:inline-flex">
+        <div className="inline-flex items-center gap-2">
           <span className="font-mono text-xs text-muted-foreground tabular-nums">{formatTime(currentTime)}</span>
           <input
             type="range"
@@ -151,7 +122,6 @@ export function AudioPlayer({ slug, className }: AudioPlayerProps) {
         </div>
       )}
 
-      {/* 快进/快退 */}
       <div className="hidden items-center gap-0.5 sm:inline-flex">
         <button
           onClick={() => skip(-10)}
@@ -169,7 +139,6 @@ export function AudioPlayer({ slug, className }: AudioPlayerProps) {
         </button>
       </div>
 
-      {/* 语速 */}
       <select
         value={rate}
         onChange={(e) => handleRateChange(parseFloat(e.target.value))}
@@ -184,9 +153,12 @@ export function AudioPlayer({ slug, className }: AudioPlayerProps) {
 
       <audio
         ref={audioRef}
-        src={audioUrl}
-        onTimeUpdate={handleTimeUpdate}
+        src={`/audio/${slug}/${voice}.mp3`}
+        preload="metadata"
+        onError={handleError}
         onLoadedMetadata={handleLoadedMetadata}
+        onCanPlay={handleCanPlay}
+        onTimeUpdate={handleTimeUpdate}
         onEnded={handleEnded}
       />
     </div>

@@ -105,7 +105,7 @@ export default async function PostPage({ params }: Props) {
           </h1>
 
           {/* 语音播报 */}
-          <AudioPlayer slug={slug} />
+          <AudioPlayer slug={slug} lang={locale} />
 
           {/* 元信息 */}
           <div className="flex flex-wrap items-center gap-4 font-sans text-sm tracking-wide text-muted-foreground">
