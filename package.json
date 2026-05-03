@@ -19,6 +19,8 @@
     "lint:tsc": "tsc --noEmit",
     "lint:eslint": "eslint --fix",
     "lint:prettier": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md,mdx}\"",
+    "audio:generate": "python3 scripts/generate-audio.py",
+    "audio:check": "python3 scripts/generate-audio.py",
     "postinstall": "prisma generate",
     "prepare": "husky"
   },

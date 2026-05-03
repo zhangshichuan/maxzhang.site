@@ -1,6 +1,6 @@
 import { Comment, ViewCounter, getCommentCount } from '@/src/features/engagement'
 import { getPostBySlug, getPostSlugs } from '@/src/features/posts'
-import { BackToPosts, BackToTop, Mermaid } from '@/src/shared/components'
+import { AudioPlayer, BackToPosts, BackToTop, Mermaid } from '@/src/shared/components'
 import { Calendar, Clock, Folder, User } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 import { MDXRemote } from 'next-mdx-remote/rsc'
@@ -103,6 +103,9 @@ export default async function PostPage({ params }: Props) {
           <h1 className="font-serif text-4xl leading-[1.2] font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             {post.title}
           </h1>
+
+          {/* 语音播报 */}
+          <AudioPlayer slug={slug} />
 
           {/* 元信息 */}
           <div className="flex flex-wrap items-center gap-4 font-sans text-sm tracking-wide text-muted-foreground">

@@ -1,1 +1,21 @@
+#!/bin/sh
+# 增量生成语音：仅对 git diff 中新增/修改的 .mdx 文章生成语音
+
 pnpm lint
+
+CHANGED=$(git diff --cached --name-only --diff-filter=ACM | grep '^articles/.*\.mdx$' || true)
+
+if [ -z "$CHANGED" ]; then
+    echo "✅ 没有文章变更，跳过语音生成"
+    exit 0
+fi
+
+echo "🎙️  检测到文章变更，增量生成语音..."
+for file in $CHANGED; do
+    # 从路径 articles/zh/my-post.mdx 中提取 locale 和 slug
+    locale=$(echo "$file" | cut -d'/' -f2)
+    slug=$(basename "$file" .mdx)
+    python3 scripts/generate-audio.py "$locale" "$slug"
+done
+
+echo "✅ 语音生成完成"

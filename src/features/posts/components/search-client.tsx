@@ -3,7 +3,7 @@
 import { PostItem } from '@/src/features/posts/components'
 import type { PostSummaryWithViews } from '@/src/features/posts/model'
 import Fuse from 'fuse.js'
-import { Folder, Search, X } from 'lucide-react'
+import { Search, X } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
@@ -117,7 +117,7 @@ export function SearchClient({ posts }: SearchClientProps) {
             onClick={() => setQuery('')}
             className="absolute top-1/2 right-3 -translate-y-1/2 rounded-sm p-1 text-muted-foreground hover:bg-muted"
           >
-            <X className="h-4 w-4" />
+            <X className="size-4" />
           </button>
         )}
       </div>

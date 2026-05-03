@@ -4,6 +4,7 @@
  * 集中导出所有共享组件，便于其他模块导入使用
  */
 
+export { AudioPlayer } from './audio-player'
 export { BackToPosts } from './back-to-posts'
 export { BackToTop } from './back-to-top'
 export { Footer } from './footer'

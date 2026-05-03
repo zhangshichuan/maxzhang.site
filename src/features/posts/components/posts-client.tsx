@@ -1,12 +1,11 @@
 'use client'
 
-import { useState } from 'react'
 import { PostItem } from '@/src/features/posts/components'
 import type { PostSummaryWithViews } from '@/src/features/posts/model'
 import { Link, useRouter } from '@/i18n/routing'
 import { GlassCard } from '@/src/shared/components'
 import { FadeIn, StaggerContainer, StaggerItem } from '@/src/shared/components'
-import { Folder, Loader2 } from 'lucide-react'
+import { Folder } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 interface PostsClientProps {
@@ -18,11 +17,9 @@ interface PostsClientProps {
 export function PostsClient({ posts, allTags, allCategories }: PostsClientProps) {
   const t = useTranslations('PostsPage')
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
 
   const handleNavigate = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault()
-    setLoading(true)
     router.push(href)
   }
 
