@@ -18,6 +18,7 @@ interface AudioPlayerProps {
 
 export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [rate, setRate] = useState(1)
@@ -55,18 +56,25 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
   }, [])
   const handleEnded = useCallback(() => setIsPlaying(false), [])
 
-  const togglePlay = useCallback(() => {
+  const togglePlay = useCallback(async () => {
     const audio = audioRef.current
-    if (!audio) return
+    if (!audio || isLoading) return
     if (audio.paused) {
       audio.playbackRate = rate
-      audio.play()
-      setIsPlaying(true)
+      setIsLoading(true)
+      try {
+        await audio.play()
+        setIsPlaying(true)
+      } catch {
+        setIsPlaying(false)
+      } finally {
+        setIsLoading(false)
+      }
     } else {
       audio.pause()
       setIsPlaying(false)
     }
-  }, [rate])
+  }, [rate, isLoading])
 
   const handleRateChange = useCallback((newRate: number) => {
     setRate(newRate)
@@ -92,15 +100,23 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
     <div className={cn('inline-flex flex-wrap items-center gap-2 font-sans', className)}>
       <button
         onClick={togglePlay}
+        disabled={isLoading}
         className={cn(
           'inline-flex cursor-pointer items-center gap-1.5 rounded-sm border border-border/40 px-3 py-1.5 text-sm font-medium tracking-wide transition-all',
+          isLoading && 'cursor-wait opacity-70',
           isPlaying
             ? 'border-primary/30 bg-primary/10 text-primary'
             : 'bg-card text-muted-foreground hover:border-primary/20 hover:text-primary',
         )}
       >
-        {isPlaying ? <Pause className="size-4" /> : <Volume2 className="size-4" />}
-        <span className="hidden sm:inline">{isPlaying ? '暂停' : '收听'}</span>
+        {isLoading ? (
+          <span className="size-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
+        ) : isPlaying ? (
+          <Pause className="size-4" />
+        ) : (
+          <Volume2 className="size-4" />
+        )}
+        <span className="hidden sm:inline">{isLoading ? '加载中' : isPlaying ? '暂停' : '收听'}</span>
       </button>
 
       {duration > 0 && (
@@ -154,7 +170,7 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
       <audio
         ref={audioRef}
         src={`/audio/${slug}/${voice}.mp3`}
-        preload="metadata"
+        preload="auto"
         onError={handleError}
         onLoadedMetadata={handleLoadedMetadata}
         onCanPlay={handleCanPlay}
