@@ -8,7 +8,7 @@
 
 import { cn } from '@/src/shared/utils'
 import { Pause, SkipBack, SkipForward, Volume2 } from 'lucide-react'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface AudioPlayerProps {
   slug: string
@@ -25,6 +25,18 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
   const [show, setShow] = useState(true)
   const audioRef = useRef<HTMLAudioElement>(null)
   const durationSet = useRef(false)
+
+  // 处理路由跳转或参数变化时重置播放器状态
+  // 注意：不要调用 audio.load()，否则会打断浏览器 preload="auto" 的加载，
+  // 导致首次进入页面时音频无法正常加载。改用 key 属性让 React 重建 audio 元素。
+  useEffect(() => {
+    setIsPlaying(false)
+    setIsLoading(false)
+    setCurrentTime(0)
+    setDuration(0)
+    setShow(true)
+    durationSet.current = false
+  }, [slug, lang])
 
   const voice = lang === 'zh' ? 'xiaoxiao' : 'jenny'
 
@@ -65,7 +77,8 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
       try {
         await audio.play()
         setIsPlaying(true)
-      } catch {
+      } catch (error) {
+        console.error('Audio play failed:', error)
         setIsPlaying(false)
       } finally {
         setIsLoading(false)
@@ -169,6 +182,7 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
 
       <audio
         ref={audioRef}
+        key={`${slug}-${lang}`}
         src={`/audio/${slug}/${voice}.mp3`}
         preload="auto"
         onError={handleError}

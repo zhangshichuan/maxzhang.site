@@ -62,6 +62,7 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
                       <Link
                         key={category}
                         href={href}
+                        prefetch={false}
                         onClick={(e) => handleNavigate(e, href)}
                         className="group flex cursor-pointer items-center justify-between rounded-sm px-3 py-2.5 text-sm font-medium transition-colors hover:bg-muted/50"
                       >
@@ -90,6 +91,7 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
                       <Link
                         key={tag}
                         href={href}
+                        prefetch={false}
                         onClick={(e) => handleNavigate(e, href)}
                         className="inline-flex cursor-pointer items-center rounded-sm border border-border/40 bg-card px-3 py-1 font-sans text-xs font-medium tracking-wide text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
                       >
