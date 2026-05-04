@@ -1,17 +1,17 @@
 ---
 title: '当你的组件死在你面前：Tailwind CSS v4 黑夜模式的真相'
-summary: '从凌晨一点一个失败的 GlassCard 组件开始，搞清楚 Tailwind v3 和 v4 在黑暗模式上的根本区别，CSS 变量那套隐藏的切换机制，以及 @custom-variant、@variant、@layer 到底各自在干什么。'
+summary: '从下午三点一个失败的 GlassCard 组件开始，搞清楚 Tailwind v3 和 v4 在黑暗模式上的根本区别，CSS 变量那套隐藏的切换机制，以及 @custom-variant、@variant、@layer 到底各自在干什么。'
 category: 'Frontend'
 tags: ['Tailwind CSS', 'Dark Mode', 'CSS', 'Frontend']
 author: 'Max Zhang'
 date: '2025-08-10'
 ---
 
-## 凌晨一点的那声"卧槽"
+## 下午三点的那声"卧槽"
 
 你肯定有过这种时刻。
 
-深夜，刚把项目从 Tailwind v3 升到 v4，build 过了，lint 没报错，心想这波迁移真他妈丝滑。你倒了杯水，顺手点了一下页面右上角的主题切换按钮。
+下午，刚把项目从 Tailwind v3 升到 v4，build 过了，lint 没报错，心想这波迁移真他妈的丝滑。你倒了杯水，顺手点了一下页面右上角的主题切换按钮。
 
 页面背景乖乖地黑了。
 
@@ -23,7 +23,7 @@ date: '2025-08-10'
 
 你打开 DevTools，`<html>` 标签上明明已经有 `class="dark"` 了。`bg-white/40 dark:bg-black/40` 这句话你也写了，Tailwind 语法一点毛病没有。但浏览器里，那个 `.dark\:bg-black\/40` 的样式就是没生效。
 
-操，这到底是什么鬼？
+卧槽，这到底是什么鬼？
 
 你对着屏幕愣了半分钟。你试着重启 dev server——不行。清缓存——不行。把 `dark:` 类改成内联 style——能行，但你不可能把整个项目全改成内联 style。
 
@@ -372,7 +372,7 @@ body {
 
 因为你搜资料的时候，这三种东西经常混在一起出现。你看到一个文章说"variants 用法详解"，可能是讲第一个意思的。看到一个文档说"组件的 variants 属性"，是第二个意思。看到 Tailwind 的官方文档在讲 `@custom-variant`，那是第三个意思。
 
-不分清楚，你他妈连证都看不懂。
+不分清楚，你他妈的连证都看不懂。
 
 ---
 
@@ -418,7 +418,7 @@ body {
 
 ## 第八章：@layer——Tailwind 的三层大楼
 
-这是 Tailwind CSS 整个设计里最他妈聪明的一个东西。不是说技术有多复杂——是思路。它在解决一个前端开发每天都在踩的坑：**样式被莫名其妙覆盖了，你完全不知道为什么。**
+这是 Tailwind CSS 整个设计里最他妈的聪明的一个东西。不是说技术有多复杂——是思路。它在解决一个前端开发每天都在踩的坑：**样式被莫名其妙覆盖了，你完全不知道为什么。**
 
 ### 问题场景
 

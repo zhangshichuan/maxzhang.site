@@ -11,15 +11,15 @@ date: '2025-06-11'
 
 事情是这样的。我接了个活——帮一个团队用大模型做一套自动客服系统。听起来简单对吧？调个 API，写几行 Python，起一个 FastAPI 服务，完事儿。
 
-我他妈也是这么想的。
+我他妈的也是这么想的。
 
-然后我新建了项目目录。光标在终端里一闪一闪的。我突然不知道该干什么了。用 pip 还是 poetry？虚拟环境放项目里面还是外面？代码风格要不要统一？commit message 写什么？VSCode 配哪些插件？CI 怎么写？最操蛋的是——有没有人能告诉我，这堆东西哪件先做、哪件后做？
+然后我新建了项目目录。光标在终端里一闪一闪的。我突然不知道该干什么了。用 pip 还是 poetry？虚拟环境放项目里面还是外面？代码风格要不要统一？commit message 写什么？VSCode 配哪些插件？CI 怎么写？最卧槽的是——有没有人能告诉我，这堆东西哪件先做、哪件后做？
 
 你多半也经历过这种时刻。LLMOps 听起来高大上，但落到地上，第一关既不是模型选型，也不是 prompt 优化，而是：我该怎么把这个项目"搭好"？
 
 这不是一篇写"pip install 就完事"的文章。我想跟你聊的是，一个 Python LLMOps 工程，从你敲第一个命令开始，到代码 push 之后 CI 自动跑完 lint、type check、test 全流程，中间每一步应该怎么走。为什么这么走。以及——冷静地说——这么走也解决不了什么。
 
-## 你他妈到底在解决什么问题
+## 你他妈的到底在解决什么问题
 
 先退一步。为什么 LLMOps 工程需要这么多"规矩"？
 
@@ -177,7 +177,7 @@ python_version = "3.12"
 ignore_missing_imports = true
 ```
 
-`ignore_missing_imports = true` 的意思是：第三方库如果没有类型标注，别报错。否则你装个 boto3，mypy 能给你报几百个错，全他妈是误报。
+`ignore_missing_imports = true` 的意思是：第三方库如果没有类型标注，别报错。否则你装个 boto3，mypy 能给你报几百个错，全他妈的是误报。
 
 Mypy 解决的是：类型不匹配、属性不存在、函数签名错误。它不解决的是：运行时变量值的合法性。Mypy 能保证 `user_id` 是 `int` 类型，但它保证不了这个 `int` 是不是一个真实存在的用户 ID。那是业务逻辑验证的活。
 
@@ -711,7 +711,7 @@ Prometheus 负责收集这些指标，Grafana 负责把它们画成你能一眼�
 
 ## 工程化的代价
 
-你可能觉得这他妈搞得太重了。确实重。
+你可能觉得这他妈的搞得太重了。确实重。
 
 装这么多工具、配这么多文件、写 CI、分层、选技术栈——一个"hello world"级别的 LLM 调用，真的需要这么多东西吗？
 
@@ -724,6 +724,106 @@ Prometheus 负责收集这些指标，Grafana 负责把它们画成你能一眼�
 每次新同事 git clone 之后打开 VSCode 直接开始写代码不用配任何东西，这就是你花时间写配置的价值。
 
 每次你需要换模型、换数据库、换部署方式，分层架构让你只改一层就能搞定，这就是当初设计边界的好处。
+
+## 全景关系图——一张图看全工具链
+
+前面你被塞了一堆工具：uv、ruff、mypy、pytest、pre-commit、commitizen、VSCode、CI、Docker。它们不是散装的——每个工具在开发流程里都有自己固定的位置，而且彼此之间有依赖关系。
+
+```mermaid
+flowchart TD
+    subgraph 编码["✍️ 编码"]
+        VSC["VSCode<br/>+ Pylance + Ruff 插件"]
+        UV["uv<br/>包管理器"]
+    end
+
+    UV -->|提供解释器| VSC
+
+    subgraph 本地检查["🔍 本地检查"]
+        Ruff["Ruff<br/>Lint + Format"]
+        Mypy["Mypy<br/>类型检查"]
+        PC["pre-commit<br/>提交前拦截"]
+        CZ["Commitizen<br/>规范 commit"]
+    end
+
+    VSC -->|Ctrl+S 触发| Ruff
+    UV -->|uv add --dev| Ruff
+    UV -->|uv add --dev| Mypy
+    Ruff --> PC
+    Mypy --> PC
+    PC --> CZ
+
+    subgraph CI流程["🔄 CI（GitHub Actions）"]
+        CI_Ruff["Ruff check"]
+        CI_Mypy["Mypy"]
+        CI_Pytest["Pytest<br/>3.12 + 3.13 矩阵"]
+    end
+
+    CZ -->|git push| CI_Ruff
+    CZ -->|git push| CI_Mypy
+    CZ -->|git push| CI_Pytest
+    UV -.->|uv.lock 锁版本| CI_Ruff
+    UV -.->|uv.lock 锁版本| CI_Mypy
+    UV -.->|uv.lock 锁版本| CI_Pytest
+
+    subgraph 部署["🚀 部署"]
+        Docker["Docker<br/>镜像构建"]
+        K8s["K8s<br/>上线"]
+    end
+
+    CI_Ruff -->|通过| Docker
+    CI_Mypy -->|通过| Docker
+    CI_Pytest -->|通过| Docker
+    Docker --> K8s
+```
+
+这张图从左到右就是你的日常开发流程：
+
+- **编码阶段**：你打开 VSCode，uv 帮你管好虚拟环境和依赖，Pylance 实时给你类型提示。VSCode 的 Ruff 插件在你保存时自动格式化和修 lint。
+- **检查阶段**：你 git commit 的时候，pre-commit 把 Ruff 和 Mypy 全量跑一遍，没过就不让提交。Commitizen 帮你写规范的 commit message，而不是 `fix` 和 `update` 这种废话。
+- **CI 阶段**：代码 push 到 GitHub，Actions 自动在 3.12 和 3.13 两个版本上各跑一遍 Ruff check + Mypy + Pytest。uv.lock 保证 CI 环境装的依赖跟你本地一模一样。
+- **部署阶段**：CI 全绿之后，Docker 把运行环境打成镜像，推到 K8s 集群上线。
+
+注意几个依赖关系：VSCode 依赖 uv 提供的 Python 解释器路径（`settings.json` 里配的 `.venv/bin/python`）；pre-commit 依赖 Ruff 和 Mypy 已经通过 `uv add --dev` 安装好了；CI 各个 step 依赖 `uv.lock` 来保证依赖版本一致；Docker 构建依赖 CI 全绿——你当然可以跳过 CI 直接构建，但那是给自己挖坑。
+
+这就是你工具箱的全景。每个工具不是孤岛——它们在流程上环环相扣。
+
+## FAQ——你心里在嘀咕的那些问题
+
+### uv 和 poetry 到底怎么选？
+
+uv。除非你的项目已经深度绑定 poetry 的插件生态，或者公司有强制规范。
+
+uv 更快（Rust 写的，解析依赖比 poetry 快一个数量级）、更简单（`uv sync` 一个命令，poetry 要 `poetry shell` 再 `poetry install`）、而且跟 pip 的兼容性更好——`pyproject.toml` 里可以直接写 pip 风格的依赖格式。
+
+poetry 的革命性在于它是第一个试图正经解决 Python 依赖管理混乱的工具。但 uv 是站在 poetry 肩膀上做得更彻底的那个。如果你是全新项目、没有历史包袱，直接 uv。卧槽，这还用想？
+
+### ruff 和 mypy 到底各自管什么？
+
+记一句话：**ruff 管"代码写得丑不丑、安不安全"，mypy 管"类型对不对"。**
+
+ruff 告诉你变量名不规范、import 没排序、有个 `except:` 裸奔了（可能吞掉 KeyboardInterrupt）、用了一个已知不安全的函数——这些是代码"长相"和"常见坑"的问题。
+
+mypy 告诉你函数返回类型和声明不一致、你给 `int` 参数传了 `str`、你访问了对象上根本不存在的属性——这些是类型层面的 bug，ruff 完全不管。
+
+这俩不重叠，互补的。傻逼的做法是只用 ruff 觉得够了——等线上因为类型错误炸了你就知道 mypy 是干什么的了。
+
+### CI 里哪些检查必须跑？
+
+最少三个：**ruff check**、**mypy**、**pytest**。
+
+`ruff format --check` 可以加上，但它更多是"统一风格"而非"阻止 bug"——你队友代码格式不对，你能忍，但 if 条件写反了，你不能忍。所以优先级是 pytest > ruff check > mypy > format check。
+
+矩阵测试（多 Python 版本）不是必须的，但强烈建议。你写了 `match` 语句（3.10 才有），你同事的库只支持 3.11——CI 在 3.12 和 3.13 上都跑一遍就能抓出来，在你合并 PR 之前，而不是生产炸了之后。
+
+### 为什么不用 pip 而要用 uv？
+
+因为 pip 有三个逆天问题：
+
+1. **慢**。pip 的依赖解析是 Python 写的，解析一个中等复杂度的项目能在"等咖啡泡好"和"等外卖送到"之间随机分布。uv 用 Rust 重写了整个解析器，快到什么鬼程度——你还没反应过来就跑完了。
+
+2. **没有锁文件**。`requirements.txt` 可以写 `flask>=2.0`，但每次安装出来的实际版本取决于你跑命令那一刻 PyPI 的状态。你同事三个月后安装，flask 已经是 3.0 了，API 不一样，代码炸了。uv.lock 锁定精确版本，杜绝"我这能跑啊"。
+
+3. **虚拟环境管理割裂**。pip 只管装包，虚拟环境你得另外用 venv/virtualenv 创建、激活、管理。uv 一把梭——`uv sync` 自动创建 .venv、装依赖、锁定版本。你少记三个命令，少三次出错的机会。
 
 ## 给你一套判断框架
 
