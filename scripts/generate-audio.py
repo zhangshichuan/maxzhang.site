@@ -39,7 +39,7 @@ def strip_mdx(content: str) -> str:
     text = re.sub(r"\*([^*]+)\*", r"\1", text)
     text = re.sub(r"_([^_]+)_", r"\1", text)
     text = re.sub(r"```[\s\S]*?```", "", text)
-    text = re.sub(r"`[^`]+`", "", text)
+    text = re.sub(r"`([^`]+)`", r"\1", text)
     text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
     text = re.sub(r"!\[.*?\]\([^)]+\)", "", text)
     text = re.sub(r"^[-*+]\s+", "", text, flags=re.MULTILINE)
@@ -48,6 +48,12 @@ def strip_mdx(content: str) -> str:
     text = re.sub(r"---", "", text)
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
+
+
+def preprocess_for_tts(text: str) -> str:
+    """TTS 友好的文本预处理：将全大写缩写拆成字母逐个朗读"""
+    text = re.sub(r"([A-Z])(?=[A-Z])", r"\1 ", text)
+    return text
 
 
 async def generate_audio(text: str, voice: str, output_path: Path, timeout: int = 120):
@@ -74,6 +80,7 @@ async def generate_article(locale: str, slug: str, verbose: bool = True, sem: as
 
         content = article_path.read_text(encoding="utf-8")
         text = strip_mdx(content)
+        text = preprocess_for_tts(text)
 
         if not text:
             if verbose:
