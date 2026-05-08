@@ -444,55 +444,104 @@ If this incremental sync pipeline isn't designed well, your search system will p
 
 ## Layer Eight: The Inverted Index — How BM25 Gets That Fast
 
-### Forward indexing is caveman logic
+### How slow forward indexing really is
 
-You have a thousand books. Find every one that mentions "quantum mechanics."
-
-The forward-index approach: start at page 1 of book 1. Scan line by line. Through all thousand books. Then tell the user the answer.
-
-That's not an algorithm. That's manual labor.
-
-### The inverted index flips it
-
-An inverted index doesn't record "what words are in each book." It records "which books contain each word."
-
-Two parts:
-
-**Term dictionary.** Every unique word that appears in the collection, stored in sorted order. Find a word: binary search. O(log N).
-
-**Posting list.** Under each word, a list recording which documents it appears in, at which positions, and how many times.
-
-Looks like this:
+Say you have four documents:
 
 ```
-"cat" → [(doc_id=5, tf=2, positions=[10, 205]),
-         (doc_id=23, tf=1, positions=[67]),
-         (doc_id=108, tf=3, positions=[...])]
-
-"dog" → [(doc_id=3, tf=1, positions=[89]),
-         (doc_id=5, tf=1, positions=[150])]
+Doc 1: cat eats fish
+Doc 2: dog eats meat
+Doc 3: cat and dog fight
+Doc 4: cat loves eating fish not rice
 ```
 
-### Where the speed comes from
+Now a user searches "cat fish eat".
 
-Search "cat dog":
+A forward-index approach: scan from Doc1 character by character. "cat eats fish" — cat: check. eat: check. fish: check. All three hit. Mark Doc1 as a candidate. Then scan "dog eats meat" — cat? No. eat? Yes. fish? No. Only one hit. Score it low. Continue Doc3, Doc4…
 
-1. Look up "cat" in the term dictionary → get its posting list (all document IDs containing "cat").
-2. Same for "dog" → another posting list.
-3. AND logic → compute the **intersection** of both lists. OR logic → compute the **union**.
-4. Score results with BM25. Sort. Return.
+Three search terms. Four documents. Every character gets scanned. Ten thousand documents? One hundred million? A single search scans over a hundred million characters. That's a straight **linear scan**. Double the data, double the wait. One hundred million documents, one search, thirty seconds — your user is already gone.
 
-At no point does the system "scan every document." It's like walking into a library and, instead of flipping through shelves, opening the index at the back of a book, finding your keyword, and jumping to the right page.
+### The inverted index: rewrite the map, center-down to term-down
 
-Every serious full-text search engine on the planet runs on this principle.
+The inverted index does not record "what words each document contains." It records the reverse: **which documents each word appears in**.
 
-### There's still room to squeeze
+Building it, step by step:
 
-Lucene adds **skip lists** and **compression encodings** on top of posting lists.
+**Step 1: tokenize.** Break each document into words (using whitespace in English, or a tokenizer like jieba in Chinese):
 
-Skip lists accelerate intersection of two large lists — think merge-sort on steroids. Compression reduces memory footprint — store more document IDs in fewer bytes.
+```
+Doc 1 → [cat, eats, fish]
+Doc 2 → [dog, eats, meat]
+Doc 3 → [cat, and, dog, fight]
+Doc 4 → [cat, loves, eating, fish, not, rice]
+```
 
-Lucene and Elasticsearch push these optimizations to the industrial limit. Even at hundreds of billions of documents, a single keyword lookup stays in the low tens of milliseconds.
+**Step 2: build the term dictionary.** Collect every unique word, sort them:
+
+```
+and, cat, dog, eating, eats, fight, fish, loves, meat, not, rice
+```
+
+11 unique words. Look up any word: binary search, O(log N). 11 words or 11 billion — same algorithm.
+
+**Step 3: build the posting lists.** Under each word, hang a list of every document where it appears, how many times, and at which positions:
+
+```
+"and"    → (doc=3, freq=1, pos=[2])
+"cat"    → (doc=1, freq=1, pos=[0]),
+           (doc=3, freq=1, pos=[0]),
+           (doc=4, freq=1, pos=[0])
+"dog"    → (doc=2, freq=1, pos=[0]),
+           (doc=3, freq=1, pos=[2])
+"eating" → (doc=4, freq=1, pos=[2])
+"eats"   → (doc=1, freq=1, pos=[1]),
+           (doc=2, freq=1, pos=[1])
+"fight"  → (doc=3, freq=1, pos=[3])
+"fish"   → (doc=1, freq=1, pos=[2]),
+           (doc=4, freq=1, pos=[3])
+"loves"  → (doc=4, freq=1, pos=[1])
+"meat"   → (doc=2, freq=1, pos=[2])
+"not"    → (doc=4, freq=1, pos=[4])
+"rice"   → (doc=4, freq=1, pos=[5])
+```
+
+That's the entire inverted index — a dictionary plus one posting list per word. You build it **once**, offline. Updates append incrementally.
+
+### What happens at query time
+
+Same search: "cat fish eat" (stemmed "eats" → "eat").
+
+1. Look up "cat" in the dictionary, binary search → `[doc1, doc3, doc4]`
+2. Look up "fish" → `[doc1, doc4]`
+3. Look up "eat" (matches "eats" and "eating") → `[doc1, doc2, doc4]`
+4. AND logic → intersect all three: `[doc1, doc3, doc4] ∩ [doc1, doc4] ∩ [doc1, doc2, doc4]` → result: `[doc1, doc4]`
+5. Run BM25 on doc1 and doc4. Score. Sort. Return.
+
+The key: **at no point was any document's raw text scanned.** The engine touched 3 dictionary lookups and 3 short posting lists. Doc4 says "cat loves eating fish not rice" — the engine never reads that sentence again after indexing.
+
+It's like walking into a library where, instead of flipping through the shelves, you consult a card catalog organized by keyword. "Quantum mechanics" → shelves 3, 7, 12. You go straight there.
+
+Every full-text search engine on the planet runs on this principle.
+
+### How it scales: the engineering gets nastier
+
+Four documents gave us posting lists of 1–3 entries each. At 100 million documents, a high-frequency word like "the" has a posting list tens of millions of entries long. Intersecting two lists that size by brute force still hurts.
+
+So Lucene adds two more tricks.
+
+**Skip lists.** Two sorted document-ID lists can be intersected without comparing every single entry. Think of stepping through a phone book — you don't flip page by page. You skip to the letter section. Skip lists embed "leap pointers" inside long posting lists so the intersection algorithm can jump past guaranteed non-matches.
+
+**Delta compression.** Instead of `[doc1, doc4, doc7, doc12, doc15]`, store the gaps: `[1, 3, 3, 5, 3]`, then encode those small integers with variable-length encoding. Across billions of documents the gaps stay tiny — often one byte or less.
+
+These optimizations push to the industrial limit. Hundreds of billions of documents. Single keyword lookup: low tens of milliseconds.
+
+### One sentence: the inverted index is a perspective flip
+
+Forward-index perspective: document → which words it contains. That's the writer's perspective — "what's in this document I just wrote."
+
+Inverted-index perspective: word → which documents contain it. That's the searcher's perspective — "I want to know about 'quantum mechanics'; tell me where."
+
+Flip the perspective, and search stops being a linear scan that gets slower with every new document. It becomes a dictionary lookup plus list intersection — the same algorithm whether you're searching four documents or four billion.
 
 ---
 
