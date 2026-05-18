@@ -195,6 +195,18 @@ main {
   color: var(--foreground);
 }
 
+.article-prose h1 {
+  font-family: var(--font-serif);
+  font-weight: 800;
+  font-size: 2rem;
+  margin-top: 3rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 3px solid var(--border);
+  color: var(--foreground);
+  letter-spacing: -0.02em;
+}
+
 .article-prose h2 {
   font-family: var(--font-serif);
   font-weight: 700;
