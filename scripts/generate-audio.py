@@ -56,17 +56,82 @@ def preprocess_for_tts(text: str) -> str:
     return text
 
 
-async def generate_audio(text: str, voice: str, output_path: Path, timeout: int = 120):
-    """使用 edge-tts 生成语音文件，带超时和残留文件清理"""
-    import edge_tts
+CHUNK_SIZE = 8000
 
-    communicate = edge_tts.Communicate(text, voice, rate="+10%")
-    try:
-        await asyncio.wait_for(communicate.save(str(output_path)), timeout=timeout)
-    except (asyncio.TimeoutError, asyncio.CancelledError, KeyboardInterrupt):
-        if output_path.exists():
-            output_path.unlink()
-        raise
+
+def split_into_chunks(text: str, chunk_size: int = CHUNK_SIZE) -> list[str]:
+    """将长文本按句子边界切分为适合 TTS 的分片"""
+    if len(text) <= chunk_size:
+        return [text]
+
+    sentences = re.split(r"(?<=[。！？\n.!?])\s*", text)
+    chunks = []
+    current = ""
+
+    for sentence in sentences:
+        if len(current) + len(sentence) <= chunk_size:
+            current += sentence
+        else:
+            if current.strip():
+                chunks.append(current.strip())
+            current = sentence
+
+    if current.strip():
+        chunks.append(current.strip())
+
+    return chunks
+
+
+async def generate_audio(text: str, voice: str, output_path: Path, timeout: int = 120):
+    """使用 edge-tts 生成语音文件，长文本自动分片拼接"""
+    import edge_tts
+    import subprocess
+    import tempfile
+
+    chunks = split_into_chunks(text)
+
+    if len(chunks) == 1:
+        communicate = edge_tts.Communicate(text, voice, rate="+10%")
+        try:
+            await asyncio.wait_for(communicate.save(str(output_path)), timeout=timeout)
+        except (asyncio.TimeoutError, asyncio.CancelledError, KeyboardInterrupt):
+            if output_path.exists():
+                output_path.unlink()
+            raise
+        return
+
+    print(f"      📦 分 {len(chunks)} 片生成...")
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        chunk_paths = []
+
+        for i, chunk in enumerate(chunks):
+            chunk_path = tmpdir_path / f"chunk_{i:03d}.mp3"
+            communicate = edge_tts.Communicate(chunk, voice, rate="+10%")
+            try:
+                await asyncio.wait_for(communicate.save(str(chunk_path)), timeout=timeout)
+                chunk_paths.append(chunk_path)
+                print(f"      ✅ 片 {i + 1}/{len(chunks)} ({len(chunk)} 字)")
+            except Exception as e:
+                print(f"      ❌ 片 {i + 1} 失败: {e}")
+                raise
+
+        filelist_path = tmpdir_path / "filelist.txt"
+        filelist_path.write_text(
+            "\n".join(f"file '{p}'" for p in chunk_paths)
+        )
+
+        result = subprocess.run(
+            [
+                "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+                "-i", str(filelist_path), "-c", "copy",
+                str(output_path),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(f"ffmpeg 拼接失败: {result.stderr}")
 
 
 async def generate_article(locale: str, slug: str, verbose: bool = True, sem: asyncio.Semaphore | None = None) -> int:
