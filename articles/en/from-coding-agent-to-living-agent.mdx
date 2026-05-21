@@ -1,8 +1,8 @@
 ---
 title: 'From Coding Agent to Living Agent: Why Hermes Points to a Completely Different Future'
-summary: 'While everyone is competing on Agent "execution power," Hermes is answering a fundamentally different question: can an Agent grow into someone who truly understands you over time? This article examines the self-evolving architecture, learning loops, and Skills system, comparing Manus, Coze, Claude Code, and others to explain why "growth" is the ultimate dividing line for Agents.'
+summary: 'While everyone is competing on Agent "execution power," Hermes is answering a fundamentally different question: can an Agent grow into someone who truly understands you over time? This article examines the self-evolving architecture, learning loops, and Skills system, comparing Manus, Coze, Claude Code, and others to explain why "growth" is the ultimate dividing line for Agents — and explores a new working mode where Hermes acts as the brain orchestrating specialized agents like Claude Code and opencode.'
 category: 'LLMOps'
-tags: ['Agent', 'Hermes', 'Skills', 'Memory', 'Self-Improving']
+tags: ['Agent', 'Hermes', 'Skills', 'Memory', 'Self-Improving', 'Orchestration', 'Claude Code']
 author: 'Max Zhang'
 date: '2026-05-21'
 ---
@@ -435,7 +435,127 @@ This matters because what you accumulate on Hermes — Skills, Memory, User Mode
 
 ---
 
-# VIII. Imagination: How It Can Live in Your Work
+# VIII. Brain Mode: Hermes as Conductor, Specialized Agents as Musicians
+
+So far we've talked about Hermes doing everything itself. But there's a smarter way to use it —
+
+**Make Hermes the brain, and let Claude Code, opencode, and Codex be the hands.**
+
+## Why You Still Need a Brain
+
+Claude Code writes excellent code. opencode handles project-level refactoring reliably. Codex does solid security analysis. Each one is top-tier in its domain.
+
+But they share a fatal flaw: **they don't know you, don't remember context, and don't coordinate with each other.**
+
+After you tell Claude Code "refactor this function," you still have to tell opencode "Claude Code just refactored that function — update the related tests too." Every tool switch means re-explaining context. Every time, you're the human hub — translating tool A's output for tool B, double-checking that tool B didn't step on a landmine tool A warned about.
+
+What the hell. The tools should be serving you, not the other way around.
+
+And here's what's even more maddening: there's zero information sharing between these tools. You have Claude Code refactor a module — it might spot a security risk in some API. But that insight never reaches codex when you run it later. Unless you manually relay it. Which you probably won't, because you don't even know what Claude Code "thought about" during the refactor. You only see the final code.
+
+## How Hermes Functions as a Brain
+
+Hermes has full shell execution capability — it can run any command in the terminal. This means:
+
+```
+You → Hermes (Brain): "Convert the order service's payment flow
+  from sync to async. Don't lose any orders."
+
+Hermes internally decomposes:
+  1. Read the code itself, understand existing flow, output structured spec
+  2. Shell-invoke claude, pass spec: "Refactor order-service/payment.ts,
+     make it async via BullMQ queue, ensure transactional safety"
+  3. Claude Code finishes → Hermes reads diff, confirms changes match spec
+  4. Shell-invoke opencode: "Claude Code changed files X above,
+     update related tests, especially async timeout and retry scenarios"
+  5. Shell-invoke codex: "Security-scan changed file Y,
+     check SQL injection, concurrency safety, transaction boundaries"
+  6. Aggregaate all three results, cross-check → report to you
+
+→ You: receive summary, confirm, done.
+```
+
+How does it know which tool for which job? Because it remembers — two months ago you mentioned "Claude Code is most reliable for refactoring," "opencode writes more thorough edge-case tests than Claude," "codex is conservative with security but doesn't miss things." These preferences live in its User Model. You never tell it twice.
+
+How does it know what to check after changes? Because it remembers — last time you did a similar async migration, the bugs were in "timeout scenarios not covered by tests" and "unclear transaction boundaries." That experience has crystallized into a Skill. Next similar migration, those checkpoints are automatically baked into the decomposition.
+
+## A Full Example: One Command, Three Specialists
+
+Thursday, 2 PM. You get a request: "Make order-service payments async. No order loss allowed."
+
+You tell Hermes one thing: "Handle it."
+
+Then it enters Brain Mode:
+
+**1. Analysis Phase (Hermes does it itself)**
+
+It reads `order-service/payment.ts` — 300 lines of code — and understands the existing sync flow: receive request → call payment gateway → deduct inventory → return result. Entire flow is serial; if the payment gateway times out, the request fails outright.
+
+It doesn't jump into code immediately. It asks you: "For the async payment callback — webhook or polling?"
+
+You reply: "Webhook."
+
+It stores this preference. Next time payment topics come up, it won't ask again.
+
+**2. Refactor Phase (Claude Code executes)**
+
+It writes a structured spec including: scope of changes (which files), business logic requirements (async dispatch, idempotent handling, webhook callback), caveats (no order loss, transaction boundaries). Then shells into Claude Code and hands it the spec.
+
+Claude Code works for three minutes in the `order-service/` directory, modifying three files. Hermes reads the diff, confirms changes are within expected scope — nothing touched that shouldn't have been.
+
+**3. Testing Phase (opencode executes)**
+
+It passes Claude Code's diff summary and original requirements to opencode: "Three files changed above. Update tests. Special attention to: webhook callback timeout scenario, idempotent duplicate delivery scenario, payment gateway timeout scenario."
+
+Where did those three "special attention" items come from? The Skill from the last similar project — those were exactly the three scenarios not fully tested, causing a post-launch incident.
+
+opencode adds 12 test cases. Hermes reads them, notices two cases don't exactly match Claude Code's actual changes. It sends the diff to opencode: "Re-check cases 5 and 9." opencode fixes them.
+
+**4. Security Phase (codex executes)**
+
+It invokes codex to scan the changes, focusing on SQL injection, concurrency safety, and transaction boundaries. Codex finds a missing idempotency check in the BullMQ job handler. Hermes passes this back to Claude Code to fix.
+
+**5. Aggregation**
+
+It collects all three outputs, cross-checks, and sends you a summary:
+
+> "Payment logic is now async. Claude Code modified 3 files under order-service; opencode added 12 test cases covering 5 key sync→async scenarios; codex found 1 missing idempotency check, Claude already fixed. Changes pushed to feature/async-payment branch. Run CI?"
+
+You reply with one word: "Run."
+
+The decision complexity and coordination workload rivals a small sprint. For you? Two sentences.
+
+## This Is the Right Division of Labor
+
+Claude Code is an elite programmer. But it's an **amnesiac programmer.** Every time you speak to it, you have to re-explain the project background, tech stack, your preferences.
+
+Hermes isn't a better programmer. It's an **engineering manager who remembers everything, knows you, coordinates, and knows who to assign what to.**
+
+An engineering manager doesn't need to write better code than their programmers. They need four things:
+
+1. **Know who's good at what** → Hermes's User Model and Memory — "opencode writes more thorough tests" wasn't decided today; it was recorded two months ago.
+2. **Decompose complex requirements into executable subtasks** → Hermes's reasoning + Skills — the "async migration" Skill, refined by last project's experience, now decomposes with surgical precision.
+3. **Remember past mistakes** → Hermes's Memory lifecycle management and Skill self-evolution — the three undertested scenarios from last time are automatically added this time.
+4. **Proactively sync information** → Hermes's cross-session capability + FTS5 search — all inter-tool information flow passes through Hermes internally, never through you.
+
+These four capabilities are on a completely different axis from "how well you write code." Claude Code is a perfect 10 on the former, a zero on the latter four.
+
+## Comparison: Claude Code Alone vs Hermes Brain Mode
+
+| | Claude Code Alone | Hermes Brain + Claude + opencode + codex |
+|---|---|---|
+| Context | Re-explained every session | Auto-recalled from Memory |
+| Multi-tool coordination | You do it manually | Hermes auto-orchestrates |
+| Security checks | Only if you remember | Auto-triggered (Hermes remembers you always check) |
+| Experience accumulation | Zero | Skills continuously evolve — next async migration is faster |
+| Information flow | Completely siloed between tools | Passes through Hermes internally |
+| Your role | Human API gateway + document translator | Just confirm and course-correct |
+
+This is the fullest form of "from Coding Agent to Living Agent." It's not competing on writing better code than Claude Code — that doesn't matter; that's what specialized tools are for. It's competing on something **you can't possibly compete on**: memory, growth, coordination, and understanding of you.
+
+---
+
+# IX. Imagination: How It Can Live in Your Work
 
 Theory and architecture done. Now let's open up imagination — a mature Hermes Agent you've used for three months, how can it weave into your daily work?
 
@@ -529,7 +649,7 @@ After a month, Hermes's code review Skill precisely knows your team's 15 unwritt
 
 ---
 
-# IX. Imagination: How It Can Live in Your Life
+# X. Imagination: How It Can Live in Your Life
 
 Agents aren't only useful when writing code. A 24-hour, cross-platform, memory-equipped, growing Agent can permeate your daily life.
 
@@ -589,7 +709,7 @@ Which is more valuable? Depends on what you want.
 
 ---
 
-# X. Honest Boundaries: Where It Falls Short
+# XI. Honest Boundaries: Where It Falls Short
 
 I'm not writing an ad. Hermes has real problems. Let me be clear.
 
@@ -635,7 +755,7 @@ Hermes has a command approval mechanism (`hermes config set approval_mode`) — 
 
 ---
 
-# XI. Questions You Might Have
+# XII. Questions You Might Have
 
 ## "How are Hermes Skills different from CLAUDE.md?"
 
@@ -695,9 +815,19 @@ If using Chinese models (DeepSeek, Qwen, MiniMax, Kimi, etc.), network is no iss
 
 If wanting Claude or GPT-4 — you'll need to solve network issues yourself. But that's not Hermes-specific; same for Claude Code.
 
+## "If Claude Code writes better code, why not just use Claude Code?"
+
+Yes, Claude Code's single-shot coding ability is genuinely stronger than Hermes's. But the question isn't "who writes better" — it's "who remembers, coordinates, and keeps improving after the writing is done."
+
+You use Claude Code to write a module. Two months later it needs changes — Claude Code doesn't remember the context of that change. You explain everything again. With Hermes Brain Mode, after it orchestrates Claude Code to write the module, Hermes remembers: what changed, why it changed that way, which edge cases were considered, which parts you weren't happy with. Two months later you just say "update that payment module from before" — Hermes recalls the context, then hands the spec to Claude Code to continue the work.
+
+And Claude Code has zero coordination ability. You can't make Claude Code call opencode to run tests then codex to do security scanning then aggregate results. Hermes can. Because that's exactly what it was designed for.
+
+So it's not "which one should I choose." It's "who should be the brain, who should be the hands." Best hands + best brain = optimal combination. And this combination's long-term value grows exponentially with time — because the brain gets smarter with use, while the hands keep getting stronger too.
+
 ---
 
-# XII. If You Want to Try
+# XIII. If You Want to Try
 
 If the above piqued your interest, here's the simplest way to start:
 
@@ -716,7 +846,7 @@ One tip: first time, have it do something you've done many times before — init
 
 ---
 
-# XIII. Decision Framework: When to Use What
+# XIV. Decision Framework: When to Use What
 
 After all that, here's a ruler for evaluating any new Agent product.
 
@@ -742,21 +872,23 @@ Care a lot (company code, client data, tech decisions, compliance) → local dep
 
 ## A Decision Table
 
-| Your Situation                                                 | Recommended Approach     |
-| -------------------------------------------------------------- | ------------------------ |
-| Occasional one-off Agent tasks                                 | Manus / ChatGPT / Claude |
-| Daily coding with real-time assistance                         | Claude Code / Cursor     |
-| Want a long-term partner that understands and evolves with you | Hermes                   |
-| Team needs automated workflows                                 | Coze / Dify / n8n        |
-| Want to tinker without writing code                            | Platform products        |
-| Need strongest single-shot reasoning + don't care about memory | Claude Code              |
-| Need memory + growth + cross-platform + local control          | Hermes                   |
+| Your Situation                                                 | Recommended Approach                                    |
+| -------------------------------------------------------------- | ------------------------------------------------------- |
+| Occasional one-off Agent tasks                                 | Manus / ChatGPT / Claude                                |
+| Daily coding with real-time assistance                         | Claude Code / Cursor / opencode                         |
+| Want a long-term partner that understands and evolves with you | Hermes                                                  |
+| Team needs automated workflows                                 | Coze / Dify / n8n                                       |
+| Want to tinker without writing code                            | Platform products                                       |
+| Need strongest single-shot reasoning + don't care about memory | Claude Code                                             |
+| Want both coding power AND memory/coordination                 | **Hermes Brain + Claude Code / opencode for execution** |
 
 This isn't about "who's better." It's about "what problem are you solving." Hammers for nails, screwdrivers for screws. Don't hammer screws, don't screwdrive nails.
 
+But if you want both — the best coding ability plus the best memory and coordination — the answer isn't one or the other. Let Hermes be the brain, let Claude Code be the hands. The Skills and Memory you spent three months tuning won't disappear because you used Claude Code for a specific task, and the most complex code is still written by the tools best at writing code. This is the optimal shape of the combination — right now.
+
 ---
 
-# XIV. A Bigger Question
+# XV. A Bigger Question
 
 At this point, I want to step back for a larger thought.
 
