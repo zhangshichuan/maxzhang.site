@@ -1,0 +1,1197 @@
+---
+title: 'When Convention Becomes a Burden: How AI Is Rewriting Frontend Framework Selection'
+summary: 'In 2016, we praised convention over configuration because conventions freed humans from XML hell. In 2026, we are embracing explicit over implicit because conventions are dragging AI into a quagmire of guesswork. This article traces three paths — Next.js, React Router v7, and TanStack Start — to unpack why AI-friendly frameworks share one clear design principle: compile implicit rules into explicit artifacts.'
+category: 'Frontend'
+tags: ['framework', 'convention-over-configuration', 'explicit-vs-implicit', 'tanstack-start', 'nextjs', 'react-router', 'remix', 'shadcn-ui', 'ant-design', 'ai-coding', 'type-safety']
+author: 'Max Zhang'
+date: '2026-06-15'
+---
+
+## 1. A Word Worth Missing
+
+2016. The year I entered the industry.
+
+Back then, React routing was a mandatory interview question. Next.js had just shipped 1.0, and Vercel was still called Zeit. I happened to be doing PHP — and in that world, Laravel reigned supreme.
+
+Laravel taught me a phrase: "convention over configuration."
+
+I remember my first Laravel project. I needed a user management module — CRUD, search, pagination. `php artisan make:controller UserController --resource` — one command, seven methods: `index`, `create`, `store`, `show`, `edit`, `update`, `destroy`. One line in the routes file: `Route::resource('users', UserController::class)`. No more configuration. Name your model `User`, and Eloquent automatically finds the `users` table. `User::find(1)->posts` automatically walks the `user_id` foreign key to the `posts` table. Validation sits in `FormRequest`, and the controller triggers it automatically.
+
+One line of `Route::resource`. Seven RESTful endpoints. Zero-config ORM. Automatic validation.
+
+That moment, the power of "convention" hit me. A framework you could trust, making all the decisions you shouldn't have to think about.
+
+Drop `UserController.php` into `app/Http/Controllers/`, write one `Route::resource` declaration, and seven RESTful endpoints are ready. Name your model `User.php`, and Eloquent finds `users` — plural, lowercase, underscore-delimited. You don't tell the framework the table name. The framework knows. Rails called this Convention over Configuration. The PHP community adopted it wholesale, treating it as orthodoxy.
+
+It felt genuinely good. You focused on business logic. Scaffolding, routing, ORM mapping — the framework handled it all. Ten people on a team, no meetings about "where do we put Model files, what naming convention do we use" — Laravel had already decided.
+
+Then the frontend started learning this trick. Next.js's App Router took "convention as routing" to its logical extreme:
+
+```
+app/
+  dashboard/
+    layout.tsx       ← implicit: this is dashboard's layout shell
+    page.tsx         ← implicit: this is dashboard's main page
+    loading.tsx      ← implicit: this is dashboard's loading skeleton
+    error.tsx        ← implicit: this is dashboard's error boundary
+    settings/
+      page.tsx       ← implicit: this is /dashboard/settings
+```
+
+The filename is the behavior. The directory tree is the route tree. You don't write `<Route path="/dashboard" component={...}>` — you create the right file in the right place.
+
+The entire industry called this progress. Less boilerplate, lower onboarding costs, unified team standards. Convention over configuration — these six words defined the design aesthetic of web frameworks for nearly the entire decade from 2010 to 2020.
+
+Until AI arrived.
+
+---
+
+## 2. Why Convention Was Right for Its Era
+
+To understand why it's wrong now, you have to understand why it was right then.
+
+Before 2010, building a Java web project was a configuration nightmare. You maintained `web.xml`, Spring bean XML, Hibernate mapping XML, `struts-config.xml`... one route mapping written in three places; change a controller name and you had to synchronize two config files. This was the extreme of "explicitness" — explicit to the point of redundancy. Humans wrote it tired, changed it scared, read it frustrated.
+
+Picture the daily grind of that era. You need to add a `/users/{id}` API. You need to: register a servlet mapping in `web.xml`, define an action path in `struts-config.xml`, declare a bean in Spring's `applicationContext`, write an ORM mapping in Hibernate's `.hbm.xml`. Five files working in concert. One file with the wrong name, and the entire chain breaks — and the compiler can't help you, because this "contract" lives at the moment the runtime reads XML.
+
+This was the old world that Rails overthrew in 2004.
+
+When Rails shouted "convention over configuration" in 2004, it solved a very specific engineering problem: **eliminate meaningless repetition**. If 99% of your controllers follow the same naming and directory rules, don't repeat the same mapping configuration across 99 projects. Write the rule into the framework once, and everyone benefits.
+
+Laravel learned a lot from Rails — ORM mapping, resource routes, artisan CLI — but it never treated CoC as its core philosophy the way Rails did. Its selling point was developer experience, not "you don't have to configure anything."
+
+But there's a premise here that's often overlooked: **this design was optimized for the human brain, not for machines.**
+
+The human brain has a capability that AI still can't match: **parallel visual scanning**. You open your IDE. The directory tree on the left is a complete two-dimensional map. You scan the file list under `app/Http/Controllers/` and in 0.5 seconds you know what modules the project has and their hierarchical relationships. The filename itself is information — you don't need to open `UserController.php` to know it handles users.
+
+The essence of "convention" is compressing behavioral information into filenames and directory positions. The human brain decompresses this information almost for free — you are inherently a powerful pattern-matching engine.
+
+To this day, if you work in a mature Rails or Laravel project, the "glance and understand" experience still holds. Framework conventions create extraordinarily high information bandwidth in the human cognitive system — the information you absorb in 0.5 seconds takes AI 5,000 tokens to reconstruct.
+
+At its core, "convention over configuration" is not a slogan. It is a precise tradeoff between human cognitive advantage and engineering repetition. Conventions trade human visual parallel processing for gains in writing efficiency — you outsource framework rules to filenames and directory positions, writing less repetitive config code, while human readers reconstruct the same information with a glance at the directory tree. In an era where humans dominated coding, this trade was worth it.
+
+But when the primary reader of code shifts from human to AI, that premise collapses.
+
+---
+
+## 3. AI Arrives and Everything Changes
+
+AI doesn't scan directories. AI reads files — **token by token, file by file, linearly**.
+
+When an AI coding agent faces Next.js's `app/dashboard/settings/page.tsx`, it sees a React component file. To fully understand this file's behavior, it needs to:
+
+1. Know that `page.tsx` is a "special filename convention" representing the main page component for this route — but this isn't written in the file; it's in Next.js documentation, stored in the framework's build logic
+2. Know this file's position in the directory tree — meaning it must first "read" the parent and sibling directories
+3. Know that `layout.tsx` in the parent directory wraps this component — cross-file inference
+4. Know that `loading.tsx` in the same directory is its Suspense fallback — another cross-file inference
+5. Know that if there's an `error.tsx` at the same level, that's its Error Boundary — yet another cross-file inference
+
+To understand a single route's complete behavior, AI needs to sequentially read 4 to 5 files and **simulate the human "glance at the directory tree"** in its context window — reconstructing the directory structure in its mind. These tokens could have been used to understand business logic, data flow, user requirements.
+
+Next.js has over 20 reserved filenames: `page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`, `template.tsx`, `default.tsx`, `not-found.tsx`, `route.ts`, `middleware.ts`... each with different semantics and nesting behaviors. AI must "know" all these conventions — not by reading them in any single file, but as **knowledge pre-trained into model weights**, or by consuming context window tokens to look up documentation.
+
+An AI's context window is a scarce resource. A top-tier model might have a 128K to 200K token window (some now support over a million) — sounds large. But when you stuff multiple files in, add conversation history, add the system prompt — the remaining token budget is tight. Filling it with "inferring framework conventions" means less room for "understanding business logic." **Every token spent guessing a convention is a potential reasoning error.**
+
+Here's the core contradiction:
+
+> **What once let humans write less code is now making AI make more mistakes.**
+
+Let's run a thought experiment. Suppose you ask AI to add a search feature to a Next.js `/dashboard/settings` route — filter data by the URL parameter `?q=xxx`.
+
+The AI's processing flow looks like this:
+
+Step one: it needs to understand the current route's structure. It searches the `app/dashboard/settings/` directory, reading files one by one — first `page.tsx` (to understand what the current page does), then `layout.tsx` (to understand what the outer layout wraps), then `loading.tsx` (to understand how loading states are handled). Only after reading three files does it know the route's complete rendering behavior. Cost: roughly 1,500-2,000 tokens.
+
+Step two: it needs to add parameter handling to `useSearchParams`. It knows `searchParams.get("q")` returns `string | null` — but it doesn't know if there are other valid parameters besides `q`, doesn't know `q`'s format constraints (minimum length? trim? encodeURIComponent?). It either "reverse-infers" from existing `searchParams.get(...)` calls in the codebase, or assumes `q` is the only parameter. This inference is based on **historical code usage patterns**, not on any compile-time schema definition. Cost: roughly 500 tokens of inference plus potential inference errors.
+
+Step three: if the project uses Server Actions for search submission, AI also needs to handle the `"use server"` boundary. Server Action inputs have no compile-time types — AI must read server-side code to infer the expected parameter shape, then construct matching calls on the client side. Type mismatches between sides? The compiler won't catch them. Only runtime will tell. Cost: roughly 1,000 tokens plus type mismatch risk.
+
+Total: to understand the context for one simple search feature, AI spent roughly 3,000-4,000 tokens on **reconstructing framework conventions**. The same requirement in TanStack Start — AI opens one route file, `validateSearch` tells it all valid search params and their types, `loaderDeps` tells it what parameters the loader depends on, `useSearch()` returns a compile-time-verified typed object. No cross-file inference. No reverse-engineering conventions. No "trusting" any implicit behavior.
+
+A 3,000-4,000 token gap isn't noticeable on one search feature. But if you're letting AI write code all day, the accumulated token consumption and inference errors become a perceptible productivity chasm.
+
+### 3.5 Human vs. AI: Two Reading Paths Through the Same Project
+
+Let's make this comparison more concrete. Imagine you're a newly onboarded developer facing a Next.js project's `app/dashboard/` directory. Here are your and AI's respective "comprehension paths":
+
+**The human reading path (parallel scanning, ~2 seconds):**
+
+You open your IDE. The directory tree expands on the left:
+
+```
+app/dashboard/
+  layout.tsx       ← instantly: this is the shell
+  page.tsx         ← instantly: this is the main content
+  loading.tsx      ← instantly: this is the skeleton
+  error.tsx        ← instantly: this is the error page
+  settings/
+    page.tsx       ← instantly: child route
+```
+
+You don't even need to open the files. Filename + directory hierarchy have already communicated 90% of the routing behavior. When your brain processes this directory tree, your visual cortex, pattern recognition system, and long-term memory ("I know Next.js conventions") work in parallel. Cognitive cost: near zero.
+
+**The AI reading path (linear scanning, ~12,000-15,000 tokens):**
+
+AI's first step: search the `app/dashboard/` directory. Discovers 5 entries. It doesn't know the relationships between these files — it only sees a list of filenames. It must open them one by one.
+
+AI opens `layout.tsx`: 200 lines, containing nav bar, sidebar, auth check. Cost: ~1,000 tokens. AI now knows the outermost layer of this directory is an authenticated layout.
+
+AI opens `page.tsx`: 150 lines, sees `useSearchParams()` and `useEffect`. Cost: ~800 tokens. AI infers this page depends on URL parameters, but doesn't know which ones are valid.
+
+AI opens `loading.tsx`: 30 lines. Cost: ~200 tokens. AI infers this is Suspense's fallback — but it needs to "know" that `loading.tsx` is a special filename in Next.js.
+
+AI opens `error.tsx`: 40 lines. Cost: ~250 tokens. Same — needs to "know" `error.tsx` is an Error Boundary.
+
+AI opens `settings/page.tsx`: 100 lines. Cost: ~600 tokens. Another child route.
+
+Total: AI read 5 files, consuming ~3,000 tokens on file contents, plus ~500 tokens of "framework convention knowledge" (knowing `loading.tsx` = Suspense fallback, `error.tsx` = Error Boundary, `layout.tsx` wraps child pages, etc.).
+
+**The key difference**: humans only need to read directory names. AI needs to read all file contents, then spend additional tokens matching framework conventions. One route directory is 0.5 seconds of perception for a human. It's 3,500 tokens of computation for AI.
+
+**This is not an AI flaw. This is the structural contradiction exposed when the "convention" design pattern undergoes a cross-species consumer migration.**
+
+---
+
+## 4. Three Frameworks, Three Paths
+
+If we line up the mainstream React full-stack frameworks of 2026 on an "explicit vs. implicit" spectrum, it looks roughly like this:
+
+```
+Pure Convention (Implicit)                    Pure Declaration (Explicit)
+    |                                              |
+  Next.js ──── React Router v7 ──── TanStack Start
+```
+
+Each point represents the framework's choices across four dimensions: route mapping, server/client boundary, search parameter types, and caching strategy.
+
+### 4.1 Next.js: The Framework Decides for You
+
+Next.js's design philosophy can be summarized in one sentence: **the framework knows what's best for your app. Trust it.**
+
+But this "paternalistic" design isn't just a slogan — it manifests in every API choice in the App Router.
+
+Before diving into criticism, a fair perspective: **Next.js's convention system is not a "wrong design." It is a design optimized to the extreme for one specific scenario.**
+
+If your website is the Vercel homepage, Next.js documentation, or an e-commerce product detail page — content-driven, SEO-sensitive, mostly static or semi-static pages — Next.js's conventions are perfect. Drop a Server Component in `page.tsx` and you automatically get SSR + ISR + streaming. You don't write any SSR configuration. In this scenario, "the framework decides for you" isn't arrogance — it's saving you from decisions you didn't need to care about.
+
+The problem: **Next.js became React's "default framework."** When every new project — whether a content site, admin system, or interaction-heavy SaaS — starts with `npx create-next-app`, a large number of projects develop a mismatch with its default philosophy. You're not choosing a framework suited to your scenario; you're using "the only option." And AI gets dragged into this mismatch — asked to write highly interactive code in an architecture optimized for static content.
+
+This isn't Next.js's fault. It's the inevitable cost of "one framework trying to serve all scenarios." But as a developer — especially one using AI — you need to recognize this mismatch and make more precise choices.
+
+**Route mapping**: pure filesystem convention. `app/dashboard/settings/page.tsx` is `/dashboard/settings`. The mapping rule exists in no readable file — it's in the framework's builder, in documentation, in the consensus between you and your colleagues. No single file lets you (or AI) see the global routing topology at a glance.
+
+The real problem is scale. Next.js's App Router has over **20 reserved filenames**, each with unique semantics and nesting behaviors. This isn't a list AI can "roughly know" — it must precisely match every convention when generating code:
+
+| Filename | Actual Meaning | AI Inference Difficulty |
+|----------|---------------|------------------------|
+| `page.tsx` | Main page component for the route | Low (most common convention) |
+| `layout.tsx` | Layout shell wrapping the route and all children | Medium (requires understanding nesting) |
+| `loading.tsx` | Loading skeleton inside Suspense boundary | Medium (must understand React Suspense) |
+| `error.tsx` | Error Boundary catching errors for the route | Medium (must understand Error Boundary) |
+| `template.tsx` | Like layout but remounts on every navigation | High (easily confused with layout) |
+| `default.tsx` | Default fallback for parallel routes | High (parallel routes themselves are niche) |
+| `not-found.tsx` | 404 page for the route | Medium |
+| `route.ts` | API route handler (not a page component) | High (one character different from page.tsx, completely different behavior) |
+| `middleware.ts` | Global request interception (at project root) | Low (position is fixed) |
+| `global-error.tsx` | Error Boundary for root layout | High (what's the difference from error.tsx?) |
+| `head.tsx` | `<head>` tag content (v13 beta convention, replaced by Metadata API in v13.2, never reached stable) | High (many old tutorials still reference it, remnants in AI training data) |
+| `opengraph-image.tsx` | Auto-generate OG images | High (a single file can do this?) |
+| `sitemap.ts` | Auto-generate sitemap.xml | High (same as above) |
+| `robots.ts` | Auto-generate robots.txt | Medium |
+| `icon.tsx` / `apple-icon.tsx` | Auto-generate favicons | High (another "one file = one feature" magic trick) |
+
+And that's not all. Parallel routes (`@modal`, `@sidebar` slots), intercepting routes (`(.)photo`, `(..)settings` interception syntax), route groups (`(marketing)` parenthesized directories) — every one is a variant of filename convention.
+
+**The AI's dilemma facing this convention dictionary**: it's not "reading a file to understand a route." It's "reading a directory tree + matching a 20-line convention dictionary + inferring each file's runtime role." If AI's training data mixes Next.js 13/14/15 content — and it does, because caching strategies and certain conventions changed between versions — AI might produce an answer that's correct for v13 and broken in v15.
+
+This isn't hypothetical. Have you seen AI write `getServerSideProps` in a Next.js project? That's the Pages Router API from before the App Router existed — in 2026, long since replaced by `async` Server Components. AI's "knowledge" is a massive probability distribution, and 20 reserved filenames + cross-version changes + deprecated API remnants give it a discount on correctness in this specific domain.
+
+Every mismatched convention means a "silent error" in AI-generated code — the code compiles, TypeScript doesn't complain, but the runtime behavior isn't what you wanted. Using `template.tsx` as `layout.tsx`? The page remounts on every navigation, all state is lost, and no compiler tells you "something's off here."
+
+### The `"use client"` Tax: A Real Workday
+
+Let's move the cost of `"use client"` from abstract to concrete.
+
+9 AM: You ask AI to add a search input to the Dashboard page. AI writes a beautiful `<SearchInput>` — `useState`, `onChange`, debounce — everything you'd expect. TypeScript doesn't complain. You hit save. White screen.
+
+Hydration error. Because `SearchInput` used `useState` inside a Server Component. AI needs to add `"use client"`. You tell it to. It does. Cost: one round-trip of correction, ~500 tokens of wasted generation + your time.
+
+10 AM: You want to extract the search input into a shared component `components/search-input.tsx`. AI moves it over. `"use client"` at the top of the new file. Then you discover one page imports it as a Server Component — that page needs its rendered output for SEO. But `"use client"` means it renders on the client, invisible to SEO. You need to redesign component boundaries. Cost: one architecture rework.
+
+2 PM: You review AI-generated code. 7 new files. 5 have `"use client"`. 2 don't — they're pure presentational components. But one component without `"use client"` uses a custom hook internally — and that hook calls `useContext`. Boom again. Cost: one code review debugging session.
+
+By end of day, you've interacted with `"use client"` at least 15 times. Each time consuming your attention and AI's context tokens.
+
+**This isn't `"use client"`'s fault. It's RSC architecture's design choice: Server is the default, client is the exception.** This design is reasonable for content sites (most content is static), but in interaction-heavy products, it has you writing "exception declarations" all day.
+
+Transplant this design philosophy to another engineering domain, and you'll see its absurdity: a building where all walls are load-bearing by default — want to hang a picture frame? Fill out a "non-load-bearing declaration." In a 10-story office building, 90% of the walls need this declaration. **The default value is designed for the minority scenario, while the majority scenario constantly writes declarations to fight the default.**
+
+**Server/Client boundary**: the default is Server Component. Every component runs on the server — unless you explicitly write `"use client"` at the top of the file. This is an "opt-out mechanism": you're not opting into interactivity; you're opting out of the server. If most components in your app need state, effects, event handlers — you'll see `"use client"` at the top of every file, like a medieval indulgence.
+
+**Search parameters**: `useSearchParams().get("q")` returns `string | null`. No schema validation. No type inference. If you expect `?page=3` to be a number — you'll find out at runtime.
+
+**Caching**: four layers of implicit caching, changing repeatedly across versions. Request Memoization, Data Cache, Full Route Cache, Router Cache — each layer has its own invalidation semantics, and those semantics changed between v13, v14, and v15. Your code didn't change a single line, but the behavior changed — because the framework changed the convention's default value.
+
+How serious is this? Here's a typical Next.js project experience:
+
+```tsx
+// Next.js 13 — this fetch caches forever by default
+// You deploy, three days later notice data isn't updating
+const data = await fetch('https://api.example.com/data')
+
+// Next.js 14 — caching strategy unchanged, but GET route handlers still cache by default
+// You fixed fetch's cache option, but didn't realize route handlers were caching too
+export async function GET() {
+  return Response.json(await db.query('...'))
+}
+
+// Next.js 15 — Breaking Change: fetch and GET route handlers no longer cache by default
+// But your old project won't auto-migrate — it survived on "trusting framework defaults"
+export const dynamic = 'force-dynamic'
+```
+
+Every version upgrade, you need to audit every `fetch` call, every route handler, every page and layout — not because you changed anything, but because the convention's default value changed. This is the classic cost of implicit behavior: **behavior is controlled by the framework, but behavioral changes are not controlled by you.**
+
+**Why the dev server is slow**: a common misconception needs clarification here. Turbopack is written in Rust and compiles as fast as esbuild and SWC. Next.js's dev server isn't slow because of "compiling JS into bundles" — it's slow because of **everything that happens outside compilation**: resolving the RSC dependency graph (distinguishing Server Components from Client Components), serializing the RSC Payload (rendering server components into an intermediate format), managing dependencies across four cache layers, coordinating the Server Action serialization pipeline.
+
+Vite's dev server is much simpler: on-demand ESM transforms, the browser handles module loading itself. No RSC dependency graph to compute. No intermediate serialization format. No implicit cache layers. TanStack Start inherits this layer — Vite or Rsbuild handles compilation, the framework doesn't add extra middleware on top. It's fast not because the compiler is faster, but because **the architecture is thinner**.
+
+### 4.2 React Router v7: The Standards-Pragmatist Compromise
+
+Remix was acquired by Shopify in 2022, then merged into React Router v7 at the end of 2024. The new version preserves Remix's core philosophy but exposes it through three modes:
+
+```
+Declarative Mode → Data Mode → Framework Mode
+  (fewest conventions)  (more conventions)  (most conventions)
+```
+
+The official docs say it directly: *"Pick your mode based on how much control or how much help you want from React Router."* — choose how much convention you want. This is a framework that admits, at the design level, that "conventions have a cost."
+
+It's more explicit than Next.js on the spectrum, but hasn't reached TanStack's extreme.
+
+**Where it's explicit:**
+
+Loader and action are exported functions. AI opens a route file, sees `export async function loader()` — it immediately knows this route has a data dependency, loaded before rendering. The behavior is declared in code, not inferred.
+
+Loaders receive standard Web `Request` objects and return standard `Response` objects:
+
+```tsx
+export async function loader({ request }: LoaderFunctionArgs) {
+  const url = new URL(request.url)          // standard Web API
+  const cookie = request.headers.get("Cookie")  // standard Web API
+  const user = await getUser(cookie)
+  return json({ user })
+}
+```
+
+`Request`, `URL`, `Response`, `FormData` — these are all standards you can look up on MDN. AI doesn't need to consult framework docs to understand the full capability boundaries of these objects. In contrast, Next.js's Server Actions abstract away `request` and `response` — you don't know how the data arrived, only that it "arrived."
+
+Remix also has a unique gene: **progressive enhancement**. A `<Form>`'s `action` is a standard HTTP POST — it still works when JavaScript is disabled. This means code behavior follows fundamental web rules, not framework-specific runtime magic.
+
+**Where it's implicit:**
+
+Filesystem routing is still convention — `routes/users.$id.tsx` maps to `/users/:id`. `$` is a dynamic parameter, `.` is nesting, `_index` is a pathless index route. This encoding is intuitive for humans but a "learned" syntax for AI.
+
+Search parameters are equally untyped: `useSearchParams().get("q")` → `string | null`.
+
+Types don't automatically flow: `useLoaderData<typeof loader>()` requires you to manually write the generic.
+
+`.client.tsx` and `.server.tsx` suffixes — conventions repackaged with different spelling, but still conventions.
+
+React Router v7 is an honest compromise. It embraces web standards, acknowledges conventions have costs, gives you choices. But it hasn't embedded type checking into the routing layer, hasn't automatically pushed loader types to components — these gaps mean AI still needs to "trust" conventions when writing code, rather than having them verified by the compiler.
+
+### 4.3 The Overlooked SPA World
+
+Before continuing with TanStack, there's an important perspective we can't skip.
+
+When comparing the "AI-friendliness" of three **full-stack frameworks**, it's easy to overlook one fact: not all web applications need SSR. If you're building a pure client-side SPA — an internal tool, a dashboard, an admin system that doesn't need SEO — you can skip Next.js, React Router v7 Framework Mode, and TanStack Start entirely. Just use Vite + React Router v7 Declarative Mode.
+
+In this case, the "routing convention" discussion simply doesn't exist — because you're writing `<Route path="/dashboard" element={<Dashboard />} />`, and the route mapping is an explicit declaration in code. No filename conventions to decode. No `"use client"` to add. No RSC dependency graph to compute.
+
+On this spectrum, an SPA is actually **more "explicit" than TanStack** — because it has zero framework-level implicit conventions. The cost: no SSR, no SEO, no build-time static optimization.
+
+This is an important reminder: **AI-friendliness isn't about maximizing one extreme.** Full-stack frameworks provide SSR and deployment convenience, but at the cost of introducing implicit conventions. SPAs have no implicit conventions, but at the cost of no SSR. Your choice isn't between a "better framework" and a "worse framework" — it's a tradeoff between "code structure that's friendlier to AI" and "loading performance that's friendlier to users."
+
+TanStack Start's interesting position: among full-stack frameworks, it comes closest to an SPA's level of "explicitness" — while retaining SSR capability. That's its unique spot on this spectrum.
+
+### 4.4 What If TanStack Start Doesn't Succeed
+
+A pragmatic question: TanStack Start is still in RC. What if it never achieves mainstream adoption?
+
+This isn't paranoia. Framework success doesn't depend on technical merit — it depends on ecosystem, community, tutorials, and the job market. Next.js has Vercel's resources, a decade of content accumulation, and its status as React's default recommendation. React Router has brand recognition dating back to 2014, plus the fresh momentum from the Remix merger. TanStack Start might not "win."
+
+But here's the key distinction:
+
+**You don't need the entire industry to use TanStack Start. You only need your project to use it.**
+
+TanStack Router is already mature enough (it predates Start by nearly a year, usable independently). TanStack Query is used by millions of projects. Vite is the most popular build tool of 2026. None of these are "might fail" projects.
+
+Even if TanStack Start itself doesn't become mainstream, its design patterns — end-to-end type safety, explicit declarations over implicit conventions, compiled artifacts over black-box mappings — are already the direction of frontend framework design in 2026. Next.js's typedRoutes is learning from it. React Router's type improvements are learning from it. New frameworks consider these designs at birth — because they've seen the demands of AI agents.
+
+**You're not choosing "TanStack Start" the specific framework. You're choosing the "explicit declaration + end-to-end types" technical path.** Even if TanStack doesn't pave this road, another framework will. Because the force pushing this road isn't Tanner Linsley's personal preference — it's the fundamental demand that AI agents, as new code consumers, place on framework design.
+
+Think of it differently: a framework's value to AI isn't about "what features it provides" — it's about "how much ambiguity it eliminates." When an AI agent opens a file, whether each line is "signal" or "noise" depends on the framework's philosophy. `createServerFn({ method: 'GET' })` is signal: it tells AI this is a read operation, server-side execution. `"use client"` is noise: it tells AI this file isn't the default, but it doesn't say what the default is. **Signal helps AI be correct. Noise helps AI not be wrong — at best.**
+
+Frameworks with more signal let AI run faster and make fewer mistakes. Frameworks with more noise make AI spend tokens, spend time — spending your money and your patience. This isn't a TanStack vs. Next.js competition. It's a "signal purity" competition. And AI is the harshest judge in this contest.
+
+Because AI doesn't forgive ambiguity. It doesn't skip implicitness. It doesn't "roughly know." It reads token by token, verifies line by line, every rule must be matched before it can continue.
+
+### 4.5 TanStack Start: Compiling Implicit Rules into Explicit Artifacts
+
+TanStack Start's design philosophy can be captured in a line from its own documentation:
+
+> *"The core bet: developers know their apps better than frameworks do. The framework should give you powerful primitives and get out of your way."*
+
+**Routing**: it also uses filesystem-based route organization. But the difference — it generates a **readable `routeTree.gen.ts`**. This file is the complete routing topology: every route's path, hierarchical relationships, loader dependencies, component bindings — all laid out before your eyes. AI reads one file and gets the global routing structure, no need to reconstruct the directory tree in its context window.
+
+**Server/Client boundary**: the default is Client Component. When you need server-side rendering — explicitly write `createServerFn` or a loader. AI's normal React code works the way you expect, no need to fight default behavior.
+
+**Search parameters**: this is where TanStack shines brightest. `validateSearch` validates search params at the route definition level:
+
+```tsx
+export const Route = createFileRoute('/')({
+  validateSearch: (search): { user: string } => ({
+    user: typeof search.user === 'string' ? search.user : '',
+  }),
+  loaderDeps: ({ search: { user } }) => ({ user }),
+  loader: async ({ deps: { user } }) => {
+    if (!user) return { user: null }
+    return { user: await fetchUser(user) }
+  },
+  component: Home,
+})
+```
+
+`validateSearch` → `loaderDeps` → `loader` → `component` — **an entire type chain, verified at compile time**. `Route.useSearch()` returns `{ user: string }`, not `URLSearchParams`. If you navigate with a non-existent search param, TypeScript catches it on the spot.
+
+**Caching**: explicit `staleTime` and `gcTime`, following SWR's universal semantics. No need to learn how many layers Next.js's four-tier cache has, or which layer changed defaults in which version. You write `staleTime: 10_000` — that means "use cache for 10 seconds." No need to understand the framework's caching philosophy.
+
+**Server Functions**: one primitive covers both read and write:
+
+```tsx
+// Read: GET
+const getTodos = createServerFn({ method: 'GET' })
+  .validator(z.object({ userId: z.string() }))
+  .handler(async ({ data }) => { ... })
+
+// Write: POST
+const createTodo = createServerFn({ method: 'POST' })
+  .validator(z.object({ title: z.string() }))
+  .handler(async ({ data }) => { ... })
+```
+
+In contrast, Next.js has three paths for reading (Server Component / Route Handler / Server Action for reads) and one for writing (Server Actions). TanStack covers all scenarios with one abstraction — AI only needs to learn one pattern.
+
+**Middleware**: TanStack's middleware model extends the explicit philosophy into another dimension. It's not just request-level middleware (similar to Next.js's `middleware.ts`) — it can also attach to individual server functions, and works on both client and server:
+
+```tsx
+// Auth middleware — can attach to entire app, specific route, or single server function
+const authMiddleware = createMiddleware()
+  .client(async ({ next }) => {
+    const session = await getSession()
+    if (!session) throw new Error('Not logged in')
+    return next({ context: { user: session.user } })
+  })
+  .server(async ({ next, context }) => {
+    // server-side context flows from client side with full type integrity
+    return next()
+  })
+
+// Attach to a single server function
+const deleteUser = createServerFn({ method: 'POST' })
+  .middleware([authMiddleware, auditMiddleware])
+  .handler(async ({ context }) => {
+    // context.user's type comes from authMiddleware
+    // AI doesn't need to guess what's in context — the type system tells it
+  })
+```
+
+Notice `.client()` and `.server()` — the same middleware can perform permission checks on the client (pre-check) and secondary verification on the server. Types flow from client to server, and the middleware chain's context types accumulate automatically. When AI writes an authenticated server function, it doesn't need to manually check the session in the function body — it just looks at the type of `context.user` and knows authentication has been done.
+
+Next.js's middleware is global — one `middleware.ts` file at the project root, controlled by `config.matcher`. It's powerful but implicit — AI opening a route handler won't see the middleware's existence unless it **first** reads the root middleware file and understands the matcher rules. TanStack's middleware is attached to the target function — explicit declaration, types flowing through.
+
+**The complete type chain trajectory**: let's trace a full TanStack type chain to see what it means for AI:
+
+```tsx
+// 1. search params validation → produces { q: string, page: number } type
+validateSearch: (search) => ({ q: search.q ?? '', page: Number(search.page) || 1 })
+
+// 2. loader deps declares dependencies → types from validateSearch return value
+loaderDeps: ({ search }) => ({ q: search.q, page: search.page })
+
+// 3. loader receives deps → return type auto-inferred
+loader: async ({ deps }) => {
+  const result = await api.search(deps.q, deps.page)
+  return { items: result.data, total: result.total }
+}
+
+// 4. component uses loader data → types from loader return value
+function SearchResults() {
+  const { items, total } = Route.useLoaderData()
+  // items: SearchItem[], total: number — the compiler knows
+  const { q, page } = Route.useSearch()
+  // q: string, page: number — the compiler knows
+}
+```
+
+When AI writes this component, it doesn't need to check API documentation to understand `result.data`'s type, doesn't need to reverse-infer how many fields `items` has. Every line of code it writes is type-safe — if it tries to use `q` as a number, the compiler says "wrong."
+
+Here's the completely different experience in the Next.js world:
+
+```tsx
+// Next.js — AI is "trusting" types are correct on every line
+export default async function Page({ searchParams }: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+  const { q, page } = await searchParams
+  // q: string | string[] | undefined
+  // page: string | string[] | undefined
+  // AI: is page a number? can q be undefined? no answer.
+  const data = await fetch(`/api/search?q=${q}&page=${page}`)
+  // this is string → string, no validation whatsoever
+  const result = await data.json() as any
+  // AI: what type is result actually? I have to check the API docs or read the api route's return code
+}
+```
+
+These two experiences produce a compounding effect on AI code generation quality. Every TanStack component with types automatically flowing through produces 2-3 fewer potential runtime errors than an equivalent Next.js component — humans aren't more careful, but compilers never miss.
+
+---
+
+## 5. `routeTree.gen.ts`: Not Configuration, but a Compilation Artifact
+
+You might ask: doesn't TanStack Start also use filesystem routing? What's the difference between `src/routes/index.tsx` and Next.js's `app/page.tsx`?
+
+The difference: **whether implicit rules have been compiled into explicit artifacts.**
+
+This analogy helps: TypeScript's type information disappears when compiled to JavaScript — there's no `interface User` at runtime. But you can see it in `.d.ts` declaration files. Declaration files are **compilation artifacts of types** — they're the type topology extracted from `.ts` source code, consumable by tools.
+
+`routeTree.gen.ts` is the "type declaration file" for routing conventions. The implicit mapping relationship of filesystem routing — `routes/users.$id.tsx` → `/users/:id` — has been **compiled** into a readable, TypeScript-traceable, AI-single-file-consumable route tree.
+
+AI doesn't need to reconstruct the directory structure in its context window. Reading one `routeTree.gen.ts` gives it:
+
+- Every route's complete path
+- Parent-child nesting relationships between routes
+- Which routes have loaders and which don't
+- How types flow from parent context to child routes
+
+This is **the core design principle of AI-friendly frameworks**:
+
+> **Any framework friendly to AI should "compile" implicit rules into machine-consumable explicit artifacts.**
+
+Filesystem routing itself isn't the problem. The problem is whether this mapping is externalized. Next.js hides the mapping in the builder's black box — it knows at runtime that `page.tsx` maps to which route, but this knowledge doesn't exist in any file you can open and read. TanStack writes it to `routeTree.gen.ts` — auto-generated, human-readable, directly consumable by AI.
+
+Both use filesystem-based route organization. But one makes AI guess; one lets AI read.
+
+Let's look at a concrete `routeTree.gen.ts`. Suppose your project has this file structure:
+
+```
+src/routes/
+  __root.tsx
+  index.tsx
+  dashboard.tsx
+  dashboard/
+    settings.tsx
+    users/
+      $userId.tsx
+```
+
+TanStack auto-generates something like this routing tree file (simplified):
+
+```tsx
+// routeTree.gen.ts — auto-generated, human-readable, AI directly consumable
+import { Route as rootRoute } from './routes/__root'
+import { Route as indexRoute } from './routes/index'
+import { Route as dashboardRoute } from './routes/dashboard'
+import { Route as dashboardSettingsRoute } from './routes/dashboard/settings'
+import { Route as dashboardUsersUserIdRoute } from './routes/dashboard/users/$userId'
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': { preLoaderRoute: typeof indexRoute }
+    '/dashboard': { preLoaderRoute: typeof dashboardRoute }
+    '/dashboard/settings': { preLoaderRoute: typeof dashboardSettingsRoute }
+    '/dashboard/users/$userId': { preLoaderRoute: typeof dashboardUsersUserIdRoute }
+  }
+}
+
+export const routeTree = rootRoute.addChildren([
+  indexRoute,
+  dashboardRoute.addChildren([
+    dashboardSettingsRoute,
+    dashboardUsersUserIdRoute,
+  ]),
+])
+```
+
+AI reads this one file and gets complete information:
+
+1. **All route paths** (four `FileRoutesByPath` interface declarations) — `/`, `/dashboard`, `/dashboard/settings`, `/dashboard/users/$userId`
+2. **Parent-child nesting** (`addChildren` calls) — `dashboardRoute` wraps settings and users
+3. **Component files for each route** (import statements) — traceable to source locations
+4. **Dynamic parameter markers** (`$userId` filename → `$userId` route parameter)
+
+With this "map," AI needs zero directory scanning to:
+
+- Navigate to `/dashboard/users/123`: confirm path exists, parameter name is `$userId`
+- Add a loader to the settings page: knows its parent routes are dashboard and root, can access parent context
+- Rename a route: TypeScript will flag all affected references
+
+This is the power of "compilation artifacts." It **serializes** the framework's internal rules — an implicit data structure that originally existed only in the builder's memory — into a file. Just as TypeScript discards type information when compiling to JavaScript but lets you preserve it through `.d.ts`, TanStack preserves routing conventions' "type information" in `routeTree.gen.ts`.
+
+Next.js isn't incapable of doing this. It simply chose not to — because in its philosophy, route mapping is "the framework's internal affair," something developers don't need to see. This choice was reasonable in the era of human-dominated coding, but in the era of AI-dominated coding, it becomes a perceptible disadvantage.
+
+### 5.1 How AI Actually Uses This "Map"
+
+Enough theory. Let's see how `routeTree.gen.ts` actually works in AI's hands with a concrete scenario.
+
+Suppose you tell AI: "Add an edit feature to `/dashboard/users/$userId` — clicking a user row enters edit mode, URL becomes `/dashboard/users/123?edit=true`."
+
+**In a Next.js project, AI's execution steps:**
+
+1. Search `app/dashboard/users/` directory, find `[userId]/page.tsx` — cost: 1 file search
+2. Read `page.tsx`, confirm current component structure — cost: 1 file read
+3. Infer that `[userId]` is the dynamic parameter `userId` — cost: framework convention knowledge
+4. Check if there's a `layout.tsx` wrapping this page — read another file
+5. Confirm `useSearchParams` is imported — search inside the component
+6. Add `edit` parameter to navigation logic — AI writes `router.push('/dashboard/users/123?edit=true')` — this is a string, TypeScript doesn't validate whether the parameter name is correct
+7. Write `searchParams.get('edit')` in the component — TypeScript returns `string | null`, doesn't validate whether `'edit'` is a valid parameter
+
+**In a TanStack project, AI's execution steps:**
+
+1. Read `routeTree.gen.ts` — one `addChildren` chain confirms `/dashboard/users/$userId`'s complete path, parent route context, and parameter name — cost: 1 file read, acquires global routing topology
+2. Open `routes/dashboard/users/$userId.tsx` — `validateSearch` already declares all valid search params
+3. AI adds an `edit: boolean` parameter in `validateSearch` — write 2 lines of code
+4. TypeScript immediately prompts: all `Route.useSearch()` call sites now have `edit: boolean` type
+5. AI writes `navigate({ search: { edit: true } })` — TypeScript validates the parameter exists and its type is correct
+
+**Two projects, same requirement. Next.js version: AI performed 6 operations, consumed ~2,500 tokens, relied on 3 framework convention inferences. TanStack version: AI performed 5 operations, consumed ~800 tokens, every step compiler-verified.**
+
+A 1,700 token saving means nothing in a single operation. But 100 interactions in a day — that's 170,000 tokens, approaching the single-shot context window limit of a mid-range model. And these tokens weren't spent on "understanding requirements" — they were spent on "reconstructing framework conventions."
+
+---
+
+## 6. What If Next.js Generated `route.gen.ts` Too?
+
+This is a rebuttal that must be confronted head-on.
+
+Technically, of course it's possible. Next.js could add a `routeTree.gen.ts` in the very next version. In fact, typedRoutes is already moving in this direction — statically generated route link types.
+
+But there are four layers to this problem.
+
+### Layer 1: It Would Be a Retrofitted Patch, Not the Foundation
+
+`routeTree.gen.ts` in TanStack is the **starting point** of the entire type inference chain. `validateSearch`'s return type → `loaderDeps`'s types → loader's return type → component's props type — the root of this chain is in the route tree file. It's not an auxiliary convenience feature; it's a structural component of the type system.
+
+In Next.js, even if a route tree file were generated, it would only be an auxiliary output layered on top of the existing architecture. Types wouldn't automatically flow from the route tree to search params → loader → component. Because Next.js's search params have no schema, loaders have no route-level type context, and Server Action boundaries are type black holes.
+
+One is sticking a map on the outside of an existing house. The other has the map as the house's foundation itself. Both look like "making routes visible," but the underlying type infrastructure is completely different.
+
+### Layer 2: The Generated File Is Only One Piece of the Puzzle
+
+Even if Next.js had a route tree, AI opening a route file would still face:
+
+```tsx
+// app/dashboard/page.tsx
+'use client'
+
+import { useSearchParams } from 'next/navigation'
+
+export default function DashboardPage() {
+  const searchParams = useSearchParams()
+  const q = searchParams.get('q') // string | null — AI: what values can q actually be?
+  const page = searchParams.get('page') // string | null — should be a number, but nothing guarantees it
+  // ...
+}
+```
+
+`searchParams.get("q")` is forever `string | null`. There is no way to say at compile time "this route's valid search params are `{ q: string, page: number }`." AI needs cross-file reading, runtime validation, and mentally maintaining a checklist of "which params are used by which components" to understand this route's complete API surface.
+
+Contrast with TanStack's equivalent:
+
+```tsx
+// src/routes/dashboard.tsx
+export const Route = createFileRoute('/dashboard')({
+  validateSearch: (search) => ({
+    q: typeof search.q === 'string' ? search.q : '',
+    page: typeof search.page === 'string' ? parseInt(search.page) : 1,
+  }),
+  loaderDeps: ({ search }) => ({ q: search.q, page: search.page }),
+  component: Dashboard,
+})
+
+function Dashboard() {
+  const { q, page } = Route.useSearch()
+  // q: string, page: number — AI: got it, these are the only valid parameters, types are clear
+}
+```
+
+AI reads one file. Knows the route path, valid search params and their types, loader dependencies. All compiler-verified. No guessing. No documentation lookup. No cross-file inference.
+
+### Layer 3: Defaults Determine AI's Daily Friction
+
+Framework competition isn't about "who has a certain feature" — it's about "whose defaults are closer to your needs."
+
+Next.js's default: you are a Server Component. Need state? Write `"use client"`. Need event handling? Write `"use client"`. Need `useEffect`? Write `"use client"`.
+
+If most components in your app need interactivity — and most product apps do — then AI is fighting the framework's default on every single component. Every `"use client"` line is a wasted context token.
+
+TanStack's default: you're a normal React component, with state, effects, event handlers. Server optimization is something you opt into when you need it. AI writes whatever it encounters, no need to fight default behavior.
+
+**A framework that makes AI spend 20% of its tokens writing code that fights the defaults isn't just 20% more token consumption than another framework — it's 20% more opportunities for error.**
+
+### Layer 4: Competition Will Make All Frameworks Better, But Philosophies Are Incompatible
+
+Next.js will definitely add more type safety. Turbopack is chasing Vite's speed, typedRoutes is chasing TanStack Router. Competition is good — it pushes all tools forward.
+
+But two things can't be changed through feature iteration:
+
+One is **default direction**. Next.js's core bet is "most web content is static; interactivity is the exception." This assumption is reasonable in Vercel's business model — static content is cache-friendly, CDN-friendly, low-cost. But this assumption conflicts with the reality of most product applications. As long as this default doesn't change, AI will pay a token tax for a mismatched philosophy.
+
+The other is the **"verifiability" constraint on API design**. TanStack's Tenet #4 writes *"surprising defaults treated as a bug"* into their project evaluation criteria. This means every new API proposal must answer: "Is this behavior predictable? Can AI understand it by reading the code rather than documentation?" Next.js has no such constraint — its optimization goals include "automatically achieving the best performance on Vercel." Automatic optimization is usually implicit — you don't need to know how caching works; it just works by itself. Until it doesn't.
+
+When these two sets of priorities collide, they produce fundamentally different API designs. You won't see Next.js writing `staleTime` next to every route's loader — because its philosophy is "the framework manages caching for you." You also won't see TanStack introducing an implicit cache layer whose trigger conditions you can't predict — because its constitution says "surprising defaults are a bug."
+
+**Architecture can be caught up to. Philosophy cannot. Because philosophy determines "what counts as a bug."**
+
+This last point deserves expansion. Imagine two framework teams in internal review.
+
+Next.js's team sits together reviewing a new API. Their optimization checklist goes roughly: 1) automatically achieve best performance on Vercel, 2) reduce developer configuration burden, 3) backward compatibility. When designing caching strategy, "automatic caching" is a reasonable default — because cache = fast, fast = good user experience, and developers don't need to know the details. When does cache invalidation happen? "The framework knows." How do developers override? "It's in the docs."
+
+TanStack's team sits together reviewing the same scenario. Their checklist is: 1) behavior must be predictable from code, 2) APIs must be explicit without being verbose, 3) surprising defaults are bugs. When designing caching strategy, `staleTime: 10_000` is the only correct answer — because whatever the value is, **it's written right there**. AI can read it. Humans can read it. The compiler can traverse it.
+
+Same feature. Two teams. Two completely different answers. Not because one team is smarter than the other. Because their "what counts as a bug" is different.
+
+In Next.js's philosophy, implicit caching is not a bug — it's a feature. In TanStack's philosophy, implicit caching **is a bug** — no matter how elegantly designed, no matter how reasonable the default value, as long as developers (and AI) need to consult documentation to know the caching behavior, it's a design flaw.
+
+This is why "Next.js can also add `route.gen.ts`" doesn't fully solve the problem. It can add type safety. It can provide more explicit hooks. It can improve dev server startup speed. These will all improve the AI experience, push Next.js forward through competition, and benefit all developers.
+
+But it won't write "surprising defaults are a bug" into its evaluation criteria — because many of the optimizations its business model depends on (automatic caching, automatic image optimization, RSC streaming) are built on the assumption that "the framework decides for you." Defining "surprising defaults" as a bug means all these automatic optimizations would need explicit, single-file-verifiable override mechanisms. This isn't a technical difficulty problem — it's a fundamental tension between philosophical direction and business model.
+
+---
+
+## 7. This Is Not "Configuration Regression"
+
+Reading this far, you might have an intuition: isn't this just "configuration over convention" — the very thing Rails overthrew — coming back?
+
+No. The "explicit declaration" of 2026 and the "XML configuration" of 2010 are not the same thing.
+
+| Dimension | 2010 XML Configuration | 2026 Explicit Declaration |
+|-----------|----------------------|--------------------------|
+| Medium | Strings (XML / YAML / JSON) | TypeScript code |
+| Validation | Crashes at runtime, or IDE plugins guess | Compile-time type checking |
+| Redundancy | High — same mapping structure repeated per route | Low — type inference eliminates most repetition |
+| Core action | Fill in string values | Write executable, typed code |
+| Information density | Low — same XML template appears repeatedly | High — declaration and implementation in one place |
+
+Spring XML in 2010 was **verbose explicitness**: you told the framework every route, every bean, every ORM mapping — even when they were identical to 99% of all other scenarios.
+
+`createFileRoute` in 2026 is **typed explicitness**: you declare a route and automatically get search param validation, loader deps inference, component props types. You **don't write** what can be derived, but you **explicitly declare** the key parameters that determine behavior.
+
+TanStack's own documentation puts it precisely:
+
+> *"TanStack Start is explicit without being verbose. Loader functions, cache configuration, middleware chains — they're visible in your code, not hidden behind conventions. This doesn't mean more code; it means the code you write maps directly to what happens at runtime."*
+
+**"Explicit but not verbose"** — that's the key phrase. Not writing more code, but making the code you write directly correspond to runtime behavior. No inferring from filenames. No guessing from directory hierarchies. No assuming "trust me, the framework knows."
+
+The best way to understand this distinction is to compare the same route in two extremes. 2010 Java + Spring XML: 50 lines scattered across 3 files. 2026 TanStack: 15 lines in one file. Next.js's convention approach: create 1 file — but the cost is that you (and AI) need to "know" what that file's filename means. What's saved isn't lines of code; what's saved is encoding behavioral declarations in filenames. And AI pays context tokens to decode those behavioral declarations.
+
+---
+
+## 8. The Same Logic Mirrored in UI Components
+
+Let's stop talking about code. Here's a story you can see.
+
+You have a project using Ant Design. The product manager says: "After clicking the login button, a ripple should expand from the click position — the color should match the dominant color of the user's avatar."
+
+You open Ant Design's Button documentation. Five `type` variants. Three `size` variants. Three `shape` variants. No ripple direction. No dynamic color.
+
+You open `node_modules/antd/es/button/` — there's the source code. You can read it. AI can read it. You could even modify it — change the ripple CSS animation to expand from the click position.
+
+Then you `npm install` a new version. All your changes, gone. You were renovating someone else's house. The property management restored it during inspection.
+
+You have another project using shadcn/ui. The same requirement arrives.
+
+Your project has a `components/ui/button.tsx`. Fifty lines, every one of them yours. AI reads it, understands it, modifies it — 12 lines changed, committed, deployed. Modifying your own code, preserved in your git history, the next `npm install` won't erase it.
+
+This isn't a question of "which component library looks better." This is a question of **code ownership**.
+
+**AI isn't stupid. AI can read antd's source code. But whether the code it modifies can become part of your project — that question has nothing to do with AI's capability and everything to do with where the code lives.**
+
+In `node_modules` — you're a tenant, you have usage rights but no ownership. In `components/ui/` — you're the landlord, your name is on the deed.
+
+Let's make this concrete. Suppose the product manager wants to replace antd's default spinning icon with a skeleton shimmer animation in all button loading states. The antd approach:
+
+```tsx
+// This is all you can do — pick from antd's prop menu
+import { Button } from 'antd'
+
+<Button loading={{ icon: <SkeletonPulse /> }}>  // ← Nope. loading only accepts boolean or { delay: number }
+  Submit
+</Button>
+```
+
+You check the docs. The `loading` prop's type is `boolean | { delay?: number }`. Can't customize the icon. Can't customize the animation. You want to `import { Button } from 'antd'` and directly modify its internal structure — can't do it, because `Button`'s implementation is in `node_modules`.
+
+You're forced to wrap it with a `Spin` component, or use CSS hacks to override antd's internal classNames. Neither approach truly solves the problem — you're just "simulating" a behavior that doesn't exist.
+
+The shadcn approach:
+
+```tsx
+// components/ui/button.tsx — your source code, modify however you want
+import { Slot } from '@radix-ui/react-slot'
+import { cva, type VariantProps } from 'class-variance-authority'
+
+const buttonVariants = cva(
+  'inline-flex items-center justify-center rounded-md text-sm font-medium',
+  {
+    variants: {
+      variant: {
+        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+        // ...
+      },
+    },
+  }
+)
+
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean
+  loading?: boolean
+  loadingContent?: React.ReactNode  // ← you added this
+}
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, loading, loadingContent, children, ...props }, ref) => {
+    const Comp = asChild ? Slot : 'button'
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        disabled={loading || props.disabled}
+        {...props}
+      >
+        {loading ? (
+          loadingContent || <SkeletonPulse />  // ← your own loading state
+        ) : (
+          children
+        )}
+      </Comp>
+    )
+  }
+)
+```
+
+You added 4 lines of code: one `loadingContent` prop, one ternary check. Sixty seconds. Committed, version controlled, the rest of the team pulls it down and it works. Can antd do this? It can — in the next major version, if their team decides to add this feature. You know how long that process takes.
+
+This isn't about "shadcn being easier to write than antd." Writing an antd button is already fast — `<Button type="primary">Submit</Button>` is one line. The problem is when requirements **cross the boundary of the prop menu** — in the antd world, everything you can do is wait, hack, or give up. In the shadcn world, you open the source file and change it. Like changing any other code you wrote yourself.
+
+This is the question you need to answer in the AI era: **do you want the convenience of one line of code, or the freedom of unlimited modification?** Before AI wrote code for you, convenience was more valuable. After AI writes code for you — when AI can modify a component for you in 60 seconds — freedom suddenly becomes far more important than convenience.
+
+As for antd 5's Design Token system — `ConfigProvider` with `token: { colorPrimary: '#xxx' }` — it solves the "uniform theming" problem, not the "free customization" problem. Tokens cover roughly 100 variables that the antd team decided to expose. Ripple direction isn't among them. Click coordinates aren't among them. The button's internal DOM structure isn't among them. What you need isn't re-theming — you need to add a custom interactive behavior inside a button.
+
+This is the dividing line between shadcn/ui and antd in the AI era: **one gives you configuration rights, the other gives you source code.**
+
+This dividing line isn't an isolated case. In the 2026 frontend ecosystem, the same spectrum appears across more library comparisons:
+
+| Library | Ownership Model | AI's Operating Range | Deep Customization Path |
+|---------|----------------|---------------------|------------------------|
+| **Ant Design** | Dependency (node_modules) | Props menu (`type`, `size`, `variant`) | Wait for major version update, or CSS hack |
+| **MUI** | Dependency (node_modules) | Props + `sx` prop + theme overrides | `createTheme()` can change styles, can't change internal DOM |
+| **TDesign** | Dependency (node_modules) | Props + CSS variable overrides | Same ceiling as antd |
+| **shadcn/ui** | Source code (components/ui/), built on Radix UI primitives | Entire component, every line, every DOM node | Open file, directly modify; behavioral logic provided by Radix, styles and structure are yours |
+| **Radix UI** | Dependency (node_modules) + render props | Behavioral logic in dependency (also shadcn's behavioral foundation), full style freedom | 100% style control, ~80% structure control (slot/className passthrough) |
+| **Ark UI** | Dependency (node_modules) + render props | Similar to Radix, multi-framework support | Partial style and structure control |
+
+Notice the pattern: dependency = configuration rights. Source code = ownership. And AI's value is helping you exercise ownership.
+
+> **A nuance worth acknowledging**: shadcn/ui's "ownership" isn't 100% dependency-free. shadcn's component source code heavily uses Radix UI primitives — Dialog's accessibility focus management, DropdownMenu's keyboard navigation, Select's popup positioning — these complex behavioral logics still live in `node_modules/@radix-ui`. What you own in the "source code" is primarily the styling layer and structural layer; the behavioral layer still depends on a third party. But this is a major step forward from antd's complete black-box model: when Radix's behavior meets your needs, you only need to modify styles and structure; when it doesn't, you can progressively replace shadcn components' Radix dependencies with your own implementations — because you're the landlord, you can replace load-bearing walls, even if that process is harder than changing wallpaper. In the antd world, you don't have that option.
+
+**If you only have configuration rights, AI can help you pick the best prop combination. If you have ownership, AI can help you reshape the entire component into whatever you imagine.** The former's ceiling is the antd team's design velocity. The latter's ceiling is your imagination — and AI's execution speed.
+
+---
+
+## 9. How TanStack Officially Articulates Its Philosophy
+
+I've said a lot about "my understanding." Here are primary sources — TanStack in its own words.
+
+### Organizational Ethos
+
+At [tanstack.com/ethos](https://tanstack.com/ethos), TanStack lists four organizational principles:
+
+**1. Independently Owned, Unbiased by Design**
+
+> *"TanStack is independently operated with no controlling interests over our technical direction and no hidden agendas."*
+
+No VC. No platform bias. No benefactor dictating technical direction. Contrast with Next.js's relationship to Vercel — a framework optimized for one platform — TanStack's choice: **bind to no platform.**
+
+**2. Technology-Agnostic by Default**
+
+> *"framework-agnostic, platform-agnostic, and future-proof tooling"*
+
+The only technology preference is TypeScript — or typed JavaScript. Everything else: frameworks, platforms, deployment environments — all neutral.
+
+**3. A Sustainable Future**
+
+> *"Instead of chasing growth at all costs, we focus on sustainable growth that prioritizes developer experience, community needs, and long-term value creation."*
+
+No burning cash. No chasing VC metrics. No sacrificing developer experience for growth. This isn't lip service — counting from React Query's birth in 2019, this bootstrapped model has run for over six years. TanStack as an organizational brand, since its founding in 2022, has sustained it for over four years.
+
+**4. Open Partners**
+
+> *"No partner can dictate or influence TanStack's core technology in a way that biases it toward their platform."*
+
+Partners can support, but cannot bias core APIs toward themselves. This is written directly into the project's constitution.
+
+The closing line sets the tone for the entire document:
+
+> *"TanStack isn't just a set of libraries — it's a commitment to building the web on your terms, without compromise."*
+
+If you read that and it sounds like PR — I understand. But combined with the four specific Ethos clauses (independent operation, technology-agnostic, sustainable growth, platform-neutral), it's not an empty manifesto. It's a verifiable commitment made by a commercial entity in public documentation. You're betting on whether this commitment will be broken — just as you're betting on whether Next.js will continue optimizing for Vercel, and whether React Router will maintain its web standards priority within Shopify's ecosystem.
+
+### Product Tenets
+
+At [tanstack.com/tenets](https://tanstack.com/tenets), they list four technical principles. Each one has a "What this rules out" counter-list — it's not just saying "what we value," but also "what we reject." The format is reminiscent of Rust's RFC process.
+
+**Tenet 1: Open, Independent, Technology-Agnostic**
+
+> *"Every TanStack library starts with a provider-agnostic core, with integrations layered on top as optional adapters — never as the foundation."*
+
+Explicitly rejects: vendor-preferred APIs, "all-in on X vendor" contributions, features that bind to specific cloud platforms.
+
+**Tenet 2: Composable, Platform-Aligned Primitives**
+
+> *"We build focused, composable primitives that embrace the platform rather than hiding it."*
+
+Explicitly rejects: all-in designs, "one framework to rule them all" abstractions, black boxes that hide platform capabilities.
+
+Note the phrase "Embrace the platform" — they're talking about embracing the Web, HTTP, JS/TS, the server itself, not inventing new abstraction layers to hide the platform.
+
+**Tenet 3: Pragmatic, Production-Grade Quality**
+
+> *"We design around real-world workloads, edge cases, and long-lived apps — not just happy-path demos."*
+
+A feature isn't done until its maintainers would run it in their own revenue-critical applications. Performance isn't nice-to-have; it's baseline.
+
+**Tenet 4: Predictable, Explicit, Type-Safe Behavior**
+
+This is the one most directly relevant to our discussion. Key passages in full:
+
+> *"We minimize magic and maximize clarity. State, side effects, and data flow should be understandable from code, not guessed from hidden behavior."*
+
+> **"Explicit over implicit: Important behaviors are explicit in APIs and configuration, with surprising defaults treated as a bug."**
+
+> *"Type safety as leverage, not dogma: TypeScript support should guide correct use and catch real bugs without drowning users in generics."*
+
+"Surprising defaults treated as a bug" — this isn't a casual preference statement; it's a hard evaluation criterion for project reviews. A PR that introduces implicit behavior doesn't need someone to complain before it counts as a problem — implicitness itself is the problem.
+
+This isn't rigor for rigor's sake. It's a working environment prepared for AI. When your project's constitution says "surprising defaults are bugs," you're telling every contributor — including AI — "you don't need to guess this API's behavior. It's written in the code. If it's not in the code, that's the API's fault, not yours."
+
+### Start's Position on Type Safety
+
+TanStack repeatedly emphasizes end-to-end type safety as its core competitive advantage in its tenets documentation. Their Start Overview page lists "End-to-End Type Safety" as a core framework feature: "Full TypeScript support across the entire stack." They didn't write the words "AI era" in their documentation — but their design principles happen to align perfectly with AI's needs. When a framework makes "types flowing through the entire stack" a design goal and writes "surprising defaults treated as a bug" into its evaluation criteria, it's not just designing APIs for human developers — it's preparing itself to enter AI agents' workflows.
+
+Their diagnosis when comparing to Next.js is also remarkably precise:
+
+> *"Next.js layers implicit behaviors: multi-layer server-side caching with a history of breaking changes and community frustration, data fetching conventions tied to file structure, optimizations that require understanding the framework's internals to override."*
+
+It's not "Next.js is bad." It's "Next.js's design defaults make AI reasoning costs too high."
+
+---
+
+## 10. RSC: The Ultimate Form of Convention-Based Design
+
+This article has spent extensive space discussing "filesystem routing" and "server/client boundaries" — but a deeper question has been hanging over it all: is React Server Components (RSC) itself the ultimate product of the "convention over configuration" philosophy?
+
+The answer might be: yes, and it pushes convention's "AI unfriendliness" to the extreme.
+
+### RSC's Boundaries Are Implicit
+
+In the RSC model, whether a component is a Server Component or Client Component is determined by its **file location** and **import relationships** — not by the component's own code.
+
+```tsx
+// components/user-avatar.tsx
+// This is a Server Component. Why? Because it doesn't have "use client".
+// No code tells you this. You can only infer it from "it doesn't have that directive."
+export async function UserAvatar({ userId }: { userId: string }) {
+  const user = await db.user.findUnique({ where: { id: userId } })
+  return <img src={user.avatarUrl} alt={user.name} />
+}
+```
+
+This component uses `await`, queries a database — so it's a Server Component. But AI can only reach this conclusion through **inference**: check if the file top has `"use client"` → no → infer it's a Server Component → confirm it can directly access the database.
+
+If AI reads this file in an "incomplete" context — for example, it's only given the file content without the top directive line — it cannot determine which side this component can run on.
+
+TanStack's equivalent:
+
+```tsx
+// In @tanstack/react-start, server code is explicitly wrapped
+const getUserAvatar = createServerFn({ method: 'GET' })
+  .validator(z.string())
+  .handler(async ({ data: userId }) => {
+    const user = await db.user.findUnique({ where: { id: userId } })
+    return { avatarUrl: user.avatarUrl, name: user.name }
+  })
+
+// The component itself is a normal Client Component
+function UserAvatar({ userId }: { userId: string }) {
+  const { data } = useQuery({ queryKey: ['avatar', userId], queryFn: () => getUserAvatar(userId) })
+  return <img src={data.avatarUrl} alt={data.name} />
+}
+```
+
+Server code in one place (`createServerFn`). Client code in another (`useQuery` + component). AI doesn't need to infer — the Server Function boundary is **written in the code**.
+
+### RSC's Serialization Format Is Implicit
+
+After Next.js's RSC finishes server-side rendering, what's sent to the browser isn't HTML — it's a special serialization format (React Flight Protocol). This format is implemented internally by React, with incomplete documentation, imperfect debugging tools, and separate parsers on the server and client sides.
+
+This means: **when AI debugs an RSC rendering bug, it's debugging a data stream it can barely "see."** The component's output isn't HTML — you can't "view source" to see what the server rendered. It's a text line-delimited RSC Payload (React Flight Protocol) — while the underlying transport is a UTF-8 text stream, not binary, its format is React's internal private protocol — the `hexId:tag[JSON]\n` line structure is nearly unreadable for debuggers, and equally opaque for AI.
+
+TanStack Start's SSR output is HTML. AI can read it. Can debug it. Can "view source." RSC's serialization black box is an absolute information barrier for AI.
+
+### RSC's Caching Is Implicit — And Changing
+
+We discussed Next.js's four-layer cache in section four. RSC makes this problem more complex: because RSC Payload caching and HTML caching are two independent mechanisms, and RSC's "component caching" is a Next.js-specific concept — "caching a serialized React component stream." No universal HTTP caching strategy maps directly onto RSC caching semantics.
+
+When AI writes data-fetching code for Next.js, what it needs to consider isn't "how to cache data" — that's a universal problem — but "how long will this component be cached in the RSC stream, what are the invalidation conditions, and is this behavior consistent across v13/v14/v15." These questions have no compiler-provided answers, no schema-based verification. They exist in Next.js's runtime and documentation.
+
+### This Is Not Opposition to RSC
+
+React Server Components solves a real problem: moving data fetching to the server, reducing client bundle size. But its implementation approach — based on implicit boundaries, filesystem conventions, private serialization formats, multi-layer caching — is the extreme complexity that "convention over configuration" can achieve in 2026.
+
+If a future "explicitized" version of RSC emerges — similar to how TanStack compiles filesystem routing into `routeTree.gen.ts`, compiling server/client boundaries into readable declaration files — it would make RSC an order of magnitude friendlier to AI.
+
+Until then, RSC is a powerful technology whose design assumptions did not include AI agents as consumers.
+
+This isn't RSC's fault. When the React team designed RSC (2020-2022), AI coding agents weren't yet a mainstream use case. They were optimizing the data-fetching experience for human developers — replacing the `useEffect` + `fetch` waterfall with direct server-side queries. That optimization was tremendously successful.
+
+But the reality of 2026 is: AI may read code more than humans do. When a technology is designed without "being read by AI" as a requirement, its API surface accumulates implicit complexity — not because the design is bad, but because the design's consumer persona has changed.
+
+### RSC's "Knowledge Version Pollution" for AI
+
+Here's an underappreciated problem. RSC was introduced in React 18 (2022), stabilized in React 19 (2024), first supported in Next.js 13 (2022), with Next.js 14 (2023) and 15 (2024) continuously adjusting behavior. RSC's API surface, `"use client"` semantics, caching strategies, Server Action serialization — all in flux.
+
+AI models' training data covers this entire timeline. When AI encounters `"use server"`, it might "recall" a 2023 tutorial telling it Server Actions can't return JSX — but React 19 actually allows it. When AI designs a component tree, it might "reference" a 2022 design pattern from before RSC existed — placing async components inside client boundaries, a pattern long since deprecated.
+
+This isn't AI misremembering. It's RSC, as a rapidly evolving technology, producing **multiple conflicting "truth versions"** in AI's training data. And AI has no ability to distinguish which version corresponds to the React and Next.js versions you're actually using.
+
+In contrast, `createServerFn`, `createFileRoute`, `validateSearch` — these are all TanStack Start APIs. Their semantics are clear, their scope is small, their evolution is slow. AI's training data doesn't contain five mutually contradictory ways to use `createServerFn`, because this technology has been relatively stable since its inception.
+
+**The faster a technology evolves, the more frequently its APIs change, the more incompatibilities between versions — the higher the probability of AI making mistakes on it.** RSC may be the fastest-evolving feature in the frontend landscape between 2022 and 2026. This velocity benefits human developers who adopt it early, but it's a disaster for AI agents that depend on training data snapshots.
+
+---
+
+## 11. Which Path Should Your Project Take
+
+No standard answer. But here are the dimensions for judgment.
+
+**If you already use AI coding agents deeply in your daily development** — whether Cursor, Claude Code, Copilot, or something else — then "explicit over implicit" is no longer a preference; it's a hard efficiency difference. Explicit declarations make the type system AI's first verification defense line. Implicit conventions make AI spend context tokens on inferring rules. In a world where AI is already part of your development workflow, tokens are money.
+
+**If your project is a pure admin system** — standardized interaction patterns, high feature density, no complex design system, team not yet introducing AI — then antd + Next.js's "move-in ready" approach is still efficient. Ant Design covers 80% of admin scenarios; you don't need to pay shadcn's initial cost for that 20% customization. Our discussion isn't saying conventions are "bad" — it's saying **recognize their cost**, then pay it in the right scenarios.
+
+**If you're building a product that needs long-term iteration** — code ownership matters more than development speed. When Ant Design upgrades to the next major version, your project migration might take two weeks. Your `button.tsx` is forever `button.tsx`; you decide when it changes. Next.js's caching behavior changed between v13 and v15 — your code didn't change, but the behavior did, because the convention's default value was changed.
+
+**React Router v7's "three modes" offer a great incremental path.** You don't need to jump from antd to shadcn and from Next.js to TanStack all at once. You can keep the convenience of filesystem routing while gradually introducing more type safety — starting with explicit loader/action exports, starting with validator schemas. Incremental "explicitization" may be more realistic than a framework-level migration.
+
+**When evaluating a framework, ask one question:**
+
+> **Does it "compile" implicit rules into files that AI can directly read?**
+
+If yes (routeTree.gen.ts, generated type definitions, schema files, readable build artifacts) — it's AI-friendly. If no (mappings only exist in the builder's memory, special filenames can only be inferred from documentation conventions) — it's consuming AI's context window, and you may end up paying for AI's "rule-guessing mistakes."
+
+This principle works in reverse too. When designing your own component library, internal framework, or project scaffolding, ask yourself:
+
+1. **Is this behavior AI-single-file-verifiable?** — If AI needs to cross 3 files to understand one route's behavior, reconsider your file granularity.
+2. **Where is this convention's mapping?** — If it only exists in documentation and team consensus, generate a file and write it down.
+3. **Can types flow automatically?** — If one function's input comes from another function's output, can the type system trace this chain? If not, you're asking both humans and AI to "trust" that the chain won't break.
+4. **Are defaults helping AI or getting in its way?** — If your framework defaults to Server Components while 90% of your project's components need interactivity, the tokens AI spends on `"use client"` are paying your "default tax."
+
+These questions didn't matter in 2016. In 2026, they determine whether your AI partner writes business logic all day, or spends half the day wrestling with framework conventions. And you might not even know this wrestling match is happening — you'll just feel AI is "a bit unreliable," making dumb mistakes, missing types in unexpected places. It's not really an AI problem. It's that the tokens it spent understanding the framework crowded out the space for understanding your requirements.
+
+### A Concrete Incremental Migration Path
+
+Enough theory. If you have a Next.js project right now, what practical steps can you take?
+
+**Step 1: Don't change frameworks. Change component libraries first.**
+
+This is the lowest-friction change. If you're using antd, gradually migrate the 3-5 most-frequently-customized components (Button, Modal, Table) to shadcn. No need to switch everything at once — one page at a time. Every "source-codified" component gives you and AI one more unit of editable freedom.
+
+**Step 2: Introduce type validation without changing routing.**
+
+In a Next.js project, you can use `zod` + `nuqs` for search params type validation. This doesn't change your routing conventions, but it plugs that `string | null` black hole. AI writes fast, but AI also needs to know what's correct.
+
+```tsx
+import { parseAsString, parseAsInteger, useQueryState } from 'nuqs'
+
+// Replace useSearchParams().get('q')
+const [q, setQ] = useQueryState('q', parseAsString.withDefault(''))
+const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1))
+// q: string, page: number — now with types
+```
+
+**Step 3: New projects, new stack.**
+
+When starting a new project — even an internal tool — do a complete experience with TanStack Start + shadcn. Not to "migrate old projects," but to establish a new working rhythm with your AI partner. Old projects continuing with Next.js is fine — but you'll know what "the other world" looks like.
+
+**Step 4: Look back at your old project's "convention tax" bill.**
+
+Once you're used to the development experience of types flowing through the entire chain, look back at your Next.js project — those `as any` casts, those manually written Zod runtime checks, those "why is this parameter undefined" debugging moments. You'll realize these aren't bugs. They're the "convention tax" you've been paying all along.
+
+### A Real Migration Case Study: Search Page
+
+Let me show you what "convention tax" actually looks like with a concrete case.
+
+Suppose you have a search page at `/search` in Next.js. URL parameters are `?q=keyword&page=1&sort=date`. Here's the typical Next.js approach:
+
+```tsx
+// app/search/page.tsx — Next.js
+'use client'
+
+import { useSearchParams, useRouter } from 'next/navigation'
+
+export default function SearchPage() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
+  // All string | null, nothing guarantees these parameters exist
+  const q = searchParams.get('q') || ''
+  const page = parseInt(searchParams.get('page') || '1')
+  const sort = (searchParams.get('sort') || 'date') as 'date' | 'relevance'
+
+  // Type assertion — you hope it's 'date' | 'relevance', but no one guarantees it
+  // If someone manually changes the URL to ?sort=foo, this line won't error, runtime might not crash
+  // But your search results will use default sorting, and the user won't know why
+}
+```
+
+This page has three potential bugs:
+1. `sort` can be any string — your type assertion is just lying to TypeScript
+2. `page` can be `NaN` — if someone writes `?page=abc` in the URL
+3. Nowhere declares this route's valid parameter set — `q`, `page`, `sort` exist purely by "convention"
+
+Now the same page in TanStack Start:
+
+```tsx
+// routes/search.tsx — TanStack Start
+export const Route = createFileRoute('/search')({
+  validateSearch: (search) => ({
+    q: typeof search.q === 'string' ? search.q : '',
+    page: typeof search.page === 'string' ? parseInt(search.page) || 1 : 1,
+    sort: search.sort === 'relevance' ? 'relevance' : 'date',
+  }),
+  loaderDeps: ({ search }) => ({ q: search.q, page: search.page, sort: search.sort }),
+  loader: async ({ deps }) => {
+    return await searchProducts(deps)
+  },
+  component: SearchPage,
+})
+
+function SearchPage() {
+  const { q, page, sort } = Route.useSearch()
+  // q: string, page: number, sort: 'date' | 'relevance'
+  // All compiler-verified correct types. No `as`. No assertions. No NaN risk.
+}
+```
+
+Write `validateSearch` once, the entire project benefits. Not just the component — the loader knows `sort`'s type, navigation functions know `sort`'s type, even other routes linking to this search page get TypeScript checking whether their search params are correct.
+
+**This is a difference of a few dozen lines of code. In 2026, AI writing these few dozen lines takes seconds. But AI fixing the production bug caused by `as 'date' | 'relevance'` — it needs to understand the entire request chain, reproduce the user's URL parameters, trace the data flow — that might take you 30 minutes of debugging.**
+
+---
+
+## 12. The Board Has Been Rewritten
+
+2016. I sat at my desk, opened a Laravel project. Created a `User.php` model — Eloquent automatically found the `users` table. Wrote one line of `Route::resource` — seven RESTful endpoints, ready. No ORM mapping to write. No routing configuration to write — the framework made all the "default decisions" for me. Back then, I thought I understood the full wisdom of "convention over configuration."
+
+Looking back ten years later, that wasn't the fullness of wisdom. It was wisdom in the specific shape of that era.
+
+"Convention" was built on one premise: **both the writer and reader of code are human.** When that premise breaks — when the primary reader of code becomes an AI that scans token by token, linearly, that doesn't scan directories, that doesn't understand "filename is behavior" — the cost of conventions surfaces.
+
+What we praised back then wasn't "conventions." We praised "writing less repetitive code." Convention was the means to that end, not the end itself. When the means conflicts with a new environment — when less code written becomes more errors made — it's time to change the means.
+
+TanStack isn't "the next generation of Next.js." It's a different answer under different premises. The premise: **in a world where AI participates in coding, code verifiability is an order of magnitude more important than code writability.** Code you can write quickly that AI can't verify correctness for is a breeding ground for technical debt. Code you write slightly slower but the compiler verifies end-to-end is the productivity lever of the AI era.
+
+This isn't the pendulum swinging back. The board has been rewritten.
+
+> In 2016, we said "convention over configuration" to free humans from XML hell.
+>
+> In 2026, we say "explicit over implicit" to free AI from the predicament of guessing.
+>
+> Both choices were right in their respective eras. What's different this time is that the driver isn't a new programming language or framework — it's a new code producer and consumer: an AI Agent that doesn't scan directories, doesn't guess conventions, but can verify an entire type chain in one second.
+
+We spent a decade teaching it to be smart. Now it's asking us to relearn one thing: put the rules where it can see them.
+
+The moment code is no longer written only by humans, the moment the optimization target shifts from "fewer keystrokes" to "higher verifiability," every framework that prides itself on "convention over configuration" must answer three questions:
+
+**Can the compiler read your conventions? Can AI verify your implicitness? Are your defaults helping AI or getting in its way?**
+
+Those that can't answer aren't worse.
+
+Our standards have simply changed.
+
+---
+
+Ten years ago, if someone asked me "what's the best React framework," I'd say "depends on your needs." If pressed further, I'd say "Next.js, because its ecosystem is the largest."
+
+Today, someone asks me the same question, my answer has changed: "Depends on who your partner is."
+
+If your partner is a human who can scan directories, understand conventions, reconstruct route trees in their mind — Next.js is still right. Its convention system has been optimized for human cognitive patterns over a decade. That's a massive inheritance.
+
+But if your partner is an AI that reads token by token, understands code linearly, can't "glance and understand" — the framework's conventions are no longer your asset; they're your overhead. Every implicit rule is a puzzle AI must spend tokens to decode. Every special filename is a convention AI must check documentation to confirm. Every layer of caching's default behavior is a trap AI might misunderstand.
+
+This isn't saying Next.js is bad. It's saying its "goodness" was built on the assumption that humans are the primary code consumers. When that assumption loosens, the entire edifice of "convention over configuration" loses a pillar.
+
+You don't need to migrate to TanStack today. You don't even need to like its API design. But you should at least realize: **in the era of AI-written code, a framework's "AI-friendliness" is not an auxiliary attribute — it's a first-class evaluation dimension, equal in importance to performance, ecosystem, and stability.**
+
+Because in the future — possibly the near future — the person writing the most code in your project won't be you.
+
+On that day, what you choose isn't just a framework. You're choosing your AI partner's working environment. Whether to give it a bright workbench where everything is labeled, or a dark room piled with implicit conventions where it has to fumble around finding things on its own.
+
+That choice needs to start being made today.
+
+After all — you wouldn't ask an architect to draw blueprints in a pitch-black room. Why let AI write code in a project where conventions are invisible?
+
+---
+
+### If You Haven't Started Using AI to Write Code Yet
+
+This article's core argument depends on one premise: **you already use AI coding agents in your daily development.** If your team hasn't adopted AI yet — or only occasionally asks ChatGPT questions — then everything I've said above doesn't apply to you.
+
+Doesn't apply. For now.
+
+Ant Design's `import { Table } from 'antd'` is still the fastest way to build admin systems in 2026. Next.js's `npx create-next-app` is still the fastest path from zero to deployment. In a world without AI writing code for you, "fewer keystrokes" is still the correct optimization target. "Convention over configuration" is still right.
+
+But know this: that premise is being rewritten. The team next door at your company might already be using Cursor or Claude Code. They might already be realizing that shadcn and TanStack's "explicit" model makes their AI more efficient. They might be shipping features faster than you — not because their AI is smarter, but because their code structure is friendlier to AI.
+
+**You don't need to migrate to an "AI-friendly framework" today. But you should add "AI-friendliness" to your technology selection criteria checklist.** Just as you added "community ecosystem" to your checklist in 2016. Not everyone made that adjustment back then — and those who didn't weren't wrong. But they missed a dimension, and that dimension became one of the most important decision factors over the next three years.
+
+"AI-friendliness" in 2026 is "community ecosystem" in 2016. Not today's urgent. Tomorrow's important.
+
+---
+
+### Limitations of This Article
+
+This article spent 1,200 lines discussing the "AI-friendliness" of three frameworks and one component library. But it didn't discuss:
+
+- **The Vue ecosystem** (Nuxt, Vue Router) — where do they sit on this spectrum? Vue's SFC single-file components have a natural "explicit" tendency, but Nuxt's file convention system shares the same implicit challenges as Next.js.
+- **SvelteKit** — filesystem routing, but loaders are explicitly exported. Its "explicitness" is close to React Router v7.
+- **Astro** — Islands Architecture, naturally separating static and interactive content. This is a completely different paradigm, potentially more "explicit" than all SPA/SSR frameworks.
+- **SolidStart** — TanStack Start's Solid equivalent, same philosophy, different reactive system.
+- **Non-web platforms** — React Native, Flutter, Tauri — the "convention vs. explicit" question may play out completely differently on different platforms.
+
+These are different facets of the same question. This article's framework — "are implicit rules compiled into explicit artifacts" — can be applied to any framework evaluation, but specific cases need to be unpacked within their respective ecosystems.
+
+Additionally, this article treats "AI-friendliness" as an objectively measurable quality attribute. But it has subjective components: different AI agents (Claude Code, Cursor, Copilot, Hermes) have different context window sizes, different file search strategies, different levels of TypeScript language service integration. A framework friendly to Claude Code might not be as friendly to Copilot — and vice versa. "AI-friendly" is not an absolute value; it depends on the specific agent you're using.
+
+But this doesn't prevent us from establishing one principle: **externalizing hidden rules into readable files is always friendlier than making AI guess.** As for what degree of externalization is optimal — that needs to be iterated in practice.
+
+---
+
+If you finish this article with only one question: "So should I switch frameworks or not?" — you've already grasped the point.
+
+You might not need to switch. But you need to know: your current framework, your current component library, your current project structure — what scores do they have on this "AI-friendliness" dimension. The places you don't know are the places AI will make mistakes. And those mistakes, AI won't proactively tell you about — because it doesn't know it guessed wrong.
+
+In 2026, the most dangerous thing isn't choosing the wrong framework. The most dangerous thing is not knowing what disadvantages your framework has in "being read by AI" — disadvantages you've never thought about. Because you don't think about them, AI won't tell you either. It will quietly guess, quietly err, quietly consume the most expensive resource in your project — not the server bill, but your shared context window.

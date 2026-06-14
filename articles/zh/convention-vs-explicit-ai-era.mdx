@@ -1,0 +1,1199 @@
+---
+title: '当约定成为负担：AI 时代的前端框架选型逻辑正在被重写'
+summary: '2016 年我们赞美「约定优于配置」，因为约定把人类从 XML 地狱里解放出来。2026 年我们重新拥抱「显式优于隐式」，因为约定正在把 AI 拖进猜测的泥潭。本文从 Next.js、React Router v7、TanStack Start 三条路线出发，拆解为什么「AI 友好的框架」有一条清晰的设计原则：把隐式规则编译成显式产物。'
+category: 'Frontend'
+tags: ['framework', 'convention-over-configuration', 'explicit-vs-implicit', 'tanstack-start', 'nextjs', 'react-router', 'remix', 'shadcn-ui', 'ant-design', 'ai-coding', 'type-safety']
+author: 'Max Zhang'
+date: '2026-06-15'
+---
+
+## 一、一个被怀念的词
+
+2016 年，我入行。
+
+那时候面试前端，React 的路由方案是必考题。那时候 Next.js 才刚出 1.0，Vercel 还叫 Zeit。我刚好在做 PHP——那基本是 Laravel 的天下。
+
+Laravel 让我记住了一个词：「约定优于配置」。
+
+我记得第一个 Laravel 项目。我需要做一个用户管理模块——CRUD、搜索、分页。Laravel 的 `php artisan make:controller UserController --resource` 一行命令，生成了 `index`、`create`、`store`、`show`、`edit`、`update`、`destroy` 七个方法。路由文件里写一行 `Route::resource('users', UserController::class)`。没有再多的配置。Model 叫 `User`，Eloquent 自动找 `users` 表。`User::find(1)->posts` 自动走 `user_id` 外键关联 `posts` 表。Validation 写在 `FormRequest` 里，Controller 被调用时自动验证。
+
+一行 `Route::resource`。七个 RESTful 端点。零配置的 ORM。自动验证。
+
+那个时刻，我被「约定」的力量彻底击中了。一个你能信任的框架，帮你做掉了那些你本不需要思考的决定。
+
+`app/Http/Controllers/UserController.php` 往那一放，`Route::resource('users', UserController::class)` 一行路由声明，七个 RESTful 端点就全有了。Model 叫 `User.php`，Eloquent 自动找 `users` 表——复数、小写、下划线分隔。你不告诉框架表名，框架知道。Rails 管这叫 Convention over Configuration，PHP 社区直接照搬，奉为圭臬。
+
+那种感觉是真的爽。你只需要关注业务逻辑，脚手架、路由、ORM 映射——框架全替你做了。团队里 10 个人，不需要开会讨论「Model 文件放哪、用什么命名规范」——Laravel 已经替你决定了。
+
+后来前端也开始学这套。Next.js 的 App Router 把「约定就是路由」做到了极致：
+
+```
+app/
+  dashboard/
+    layout.tsx       ← 隐式：这是 dashboard 的布局壳
+    page.tsx         ← 隐式：这是 dashboard 的主页面
+    loading.tsx      ← 隐式：这是 dashboard 的加载骨架屏
+    error.tsx        ← 隐式：这是 dashboard 的错误边界
+    settings/
+      page.tsx       ← 隐式：这是 /dashboard/settings
+```
+
+文件名就是行为。目录结构就是路由树。你不需要写 `<Route path="/dashboard" component={...}>`——你只需要在正确的位置创建一个正确的文件名。
+
+整个行业都说这是进步。减少 boilerplate，降低上手门槛，统一团队规范。约定优于配置——这六个字在 2010 到 2020 这十年间，几乎定义了 Web 框架的设计审美。
+
+直到 AI 来了。
+
+---
+
+## 二、「约定」为什么在那个时代是对的
+
+要理解为什么现在错了，得先理解为什么当时对了。
+
+在 2010 年之前，写一个 Java Web 项目是一场配置噩梦。你需要维护 `web.xml`、Spring bean XML、Hibernate mapping XML、struts-config.xml……一个路由映射要写三处，改了 Controller 名字要同步修改两个配置文件。这是「显式」的极端——显式到了冗余的地步，人类写着累、改着怕、看着烦。
+
+想象一下那个时代的日常。你要新增一个 `/users/{id}` 的 API。你需要：在 `web.xml` 里注册 Servlet 映射，在 `struts-config.xml` 里定义 Action 路径，在 Spring 的 applicationContext 里声明 Bean，在 Hibernate 的 `.hbm.xml` 里写 ORM 映射。五个文件协同工作，一个文件改错了名字，整个链条就断了——而编译器帮不了你，因为这个「契约」存在于运行时读 XML 的那一刻。
+
+这就是 Rails 在 2004 年革命掉的旧世界。
+
+Rails 在 2004 年喊出「约定优于配置」的时候，它解决的是一个非常具体的工程问题：**消除无意义的重复劳动**。如果你的 99% 的 Controller 都遵循同样的命名和目录规则，那就不要在 99 个项目里重复写同样的映射配置。把这个规则写进框架一次，所有人都受益。
+
+Laravel 从 Rails 身上学了很多——ORM 映射、资源路由、artisan 命令行——但它不像 Rails 那样把 CoC 当作核心哲学。它的卖点是开发体验，不是「你什么都不用配」。
+
+但这里有一个常常被忽略的前提：**这套设计是为人类的大脑优化的，不是为机器的。**
+
+人脑有一个 AI 至今无法比拟的能力：**并行视觉扫描**。你打开 IDE，左侧的目录树是一张完整的二维地图。你扫一眼 `app/Http/Controllers/` 下面的文件列表，0.5 秒就知道这个项目有哪些模块、模块之间是什么层级关系。文件名本身就是信息——你不打开 `UserController.php`，也知道它管的是用户。
+
+「约定」的本质，是把行为信息「压缩」进了文件名和目录位置。人脑解压这种信息几乎是免费的——你天生就是一台强大的模式匹配引擎。
+
+直到今天，如果你在一个成熟的 Rails 或 Laravel 项目里工作，这种「扫一眼就懂」的体验依然成立。框架的约定在人类的认知系统中创造了极高的信息带宽——你在 0.5 秒内吸收的信息，需要 AI 花 5000 个 token 才能重建。
+
+说到底，「约定优于配置」不是一句口号，它是人类认知优势和工程重复劳动之间的一次精确权衡。约定用人类的视觉并行处理能力，换取了书写效率的提升——你把框架规则「外包」给了文件名和目录位置，少写的是重复的配置代码，而人类读者扫一眼目录树就能重建同样的信息。在人类主导编码的时代，这个交易是划算的。
+
+但当阅读代码的主体从人变成 AI 的时候，这个前提轰然坍塌。
+
+---
+
+## 三、AI 来了，算盘全变了
+
+AI 不扫目录。AI 读文件——**逐 token、逐文件、线性地**读。
+
+当一个 AI coding agent 面对 Next.js 的 `app/dashboard/settings/page.tsx` 时，它看到的是一个 React 组件文件。为了完全理解这个文件的行为，它需要：
+
+1. 知道 `page.tsx` 是一个「特殊文件名公约」，代表这是对应路由的主页面组件——但这并非写在这个文件里，而是写在 Next.js 的文档里、存储在框架的构建逻辑里
+2. 知道这个文件在目录树中的位置——这意味着它必须先「读过」父目录和兄弟目录
+3. 知道 `layout.tsx` 在父级目录，会包裹这个组件——跨文件推断
+4. 知道 `loading.tsx` 在同级目录，是它的 Suspense fallback——另一个跨文件推断
+5. 知道如果同级有 `error.tsx`，那是它的 Error Boundary——又一个跨文件推断
+
+理解一个路由的完整行为，AI 需要串行读取 4 到 5 个文件，并且在 context window 里**模拟人类的「扫一眼目录树」**——把这个目录结构在脑海中重建。而这些 token 本可以用来理解业务逻辑、理解数据流、理解用户需求。
+
+Next.js 有 20 多个保留文件名：`page.tsx`、`layout.tsx`、`loading.tsx`、`error.tsx`、`template.tsx`、`default.tsx`、`not-found.tsx`、`route.ts`、`middleware.ts`……每一个都有不同的语义和嵌套行为。AI 必须「知道」所有这些约定——不是在任何一个文件里读到的，而是**预先训练进模型权重里的知识**，或者消耗 context window token 去查文档。
+
+AI 的 context window 是稀缺资源。一个顶级模型可能有 128K 到 200K token 的窗口（部分模型已支持百万级），听起来很大。但当你把多个文件塞进去、把对话历史算进去、把系统 prompt 算进去——剩下的 token 预算非常紧张。填满「推断框架约定」就少填「理解业务逻辑」。**每个被消耗在猜测约定上的 token，都是一次可能出错的推理。**
+
+这就是核心矛盾：
+
+> **曾经让人类少写代码的东西，正在让 AI 多犯错误。**
+
+我们可以做一个思想实验。假设你让 AI 给一个 Next.js 应用的 `/dashboard/settings` 路由加一个搜索功能——根据 URL 参数 `?q=xxx` 过滤数据。
+
+AI 的处理流程是这样的：
+
+第一步：它需要理解当前路由的结构。它会搜索 `app/dashboard/settings/` 目录，逐个读取文件——先读 `page.tsx`（理解当前页面在做什么），再读 `layout.tsx`（理解外层布局包裹了什么），再读 `loading.tsx`（理解加载态的处理方式）。三个文件读完，它才知道这个路由的完整渲染行为。消耗：约 1500-2000 token。
+
+第二步：它需要给 `useSearchParams` 加参数处理。它知道 `searchParams.get("q")` 返回 `string | null`——但不知道 `q` 之外还有没有其他合法参数，不知道 `q` 的格式约束（最小长度？是否需要 trim？是否要 encodeURIComponent？）。它要么从现有代码的 `searchParams.get(...)` 调用中「反向推断」，要么假设 `q` 是唯一参数。这个推断是基于**历史代码的使用模式**，不是基于任何编译期的 schema 定义。消耗：约 500 token 的推断 + 可能的推断错误。
+
+第三步：如果这个项目用了 Server Action 来提交搜索，AI 还要处理 `"use server"` 边界。Server Action 的输入没有编译期类型——AI 必须读 server 端代码来推断期望的参数形状，再在 client 端构造匹配的调用。两边的类型不一致？编译期不会报错，运行时才知道。消耗：约 1000 token + 类型不匹配的风险。
+
+总计：理解一个简单搜索功能的上下文，AI 花了约 3000-4000 token 在**还原框架约定**上。而同样的需求在 TanStack Start 里——AI 打开一个路由文件，`validateSearch` 告诉它所有合法的 search params 和类型，`loaderDeps` 告诉它 loader 依赖哪些参数，`useSearch()` 返回的是编译期验证过的类型对象。不需要跨文件推断，不需要反向工程约定，不需要「信任」任何隐式行为。
+
+这 3000-4000 token 的差距，在一个搜索功能上不明显。但如果你一整天都在让 AI 写代码，累积的 token 消耗和推断失误会变成一个可感知的生产力鸿沟。
+
+### 3.5 人类 vs AI：同一个项目的两种阅读路径
+
+让我们把这个对比做得更具体。假设你是一个新加入团队的开发者，面对一个 Next.js 项目的 `app/dashboard/` 目录。这是你和 AI 分别的「理解路径」：
+
+**人类的阅读路径（并行扫描，约 2 秒）**：
+
+你打开 IDE。左侧目录树展开：
+
+```
+app/dashboard/
+  layout.tsx       ← 秒懂：这是外壳
+  page.tsx         ← 秒懂：这是主内容
+  loading.tsx      ← 秒懂：这是骨架屏
+  error.tsx        ← 秒懂：这是错误页
+  settings/
+    page.tsx       ← 秒懂：子路由
+```
+
+你甚至不需要打开文件。文件名 + 目录层级已经把 90% 的路由行为传达给你了。你的大脑在处理这棵目录树时，视觉皮层、模式识别系统和长期记忆（「我知道 Next.js 的约定」）是并行的。认知成本接近零。
+
+**AI 的阅读路径（线性扫描，约 12,000-15,000 token）**：
+
+AI 的第一步：搜索 `app/dashboard/` 目录。发现 5 个条目。它不知道这些文件之间的关系——它只看到了文件名列表。它必须逐个打开。
+
+AI 打开 `layout.tsx`：200 行，包含导航栏、侧边栏、认证检查。消耗约 1000 token。AI 现在知道这个目录最外层是一个带认证的布局。
+
+AI 打开 `page.tsx`：150 行，看到 `useSearchParams()` 和 `useEffect`。消耗约 800 token。AI 推断这个页面依赖 URL 参数，但不知道哪些参数是合法的。
+
+AI 打开 `loading.tsx`：30 行。消耗约 200 token。AI 推断这是 Suspense 的 fallback——但它需要「知道」`loading.tsx` 在 Next.js 里是特殊文件名。
+
+AI 打开 `error.tsx`：40 行。消耗约 250 token。同上——需要「知道」`error.tsx` 是 Error Boundary。
+
+AI 打开 `settings/page.tsx`：100 行。消耗约 600 token。又一个子路由。
+
+总计：AI 读了 5 个文件，消耗了约 3000 token 在文件内容上，加上约 500 token 的「框架约定知识」（知道 `loading.tsx` = Suspense fallback、`error.tsx` = Error Boundary、`layout.tsx` 包裹子页面等）。
+
+**关键差异**：人类只需要读目录名。AI 需要读完所有文件内容，然后用额外的 token 去匹配框架约定。一个路由目录对人类是 0.5 秒的感知，对 AI 是 3500 token 的计算。
+
+**这不是 AI 的缺陷。这是「约定」这个设计模式，在进行跨物种的「消费者迁移」时暴露出的结构性矛盾。**
+
+---
+
+## 四、三个框架，三条路线
+
+如果把 2026 年的主流 React 全栈框架按「显式 vs 隐式」排一条线，大概是这样的：
+
+```
+纯约定（隐式）                                纯声明（显式）
+    |                                              |
+  Next.js ──── React Router v7 ──── TanStack Start
+```
+
+每一个点代表了框架在路由映射、Server/Client 边界、搜索参数类型、缓存策略四个维度上的选择。
+
+### 4.1 Next.js：框架替你决定
+
+Next.js 的设计哲学可以用一句话概括：**框架知道什么对你的应用最好，信任它。**
+
+但这种「父爱式」设计不是一句口号——它具体体现在 App Router 的每一个 API 选择里。
+
+但在深入批评之前，有一个重要的公平视角：**Next.js 的约定体系不是「错误的设计」。它是「为一种特定场景做了极致优化的设计」。**
+
+如果你的网站是 Vercel 官网、Next.js 文档站、一个电商的商品详情页——内容驱动的、SEO 敏感的、大部分页面是静态或半静态的——Next.js 的约定是完美的。`page.tsx` 放一个 Server Component，自动获得 SSR + ISR + 流式传输。你不需要写任何 SSR 配置。这个场景下，「框架替你决定」不是傲慢——是帮你省去了你本不需要关心的决策。
+
+问题在于：**Next.js 成为了 React 的「默认框架」**。当每个新项目——无论是内容站、后台系统、交互密集的 SaaS——都以 `npx create-next-app` 开始时，大量项目跟它的默认哲学产生了错配。你不是在选一个适合你场景的框架，而是在用「唯一的选择」。而 AI 被卷进了这个错配里——它被要求在一个为静态内容优化的架构里写出高度交互的代码。
+
+这不是 Next.js 的错。这是「一个框架试图服务所有场景」的必然代价。但作为开发者——特别是使用 AI 的开发者——你需要意识到这个错配，并做出更精确的选择。
+
+**路由映射**：纯文件系统约定。`app/dashboard/settings/page.tsx` 就是 `/dashboard/settings`。映射规则不在任何可读的文件里——它在框架的构建器中，在文档里，在你和同事的共识里。没有任何一个文件能让你（或 AI）一览全局路由拓扑。
+
+但真正的问题是规模。Next.js 的 App Router 有多达 **20 多个保留文件名**，每个都有独特的语义和嵌套行为。这不是一个 AI 可以「大概知道」的列表——它必须在生成代码时精确匹配每一个约定：
+
+| 文件名 | 实际含义 | AI 推断难度 |
+|--------|---------|------------|
+| `page.tsx` | 该路由的主页面组件 | 低（最常用的约定） |
+| `layout.tsx` | 包裹该路由及所有子路由的布局壳 | 中（需要理解嵌套关系） |
+| `loading.tsx` | Suspense 边界内的加载骨架屏 | 中（必须懂 React Suspense） |
+| `error.tsx` | Error Boundary，捕获该路由的错误 | 中（必须懂 Error Boundary） |
+| `template.tsx` | 类似 layout 但每次导航都重新挂载 | 高（很容易和 layout 搞混） |
+| `default.tsx` | 并行路由的默认回退 | 高（并行路由本身就很冷门） |
+| `not-found.tsx` | 该路由的 404 页面 | 中 |
+| `route.ts` | API 路由处理器（不是页面组件） | 高（和 page.tsx 一字之差，行为完全不同） |
+| `middleware.ts` | 全局请求拦截（放根目录） | 低（位置固定） |
+| `global-error.tsx` | 根布局的 Error Boundary | 高（和 error.tsx 的区别是什么？） |
+| `head.tsx` | `<head>` 标签内容（v13 beta 约定，v13.2 被 Metadata API 替代，从未 stable） | 高（大量旧教程仍在引用，AI 训练数据里残存） |
+| `opengraph-image.tsx` | 自动生成 OG 图片 | 高（这是一个文件就能做到的吗？） |
+| `sitemap.ts` | 自动生成 sitemap.xml | 高（同上） |
+| `robots.ts` | 自动生成 robots.txt | 中 |
+| `icon.tsx` / `apple-icon.tsx` | 自动生成 favicon | 高（又是一个文件=一个功能的魔法） |
+
+这还不是全部。`parallel routes`（`@modal`、`@sidebar` 等槽位）、`intercepting routes`（`(.)photo`、`(..)settings` 等拦截语法）、`route groups`（`(marketing)` 括号目录）——每一种都是文件命名约定的变体。
+
+**AI 面对这个约定词典时的困境**：它不是在「读一个文件来理解一个路由」。它在「读一个目录树 + 匹配一份 20 行的约定词典 + 推断每个文件的运行时角色」。如果 AI 的训练数据中 Next.js 13/14/15 的内容混杂——而它们确实混杂了，因为缓存策略和某些约定在版本间变化过——AI 可能给出一个在 v13 正确但在 v15 崩溃的答案。
+
+这不是假设。你见过 AI 在 Next.js 项目里写出 `getServerSideProps` 吗？那是 App Router 出现之前 Pages Router 的 API——在 2026 年早已被 `async` Server Component 取代。AI 的「知识」是一个巨大的概率分布，而 20 个保留文件名 + 跨版本变化 + 废弃 API 的残留让它在这个特定领域里的正确率被打了一个折扣。
+
+每一个被错误匹配的约定，都意味着一次 AI 生成代码的「静默错误」——代码能编译，TypeScript 不报错，但运行时行为不是你想要的。`template.tsx` 当 `layout.tsx` 用？页面每次都重新挂载，状态全丢，但没有一个编译器告诉你「这里不对劲」。
+
+### `"use client"` 税：一个真实的工作日
+
+让我们把 `"use client"` 的成本从抽象变成具体。
+
+早上 9 点，你让 AI 给 Dashboard 页面加一个搜索输入框。AI 写了一个漂亮的 `<SearchInput>`，`useState`、`onChange`、debounce——该有的都有。TypeScript 不报错。你点保存。页面白屏。
+
+Hydration 错误。因为 `SearchInput` 在 Server Component 里用了 `useState`。AI 需要加 `"use client"`。你告诉它加。它加了。消耗：往返一轮纠错，约 500 token 的无效生成 + 你的时间。
+
+上午 10 点，你想把搜索输入框抽成一个共享组件 `components/search-input.tsx`。AI 把它挪过去。`"use client"` 在新文件顶部。然后你发现有一个页面里它被当 Server Component 导入——那个页面需要它的渲染结果做 SEO。但 `"use client"` 意味着它在客户端渲染，SEO 看不见。你需要重新设计组件边界。消耗：一次架构返工。
+
+下午 2 点，你读 AI 生成的代码审查。7 个新文件。5 个有 `"use client"`。2 个没有——因为它们是纯展示组件。但有一个没有 `"use client"` 的组件在内部用了一个自定义 hook——那个 hook 用到了 `useContext`。又炸了。消耗：一次 code review 的 debug。
+
+到下班时，这一天你跟 `"use client"` 相关的交互至少 15 次。每次都在消耗你的注意力和 AI 的 context token。
+
+**这不是 `"use client"` 的错。它是 RSC 架构的设计选择：Server 是默认值，客户端是例外。** 这个设计在内容型网站里是合理的（大部分内容确实是静态的），但在交互密集型产品里，它让你全天都在写「例外声明」。
+
+如果你把这个设计思想移植到其他工程领域，你会发现它的荒谬：一个建筑默认所有墙都是承重墙——你想挂个画框？填「非承重声明」。一栋 10 层的办公楼，90% 的墙你都要填这个声明。**设计的默认值是少数场景的需求，而多数场景在不断地写声明对抗默认值。**
+
+**Server/Client 边界**：默认值是 Server Component。你的每一个组件都在服务端运行——除非你显式地在文件顶部写 `"use client"`。这是一种「退出机制」：你不是在 opt into 交互性，而是在 opt out of 服务端。如果你的应用中大部分组件需要 state、effect、event handler——那你将在每个文件顶部看到 `"use client"`，像一种赎罪券。
+
+**搜索参数**：`useSearchParams().get("q")` 返回的是 `string | null`。没有 schema 校验，没有类型推导。如果你期望 `?page=3` 是一个数字——运行时才知道它是不是。
+
+**缓存**：四层隐式缓存，跨版本反复变化。Request Memoization、Data Cache、Full Route Cache、Router Cache——每一层有自己的失效语义，而失效语义在 v13、v14、v15 之间变化过。你的代码一行没改，但行为变了——因为「约定」的默认值被框架改了。
+
+这个问题有多严重？看看这个 Next.js 项目的典型经历：
+
+```tsx
+// Next.js 13 — 这个 fetch 默认永久缓存
+// 你部署了，三天后发现数据不更新
+const data = await fetch('https://api.example.com/data')
+
+// Next.js 14 — 缓存策略不变，但 GET route handler 仍默认缓存
+// 你改了 fetch 的 cache 选项，但没意识到 route handler 也在缓存
+export async function GET() {
+  return Response.json(await db.query('...'))
+}
+
+// Next.js 15 — Breaking Change：fetch 和 GET route handler 都不再默认缓存
+// 但你的旧项目不会自动迁移——它们靠「信任框架默认值」活着
+export const dynamic = 'force-dynamic'
+```
+
+每一次版本升级，你都需要审计所有 `fetch` 调用、所有 route handler、所有 page 和 layout——不是因为你改了什么，而是因为「约定」的默认值改了。这是一个典型的隐式行为的代价：**行为由框架控制，但行为的变化不由你控制。**
+
+**Dev Server 为什么慢**：这里需要澄清一个常见误解。Turbopack 是 Rust 写的，编译速度不输 esbuild 和 SWC。Next.js dev server 的慢不是慢在「编译 JS 成 bundle」，是慢在**编译之外要做的事**：解析 RSC 依赖图（分辨哪些是 Server Component 哪些是 Client Component）、序列化 RSC Payload（把服务端组件渲染成一种中间格式）、管理四层缓存的依赖关系、协调 Server Action 的序列化管线。
+
+Vite 的 dev server 简单得多：按需的 ESM transform，浏览器自己处理模块加载。没有 RSC 依赖图要算，没有中间序列化格式，没有隐式缓存层。TanStack Start 继承了这一层——Vite 或 Rsbuild 负责编译，框架不在上面加额外的中间层。它快，不是编译器更快，是**架构更薄**。
+
+### 4.2 React Router v7：标准派的折中
+
+Remix 在 2022 年被 Shopify 收购，随后在 2024 年底合并进了 React Router v7。新版本保留了 Remix 的核心哲学，但以三种模式对外暴露：
+
+```
+Declarative Mode → Data Mode → Framework Mode
+  （最少约定）       （增加约定）     （最多约定）
+```
+
+官方文档直接说：*"Pick your mode based on how much control or how much help you want from React Router."*——你需要多少约定，自己选。这是一个在设计层面就承认「约定有代价」的框架。
+
+它在光谱上比 Next.js 更显式，但没走到 TanStack 的极致。
+
+**显式之处**：
+
+Loader 和 action 是 `export` 出来的函数。AI 打开一个路由文件，看到 `export async function loader()`——它立即知道这个路由有数据依赖，数据在渲染之前加载。行为是声明在代码里的，不是推断出来的。
+
+Loader 接收的是标准的 Web `Request`，返回的是标准的 `Response`：
+
+```tsx
+export async function loader({ request }: LoaderFunctionArgs) {
+  const url = new URL(request.url)          // 标准 Web API
+  const cookie = request.headers.get("Cookie")  // 标准 Web API
+  const user = await getUser(cookie)
+  return json({ user })
+}
+```
+
+`Request`、`URL`、`Response`、`FormData`——这些都是 MDN 上能查到的标准。AI 不需要查框架文档就能理解这些对象的完整能力边界。相比之下，Next.js 的 Server Action 把 `request` 和 `response` 抽象掉了——你不知道数据是怎么进来的，只知道它「进来了」。
+
+Remix 还有一个独特的基因：**渐进增强**。一个 `<Form>` 的 `action` 就是一个标准的 HTTP POST——JavaScript 禁用的时候它仍然能工作。这意味着代码行为是遵循 Web 基本规则的，不依赖框架特定的运行时魔法。
+
+**隐式之处**：
+
+文件系统路由仍然是约定——`routes/users.$id.tsx` 映射到 `/users/:id`。`$` 是动态参数，`.` 是嵌套，`_index` 是无路径的 index 路由。这个编码对人是直观的，对 AI 是需要「学」的语法。
+
+搜索参数同样无类型：`useSearchParams().get("q")` → `string | null`。
+
+类型不自动流动：`useLoaderData<typeof loader>()` 需要你手动写泛型。
+
+`.client.tsx` 和 `.server.tsx` 后缀——约定换了一种拼法，但仍然是约定。
+
+React Router v7 是一个诚实的折中。它拥抱 Web 标准，承认约定有代价，给你选择权。但它没有把类型检查嵌入路由层，没有把 loader 的类型自动推到组件——这些缺口意味着 AI 仍然需要在写代码时「信任」约定，而不是被编译器验证。
+
+### 4.3 被遗漏的 SPA 世界
+
+在继续讨论 TanStack 之前，有一个重要的视角不能跳过。
+
+我们在比较三个**全栈框架**的「AI 友好度」时，很容易忽略一个事实：不是所有 Web 应用都需要 SSR。如果你在做一个纯客户端 SPA——一个内部工具、一个 Dashboard、一个不需要 SEO 的管理系统——你完全可以跳过 Next.js、React Router v7 Framework Mode 和 TanStack Start，直接用 Vite + React Router v7 Declarative Mode。
+
+这种情况下，「路由约定」的讨论根本就不存在——因为你在用 `<Route path="/dashboard" element={<Dashboard />} />`，路由映射是代码里的显式声明。没有文件名约定要解码，没有 `"use client"` 要加，没有 RSC 依赖图要算。
+
+SPA 在这个光谱里，其实是**比 TanStack 更「显式」的**——因为它没有任何框架级的隐式约定。代价是：没有 SSR、没有 SEO、没有构建时静态优化。
+
+这是一个重要的提醒：**AI 友好度不是越极端越好。** 全栈框架提供了 SSR 和部署便利，但代价是引入了隐式约定。SPA 没有隐式约定，但代价是没有 SSR。你的选择不是在「更好的框架」和「更差的框架」之间——是在「对 AI 更友好的代码结构」和「对用户更友好的加载性能」之间做权衡。
+
+TanStack Start 的有趣之处在于：它在全栈框架中，最接近 SPA 的「显式」程度——但保留了 SSR 的能力。这是它在这条光谱上的独特位置。
+
+### 4.4 当 TanStack Start 不成功怎么办
+
+一个务实的问题：TanStack Start 还在 RC 阶段。如果它最终没有获得足够的主流采用呢？
+
+这不是杞人忧天。框架的成功不取决于技术优势，取决于生态、社区、教程、招聘市场。Next.js 有 Vercel 的资源、十年的内容积累、和成为 React 默认推荐的地位。React Router 有 2014 年以来的品牌认知和 Remix 合并后的新势头。TanStack Start 可能不会「赢」。
+
+但这里有一个关键区别：
+
+**你不需要整个行业都用 TanStack Start。你只需要你的项目用。**
+
+TanStack Router 已经足够成熟（它本身比 Start 早近一年，独立于 Start 之外使用）。TanStack Query 被数百万项目使用。Vite 是 2026 年最流行的构建工具。这些都不是「可能会失败」的项目。
+
+即使 TanStack Start 本身不成为主流，它的设计模式——端到端类型安全、显式声明优于隐式约定、编译产物代替黑盒映射——已经是 2026 年前端框架设计的方向。Next.js 的 typedRoutes 在学它。React Router 的类型改进在学它。新框架在诞生时就会考虑这些设计——因为它们看到了 AI agent 的需求。
+
+**你选的不是「TanStack Start」这个特定的框架。你选的是「显式声明 + 端到端类型」这条技术路线。** 这条路即使不是 TanStack 走出来，也会有别的框架走出来。因为推动这条路的力量不是 Tanner Linsley 的个人偏好——是 AI agent 作为新的代码消费者，对框架设计产生的底层需求。
+
+换个角度想：一个框架对 AI 的价值，不在于它「提供了什么功能」，而在于它「消除了多少歧义」。当一个 AI agent 打开一个文件时，这个文件里的每一行是「信号」还是「噪音」——这取决于框架的哲学。`createServerFn({ method: 'GET' })` 是信号：它告诉 AI，这是一个读操作，server 端执行。`"use client"` 是噪音：它告诉 AI，这个文件不是默认值，但它没说默认值是什么。**信号让 AI 正确。噪音让 AI 不犯错——最多如此。**
+
+信号多的框架，AI 在上面跑得快、错得少。噪音多的框架，AI 在上面花 token、花时间——花的是你的钱和你的耐心。这不是 TanStack vs Next.js 的竞争。这是「信号纯度」的竞争。而 AI，是这场竞争里最苛刻的裁判。
+
+因为它不原谅歧义。它不跳过隐式。它不会「大概知道」。它逐 token 读，逐行验证，每条规则都要匹配到才能继续。
+
+### 4.5 TanStack Start：把隐式规则编译成显式产物
+
+TanStack Start 的设计哲学可以用它自己文档里的一句话概括：
+
+> *"The core bet: developers know their apps better than frameworks do. The framework should give you powerful primitives and get out of your way."*
+
+**路由**：它也用文件系统组织路由。但区别在于——它生成一个**可读的 `routeTree.gen.ts`**。这个文件是完整的路由拓扑：每个路由的路径、层级关系、loader 依赖、组件绑定，全部展开在眼前。AI 读一个文件就能获得全局路由结构，不需要在 context window 里重建目录树。
+
+**Server/Client 边界**：默认是 Client Component。你需要服务端渲染时——显式写 `createServerFn` 或 loader。AI 的正常 React 代码像你预期的那样工作，不需要对抗默认行为。
+
+**搜索参数**：这是 TanStack 最亮眼的地方。`validateSearch` 在路由定义层面校验 search params：
+
+```tsx
+export const Route = createFileRoute('/')({
+  validateSearch: (search): { user: string } => ({
+    user: typeof search.user === 'string' ? search.user : '',
+  }),
+  loaderDeps: ({ search: { user } }) => ({ user }),
+  loader: async ({ deps: { user } }) => {
+    if (!user) return { user: null }
+    return { user: await fetchUser(user) }
+  },
+  component: Home,
+})
+```
+
+`validateSearch` → `loaderDeps` → `loader` → `component`——**一整条类型链，编译时验证**。`Route.useSearch()` 返回 `{ user: string }`，不是 `URLSearchParams`。如果你在导航时传了一个不存在的 search param，TypeScript 当场报错。
+
+**缓存**：显式 `staleTime` 和 `gcTime`，就是 SWR 的通用语义。不需要学 Next.js 的四层缓存有多少层、每一层在哪个版本改了默认值。你写 `staleTime: 10_000`，就是「10 秒内用缓存」。不需要理解框架的缓存哲学。
+
+**Server Function**：一个原语解决读写：
+
+```tsx
+// 读：GET
+const getTodos = createServerFn({ method: 'GET' })
+  .validator(z.object({ userId: z.string() }))
+  .handler(async ({ data }) => { ... })
+
+// 写：POST
+const createTodo = createServerFn({ method: 'POST' })
+  .validator(z.object({ title: z.string() }))
+  .handler(async ({ data }) => { ... })
+```
+
+对比 Next.js，读取有三种路径（Server Component / Route Handler / Server Action for reads）、写入有一种（Server Actions）。TanStack 用一个抽象覆盖所有场景——AI 只需要学会一个模式。
+
+**中间件**：TanStack 的中间件模型是整个显式哲学在另一个维度的延伸。它不仅是请求级中间件（类似 Next.js 的 `middleware.ts`），还可以挂在单个 server function 上——而且在 client 端和 server 端都可以生效：
+
+```tsx
+// 认证中间件——可以挂在整个 app、特定路由、或单个 server function
+const authMiddleware = createMiddleware()
+  .client(async ({ next }) => {
+    const session = await getSession()
+    if (!session) throw new Error('未登录')
+    return next({ context: { user: session.user } })
+  })
+  .server(async ({ next, context }) => {
+    // server 端的 context 从 client 端透传过来，类型完整
+    return next()
+  })
+
+// 挂在单个 server function 上
+const deleteUser = createServerFn({ method: 'POST' })
+  .middleware([authMiddleware, auditMiddleware])
+  .handler(async ({ context }) => {
+    // context.user 的类型来自 authMiddleware
+    // AI 不需要猜 context 里有什么——类型系统告诉它
+  })
+```
+
+注意 `.client()` 和 `.server()`——同一个中间件可以在客户端做权限校验（预检查），在服务端做二次验证。类型从 client 端流到 server 端，中间件链的 context 类型自动累积。AI 写一个带认证的 server function 时，它不需要在函数体里手动检查 session——它只需要看 `context.user` 的类型就知道认证已经做了。
+
+Next.js 的 middleware 是全局的——一个 `middleware.ts` 文件在项目根目录，通过 `config.matcher` 控制生效范围。它是强大的，但是隐式的——AI 打开一个 route handler 不会看到 middleware 的存在，除非它**先**读过根目录的 middleware 文件并理解了 matcher 规则。TanStack 的中间件是挂在目标函数上的——显式声明，类型贯穿。
+
+**类型链的完整轨迹**：让我们追踪一下 TanStack 的一条完整类型链，看看它对 AI 意味着什么：
+
+```tsx
+// 1. search params 校验 → 产生 { q: string, page: number } 类型
+validateSearch: (search) => ({ q: search.q ?? '', page: Number(search.page) || 1 })
+
+// 2. loader deps 声明依赖 → 类型来自 validateSearch 的返回值
+loaderDeps: ({ search }) => ({ q: search.q, page: search.page })
+
+// 3. loader 接收 deps → 返回类型自动推断
+loader: async ({ deps }) => {
+  const result = await api.search(deps.q, deps.page)
+  return { items: result.data, total: result.total }
+}
+
+// 4. component 使用 loader 数据 → 类型来自 loader 的返回值
+function SearchResults() {
+  const { items, total } = Route.useLoaderData()
+  // items: SearchItem[], total: number —— 编译器知道的
+  const { q, page } = Route.useSearch()
+  // q: string, page: number —— 编译器知道的
+}
+```
+
+AI 在写这个组件时，不需要查看 api 文档来理解 `result.data` 的类型，不需要反向推断 `items` 有几个字段。它写的每一行代码都是类型安全的——如果它把 `q` 当成 number 用，编译器会告诉它「错了」。
+
+这在 Next.js 的世界里是完全另一种体验：
+
+```tsx
+// Next.js — AI 每一行都在「信任」类型是对的
+export default async function Page({ searchParams }: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+  const { q, page } = await searchParams
+  // q: string | string[] | undefined
+  // page: string | string[] | undefined
+  // AI: page 是数字吗？q 可以为 undefined 吗？没有答案。
+  const data = await fetch(`/api/search?q=${q}&page=${page}`)
+  // 这是 string → string，没有任何校验
+  const result = await data.json() as any
+  // AI: result 到底是什么类型？我必须查 API 文档或者看 api route 的返回代码
+}
+```
+
+这两种体验的差异，在 AI 生成代码的质量上会产生复利效应。每一个 TanStack 项目中类型自动流通的组件，都比 Next.js 中同等的组件少 2-3 个潜在的运行时错误——人不会更小心，但编译器不会漏。
+
+---
+
+## 五、`routeTree.gen.ts`：不是配置，是编译产物
+
+你可能会问：TanStack Start 不也是文件系统路由吗？`src/routes/index.tsx` 和 Next.js 的 `app/page.tsx` 有什么区别？
+
+区别在于：**隐式规则有没有被编译成显式产物。**
+
+这个类比可以帮助理解：
+
+TypeScript 的类型信息在编译成 JavaScript 后消失了——运行时不存在 `interface User`。但你可以在 `.d.ts` 声明文件里看到它。声明文件是**类型的编译产物**——它是从 `.ts` 源码中提取出来的、可被工具消费的类型拓扑。
+
+`routeTree.gen.ts` 就是路由约定的「类型声明文件」。文件系统路由的隐式映射关系——`routes/users.$id.tsx` → `/users/:id`——被**编译**成了一个可读的、可被 TypeScript 追溯的、可被 AI 单文件消费的路由树。
+
+AI 不需要在 context window 里重建目录结构。它读一个 `routeTree.gen.ts`，就知道了：
+
+- 每个路由的完整路径
+- 路由之间的父子嵌套关系
+- 哪些路由有 loader、哪些没有
+- 类型如何从 parent context 流向 child route
+
+这就是 **「AI 友好框架」的核心设计原则**：
+
+> **任何对 AI 友好的框架，都应该把隐式规则「编译」成可被机器消费的显式产物。**
+
+文件系统路由本身不是问题。问题是这个映射是否被外化。Next.js 把映射藏在构建器黑盒里——它运行时知道 `page.tsx` 对应哪个路由，但这个知识不存在于任何一个你可以打开阅读的文件中。TanStack 把它写成了 `routeTree.gen.ts`——自动生成的、人类可读的、AI 可直接消费的。
+
+两者都用文件系统组织路由。但一个让 AI 猜，一个让 AI 读。
+
+让我们看一个具体的 `routeTree.gen.ts` 是什么样的。假设你的项目有以下文件结构：
+
+```
+src/routes/
+  __root.tsx
+  index.tsx
+  dashboard.tsx
+  dashboard/
+    settings.tsx
+    users/
+      $userId.tsx
+```
+
+TanStack 会自动生成类似这样的路由树文件（简化版）：
+
+```tsx
+// routeTree.gen.ts — 自动生成，人类可读，AI 可直接消费
+import { Route as rootRoute } from './routes/__root'
+import { Route as indexRoute } from './routes/index'
+import { Route as dashboardRoute } from './routes/dashboard'
+import { Route as dashboardSettingsRoute } from './routes/dashboard/settings'
+import { Route as dashboardUsersUserIdRoute } from './routes/dashboard/users/$userId'
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': { preLoaderRoute: typeof indexRoute }
+    '/dashboard': { preLoaderRoute: typeof dashboardRoute }
+    '/dashboard/settings': { preLoaderRoute: typeof dashboardSettingsRoute }
+    '/dashboard/users/$userId': { preLoaderRoute: typeof dashboardUsersUserIdRoute }
+  }
+}
+
+export const routeTree = rootRoute.addChildren([
+  indexRoute,
+  dashboardRoute.addChildren([
+    dashboardSettingsRoute,
+    dashboardUsersUserIdRoute,
+  ]),
+])
+```
+
+AI 读这一个文件就获得了完整信息：
+
+1. **所有路由的路径**（四行 `FileRoutesByPath` 接口声明）——`/`、`/dashboard`、`/dashboard/settings`、`/dashboard/users/$userId`
+2. **父子嵌套关系**（`addChildren` 调用）——`dashboardRoute` 包裹了 settings 和 users
+3. **每个路由对应的组件文件**（import 语句）——可以追溯源码位置
+4. **动态参数的标记方式**（`$userId` 文件名 → `$userId` 路由参数）
+
+有了这份「地图」，AI 在做以下操作时不需要任何目录扫描：
+
+- 导航到 `/dashboard/users/123`：确认路径存在、参数名是 `$userId`
+- 给 settings 页面加 loader：知道它的父路由是 dashboard、root，可以访问父 context
+- 重命名路由：TypeScript 会报出所有受影响的引用
+
+这就是「编译产物」的力量。它把框架的内部规则——一个原本只存在于构建器内存中的隐式数据结构——**序列化**成了一个文件。就像 TypeScript 编译成 JavaScript 时会丢掉类型信息，但你可以通过 `.d.ts` 保留它。TanStack 把路由约定的「类型信息」保留在了 `routeTree.gen.ts` 里。
+
+Next.js 不是做不到。它只是选择了不这样做——因为它的哲学里，路由映射是「框架的内部事务」，开发者不需要看到。这个选择在人类主导编码的时代是合理的，但在 AI 主导编码的时代，它变成了一个可感知的劣势。
+
+### 5.1 AI 实际如何使用这份「地图」
+
+说了一堆理论。让我们用一个具体场景来看看 `routeTree.gen.ts` 在 AI 的手里到底怎么工作。
+
+假设你对 AI 说：「给 `/dashboard/users/$userId` 加一个编辑功能——点击用户行进入编辑模式，URL 变成 `/dashboard/users/123?edit=true`。」
+
+**在 Next.js 项目中，AI 的执行步骤：**
+
+1. 搜索 `app/dashboard/users/` 目录，找到 `[userId]/page.tsx`——消耗 1 次文件搜索
+2. 读 `page.tsx`，确认当前组件结构——消耗 1 次文件读取
+3. 推断 `[userId]` 是动态参数名 `userId`——消耗框架约定知识
+4. 检查是否有 `layout.tsx` 包裹这个页面——再读一个文件
+5. 确认 `useSearchParams` 已导入——在组件内部找
+6. 添加 `edit` 参数到导航逻辑——AI 写 `router.push('/dashboard/users/123?edit=true')`——这是字符串，TypeScript 不验证参数名是否正确
+7. 在组件里写 `searchParams.get('edit')`——TypeScript 返回 `string | null`，不验证 `'edit'` 是不是合法参数
+
+**在 TanStack 项目中，AI 的执行步骤：**
+
+1. 读 `routeTree.gen.ts`——一条 `addChildren` 链确认了 `/dashboard/users/$userId` 的完整路径、父路由 context、以及参数名——消耗 1 次文件读取，获得全局路由拓扑
+2. 打开 `routes/dashboard/users/$userId.tsx`——`validateSearch` 已经声明了所有合法的 search params
+3. AI 在 `validateSearch` 里加一个 `edit: boolean` 参数——写 2 行代码
+4. TypeScript 立即提示：所有 `Route.useSearch()` 的调用处现在有了 `edit: boolean` 类型
+5. AI 写 `navigate({ search: { edit: true } })`——TypeScript 验证参数存在且类型正确
+
+**两个项目，同一个需求。Next.js 版本 AI 做了 6 步操作、消耗约 2500 token、依赖 3 次框架约定推断。TanStack 版本 AI 做了 5 步操作、消耗约 800 token、每一步都有编译器验证。**
+
+这 1700 token 的节省，在单次操作中不值一提。但一天 100 次交互下来，就是 170,000 token——接近一个中等模型的单次 context window 上限。而这些 token 不是花在「理解需求」上，是花在「还原框架约定」上。
+
+---
+
+## 六、如果 Next.js 也生成 `route.gen.ts` 呢？
+
+这是一个必须正面回答的反驳。
+
+技术上当然可以。Next.js 完全可以在下一个版本加一个 `routeTree.gen.ts`。事实上，typedRoutes 已经在往这个方向走了——静态生成的路由链接类型。
+
+但这里有四层问题。
+
+### 第一层：是后装的补丁，不是地基
+
+`routeTree.gen.ts` 在 TanStack 里是整个类型推导链的**起点**。`validateSearch` 的返回类型 → `loaderDeps` 的类型 → loader 的返回类型 → component 的 props 类型——这条链的根就在路由树文件。它不是一个附加的便利功能，它是类型系统的结构性组件。
+
+在 Next.js 里，即使生成路由树文件，它也只是现有架构上的一个辅助输出。类型不会从路由树自动流向 search params → loader → component。因为 Next.js 的 search params 没有 schema，loader 没有 route 级别的类型上下文，Server Action 的边界是类型黑洞。
+
+一个是在已有的房子外面贴一张地图。一个是地图本身就是房子的地基。看起来都是「让路由可见」，但底层的类型基础设施完全不同。
+
+### 第二层：生成文件只是拼图的一块
+
+即使 Next.js 有了路由树，AI 打开一个路由文件时仍然要面对：
+
+```tsx
+// app/dashboard/page.tsx
+'use client'
+
+import { useSearchParams } from 'next/navigation'
+
+export default function DashboardPage() {
+  const searchParams = useSearchParams()
+  const q = searchParams.get('q') // string | null — AI: q 到底可以是哪些值？
+  const page = searchParams.get('page') // string | null — 应该是数字，但没有任何东西保证
+  // ...
+}
+```
+
+`searchParams.get("q")` 永远是 `string | null`。没有办法在编译时说「这个路由的合法 search params 是 `{ q: string, page: number }`」。AI 要理解这个路由的完整 API surface，需要跨文件阅读、需要运行时验证、需要在脑子里维护一份「哪些 params 被哪个组件用了」的清单。
+
+再对比 TanStack 的等价代码：
+
+```tsx
+// src/routes/dashboard.tsx
+export const Route = createFileRoute('/dashboard')({
+  validateSearch: (search) => ({
+    q: typeof search.q === 'string' ? search.q : '',
+    page: typeof search.page === 'string' ? parseInt(search.page) : 1,
+  }),
+  loaderDeps: ({ search }) => ({ q: search.q, page: search.page }),
+  component: Dashboard,
+})
+
+function Dashboard() {
+  const { q, page } = Route.useSearch()
+  // q: string, page: number — AI: 我知道了，这两个是唯一合法的参数，类型也很清楚
+}
+```
+
+AI 读一个文件。知道了路由路径、合法的 search params 和类型、loader 的依赖。都是编译器验证过的。不需要猜，不需要查文档，不需要跨文件推断。
+
+### 第三层：默认值决定 AI 的日常摩擦
+
+框架之间的竞争，不是「谁有某个功能」，而是「谁的默认值更接近你的需求」。
+
+Next.js 的默认值是：你是 Server Component。你要加状态？写 `"use client"`。要加事件处理？写 `"use client"`。要加 useEffect？写 `"use client"`。
+
+如果你的应用中大部分组件需要交互性——而大多数产品应用确实如此——那 AI 每写一个组件都在对抗框架的默认值。每一行 `"use client"` 都是被浪费的 context token。
+
+TanStack 的默认值是：你是普通的 React 组件，有 state、有 effect、有 event handler。服务端优化是当你需要的时候才 opt in。AI 碰到什么写什么，不需要对抗默认行为。
+
+**一个框架如果让 AI 花 20% 的 token 去写对抗默认值的代码，不是比另一个框架多了 20% 的 token 消耗——而是多了 20% 的出错机会。**
+
+### 第四层：竞争会让所有框架变好，但哲学不兼容
+
+Next.js 一定会加更多类型安全。Turbopack 在追 Vite 的速度，typedRoutes 在追 TanStack Router。竞争是好的——它让所有工具都在进步。
+
+但有两个东西不是功能迭代能改变的：
+
+一个是**默认值方向**。Next.js 的核心赌注是「大多数 Web 内容是静态的，交互是例外」。这个假设在 Vercel 的商业模型里是合理的——静态内容缓存友好、CDN 友好、成本低。但这个假设和大多数产品应用的实际情况是冲突的。只要这个默认值不改变，AI 就要为一个不匹配的哲学支付 token 税。
+
+另一个是 **API 设计的「可验证性」约束**。TanStack 的 Tenets 第 4 条把 *"surprising defaults treated as a bug"* 写进了项目的评估标准。这意味着每一个新 API 提案都要回答：「这个行为是可预测的吗？AI 能通过读代码而不是读文档来理解它吗？」Next.js 没有这样的约束——它的优化目标包含「在 Vercel 上自动获得最佳性能」。自动优化通常是隐式的——你不需要知道缓存怎么工作，它自己就工作了。直到它不工作。
+
+两套优先级撞在一起，产生的是根本不同的 API 设计。你不会看到 Next.js 把 `staleTime` 写在每个路由的 loader 旁边——因为它的哲学是「框架替你管缓存」。你也不会看到 TanStack 引入一个你不知道什么时候会生效的隐式缓存层——因为它的宪法说「surprising defaults are a bug」。
+
+**架构可以被追平。哲学不能。因为哲学决定了「什么算 bug」。**
+
+这最后一点值得展开。想象两个框架团队的内部评审。
+
+Next.js 的团队坐在一起评审一个新 API。他们的优化目标清单大概是这样的：1) 在 Vercel 上自动获得最佳性能，2) 减少开发者的配置负担，3) 向后兼容。当他们设计缓存策略时，「自动缓存」是合理的默认值——因为缓存 = 快，快 = 好的用户体验，而开发者不需要知道细节。缓存失效什么时候发生？「框架知道」。开发者怎么覆盖？「文档里有」。
+
+TanStack 的团队坐在一起评审同一个场景。他们的清单是：1) 行为必须从代码中可预测，2) API 必须显式而不啰嗦，3) 令人惊讶的默认值就是 bug。当他们设计缓存策略时，`staleTime: 10_000` 是唯一的正确答案——因为不管值是多少，**它写在那里**。AI 读得懂，人读得懂，编译器可以遍历。
+
+同一个功能。两个团队。两个完全不同的答案。不是因为一个团队比另一个团队聪明。因为他们的「什么算 bug」不一样。
+
+在 Next.js 的哲学里，隐式缓存不是 bug——它是特性。在 TanStack 的哲学里，隐式缓存**就是 bug**——不管它设计得多精妙，不管它的默认值多合理，只要开发者（和 AI）需要查文档才能知道缓存的行为，它就是一个设计缺陷。
+
+这就是为什么「Next.js 也可以加 `route.gen.ts`」不能完全解决问题。它可以加类型安全。它可以提供更多的显式 hook。它可以改进 dev server 的启动速度。这些都会改善 AI 的体验，Next.js 在竞争中会被推着往前走，所有开发者都会受益。
+
+但它不会把「surprising defaults are a bug」写进自己的评估标准——因为它的商业模型赖以生存的许多优化（自动缓存、自动图片优化、RSC streaming）都是建立在「框架替你决定」的假设上的。把「surprising defaults」定义为 bug，意味着所有这些自动优化都需要提供显式的、单文件可验证的覆盖方式。这不是技术难度问题——是哲学方向和商业模式的根本张力。
+
+---
+
+## 七、这不是「配置回归」
+
+读到这你可能有一个直觉：这不就是当年被 Rails 革命掉的「配置优于约定」又回来了吗？
+
+不是。2026 年的「显式声明」和 2010 年的「XML 配置」不是同一种东西。
+
+| 维度 | 2010 的 XML 配置 | 2026 的显式声明 |
+|------|-----------------|----------------|
+| 载体 | 字符串（XML / YAML / JSON） | TypeScript 代码 |
+| 验证 | 运行时崩，或靠 IDE 插件猜 | 编译期类型检查 |
+| 冗余 | 高——每个路由重复写同样的映射结构 | 低——类型推导消除大部分重复 |
+| 核心动作 | 填字符串值 | 写可执行的、有类型的代码 |
+| 信息密度 | 低——同一段 XML 模板反复出现 | 高——声明和实现在同一处 |
+
+2010 年的 Spring XML 是**啰嗦的显式**：你要告诉框架每一个路由、每一个 Bean、每一个 ORM 映射——即使它们和 99% 的场景一模一样。
+
+2026 年的 `createFileRoute` 是**类型化的显式**：你声明路由时自动获得了 search params 校验、loader deps 推导、组件 props 类型。你 **不写** 那些可以被推导出来的东西，但你**显式声明**那些决定行为的关键参数。
+
+TanStack 自己文档里的措辞非常精准：
+
+> *"TanStack Start is explicit without being verbose. Loader functions, cache configuration, middleware chains — they're visible in your code, not hidden behind conventions. This doesn't mean more code; it means the code you write maps directly to what happens at runtime."*
+
+**「显式但不啰嗦」**——这才是关键词。不是多写代码，是让你写的代码直接对应运行时行为。不通过文件名推断，不通过目录层级猜测，不通过「相信我，框架知道的」来假设。
+
+理解这层差别最好的办法是对比同一个路由在两种极端下的写法。2010 年的 Java + Spring XML 要写 50 行散落在 3 个文件里。2026 年的 TanStack 要写 15 行在一个文件里。Next.js 的约定模式只要创建 1 个文件——但它的代价是你（和 AI）需要「知道」这个文件的文件名意味着什么。省的不是代码行数，省的是你在文件名里编码了行为声明。而 AI 在解码这个行为声明时，付出了 context token 的代价。
+
+---
+
+## 八、同一逻辑在 UI 组件上的镜像
+
+不谈代码了。讲一个你看得见的故事。
+
+你有一个项目，用的是 Ant Design。产品经理说：「登录按钮点击后，要从点击位置扩散出一圈波纹——颜色要跟用户头像的主色调匹配。」
+
+你打开 Ant Design 的 Button 文档。`type` 五种、`size` 三种、`shape` 三种。没有波纹方向，没有动态颜色。
+
+你打开 `node_modules/antd/es/button/`，里面有源码。你读得懂，AI 也读得懂。你甚至可以改——把波纹的 CSS 动画改成从点击位置展开。
+
+然后你 `npm install` 了新版本。所有的改动，消失。你是在别人的房子里装修，物业巡检的时候强制还原。
+
+你还有一个项目，用的是 shadcn/ui。同样的需求来了。
+
+你的项目里有一个 `components/ui/button.tsx`。50 行，每一行都是你的。AI 读它、理解它、修改它——12 行变更，提交，部署。改的是你自己的代码，留在你 git 的历史里，下一次 `npm install` 不会抹掉它。
+
+这不是「哪个组件库更好看」的问题。这是**代码所有权**的问题。
+
+**AI 不傻。AI 能读懂 antd 的源码。但它改出来的代码能不能成为项目的一部分——这个问题和 AI 的能力无关，和代码放在哪里有关。**
+
+放在 `node_modules` 里——你是租客，有使用权没有所有权。放在 `components/ui/` 里——你是房东，房本上是你的名字。
+
+让我们把这个场景具体化。假设产品经理想在所有按钮的 loading 状态中，用一个骨架闪烁动画替代 antd 默认的旋转图标。用 antd 的做法：
+
+```tsx
+// 这是你能做的全部——在 antd 的 prop 菜单里挑
+import { Button } from 'antd'
+
+<Button loading={{ icon: <SkeletonPulse /> }}>  // ← 不行。loading 只接受 boolean 或 { delay: number }
+  提交
+</Button>
+```
+
+你翻了文档。`loading` prop 的类型是 `boolean | { delay?: number }`。不能自定义图标，不能自定义动画。你想 `import { Button } from 'antd'` 然后直接改它的内部结构——做不到，因为 `Button` 的实现在 `node_modules` 里。
+
+你被迫用 `Spin` 组件包一层，或者用 CSS hack 覆盖 antd 的内部 className。两个方案都不能真正解决问题——你只是在「模拟」一个不存在的行为。
+
+用 shadcn 的做法：
+
+```tsx
+// components/ui/button.tsx —— 你的源代码，你想怎么改就怎么改
+import { Slot } from '@radix-ui/react-slot'
+import { cva, type VariantProps } from 'class-variance-authority'
+
+const buttonVariants = cva(
+  'inline-flex items-center justify-center rounded-md text-sm font-medium',
+  {
+    variants: {
+      variant: {
+        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+        // ...
+      },
+    },
+  }
+)
+
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean
+  loading?: boolean
+  loadingContent?: React.ReactNode  // ← 你自己加的
+}
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, loading, loadingContent, children, ...props }, ref) => {
+    const Comp = asChild ? Slot : 'button'
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        disabled={loading || props.disabled}
+        {...props}
+      >
+        {loading ? (
+          loadingContent || <SkeletonPulse />  // ← 你自己的加载态
+        ) : (
+          children
+        )}
+      </Comp>
+    )
+  }
+)
+```
+
+你加了 4 行代码：一个 `loadingContent` prop，一个三元判断。60 秒。提交了，版本控制了，团队其他人拉下来就能用。antd 能做到吗？能做到——在下一个大版本里，如果他们的团队决定加这个功能。你知道这个过程要多久。
+
+这不是「shadcn 比 antd 好写」的问题。写一个 antd 按钮已经很快了——`<Button type="primary">提交</Button>` 只有一行。问题是当需求**越出了 prop 菜单的边界**时，你在 antd 世界里能做的一切就是等、hack、或者放弃。在 shadcn 世界里，你打开源文件，改。就像改任何其他你自己写的代码一样。
+
+这就是你在 AI 时代需要回答的那个问题：**你是想要一行代码的便利，还是想要无限修改的自由？** 在 AI 替你写代码之前，便利更值钱。在 AI 替你写代码之后——当 AI 可以在 60 秒内帮你改好一个组件——自由突然变得比便利重要得多。
+
+至于 antd 5 的 Design Token 系统——`ConfigProvider` 里的 `token: { colorPrimary: '#xxx' }`——它解决的是「统一换肤」的问题，不是「自由定制」的问题。Token 覆盖的是 antd 团队决定暴露的约 100 个变量。波纹方向不在变量里。点击坐标不在变量里。按钮内部 DOM 结构不在变量里。你需要的不是换肤——你需要在按钮里加一个自己定义的交互行为。
+
+这就是 shadcn/ui 和 antd 在 AI 时代的分界线：**一个给你配置权，一个给你源代码。**
+
+这个分界线不是孤例。在 2026 年的前端生态里，同样的光谱出现在更多库的比较中：
+
+| 库 | 所有权模型 | AI 的可操作范围 | 深度定制的路径 |
+|----|----------|----------------|--------------|
+| **Ant Design** | 依赖（node_modules） | Props 菜单（`type`、`size`、`variant`） | 等大版本更新，或 CSS hack |
+| **MUI** | 依赖（node_modules） | Props + `sx` prop + 主题覆盖 | `createTheme()` 能改样式，改不了内部 DOM |
+| **TDesign** | 依赖（node_modules） | Props + CSS 变量覆盖 | 和 antd 同样的天花板 |
+| **shadcn/ui** | 源代码（components/ui/），底层依赖 Radix UI 原语 | 整个组件，每一行，每一个 DOM 节点 | 打开文件，直接改；行为逻辑由 Radix 提供，样式和结构你定 |
+| **Radix UI** | 依赖（node_modules）+ 渲染 props | 行为逻辑在依赖里（也是 shadcn 的行为底层），样式完全自由 | 样式 100% 可控、结构 80% 可控（slot/className 透传） |
+| **Ark UI** | 依赖（node_modules）+ 渲染 props | 类似 Radix，多框架支持 | 样式和部分结构可控 |
+
+注意这个模式：依赖 = 配置权。源码 = 所有权。而 AI 的价值，是帮你行使所有权。
+
+> **一个需要承认的 nuance**：shadcn/ui 的「所有权」不是 100% 无依赖的。shadcn 的组件源码里大量使用 Radix UI 原语——Dialog 的无障碍焦点管理、DropdownMenu 的键盘导航、Select 的弹出层定位——这些复杂的行为逻辑仍然在 `node_modules/@radix-ui` 里。你拥有的「源代码」主要是样式层和结构层，行为层仍然依赖第三方。但这比 antd 的全黑盒模式前进了一大步：当 Radix 的行为满足你的需求时，你只需改样式和结构；当不满足时，你可以把 shadcn 组件的 Radix 依赖逐步替换成自己的实现——因为你是房东，你可以换承重墙，哪怕这个过程比换墙纸费劲。antd 的世界里你没有这个选项。
+
+**如果你只有配置权，AI 能帮你挑最合适的 prop 组合。如果你有所有权，AI 能帮你把整个组件改造成任何你想要的形态。** 前者的上限是 antd 团队的设计速度。后者的上限是你的想象力——以及 AI 的执行速度。
+
+---
+
+## 九、TanStack 官方如何阐述自己的哲学
+
+前面说了很多「我的理解」。这里给你看一手材料——TanStack 自己是怎么说的。
+
+### 组织精神（Ethos）
+
+在 [tanstack.com/ethos](https://tanstack.com/ethos)，TanStack 列出了四条组织原则：
+
+**1. Independently Owned, Unbiased by Design**
+
+> *"TanStack is independently operated with no controlling interests over our technical direction and no hidden agendas."*
+
+没有 VC，没有平台偏向，没有金主爸爸干预技术方向。对比 Next.js 和 Vercel 的关系——一个框架为一个平台优化——TanStack 的选择是：**不绑定任何平台**。
+
+**2. Technology-Agnostic by Default**
+
+> *"framework-agnostic, platform-agnostic, and future-proof tooling"*
+
+唯一的技术倾向是 TypeScript——或者说 typed JavaScript。其他一切：框架、平台、部署环境——都是中立的。
+
+**3. A Sustainable Future**
+
+> *"Instead of chasing growth at all costs, we focus on sustainable growth that prioritizes developer experience, community needs, and long-term value creation."*
+
+不烧钱，不追 VC 指标，不为了增长牺牲开发体验。这不是嘴炮——从 React Query 2019 年诞生算起，这套 bootstrapped 模式已经运行了六年多。TanStack 作为组织品牌自 2022 年成立以来也坚持了四年多。
+
+**4. Open Partners**
+
+> *"No partner can dictate or influence TanStack's core technology in a way that biases it toward their platform."*
+
+合作伙伴可以支持，但不能让核心 API 偏向自己。这条是直接写在项目宪法里的。
+
+最后一句是全文的定调：
+
+> *"TanStack isn't just a set of libraries — it's a commitment to building the web on your terms, without compromise."*
+
+如果你读完这句话觉得像 PR 话术——我理解。但结合他们四条 Ethos 的具体条款（独立运营、技术无关、可持续增长、不绑定平台），它不是一个空洞的宣言。它是一个商业实体在公开文档里做出的、可被验证的承诺。你在赌这个承诺会不会被打破——就像你在赌 Next.js 会不会继续为 Vercel 优化，赌 React Router 会不会在 Shopify 的体系里保持 Web 标准的优先。
+
+### 产品信条（Product Tenets）
+
+在 [tanstack.com/tenets](https://tanstack.com/tenets)，他们列了四条技术原则。每一条都有「What this rules out」的反面清单——这不只是说「我们推崇什么」，更在说「我们拒绝什么」。这个格式很像 Rust 的 RFC 流程。
+
+**信条 1：Open, Independent, Technology-Agnostic**
+
+> *"Every TanStack library starts with a provider-agnostic core, with integrations layered on top as optional adapters — never as the foundation."*
+
+明确拒绝的：供应商偏好的 API、「all-in on X vendor」的贡献、绑定特定云平台的功能。
+
+**信条 2：Composable, Platform-Aligned Primitives**
+
+> *"We build focused, composable primitives that embrace the platform rather than hiding it."*
+
+明确拒绝的：要求 all-in 的设计、「one framework to rule them all」的抽象、隐藏平台能力的黑盒。
+
+注意「Embrace the platform」这个措辞——他们说的是拥抱 Web、HTTP、JS/TS、服务器本身，而不是发明新的抽象层把平台藏起来。
+
+**信条 3：Pragmatic, Production-Grade Quality**
+
+> *"We design around real-world workloads, edge cases, and long-lived apps — not just happy-path demos."*
+
+功能要做到维护者敢用在自己盈利项目里才算完成。性能不是 nice-to-have，是 baseline。
+
+**信条 4：Predictable, Explicit, Type-Safe Behavior**
+
+这是和我们讨论最直接相关的一条。全文照录关键段落：
+
+> *"We minimize magic and maximize clarity. State, side effects, and data flow should be understandable from code, not guessed from hidden behavior."*
+
+> **"Explicit over implicit: Important behaviors are explicit in APIs and configuration, with surprising defaults treated as a bug."**
+
+> *"Type safety as leverage, not dogma: TypeScript support should guide correct use and catch real bugs without drowning users in generics."*
+
+「令人惊讶的默认值被视为 bug」——这不是轻描淡写的偏好表述，这是项目评审的硬性标准。一个 PR 如果引入了隐式行为，不需要有人抱怨才算问题——隐式本身就是问题。
+
+这不是严格主义。这是为 AI 准备的工作环境。当你的项目宪法说「令人惊讶的默认值就是 bug」时，你是在告诉每一个贡献者——包括 AI——「你不需要猜这个 API 的行为。它写在代码里。如果它不在代码里，是 API 的错，不是你的。」
+
+### Start 对类型安全的立场
+
+TanStack 在信条文档（Tenets）里反复强调端到端类型安全是其核心竞争力。他们在 Start 的 Overview 页将 "End-to-End Type Safety" 列为框架的核心特性：「Full TypeScript support across the entire stack.」他们没有在文档里写「AI 时代」这三个字——但设计原则的方向恰好对准了 AI 的需求。当一个框架把「类型贯穿全栈」作为设计目标、把「surprising defaults treated as a bug」写进评估标准，它就不只是在为人类开发者设计 API——它在为自己进入 AI agent 的工作流做准备。
+
+他们对比 Next.js 时的诊断也极其精准：
+
+> *"Next.js layers implicit behaviors: multi-layer server-side caching with a history of breaking changes and community frustration, data fetching conventions tied to file structure, optimizations that require understanding the framework's internals to override."*
+
+不是「Next.js 不好」。是「Next.js 的设计默认值让 AI 推理成本过高」。
+
+---
+
+## 十、RSC：约定设计的终极形态
+
+本文花了大量篇幅在讨论「文件系统路由」和「Server/Client 边界」——但有一个更深层的问题一直悬在上面：React Server Components（RSC）本身，是不是「约定优于配置」这个哲学的终极产物？
+
+答案可能是：是的，而且它把约定的「AI 不友好」推到了极致。
+
+### RSC 的边界是隐式的
+
+在 RSC 模型里，一个组件是 Server Component 还是 Client Component，由它的**文件位置**和**引用关系**决定——不是由组件本身的代码决定。
+
+```tsx
+// components/user-avatar.tsx
+// 这是一个 Server Component。为什么？因为它没有写 "use client"。
+// 没有任何代码告诉你这一点。你只能通过「它没有写那行指令」来推断。
+export async function UserAvatar({ userId }: { userId: string }) {
+  const user = await db.user.findUnique({ where: { id: userId } })
+  return <img src={user.avatarUrl} alt={user.name} />
+}
+```
+
+这个组件里写了 `await`、写了数据库查询——所以它是 Server Component。但 AI 只能通过**推理**得出这个结论：检查文件顶部有没有 `"use client"` → 没有 → 推断它是 Server Component → 确认它可以直接访问数据库。
+
+如果 AI 在一个「不完整」的 context 里读到这个文件——比如它只被给了一个文件内容而没有顶部指令行——它无法判断这个组件能在哪端运行。
+
+TanStack 的等价代码：
+
+```tsx
+// @tanstack/react-start 里，服务端代码被显式包裹
+const getUserAvatar = createServerFn({ method: 'GET' })
+  .validator(z.string())
+  .handler(async ({ data: userId }) => {
+    const user = await db.user.findUnique({ where: { id: userId } })
+    return { avatarUrl: user.avatarUrl, name: user.name }
+  })
+
+// 组件本身是普通的 Client Component
+function UserAvatar({ userId }: { userId: string }) {
+  const { data } = useQuery({ queryKey: ['avatar', userId], queryFn: () => getUserAvatar(userId) })
+  return <img src={data.avatarUrl} alt={data.name} />
+}
+```
+
+服务端代码在一处（`createServerFn`），客户端代码在另一处（`useQuery` + 组件）。AI 不需要推断——Server Function 的边界是**写在代码里的**。
+
+### RSC 的序列化格式是隐式的
+
+Next.js 的 RSC 在服务端渲染完成后，发给浏览器的不是 HTML——是一个特殊的序列化格式（React Flight Protocol）。这个格式是 React 内部实现的，文档不全，调试工具不完善，而且在服务端和客户端各有一套解析器。
+
+这意味着：**当 AI 排查一个 RSC 的渲染 bug 时，它在调试一个它几乎不可能「看到」的数据流。** 组件的输出不是 HTML——你不能「查看源代码」来看服务端渲染了什么。它是一个文本行分隔的 RSC Payload（React Flight Protocol），虽然底层是 UTF-8 文本流而非二进制，但其格式是 React 内部私有协议——`hexId:tag[JSON]\n` 的行结构对调试者几乎不可读，AI 同样无法从中有效提取信息。
+
+TanStack Start 的 SSR 输出是 HTML。AI 可以读。可以 debug。可以「查看源代码」。RSC 的序列化黑盒对 AI 是一个绝对的信息壁垒。
+
+### RSC 的缓存是隐式的——而且在变化
+
+我们在第四章讨论过 Next.js 的四层缓存。RSC 让这个问题更复杂：因为 RSC Payload 的缓存和 HTML 的缓存是两层独立的机制，而且 RSC 的「组件缓存」是一个 Next.js 独有的概念——「缓存一个序列化的 React 组件流」。没有一个通用的 HTTP 缓存策略能直接映射到 RSC 缓存语义上。
+
+当 AI 写一个 Next.js 的数据获取代码时，它需要考虑的不是「数据怎么缓存」——这是一个通用问题——而是「这个组件在 RSC 流里会被缓存多久、失效条件是什么、这个行为在 v13/v14/v15 里是否一致」。这些问题没有编译器可以回答，没有 schema 可以验证。它们存在于 Next.js 的运行时和文档里。
+
+### 这不是反对 RSC
+
+React Server Components 解决了一个真实的问题：把数据获取移到服务端，减少客户端 bundle。但它的实现方式——基于隐式边界、文件系统约定、私有序列化格式、多层缓存——是「约定优于配置」在 2026 年能达到的极致复杂度。
+
+如果未来出现一个 RSC 的「显式化」版本——类似 TanStack 把文件系统路由编译成 `routeTree.gen.ts` 那样，把 Server/Client 边界编译成可读的声明文件——它会让 RSC 对 AI 友好一个数量级。
+
+在那之前，RSC 是一个强大的技术，但它的设计假设里没有 AI agent 这个消费者。
+
+这不是 RSC 的问题。React 团队在设计 RSC 的时候（2020-2022），AI coding agent 还不是一个主流的使用场景。他们优化的是人类开发者的数据获取体验——把 `useEffect` + `fetch` 的瀑布流改成服务端直接查询。这个优化非常成功。
+
+但 2026 年的现实是：AI 读代码的次数可能比人还多。当一个技术在设计时没有把「被 AI 阅读」纳入需求，它的 API 表面就会产生隐式复杂度——不是因为设计不好，是因为设计的 consumer persona 变了。
+
+### RSC 对 AI 的「知识版本污染」
+
+这里有一个被低估的问题。RSC 在 React 18（2022）中被引入，React 19（2024）中稳定化，Next.js 13（2022）首次支持，Next.js 14（2023）和 15（2024）不断调整行为。RSC 的 API 表面、`"use client"` 的语义、缓存策略、Server Action 的序列化——都在变。
+
+AI 模型的训练数据里，覆盖了这整个时间线的内容。当 AI 读到 `"use server"` 时，它可能「回忆」起某个 2023 年的教程告诉你 Server Action 不能返回 JSX——但实际上 React 19 已经允许了。当 AI 设计一个组件树时，它可能「参考」了一个 RSC 还不存在的 2022 年的设计模式——把 async 组件放在 client boundary 里面，而那个写法早已废弃。
+
+这不是 AI 记错了。是 RSC 作为一项快速演化的技术，在 AI 的训练数据里产生了**多个冲突的「真相版本」**。而 AI 没有能力区分哪个版本对应你正在使用的 React 和 Next.js 版本。
+
+相比之下，`createServerFn`、`createFileRoute`、`validateSearch`——这些都是 TanStack Start 的 API。它们的语义清晰、范围小、演化慢。AI 的训练数据里没有 5 个互相矛盾的 `createServerFn` 使用方式，因为这项技术从诞生起就相对稳定。
+
+**一项技术的演化速度越快、API 变化越频繁、版本间的不兼容越多——AI 在它上面出错的概率就越高。** RSC 可能是 2022-2026 年间前端领域演化最快的特性。这种速度对第一时间使用它的人类开发者是有利的，但对依赖训练数据快照的 AI agent 是灾难。
+
+---
+
+## 十一、你的项目该选哪条路
+
+不给标准答案。但给判断维度。
+
+**如果你已经在日常开发中深度使用 AI coding agent**——无论是 Cursor、Claude Code、Copilot 还是别的——那「显式优于隐式」就不再是偏好，而是效率的硬差异。显式声明让类型系统成为 AI 的第一道验证防线。隐式约定让 AI 把 context token 花在推断规则上。在 AI 已经是你开发流程一部分的世界里，token 就是钱。
+
+**如果你的项目是纯后台管理系统**——交互模式标准、功能密度高、没有复杂的设计系统、团队暂时不引入 AI——那 antd + Next.js 的「拎包入住」仍然高效。Ant Design 覆盖了 80% 的后台场景，你不需要为那 20% 的定制支付 shadcn 的初始成本。我们之前的讨论不是说约定「不好」——是说要**意识到它的代价**，然后在正确的场景里支付它。
+
+**如果你在做需要长期迭代的产品**——代码所有权比开发速度重要。Ant Design 升级到下一个大版本时，你的项目迁移可能要花两周。而你的 `button.tsx` 永远是 `button.tsx`，你决定它什么时候变。Next.js 的缓存行为在 v13 到 v15 之间变化过——你的代码没有变，但行为变了，因为「约定」的默认值被改了。
+
+**React Router v7 的「三种模式」是一个很好的渐进路径。** 你不需要一次性从 antd 跳到 shadcn、从 Next.js 跳到 TanStack。你可以保留文件系统路由的便利性，同时逐步引入更多的类型安全——从 loader/action 的显式导出开始，从 validator schema 开始。渐进式的「显式化」可能比框架级迁移更现实。
+
+**评估一个框架时，问一句：**
+
+> **它有没有把隐式规则「编译」成 AI 可以直接读取的文件？**
+
+如果有（routeTree.gen.ts、生成的类型定义、schema 文件、可读的构建中间产物）——它就是 AI 友好的。如果没有（映射只在构建器的内存里、特殊文件名只能靠文档约定推断）——它就是在消耗 AI 的 context window，而你可能要为 AI 的「规则猜测失误」买单。
+
+这个原则也可以反过来用。当你在设计自己的组件库、自己的内部框架、或者自己的项目脚手架时，问自己：
+
+1. **这个行为是 AI 单文件可验证的吗？** —— 如果 AI 需要跨 3 个文件才能理解一个路由的行为，重新考虑你的文件拆分粒度。
+2. **这个约定的映射在哪里？** —— 如果它只存在于文档和团队共识里，生成一个文件把它写下来。
+3. **类型能自动流动吗？** —— 如果一个函数的输入来自另一个函数的输出，类型系统有没有能力追踪这个链路？如果不能，你是在让人类和 AI 都「信任」这个链路不会断。
+4. **默认值在帮 AI 还是在挡 AI 的路？** —— 如果你的框架默认 Server Component，而你的项目 90% 的组件需要交互性，AI 花在 `"use client"` 上的 token 就是在为你付「默认值税」。
+
+这些问题在 2016 年不重要。在 2026 年，它们决定了你的 AI 搭档是能帮你写一天业务逻辑，还是花半天跟你博弈框架约定。而你自己可能甚至不知道这场博弈在发生——你只会感觉到 AI「有点不靠谱」，会犯一些低级错误，会在意想不到的地方漏掉类型。其实不是 AI 的问题。是它花在理解框架上的 token，挤占了它理解需求的空间。
+
+### 一个具体的渐进迁移路径
+
+说了这么多理论，如果你现在有一个 Next.js 项目，有什么实际可行的步骤？
+
+**第一步：不换框架，先换组件库。**
+
+这是阻力最小的改动。如果你在用 antd，把最常被定制的 3-5 个组件（Button、Modal、Table）逐步迁移到 shadcn。不需要一次性全换——一个页面一个页面来。每一个被「源代码化」的组件，都给你和 AI 增加了一份可以编辑的自由。
+
+**第二步：引入类型校验，不换路由。**
+
+在 Next.js 项目里，你可以用 `zod` + `nuqs` 来做 search params 的类型校验。这不会改变你的路由约定，但它把那个 `string | null` 的黑洞堵上了。AI 写得快，但 AI 也需要知道什么是对的。
+
+```tsx
+import { parseAsString, parseAsInteger, useQueryState } from 'nuqs'
+
+// 替代 useSearchParams().get('q')
+const [q, setQ] = useQueryState('q', parseAsString.withDefault(''))
+const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1))
+// q: string, page: number —— 有类型了
+```
+
+**第三步：新项目用新栈。**
+
+当你开一个新项目时——哪怕是内部工具——用 TanStack Start + shadcn 做一次完整的体验。不是为了「迁移旧项目」，是为了让你和你的 AI 搭档建立一套新的工作节奏。旧项目继续用 Next.js 没问题——但你会知道「另一个世界」是什么样的。
+
+**第四步：回看旧项目的「约定税」账单。**
+
+当你习惯了类型链贯穿的开发体验后，回头看你 Next.js 项目里的那些 `as any`、那些手动写的 Zod runtime check、那些「为什么这个参数是 undefined」的 debug 时刻——你会发现这些不是 bug。是你一直在支付「约定税」。
+
+### 一个真实的迁移案例：搜索页面
+
+让我用一个具体的案例来展示「约定税」到底长什么样。
+
+假设你在 Next.js 里有一个搜索页面 `/search`。URL 参数是 `?q=keyword&page=1&sort=date`。这是 Next.js 的典型写法：
+
+```tsx
+// app/search/page.tsx — Next.js
+'use client'
+
+import { useSearchParams, useRouter } from 'next/navigation'
+
+export default function SearchPage() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
+  // 全是 string | null，没有任何东西保证这些参数存在
+  const q = searchParams.get('q') || ''
+  const page = parseInt(searchParams.get('page') || '1')
+  const sort = (searchParams.get('sort') || 'date') as 'date' | 'relevance'
+
+  // 类型断言——你希望它是 'date' | 'relevance'，但没人保证
+  // 如果有人手动改 URL 为 ?sort=foo，这行不会报错，运行时也可能不崩
+  // 但你的搜索结果会变成默认排序，用户不知道为什么
+}
+```
+
+这个页面有三种潜在的 bug：
+1. `sort` 可以是任意字符串——你的类型断言只是欺骗 TypeScript
+2. `page` 可以是 `NaN`——如果有人在 URL 里写 `?page=abc`
+3. 没有任何一个地方声明了这个路由的合法参数集合——`q`、`page`、`sort` 的存在仅仅是「惯例」
+
+现在同样的页面在 TanStack Start 里：
+
+```tsx
+// routes/search.tsx — TanStack Start
+export const Route = createFileRoute('/search')({
+  validateSearch: (search) => ({
+    q: typeof search.q === 'string' ? search.q : '',
+    page: typeof search.page === 'string' ? parseInt(search.page) || 1 : 1,
+    sort: search.sort === 'relevance' ? 'relevance' : 'date',
+  }),
+  loaderDeps: ({ search }) => ({ q: search.q, page: search.page, sort: search.sort }),
+  loader: async ({ deps }) => {
+    return await searchProducts(deps)
+  },
+  component: SearchPage,
+})
+
+function SearchPage() {
+  const { q, page, sort } = Route.useSearch()
+  // q: string, page: number, sort: 'date' | 'relevance'
+  // 全部是编译器验证过的正确类型。没有 as，没有断言，没有 NaN 风险。
+}
+```
+
+`validateSearch` 写一次，全项目受益。不仅是组件——loader 知道 `sort` 的类型，导航函数知道 `sort` 的类型，连别的路由如果要链接到这个搜索页，TypeScript 都会检查它传的 search params 是否正确。
+
+**这是几十行代码的差异。在 2026 年，AI 帮你写这几十行只需要几秒钟。但 AI 帮你修复那个由 `as 'date' | 'relevance'` 引发的线上 bug——它需要理解整个请求链路、复现用户的 URL 参数、追踪数据流——可能需要你 30 分钟的 debug。**
+
+---
+
+## 十二、棋盘被改写了
+
+2016 年，我坐在办公桌前，打开一个 Laravel 项目。创建一个 `User.php` Model，Eloquent 自动找 `users` 表。写一行 `Route::resource`，七个 RESTful 端点就有了。不用写 ORM 映射，不用写路由配置——框架替你做了所有的「默认决定」。那时候我觉得自己理解了「约定优于配置」的全部智慧。
+
+十年后回头看，那不是智慧的全部。那是智慧在那个时代的具体形状。
+
+「约定」的正确性建立在一个前提上：**写代码的和读代码的，都是人。** 当这个前提被打破——当读代码的主体变成了一个逐 token 线性扫描、不会扫目录、不理解「文件名就是行为」的 AI——约定的代价就浮出水面了。
+
+我们当年赞美的不是「约定」。我们赞美的是「少写重复代码」。约定是实现这个目标的手段，而不是目标本身。当手段和新的环境产生了冲突——当少写的代码变成了多犯的错误——就应该换手段了。
+
+TanStack 不是「新一代 Next.js」。它是一个不同前提下的不同答案。前提是：**在 AI 参与编码的世界里，代码的可验证性比可书写性重要一个数量级。** 你可以快速写出的代码如果 AI 无法验证正确性，它就是技术债务的温床。你可以稍慢写出但编译器全程验证的代码，才是 AI 时代的生产力杠杆。
+
+这不是 pendulum 摆回去了。是棋盘被改写了。
+
+> 2016 年我们说「约定优于配置」，是把人类从 XML 地狱里解放出来。
+>
+> 2026 年我们说「显式优于隐式」，是把 AI 从猜测的困境里解放出来。
+>
+> 两个选择，在各自的时代都是对的。不同的是，这一次的驱动者不是一种新的编程语言或框架——而是一个新的代码生产者和消费者：一个不会扫目录、不会猜约定、但能在一秒内验证整个类型链的 AI Agent。
+
+我们花了十年把它教聪明。现在，它要我们重新学会一件事：把规则写在它能看见的地方。
+
+当写代码的不再只是人，优化目标从「少打字」变成「高可验证性」的那一刻起，所有以「约定优于配置」为荣的框架都需要回答三个问题：
+
+**你的约定，编译器能读懂吗？你的隐式，AI 能验证吗？你的默认值，是在帮 AI 还是在挡 AI 的路？**
+
+答不上来的那些，不是变差了。
+
+是我们的标准，已经不一样了。
+
+---
+
+十年前，如果有人问我「最好的 React 框架是什么」，我会说「看你的需求」。如果继续追问，我会说「Next.js，因为它的生态最大」。
+
+今天有人问我同样的问题，我的回答变了：「看你的搭档是谁。」
+
+如果你的搭档是一个会扫目录、理解约定、能在脑子里重建路由树的人类——Next.js 仍然是对的。它的约定体系为人类的认知模式做了十年的优化，这是一笔巨大的遗产。
+
+但如果你的搭档是一个逐 token 阅读、线性理解代码、不会「扫一眼就懂」的 AI——框架的约定不再是你的资产，是你的开销。每一条隐式规则都是 AI 要消耗 token 去推断的谜题。每一个特殊文件名都是 AI 要查文档去确认的约定。每一层缓存的默认行为都是 AI 可能会误解的陷阱。
+
+这不是说 Next.js 不好。是说它的「好」建立在人类是主要代码消费者的假设上。当这个假设松动的时候，整个「约定优于配置」的大厦就少了一根柱子。
+
+你不需要今天就迁移到 TanStack。你甚至不需要喜欢它的 API 设计。但你至少应该意识到：**在 AI 写代码的时代，一个框架的「AI 友好度」不是一个附加属性——它是和性能、生态、稳定性同等重要的一级评估维度。**
+
+因为在未来——可能是不远的未来——你的项目里写代码最多的人，不是你自己。
+
+到那一天，你选的不只是一个框架。你选的是你的 AI 搭档的工作环境。是给它一个明亮的、每样东西都标着名字的工作台，还是一个堆满了隐式约定、需要它自己摸索着找东西的暗室。
+
+这个选择，今天就要开始做了。
+
+毕竟——你不会让一个建筑师在伸手不见五指的房间里画图。凭什么让 AI 在看不见约定的项目里写代码？
+
+---
+
+### 如果你还没有用 AI 写代码
+
+本文的核心论证依赖一个前提：**你已经在日常开发中使用 AI coding agent。** 如果你的团队还没有引入 AI——或者只是偶尔用 ChatGPT 问问问题——那我上面说的一切对你都不适用。
+
+暂时不适用。
+
+Ant Design 的 `import { Table } from 'antd'` 在 2026 年仍然是写后台管理系统最快的方式。Next.js 的 `npx create-next-app` 仍然是最快从零到部署的路径。在没有 AI 替你写代码的世界里，「少打字」仍然是正确的优化目标，「约定优于配置」仍然是对的。
+
+但你要知道：这个前提正在被改写。你公司隔壁那个团队可能已经在用 Cursor 或 Claude Code 了。他们可能已经开始意识到 shadcn 和 TanStack 的「显式」模型让他们的 AI 更高效。他们可能正在比你更快地交付功能——不是因为他们的 AI 更聪明，是因为他们的代码结构对 AI 更友好。
+
+**你不需要今天就做一个「AI 友好框架」的迁移。但你应该把「AI 友好度」加入你的技术选型维度清单。** 就像 2016 年你把「社区生态」加入清单一样。当时不是所有人都做了这个调整——不做的人也没错。但他们错过了一个维度，而这个维度在接下来的三年里变成了最重要的决策因素之一。
+
+2026 年的「AI 友好度」就是 2016 年的「社区生态」。不是今天的 urgent，是明天的 important。
+
+---
+
+### 本文的局限
+
+本文花了 1200 行讨论三个框架和一个组件库的「AI 友好度」。但它没有讨论：
+
+- **Vue 生态**（Nuxt、Vue Router）——它们在这个光谱上处于什么位置？Vue 的 SFC 单文件组件天然具有「显式」的倾向，但 Nuxt 的文件约定系统和 Next.js 有同样的隐式挑战。
+- **SvelteKit**——文件系统路由，但 loader 显式导出。它的「显式度」接近 React Router v7。
+- **Astro**——岛屿架构（Islands Architecture），天然分隔静态和交互。这是一个完全不同的范式，可能比所有 SPA/SSR 框架都更「显式」。
+- **SolidStart**——TanStack Start 的 Solid 版本，同样的哲学，不同的响应式系统。
+- **非 Web 平台**——React Native、Flutter、Tauri 的「约定 vs 显式」问题在不同平台上可能完全不同。
+
+这些是同一个问题的不同切面。本文的框架——「隐式规则是否被编译成显式产物」——可以用在任何框架的评估上，但具体案例需要在各自的生态里展开。
+
+同时，本文把「AI 友好度」当成了一个可以客观度量的质量属性。但它有主观成分：不同的 AI agent（Claude Code、Cursor、Copilot、Hermes）有不同的 context window 大小、不同的文件搜索策略、不同级别的 TypeScript 语言服务集成。一个对 Claude Code 友好的框架，对 Copilot 可能没那么友好——反之亦然。「AI 友好」不是一个绝对值，它依赖于你用的具体 agent。
+
+但这不妨碍我们建立一条原则：**把隐藏的规则外化为可读的文件，永远比让 AI 猜更友好。** 至于外化到什么程度最优——那是需要在实践中迭代的。
+
+---
+
+如果你读完这篇文章，脑子里只有一个问题：「所以我到底换不换框架？」——你已经抓住了重点。
+
+你不一定需要换。但你需要知道：你现在的框架、你现在的组件库、你现在的项目结构——它们在「AI 友好度」这个维度上，是多少分。你不知道的地方，就是 AI 会出错的地方。而那些错误，AI 不会主动告诉你——因为它不知道自己猜错了。
+
+2026 年，最危险的不是选错了框架。最危险的是你不知道你的框架在「被 AI 阅读」这件事上，有什么你从没想过的劣势。因为你不去想，AI 也不会告诉你。它会默默地猜、默默地错、默默地花掉你项目里最贵的资源——不是服务器账单，是你和它的 context window。

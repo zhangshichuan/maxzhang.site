@@ -162,9 +162,12 @@ async def generate_article(locale: str, slug: str, verbose: bool = True, sem: as
         for key, voice in voices.items():
             out_path = out_dir / f"{key}.mp3"
             if out_path.exists():
-                if verbose:
-                    print(f"  ⏭  {locale}/{slug} 已有音频 ({key})")
-                return 0
+                if article_path.stat().st_mtime <= out_path.stat().st_mtime:
+                    if verbose:
+                        print(f"  ⏭  {locale}/{slug} 已有音频 ({key})")
+                    return 0
+                elif verbose:
+                    print(f"  🔄 {locale}/{slug} 内容已更新，重新生成 ({key})")
 
             if verbose:
                 print(f"  🎙️  {locale}/{slug} ({len(text)} 字符) → {key}")
