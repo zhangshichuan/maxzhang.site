@@ -2,7 +2,20 @@
 title: 'When Convention Becomes a Burden: How AI Is Rewriting Frontend Framework Selection'
 summary: 'In 2016, we praised convention over configuration because conventions freed humans from XML hell. In 2026, we are embracing explicit over implicit because conventions are dragging AI into a quagmire of guesswork. This article traces three paths — Next.js, React Router v7, and TanStack Start — to unpack why AI-friendly frameworks share one clear design principle: compile implicit rules into explicit artifacts.'
 category: 'Frontend'
-tags: ['framework', 'convention-over-configuration', 'explicit-vs-implicit', 'tanstack-start', 'nextjs', 'react-router', 'remix', 'shadcn-ui', 'ant-design', 'ai-coding', 'type-safety']
+tags:
+  [
+    'framework',
+    'convention-over-configuration',
+    'explicit-vs-implicit',
+    'tanstack-start',
+    'nextjs',
+    'react-router',
+    'remix',
+    'shadcn-ui',
+    'ant-design',
+    'ai-coding',
+    'type-safety',
+  ]
 author: 'Max Zhang'
 date: '2026-06-15'
 ---
@@ -182,23 +195,23 @@ This isn't Next.js's fault. It's the inevitable cost of "one framework trying to
 
 The real problem is scale. Next.js's App Router has over **20 reserved filenames**, each with unique semantics and nesting behaviors. This isn't a list AI can "roughly know" — it must precisely match every convention when generating code:
 
-| Filename | Actual Meaning | AI Inference Difficulty |
-|----------|---------------|------------------------|
-| `page.tsx` | Main page component for the route | Low (most common convention) |
-| `layout.tsx` | Layout shell wrapping the route and all children | Medium (requires understanding nesting) |
-| `loading.tsx` | Loading skeleton inside Suspense boundary | Medium (must understand React Suspense) |
-| `error.tsx` | Error Boundary catching errors for the route | Medium (must understand Error Boundary) |
-| `template.tsx` | Like layout but remounts on every navigation | High (easily confused with layout) |
-| `default.tsx` | Default fallback for parallel routes | High (parallel routes themselves are niche) |
-| `not-found.tsx` | 404 page for the route | Medium |
-| `route.ts` | API route handler (not a page component) | High (one character different from page.tsx, completely different behavior) |
-| `middleware.ts` | Global request interception (at project root) | Low (position is fixed) |
-| `global-error.tsx` | Error Boundary for root layout | High (what's the difference from error.tsx?) |
-| `head.tsx` | `<head>` tag content (v13 beta convention, replaced by Metadata API in v13.2, never reached stable) | High (many old tutorials still reference it, remnants in AI training data) |
-| `opengraph-image.tsx` | Auto-generate OG images | High (a single file can do this?) |
-| `sitemap.ts` | Auto-generate sitemap.xml | High (same as above) |
-| `robots.ts` | Auto-generate robots.txt | Medium |
-| `icon.tsx` / `apple-icon.tsx` | Auto-generate favicons | High (another "one file = one feature" magic trick) |
+| Filename                      | Actual Meaning                                                                                      | AI Inference Difficulty                                                     |
+| ----------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `page.tsx`                    | Main page component for the route                                                                   | Low (most common convention)                                                |
+| `layout.tsx`                  | Layout shell wrapping the route and all children                                                    | Medium (requires understanding nesting)                                     |
+| `loading.tsx`                 | Loading skeleton inside Suspense boundary                                                           | Medium (must understand React Suspense)                                     |
+| `error.tsx`                   | Error Boundary catching errors for the route                                                        | Medium (must understand Error Boundary)                                     |
+| `template.tsx`                | Like layout but remounts on every navigation                                                        | High (easily confused with layout)                                          |
+| `default.tsx`                 | Default fallback for parallel routes                                                                | High (parallel routes themselves are niche)                                 |
+| `not-found.tsx`               | 404 page for the route                                                                              | Medium                                                                      |
+| `route.ts`                    | API route handler (not a page component)                                                            | High (one character different from page.tsx, completely different behavior) |
+| `middleware.ts`               | Global request interception (at project root)                                                       | Low (position is fixed)                                                     |
+| `global-error.tsx`            | Error Boundary for root layout                                                                      | High (what's the difference from error.tsx?)                                |
+| `head.tsx`                    | `<head>` tag content (v13 beta convention, replaced by Metadata API in v13.2, never reached stable) | High (many old tutorials still reference it, remnants in AI training data)  |
+| `opengraph-image.tsx`         | Auto-generate OG images                                                                             | High (a single file can do this?)                                           |
+| `sitemap.ts`                  | Auto-generate sitemap.xml                                                                           | High (same as above)                                                        |
+| `robots.ts`                   | Auto-generate robots.txt                                                                            | Medium                                                                      |
+| `icon.tsx` / `apple-icon.tsx` | Auto-generate favicons                                                                              | High (another "one file = one feature" magic trick)                         |
 
 And that's not all. Parallel routes (`@modal`, `@sidebar` slots), intercepting routes (`(.)photo`, `(..)settings` interception syntax), route groups (`(marketing)` parenthesized directories) — every one is a variant of filename convention.
 
@@ -265,7 +278,7 @@ Declarative Mode → Data Mode → Framework Mode
   (fewest conventions)  (more conventions)  (most conventions)
 ```
 
-The official docs say it directly: *"Pick your mode based on how much control or how much help you want from React Router."* — choose how much convention you want. This is a framework that admits, at the design level, that "conventions have a cost."
+The official docs say it directly: _"Pick your mode based on how much control or how much help you want from React Router."_ — choose how much convention you want. This is a framework that admits, at the design level, that "conventions have a cost."
 
 It's more explicit than Next.js on the spectrum, but hasn't reached TanStack's extreme.
 
@@ -277,8 +290,8 @@ Loaders receive standard Web `Request` objects and return standard `Response` ob
 
 ```tsx
 export async function loader({ request }: LoaderFunctionArgs) {
-  const url = new URL(request.url)          // standard Web API
-  const cookie = request.headers.get("Cookie")  // standard Web API
+  const url = new URL(request.url) // standard Web API
+  const cookie = request.headers.get('Cookie') // standard Web API
   const user = await getUser(cookie)
   return json({ user })
 }
@@ -340,7 +353,7 @@ Because AI doesn't forgive ambiguity. It doesn't skip implicitness. It doesn't "
 
 TanStack Start's design philosophy can be captured in a line from its own documentation:
 
-> *"The core bet: developers know their apps better than frameworks do. The framework should give you powerful primitives and get out of your way."*
+> _"The core bet: developers know their apps better than frameworks do. The framework should give you powerful primitives and get out of your way."_
 
 **Routing**: it also uses filesystem-based route organization. But the difference — it generates a **readable `routeTree.gen.ts`**. This file is the complete routing topology: every route's path, hierarchical relationships, loader dependencies, component bindings — all laid out before your eyes. AI reads one file and gets the global routing structure, no need to reconstruct the directory tree in its context window.
 
@@ -440,7 +453,9 @@ Here's the completely different experience in the Next.js world:
 
 ```tsx
 // Next.js — AI is "trusting" types are correct on every line
-export default async function Page({ searchParams }: {
+export default async function Page({
+  searchParams,
+}: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const { q, page } = await searchParams
@@ -449,7 +464,7 @@ export default async function Page({ searchParams }: {
   // AI: is page a number? can q be undefined? no answer.
   const data = await fetch(`/api/search?q=${q}&page=${page}`)
   // this is string → string, no validation whatsoever
-  const result = await data.json() as any
+  const result = (await data.json()) as any
   // AI: what type is result actually? I have to check the API docs or read the api route's return code
 }
 ```
@@ -517,10 +532,7 @@ declare module '@tanstack/react-router' {
 
 export const routeTree = rootRoute.addChildren([
   indexRoute,
-  dashboardRoute.addChildren([
-    dashboardSettingsRoute,
-    dashboardUsersUserIdRoute,
-  ]),
+  dashboardRoute.addChildren([dashboardSettingsRoute, dashboardUsersUserIdRoute]),
 ])
 ```
 
@@ -648,7 +660,7 @@ But two things can't be changed through feature iteration:
 
 One is **default direction**. Next.js's core bet is "most web content is static; interactivity is the exception." This assumption is reasonable in Vercel's business model — static content is cache-friendly, CDN-friendly, low-cost. But this assumption conflicts with the reality of most product applications. As long as this default doesn't change, AI will pay a token tax for a mismatched philosophy.
 
-The other is the **"verifiability" constraint on API design**. TanStack's Tenet #4 writes *"surprising defaults treated as a bug"* into their project evaluation criteria. This means every new API proposal must answer: "Is this behavior predictable? Can AI understand it by reading the code rather than documentation?" Next.js has no such constraint — its optimization goals include "automatically achieving the best performance on Vercel." Automatic optimization is usually implicit — you don't need to know how caching works; it just works by itself. Until it doesn't.
+The other is the **"verifiability" constraint on API design**. TanStack's Tenet #4 writes _"surprising defaults treated as a bug"_ into their project evaluation criteria. This means every new API proposal must answer: "Is this behavior predictable? Can AI understand it by reading the code rather than documentation?" Next.js has no such constraint — its optimization goals include "automatically achieving the best performance on Vercel." Automatic optimization is usually implicit — you don't need to know how caching works; it just works by itself. Until it doesn't.
 
 When these two sets of priorities collide, they produce fundamentally different API designs. You won't see Next.js writing `staleTime` next to every route's loader — because its philosophy is "the framework manages caching for you." You also won't see TanStack introducing an implicit cache layer whose trigger conditions you can't predict — because its constitution says "surprising defaults are a bug."
 
@@ -676,13 +688,13 @@ Reading this far, you might have an intuition: isn't this just "configuration ov
 
 No. The "explicit declaration" of 2026 and the "XML configuration" of 2010 are not the same thing.
 
-| Dimension | 2010 XML Configuration | 2026 Explicit Declaration |
-|-----------|----------------------|--------------------------|
-| Medium | Strings (XML / YAML / JSON) | TypeScript code |
-| Validation | Crashes at runtime, or IDE plugins guess | Compile-time type checking |
-| Redundancy | High — same mapping structure repeated per route | Low — type inference eliminates most repetition |
-| Core action | Fill in string values | Write executable, typed code |
-| Information density | Low — same XML template appears repeatedly | High — declaration and implementation in one place |
+| Dimension           | 2010 XML Configuration                           | 2026 Explicit Declaration                          |
+| ------------------- | ------------------------------------------------ | -------------------------------------------------- |
+| Medium              | Strings (XML / YAML / JSON)                      | TypeScript code                                    |
+| Validation          | Crashes at runtime, or IDE plugins guess         | Compile-time type checking                         |
+| Redundancy          | High — same mapping structure repeated per route | Low — type inference eliminates most repetition    |
+| Core action         | Fill in string values                            | Write executable, typed code                       |
+| Information density | Low — same XML template appears repeatedly       | High — declaration and implementation in one place |
 
 Spring XML in 2010 was **verbose explicitness**: you told the framework every route, every bean, every ORM mapping — even when they were identical to 99% of all other scenarios.
 
@@ -690,7 +702,7 @@ Spring XML in 2010 was **verbose explicitness**: you told the framework every ro
 
 TanStack's own documentation puts it precisely:
 
-> *"TanStack Start is explicit without being verbose. Loader functions, cache configuration, middleware chains — they're visible in your code, not hidden behind conventions. This doesn't mean more code; it means the code you write maps directly to what happens at runtime."*
+> _"TanStack Start is explicit without being verbose. Loader functions, cache configuration, middleware chains — they're visible in your code, not hidden behind conventions. This doesn't mean more code; it means the code you write maps directly to what happens at runtime."_
 
 **"Explicit but not verbose"** — that's the key phrase. Not writing more code, but making the code you write directly correspond to runtime behavior. No inferring from filenames. No guessing from directory hierarchies. No assuming "trust me, the framework knows."
 
@@ -742,24 +754,20 @@ The shadcn approach:
 import { Slot } from '@radix-ui/react-slot'
 import { cva, type VariantProps } from 'class-variance-authority'
 
-const buttonVariants = cva(
-  'inline-flex items-center justify-center rounded-md text-sm font-medium',
-  {
-    variants: {
-      variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-        // ...
-      },
+const buttonVariants = cva('inline-flex items-center justify-center rounded-md text-sm font-medium', {
+  variants: {
+    variant: {
+      default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+      // ...
     },
-  }
-)
+  },
+})
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean
   loading?: boolean
-  loadingContent?: React.ReactNode  // ← you added this
+  loadingContent?: React.ReactNode // ← you added this
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -772,14 +780,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={loading || props.disabled}
         {...props}
       >
-        {loading ? (
-          loadingContent || <SkeletonPulse />  // ← your own loading state
-        ) : (
-          children
-        )}
+        {loading
+          ? loadingContent || <SkeletonPulse /> // ← your own loading state
+          : children}
       </Comp>
     )
-  }
+  },
 )
 ```
 
@@ -795,14 +801,14 @@ This is the dividing line between shadcn/ui and antd in the AI era: **one gives 
 
 This dividing line isn't an isolated case. In the 2026 frontend ecosystem, the same spectrum appears across more library comparisons:
 
-| Library | Ownership Model | AI's Operating Range | Deep Customization Path |
-|---------|----------------|---------------------|------------------------|
-| **Ant Design** | Dependency (node_modules) | Props menu (`type`, `size`, `variant`) | Wait for major version update, or CSS hack |
-| **MUI** | Dependency (node_modules) | Props + `sx` prop + theme overrides | `createTheme()` can change styles, can't change internal DOM |
-| **TDesign** | Dependency (node_modules) | Props + CSS variable overrides | Same ceiling as antd |
-| **shadcn/ui** | Source code (components/ui/), built on Radix UI primitives | Entire component, every line, every DOM node | Open file, directly modify; behavioral logic provided by Radix, styles and structure are yours |
-| **Radix UI** | Dependency (node_modules) + render props | Behavioral logic in dependency (also shadcn's behavioral foundation), full style freedom | 100% style control, ~80% structure control (slot/className passthrough) |
-| **Ark UI** | Dependency (node_modules) + render props | Similar to Radix, multi-framework support | Partial style and structure control |
+| Library        | Ownership Model                                            | AI's Operating Range                                                                     | Deep Customization Path                                                                        |
+| -------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| **Ant Design** | Dependency (node_modules)                                  | Props menu (`type`, `size`, `variant`)                                                   | Wait for major version update, or CSS hack                                                     |
+| **MUI**        | Dependency (node_modules)                                  | Props + `sx` prop + theme overrides                                                      | `createTheme()` can change styles, can't change internal DOM                                   |
+| **TDesign**    | Dependency (node_modules)                                  | Props + CSS variable overrides                                                           | Same ceiling as antd                                                                           |
+| **shadcn/ui**  | Source code (components/ui/), built on Radix UI primitives | Entire component, every line, every DOM node                                             | Open file, directly modify; behavioral logic provided by Radix, styles and structure are yours |
+| **Radix UI**   | Dependency (node_modules) + render props                   | Behavioral logic in dependency (also shadcn's behavioral foundation), full style freedom | 100% style control, ~80% structure control (slot/className passthrough)                        |
+| **Ark UI**     | Dependency (node_modules) + render props                   | Similar to Radix, multi-framework support                                                | Partial style and structure control                                                            |
 
 Notice the pattern: dependency = configuration rights. Source code = ownership. And AI's value is helping you exercise ownership.
 
@@ -822,31 +828,31 @@ At [tanstack.com/ethos](https://tanstack.com/ethos), TanStack lists four organiz
 
 **1. Independently Owned, Unbiased by Design**
 
-> *"TanStack is independently operated with no controlling interests over our technical direction and no hidden agendas."*
+> _"TanStack is independently operated with no controlling interests over our technical direction and no hidden agendas."_
 
 No VC. No platform bias. No benefactor dictating technical direction. Contrast with Next.js's relationship to Vercel — a framework optimized for one platform — TanStack's choice: **bind to no platform.**
 
 **2. Technology-Agnostic by Default**
 
-> *"framework-agnostic, platform-agnostic, and future-proof tooling"*
+> _"framework-agnostic, platform-agnostic, and future-proof tooling"_
 
 The only technology preference is TypeScript — or typed JavaScript. Everything else: frameworks, platforms, deployment environments — all neutral.
 
 **3. A Sustainable Future**
 
-> *"Instead of chasing growth at all costs, we focus on sustainable growth that prioritizes developer experience, community needs, and long-term value creation."*
+> _"Instead of chasing growth at all costs, we focus on sustainable growth that prioritizes developer experience, community needs, and long-term value creation."_
 
 No burning cash. No chasing VC metrics. No sacrificing developer experience for growth. This isn't lip service — counting from React Query's birth in 2019, this bootstrapped model has run for over six years. TanStack as an organizational brand, since its founding in 2022, has sustained it for over four years.
 
 **4. Open Partners**
 
-> *"No partner can dictate or influence TanStack's core technology in a way that biases it toward their platform."*
+> _"No partner can dictate or influence TanStack's core technology in a way that biases it toward their platform."_
 
 Partners can support, but cannot bias core APIs toward themselves. This is written directly into the project's constitution.
 
 The closing line sets the tone for the entire document:
 
-> *"TanStack isn't just a set of libraries — it's a commitment to building the web on your terms, without compromise."*
+> _"TanStack isn't just a set of libraries — it's a commitment to building the web on your terms, without compromise."_
 
 If you read that and it sounds like PR — I understand. But combined with the four specific Ethos clauses (independent operation, technology-agnostic, sustainable growth, platform-neutral), it's not an empty manifesto. It's a verifiable commitment made by a commercial entity in public documentation. You're betting on whether this commitment will be broken — just as you're betting on whether Next.js will continue optimizing for Vercel, and whether React Router will maintain its web standards priority within Shopify's ecosystem.
 
@@ -856,13 +862,13 @@ At [tanstack.com/tenets](https://tanstack.com/tenets), they list four technical 
 
 **Tenet 1: Open, Independent, Technology-Agnostic**
 
-> *"Every TanStack library starts with a provider-agnostic core, with integrations layered on top as optional adapters — never as the foundation."*
+> _"Every TanStack library starts with a provider-agnostic core, with integrations layered on top as optional adapters — never as the foundation."_
 
 Explicitly rejects: vendor-preferred APIs, "all-in on X vendor" contributions, features that bind to specific cloud platforms.
 
 **Tenet 2: Composable, Platform-Aligned Primitives**
 
-> *"We build focused, composable primitives that embrace the platform rather than hiding it."*
+> _"We build focused, composable primitives that embrace the platform rather than hiding it."_
 
 Explicitly rejects: all-in designs, "one framework to rule them all" abstractions, black boxes that hide platform capabilities.
 
@@ -870,7 +876,7 @@ Note the phrase "Embrace the platform" — they're talking about embracing the W
 
 **Tenet 3: Pragmatic, Production-Grade Quality**
 
-> *"We design around real-world workloads, edge cases, and long-lived apps — not just happy-path demos."*
+> _"We design around real-world workloads, edge cases, and long-lived apps — not just happy-path demos."_
 
 A feature isn't done until its maintainers would run it in their own revenue-critical applications. Performance isn't nice-to-have; it's baseline.
 
@@ -878,11 +884,11 @@ A feature isn't done until its maintainers would run it in their own revenue-cri
 
 This is the one most directly relevant to our discussion. Key passages in full:
 
-> *"We minimize magic and maximize clarity. State, side effects, and data flow should be understandable from code, not guessed from hidden behavior."*
+> _"We minimize magic and maximize clarity. State, side effects, and data flow should be understandable from code, not guessed from hidden behavior."_
 
 > **"Explicit over implicit: Important behaviors are explicit in APIs and configuration, with surprising defaults treated as a bug."**
 
-> *"Type safety as leverage, not dogma: TypeScript support should guide correct use and catch real bugs without drowning users in generics."*
+> _"Type safety as leverage, not dogma: TypeScript support should guide correct use and catch real bugs without drowning users in generics."_
 
 "Surprising defaults treated as a bug" — this isn't a casual preference statement; it's a hard evaluation criterion for project reviews. A PR that introduces implicit behavior doesn't need someone to complain before it counts as a problem — implicitness itself is the problem.
 
@@ -894,7 +900,7 @@ TanStack repeatedly emphasizes end-to-end type safety as its core competitive ad
 
 Their diagnosis when comparing to Next.js is also remarkably precise:
 
-> *"Next.js layers implicit behaviors: multi-layer server-side caching with a history of breaking changes and community frustration, data fetching conventions tied to file structure, optimizations that require understanding the framework's internals to override."*
+> _"Next.js layers implicit behaviors: multi-layer server-side caching with a history of breaking changes and community frustration, data fetching conventions tied to file structure, optimizations that require understanding the framework's internals to override."_
 
 It's not "Next.js is bad." It's "Next.js's design defaults make AI reasoning costs too high."
 
@@ -1068,6 +1074,7 @@ export default function SearchPage() {
 ```
 
 This page has three potential bugs:
+
 1. `sort` can be any string — your type assertion is just lying to TypeScript
 2. `page` can be `NaN` — if someone writes `?page=abc` in the URL
 3. Nowhere declares this route's valid parameter set — `q`, `page`, `sort` exist purely by "convention"

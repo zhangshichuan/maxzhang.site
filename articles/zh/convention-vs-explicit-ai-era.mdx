@@ -2,7 +2,20 @@
 title: '当约定成为负担：AI 时代的前端框架选型逻辑正在被重写'
 summary: '2016 年我们赞美「约定优于配置」，因为约定把人类从 XML 地狱里解放出来。2026 年我们重新拥抱「显式优于隐式」，因为约定正在把 AI 拖进猜测的泥潭。本文从 Next.js、React Router v7、TanStack Start 三条路线出发，拆解为什么「AI 友好的框架」有一条清晰的设计原则：把隐式规则编译成显式产物。'
 category: 'Frontend'
-tags: ['framework', 'convention-over-configuration', 'explicit-vs-implicit', 'tanstack-start', 'nextjs', 'react-router', 'remix', 'shadcn-ui', 'ant-design', 'ai-coding', 'type-safety']
+tags:
+  [
+    'framework',
+    'convention-over-configuration',
+    'explicit-vs-implicit',
+    'tanstack-start',
+    'nextjs',
+    'react-router',
+    'remix',
+    'shadcn-ui',
+    'ant-design',
+    'ai-coding',
+    'type-safety',
+  ]
 author: 'Max Zhang'
 date: '2026-06-15'
 ---
@@ -182,23 +195,23 @@ Next.js 的设计哲学可以用一句话概括：**框架知道什么对你的�
 
 但真正的问题是规模。Next.js 的 App Router 有多达 **20 多个保留文件名**，每个都有独特的语义和嵌套行为。这不是一个 AI 可以「大概知道」的列表——它必须在生成代码时精确匹配每一个约定：
 
-| 文件名 | 实际含义 | AI 推断难度 |
-|--------|---------|------------|
-| `page.tsx` | 该路由的主页面组件 | 低（最常用的约定） |
-| `layout.tsx` | 包裹该路由及所有子路由的布局壳 | 中（需要理解嵌套关系） |
-| `loading.tsx` | Suspense 边界内的加载骨架屏 | 中（必须懂 React Suspense） |
-| `error.tsx` | Error Boundary，捕获该路由的错误 | 中（必须懂 Error Boundary） |
-| `template.tsx` | 类似 layout 但每次导航都重新挂载 | 高（很容易和 layout 搞混） |
-| `default.tsx` | 并行路由的默认回退 | 高（并行路由本身就很冷门） |
-| `not-found.tsx` | 该路由的 404 页面 | 中 |
-| `route.ts` | API 路由处理器（不是页面组件） | 高（和 page.tsx 一字之差，行为完全不同） |
-| `middleware.ts` | 全局请求拦截（放根目录） | 低（位置固定） |
-| `global-error.tsx` | 根布局的 Error Boundary | 高（和 error.tsx 的区别是什么？） |
-| `head.tsx` | `<head>` 标签内容（v13 beta 约定，v13.2 被 Metadata API 替代，从未 stable） | 高（大量旧教程仍在引用，AI 训练数据里残存） |
-| `opengraph-image.tsx` | 自动生成 OG 图片 | 高（这是一个文件就能做到的吗？） |
-| `sitemap.ts` | 自动生成 sitemap.xml | 高（同上） |
-| `robots.ts` | 自动生成 robots.txt | 中 |
-| `icon.tsx` / `apple-icon.tsx` | 自动生成 favicon | 高（又是一个文件=一个功能的魔法） |
+| 文件名                        | 实际含义                                                                    | AI 推断难度                                 |
+| ----------------------------- | --------------------------------------------------------------------------- | ------------------------------------------- |
+| `page.tsx`                    | 该路由的主页面组件                                                          | 低（最常用的约定）                          |
+| `layout.tsx`                  | 包裹该路由及所有子路由的布局壳                                              | 中（需要理解嵌套关系）                      |
+| `loading.tsx`                 | Suspense 边界内的加载骨架屏                                                 | 中（必须懂 React Suspense）                 |
+| `error.tsx`                   | Error Boundary，捕获该路由的错误                                            | 中（必须懂 Error Boundary）                 |
+| `template.tsx`                | 类似 layout 但每次导航都重新挂载                                            | 高（很容易和 layout 搞混）                  |
+| `default.tsx`                 | 并行路由的默认回退                                                          | 高（并行路由本身就很冷门）                  |
+| `not-found.tsx`               | 该路由的 404 页面                                                           | 中                                          |
+| `route.ts`                    | API 路由处理器（不是页面组件）                                              | 高（和 page.tsx 一字之差，行为完全不同）    |
+| `middleware.ts`               | 全局请求拦截（放根目录）                                                    | 低（位置固定）                              |
+| `global-error.tsx`            | 根布局的 Error Boundary                                                     | 高（和 error.tsx 的区别是什么？）           |
+| `head.tsx`                    | `<head>` 标签内容（v13 beta 约定，v13.2 被 Metadata API 替代，从未 stable） | 高（大量旧教程仍在引用，AI 训练数据里残存） |
+| `opengraph-image.tsx`         | 自动生成 OG 图片                                                            | 高（这是一个文件就能做到的吗？）            |
+| `sitemap.ts`                  | 自动生成 sitemap.xml                                                        | 高（同上）                                  |
+| `robots.ts`                   | 自动生成 robots.txt                                                         | 中                                          |
+| `icon.tsx` / `apple-icon.tsx` | 自动生成 favicon                                                            | 高（又是一个文件=一个功能的魔法）           |
 
 这还不是全部。`parallel routes`（`@modal`、`@sidebar` 等槽位）、`intercepting routes`（`(.)photo`、`(..)settings` 等拦截语法）、`route groups`（`(marketing)` 括号目录）——每一种都是文件命名约定的变体。
 
@@ -265,7 +278,7 @@ Declarative Mode → Data Mode → Framework Mode
   （最少约定）       （增加约定）     （最多约定）
 ```
 
-官方文档直接说：*"Pick your mode based on how much control or how much help you want from React Router."*——你需要多少约定，自己选。这是一个在设计层面就承认「约定有代价」的框架。
+官方文档直接说：_"Pick your mode based on how much control or how much help you want from React Router."_——你需要多少约定，自己选。这是一个在设计层面就承认「约定有代价」的框架。
 
 它在光谱上比 Next.js 更显式，但没走到 TanStack 的极致。
 
@@ -277,8 +290,8 @@ Loader 接收的是标准的 Web `Request`，返回的是标准的 `Response`：
 
 ```tsx
 export async function loader({ request }: LoaderFunctionArgs) {
-  const url = new URL(request.url)          // 标准 Web API
-  const cookie = request.headers.get("Cookie")  // 标准 Web API
+  const url = new URL(request.url) // 标准 Web API
+  const cookie = request.headers.get('Cookie') // 标准 Web API
   const user = await getUser(cookie)
   return json({ user })
 }
@@ -340,7 +353,7 @@ TanStack Router 已经足够成熟（它本身比 Start 早近一年，独立于
 
 TanStack Start 的设计哲学可以用它自己文档里的一句话概括：
 
-> *"The core bet: developers know their apps better than frameworks do. The framework should give you powerful primitives and get out of your way."*
+> _"The core bet: developers know their apps better than frameworks do. The framework should give you powerful primitives and get out of your way."_
 
 **路由**：它也用文件系统组织路由。但区别在于——它生成一个**可读的 `routeTree.gen.ts`**。这个文件是完整的路由拓扑：每个路由的路径、层级关系、loader 依赖、组件绑定，全部展开在眼前。AI 读一个文件就能获得全局路由结构，不需要在 context window 里重建目录树。
 
@@ -440,7 +453,9 @@ AI 在写这个组件时，不需要查看 api 文档来理解 `result.data` 的
 
 ```tsx
 // Next.js — AI 每一行都在「信任」类型是对的
-export default async function Page({ searchParams }: {
+export default async function Page({
+  searchParams,
+}: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const { q, page } = await searchParams
@@ -449,7 +464,7 @@ export default async function Page({ searchParams }: {
   // AI: page 是数字吗？q 可以为 undefined 吗？没有答案。
   const data = await fetch(`/api/search?q=${q}&page=${page}`)
   // 这是 string → string，没有任何校验
-  const result = await data.json() as any
+  const result = (await data.json()) as any
   // AI: result 到底是什么类型？我必须查 API 文档或者看 api route 的返回代码
 }
 ```
@@ -519,10 +534,7 @@ declare module '@tanstack/react-router' {
 
 export const routeTree = rootRoute.addChildren([
   indexRoute,
-  dashboardRoute.addChildren([
-    dashboardSettingsRoute,
-    dashboardUsersUserIdRoute,
-  ]),
+  dashboardRoute.addChildren([dashboardSettingsRoute, dashboardUsersUserIdRoute]),
 ])
 ```
 
@@ -650,7 +662,7 @@ Next.js 一定会加更多类型安全。Turbopack 在追 Vite 的速度，typed
 
 一个是**默认值方向**。Next.js 的核心赌注是「大多数 Web 内容是静态的，交互是例外」。这个假设在 Vercel 的商业模型里是合理的——静态内容缓存友好、CDN 友好、成本低。但这个假设和大多数产品应用的实际情况是冲突的。只要这个默认值不改变，AI 就要为一个不匹配的哲学支付 token 税。
 
-另一个是 **API 设计的「可验证性」约束**。TanStack 的 Tenets 第 4 条把 *"surprising defaults treated as a bug"* 写进了项目的评估标准。这意味着每一个新 API 提案都要回答：「这个行为是可预测的吗？AI 能通过读代码而不是读文档来理解它吗？」Next.js 没有这样的约束——它的优化目标包含「在 Vercel 上自动获得最佳性能」。自动优化通常是隐式的——你不需要知道缓存怎么工作，它自己就工作了。直到它不工作。
+另一个是 **API 设计的「可验证性」约束**。TanStack 的 Tenets 第 4 条把 _"surprising defaults treated as a bug"_ 写进了项目的评估标准。这意味着每一个新 API 提案都要回答：「这个行为是可预测的吗？AI 能通过读代码而不是读文档来理解它吗？」Next.js 没有这样的约束——它的优化目标包含「在 Vercel 上自动获得最佳性能」。自动优化通常是隐式的——你不需要知道缓存怎么工作，它自己就工作了。直到它不工作。
 
 两套优先级撞在一起，产生的是根本不同的 API 设计。你不会看到 Next.js 把 `staleTime` 写在每个路由的 loader 旁边——因为它的哲学是「框架替你管缓存」。你也不会看到 TanStack 引入一个你不知道什么时候会生效的隐式缓存层——因为它的宪法说「surprising defaults are a bug」。
 
@@ -678,13 +690,13 @@ TanStack 的团队坐在一起评审同一个场景。他们的清单是：1) �
 
 不是。2026 年的「显式声明」和 2010 年的「XML 配置」不是同一种东西。
 
-| 维度 | 2010 的 XML 配置 | 2026 的显式声明 |
-|------|-----------------|----------------|
-| 载体 | 字符串（XML / YAML / JSON） | TypeScript 代码 |
-| 验证 | 运行时崩，或靠 IDE 插件猜 | 编译期类型检查 |
-| 冗余 | 高——每个路由重复写同样的映射结构 | 低——类型推导消除大部分重复 |
-| 核心动作 | 填字符串值 | 写可执行的、有类型的代码 |
-| 信息密度 | 低——同一段 XML 模板反复出现 | 高——声明和实现在同一处 |
+| 维度     | 2010 的 XML 配置                 | 2026 的显式声明            |
+| -------- | -------------------------------- | -------------------------- |
+| 载体     | 字符串（XML / YAML / JSON）      | TypeScript 代码            |
+| 验证     | 运行时崩，或靠 IDE 插件猜        | 编译期类型检查             |
+| 冗余     | 高——每个路由重复写同样的映射结构 | 低——类型推导消除大部分重复 |
+| 核心动作 | 填字符串值                       | 写可执行的、有类型的代码   |
+| 信息密度 | 低——同一段 XML 模板反复出现      | 高——声明和实现在同一处     |
 
 2010 年的 Spring XML 是**啰嗦的显式**：你要告诉框架每一个路由、每一个 Bean、每一个 ORM 映射——即使它们和 99% 的场景一模一样。
 
@@ -692,7 +704,7 @@ TanStack 的团队坐在一起评审同一个场景。他们的清单是：1) �
 
 TanStack 自己文档里的措辞非常精准：
 
-> *"TanStack Start is explicit without being verbose. Loader functions, cache configuration, middleware chains — they're visible in your code, not hidden behind conventions. This doesn't mean more code; it means the code you write maps directly to what happens at runtime."*
+> _"TanStack Start is explicit without being verbose. Loader functions, cache configuration, middleware chains — they're visible in your code, not hidden behind conventions. This doesn't mean more code; it means the code you write maps directly to what happens at runtime."_
 
 **「显式但不啰嗦」**——这才是关键词。不是多写代码，是让你写的代码直接对应运行时行为。不通过文件名推断，不通过目录层级猜测，不通过「相信我，框架知道的」来假设。
 
@@ -744,24 +756,20 @@ import { Button } from 'antd'
 import { Slot } from '@radix-ui/react-slot'
 import { cva, type VariantProps } from 'class-variance-authority'
 
-const buttonVariants = cva(
-  'inline-flex items-center justify-center rounded-md text-sm font-medium',
-  {
-    variants: {
-      variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-        // ...
-      },
+const buttonVariants = cva('inline-flex items-center justify-center rounded-md text-sm font-medium', {
+  variants: {
+    variant: {
+      default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+      // ...
     },
-  }
-)
+  },
+})
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean
   loading?: boolean
-  loadingContent?: React.ReactNode  // ← 你自己加的
+  loadingContent?: React.ReactNode // ← 你自己加的
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -774,14 +782,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={loading || props.disabled}
         {...props}
       >
-        {loading ? (
-          loadingContent || <SkeletonPulse />  // ← 你自己的加载态
-        ) : (
-          children
-        )}
+        {loading
+          ? loadingContent || <SkeletonPulse /> // ← 你自己的加载态
+          : children}
       </Comp>
     )
-  }
+  },
 )
 ```
 
@@ -797,14 +803,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
 这个分界线不是孤例。在 2026 年的前端生态里，同样的光谱出现在更多库的比较中：
 
-| 库 | 所有权模型 | AI 的可操作范围 | 深度定制的路径 |
-|----|----------|----------------|--------------|
-| **Ant Design** | 依赖（node_modules） | Props 菜单（`type`、`size`、`variant`） | 等大版本更新，或 CSS hack |
-| **MUI** | 依赖（node_modules） | Props + `sx` prop + 主题覆盖 | `createTheme()` 能改样式，改不了内部 DOM |
-| **TDesign** | 依赖（node_modules） | Props + CSS 变量覆盖 | 和 antd 同样的天花板 |
-| **shadcn/ui** | 源代码（components/ui/），底层依赖 Radix UI 原语 | 整个组件，每一行，每一个 DOM 节点 | 打开文件，直接改；行为逻辑由 Radix 提供，样式和结构你定 |
-| **Radix UI** | 依赖（node_modules）+ 渲染 props | 行为逻辑在依赖里（也是 shadcn 的行为底层），样式完全自由 | 样式 100% 可控、结构 80% 可控（slot/className 透传） |
-| **Ark UI** | 依赖（node_modules）+ 渲染 props | 类似 Radix，多框架支持 | 样式和部分结构可控 |
+| 库             | 所有权模型                                       | AI 的可操作范围                                          | 深度定制的路径                                          |
+| -------------- | ------------------------------------------------ | -------------------------------------------------------- | ------------------------------------------------------- |
+| **Ant Design** | 依赖（node_modules）                             | Props 菜单（`type`、`size`、`variant`）                  | 等大版本更新，或 CSS hack                               |
+| **MUI**        | 依赖（node_modules）                             | Props + `sx` prop + 主题覆盖                             | `createTheme()` 能改样式，改不了内部 DOM                |
+| **TDesign**    | 依赖（node_modules）                             | Props + CSS 变量覆盖                                     | 和 antd 同样的天花板                                    |
+| **shadcn/ui**  | 源代码（components/ui/），底层依赖 Radix UI 原语 | 整个组件，每一行，每一个 DOM 节点                        | 打开文件，直接改；行为逻辑由 Radix 提供，样式和结构你定 |
+| **Radix UI**   | 依赖（node_modules）+ 渲染 props                 | 行为逻辑在依赖里（也是 shadcn 的行为底层），样式完全自由 | 样式 100% 可控、结构 80% 可控（slot/className 透传）    |
+| **Ark UI**     | 依赖（node_modules）+ 渲染 props                 | 类似 Radix，多框架支持                                   | 样式和部分结构可控                                      |
 
 注意这个模式：依赖 = 配置权。源码 = 所有权。而 AI 的价值，是帮你行使所有权。
 
@@ -824,31 +830,31 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
 **1. Independently Owned, Unbiased by Design**
 
-> *"TanStack is independently operated with no controlling interests over our technical direction and no hidden agendas."*
+> _"TanStack is independently operated with no controlling interests over our technical direction and no hidden agendas."_
 
 没有 VC，没有平台偏向，没有金主爸爸干预技术方向。对比 Next.js 和 Vercel 的关系——一个框架为一个平台优化——TanStack 的选择是：**不绑定任何平台**。
 
 **2. Technology-Agnostic by Default**
 
-> *"framework-agnostic, platform-agnostic, and future-proof tooling"*
+> _"framework-agnostic, platform-agnostic, and future-proof tooling"_
 
 唯一的技术倾向是 TypeScript——或者说 typed JavaScript。其他一切：框架、平台、部署环境——都是中立的。
 
 **3. A Sustainable Future**
 
-> *"Instead of chasing growth at all costs, we focus on sustainable growth that prioritizes developer experience, community needs, and long-term value creation."*
+> _"Instead of chasing growth at all costs, we focus on sustainable growth that prioritizes developer experience, community needs, and long-term value creation."_
 
 不烧钱，不追 VC 指标，不为了增长牺牲开发体验。这不是嘴炮——从 React Query 2019 年诞生算起，这套 bootstrapped 模式已经运行了六年多。TanStack 作为组织品牌自 2022 年成立以来也坚持了四年多。
 
 **4. Open Partners**
 
-> *"No partner can dictate or influence TanStack's core technology in a way that biases it toward their platform."*
+> _"No partner can dictate or influence TanStack's core technology in a way that biases it toward their platform."_
 
 合作伙伴可以支持，但不能让核心 API 偏向自己。这条是直接写在项目宪法里的。
 
 最后一句是全文的定调：
 
-> *"TanStack isn't just a set of libraries — it's a commitment to building the web on your terms, without compromise."*
+> _"TanStack isn't just a set of libraries — it's a commitment to building the web on your terms, without compromise."_
 
 如果你读完这句话觉得像 PR 话术——我理解。但结合他们四条 Ethos 的具体条款（独立运营、技术无关、可持续增长、不绑定平台），它不是一个空洞的宣言。它是一个商业实体在公开文档里做出的、可被验证的承诺。你在赌这个承诺会不会被打破——就像你在赌 Next.js 会不会继续为 Vercel 优化，赌 React Router 会不会在 Shopify 的体系里保持 Web 标准的优先。
 
@@ -858,13 +864,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
 **信条 1：Open, Independent, Technology-Agnostic**
 
-> *"Every TanStack library starts with a provider-agnostic core, with integrations layered on top as optional adapters — never as the foundation."*
+> _"Every TanStack library starts with a provider-agnostic core, with integrations layered on top as optional adapters — never as the foundation."_
 
 明确拒绝的：供应商偏好的 API、「all-in on X vendor」的贡献、绑定特定云平台的功能。
 
 **信条 2：Composable, Platform-Aligned Primitives**
 
-> *"We build focused, composable primitives that embrace the platform rather than hiding it."*
+> _"We build focused, composable primitives that embrace the platform rather than hiding it."_
 
 明确拒绝的：要求 all-in 的设计、「one framework to rule them all」的抽象、隐藏平台能力的黑盒。
 
@@ -872,7 +878,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
 **信条 3：Pragmatic, Production-Grade Quality**
 
-> *"We design around real-world workloads, edge cases, and long-lived apps — not just happy-path demos."*
+> _"We design around real-world workloads, edge cases, and long-lived apps — not just happy-path demos."_
 
 功能要做到维护者敢用在自己盈利项目里才算完成。性能不是 nice-to-have，是 baseline。
 
@@ -880,11 +886,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
 这是和我们讨论最直接相关的一条。全文照录关键段落：
 
-> *"We minimize magic and maximize clarity. State, side effects, and data flow should be understandable from code, not guessed from hidden behavior."*
+> _"We minimize magic and maximize clarity. State, side effects, and data flow should be understandable from code, not guessed from hidden behavior."_
 
 > **"Explicit over implicit: Important behaviors are explicit in APIs and configuration, with surprising defaults treated as a bug."**
 
-> *"Type safety as leverage, not dogma: TypeScript support should guide correct use and catch real bugs without drowning users in generics."*
+> _"Type safety as leverage, not dogma: TypeScript support should guide correct use and catch real bugs without drowning users in generics."_
 
 「令人惊讶的默认值被视为 bug」——这不是轻描淡写的偏好表述，这是项目评审的硬性标准。一个 PR 如果引入了隐式行为，不需要有人抱怨才算问题——隐式本身就是问题。
 
@@ -896,7 +902,7 @@ TanStack 在信条文档（Tenets）里反复强调端到端类型安全是其�
 
 他们对比 Next.js 时的诊断也极其精准：
 
-> *"Next.js layers implicit behaviors: multi-layer server-side caching with a history of breaking changes and community frustration, data fetching conventions tied to file structure, optimizations that require understanding the framework's internals to override."*
+> _"Next.js layers implicit behaviors: multi-layer server-side caching with a history of breaking changes and community frustration, data fetching conventions tied to file structure, optimizations that require understanding the framework's internals to override."_
 
 不是「Next.js 不好」。是「Next.js 的设计默认值让 AI 推理成本过高」。
 
@@ -1070,6 +1076,7 @@ export default function SearchPage() {
 ```
 
 这个页面有三种潜在的 bug：
+
 1. `sort` 可以是任意字符串——你的类型断言只是欺骗 TypeScript
 2. `page` 可以是 `NaN`——如果有人在 URL 里写 `?page=abc`
 3. 没有任何一个地方声明了这个路由的合法参数集合——`q`、`page`、`sort` 的存在仅仅是「惯例」
