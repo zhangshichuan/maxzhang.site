@@ -1,0 +1,262 @@
+---
+title: 'Three Generations of Toolchains, One Dividing Line That Never Moved: From Webpack to Vite to Rust — Who Actually Compiles Your TypeScript?'
+summary: 'UmiJS scrapped its custom Rust bundler after a year, and Anders Hejlsberg is rewriting the TypeScript compiler in Go — the frontend toolchain is undergoing its third wave of reconstruction. But here is what most people miss: from the Webpack era through the Vite era to the Rust era, transpilation and type checking have always been two separate jobs. They never merged, and they never will. This article traces the evolution across three generations of toolchains, breaks down the roles and boundaries of Babel, esbuild, SWC, Turbopack, and Go-based TSC, and lands on a real problem: why does "Go to Definition" in VS Code freeze for three seconds on a remote monorepo — and six things you can do about it right now.'
+category: 'Frontend'
+tags: ['typescript', 'webpack', 'vite', 'esbuild', 'swc', 'turbopack', 'babel', 'rust', 'go', 'umijs', 'tsserver', 'vscode', 'monorepo', 'toolchain']
+author: 'Max Zhang'
+date: '2026-07-08'
+---
+
+# 1. UmiJS Spent a Year Building a Rust Bundler — Then Threw It Away
+
+In 2024, Ant Group's UmiJS team took on something ambitious: write a Webpack replacement from scratch in Rust. They called it Mako.
+
+Mako was a true "from scratch" effort — no existing engine underneath, pure Rust, targeting build times under 4 seconds for Ant Design Pro-sized projects that Webpack took 16 seconds for. The npm package was `@umijs/mako`, the GitHub repo racked up over a thousand stars, and the community was genuinely excited.
+
+A year later, in April 2025, the team posted an Issue on GitHub titled `[Mako Next]: A new bundler on top of Turbopack`. The opening line:
+
+> *"The previous Mako bundler faced numerous design challenges and persistent bugs."*
+
+Translation: writing a Rust bundler from scratch is brutally hard. Webpack accumulated a decade of ecosystem compatibility — loaders, plugins, resolve aliases, code-splitting edge cases — and Mako had to chase every single one of them. The chase never ends, and the bugs never stop.
+
+So they made a deeply pragmatic decision: **stop building. Build on top of Turbopack instead.**
+
+The new project is called utoopack, living under `utooland/utoo`. The core logic boils down to one idea — embed Vercel's Turbopack as the engine, and write only the UmiJS framework adapter on top. How? The repo's `next.js/` directory is a Git submodule pointing to their own `utooland/next.js` fork. Rust code in `crates/pack-core` depends on those Turbopack crates; TypeScript code in `packages/pack/` translates UmiJS configuration down to the underlying engine.
+
+utoopack's README doesn't mince words:
+
+> *"Core logic in Rust + Turbopack for extreme speed."*
+
+This isn't "inspired by" Turbopack — this is Turbopack, taken wholesale and used directly. It's no different from how Next.js itself uses Turbopack. Both treat Vercel's engine as the base layer and write their own framework adapters around it.
+
+The Mako story is not an outlier. Across the entire wave of Rust/Go rewrites in the frontend toolchain, one line has never moved.
+
+---
+
+# 2. The Webpack Era: TypeScript Compilation Was Never a One-Person Job
+
+A lot of people have this misconception: back in the Webpack days, TSC handled all of TypeScript compilation by itself.
+
+Not even close.
+
+Webpack is a **bundler** — its actual job is stitching dozens or hundreds of JS files into a single bundle. It does not speak TypeScript. TypeScript handling gets injected through loaders.
+
+There were two schools of thought.
+
+**School one: ts-loader.** This loader calls `tsc` internally, doing transpilation and type checking together. The upside: one package, simple setup. The downside: slow. tsc builds a global type graph, and every time you change a single file it re-checks the entire project. HMR was basically unusable.
+
+**School two: babel-loader + fork-ts-checker-webpack-plugin.** This was the industry standard. babel-loader paired with `@babel/preset-typescript` does exactly one thing: strip the type annotations out of TypeScript syntax and emit plain JavaScript. It does not check types — `const x: number = "hello"` won't trigger any error; it just deletes `: number`. Type checking runs in a separate process via `fork-ts-checker-webpack-plugin`, which calls `tsc` internally but never blocks Webpack's build pipeline.
+
+So here is the actual division of labor in the Webpack era:
+
+| Who | Does What |
+|---|---|
+| babel-loader | Takes the one TS file you changed, blindly strips type annotations, spits out JS |
+| Webpack | Stitches babel-loader's output together with other modules into a bundle |
+| fork-ts-checker | Runs tsc in a separate process, does global type checking, never blocks the build |
+
+From day one, transpilation and type checking have been **two parallel tracks**. Nobody ever had a single tool doing both. Sure, TSC itself *can* transpile — running `tsc` without `--noEmit` will output JS files — but **nobody has ever used TSC for hot reload**. It's just too slow.
+
+---
+
+# 3. Why Babel Is Fast: It Never Knows Whether Your Code Is Correct
+
+Babel's architecture is the classic three-stage pipeline.
+
+Step one, **Parse**. Read the source code string and produce an AST (Abstract Syntax Tree). `const x: number = 1` becomes a tree with a `VariableDeclaration` root, children `Identifier("x")`, `TypeAnnotation("number")`, `NumericLiteral(1)`.
+
+Step two, **Transform**. Walk the AST; every node gets passed through the registered plugins. The `@babel/preset-typescript` plugin sees a `TypeAnnotation` node — delete it. Sees a `TSInterfaceDeclaration` node — delete it. Sees parameter types on an arrow function — delete them. The entire process is mechanical deletion with eyes closed.
+
+Step three, **Generate**. Print the modified AST back into a string. `const x = 1`. Done.
+
+Throughout this entire process, Babel looks at exactly **one file**. `import { getUser } from './api'` — it does not go read `./api.ts` to see what's there. It does not verify the return type of `getUser`. It operates purely at the syntax level.
+
+Why is it so fast? Because Babel plugins use the **Visitor pattern**. When Babel traverses the AST and hits a `FunctionDeclaration` node, it hands control to every plugin that registered interest in `FunctionDeclaration`. All plugins execute in a single traversal pass — no multiple scanning rounds. It's essentially jQuery-style DOM manipulation: find nodes, mutate nodes, done.
+
+So what is TSC doing? Semantic analysis. For the same line `const user: User = await getUser(42)`, TSC has to find the definition of `getUser` in `./api.ts`, resolve its return type, verify that type is compatible with `User`, and if `User` is a generic imported from another file, expand the type parameters and check every branch of conditional types. This isn't a dictionary lookup. This is solving a logic problem.
+
+Babel is fast not because it's written in a faster language — Babel is JavaScript too. It's fast because it does dramatically less work.
+
+---
+
+# 4. The Real Secret of Vite's Speed: It's Not Just esbuild — It's Two Things Working Together
+
+When Vite arrived, everyone shouted "esbuild is so fast." And esbuild is fast — written in Go, single-file transpilation in 1–5 milliseconds. But the main reason Vite's dev mode is fast isn't esbuild's Go advantage. It's **architectural design**.
+
+The Vite speed formula is two things combined: **on-demand compilation + no bundling.**
+
+First, on-demand compilation. Webpack, on startup, compiles and bundles the entry file and all its dependencies before the dev server even opens. A project with a few hundred files? Cold start takes 30 seconds minimum. Vite doesn't do that. It starts the dev server without compiling a single file — your source code sits untouched on disk. The browser hits `http://localhost:5173`, loads `index.html`, which contains `<script type="module" src="/src/main.ts">`. The browser sees `type="module"` and sends an HTTP request to Vite's dev server: `GET /src/main.ts`. Only *then* does Vite hand `main.ts` to esbuild, strip the type annotations, and return JS to the browser. The browser executes that JS, finds `import App from './App.vue'`, and fires another HTTP request: `GET /src/App.vue`. Vite compiles `App.vue`, returns JS.
+
+Your project has 500 files, but the browser only requested 10 of them — so Vite only compiled 10. **Files you don't touch don't move.**
+
+Second, "no bundling." In the Webpack era, browsers didn't understand `import` and `export`, so Webpack had to concatenate all modules into a single bundle and implement its own module loading system. But since 2018, all major browsers natively support ES Modules. An `import` statement inside `<script type="module">` — the browser can resolve it on its own, following the import path to fetch dependency files via HTTP.
+
+So in development mode, Vite doesn't need to bundle at all. The browser *is* the module loader. esbuild's only job is to strip type annotations from individual TS files and turn them into JS. The browser handles threading dozens of JS files together.
+
+Webpack cold start: 30 seconds. Vite cold start: 300 milliseconds. Of that 100x gap, esbuild's Go advantage contributes maybe 2–3x. The rest is those three words: "no bundling."
+
+One common misconception worth clarifying: **browsers cannot parse TypeScript.** A browser has never seen TypeScript in its life. What Vite's dev server returns to the browser is always plain JS. The fact that esbuild converted TS to JS on the server side is completely transparent to the browser.
+
+---
+
+# 5. Rust and Go Are Rewriting Everything — But the Division of Labor Hasn't Changed
+
+From 2024 to 2026, the frontend toolchain went through a language-level reshuffling.
+
+**esbuild** (Go, written by one person: Evan Wallace). Zero startup overhead, single-file transpilation in 1–5 milliseconds, 50–100x faster than babel-loader. But Evan's stance is unambiguous: esbuild only does transpilation, not type checking. He literally wrote in the docs that esbuild does not guarantee your TypeScript code is type-correct.
+
+**SWC** (Rust, started by Korean developer kdy1). Starting with version 12, Next.js replaced Babel with SWC for transpilation — both `next dev` and `next build` TS/JSX transpilation runs through SWC. Same deal as esbuild: strips types, doesn't check them.
+
+**Turbopack** (Rust, Vercel team). The default bundler for Next.js 16, replacing Webpack. Built on the "Turbo Engine" — an incremental computation engine whose core idea is memoization: on every file change, only recompute the affected portion; everything else hits cache. Production builds are 2–5x faster than Webpack, HMR is 10x faster. In Vercel's words: "An incremental bundler optimized for JavaScript and TypeScript, written in Rust."
+
+**Go-based TypeScript compiler** (Anders Hejlsberg leading, Microsoft). Announced in 2025, still under development. The current Node.js `tsc` takes 30–60 seconds on a medium-sized project; the Go version targets 3–6 seconds — a 10x speedup. But Anders has said the gains come primarily from Go's runtime advantages (native binaries, no JIT warmup, better memory management) and an incremental rewrite of the compiler architecture.
+
+Lay these four things side by side and the pattern is almost boringly simple: **the language changed, but the division of labor didn't.**
+
+esbuild, SWC, and Turbopack solve the problem of "turning TS into JS is too slow" — that's the transpilation layer. Go-based tsc solves the problem of "verifying type relationships is too slow" — that's the type-checking layer. The computational workload between these two lines differs by more than an order of magnitude. Transpilation only needs to manipulate one file's syntax tree. Type checking needs to traverse the entire project's type graph. Rewrite tsc in Go ten times over and it will never be faster than esbuild transpiling a single file, because tsc simply does vastly more work.
+
+So when the Go-based tsc ships, your development workflow won't fundamentally change: esbuild/SWC/Turbopack will keep delivering HMR transpilation in under 50 milliseconds, and Go-based tsc will do type checking in your IDE and CI — just going from 30 seconds to 3.
+
+---
+
+# 6. Why Does "Go to Definition" in VS Code Freeze for Several Seconds?
+
+This question connects directly to everything we just discussed.
+
+Here's your situation: a monorepo, code on a remote Linux server, you're connected via VS Code Remote SSH from your local machine. You click a function name to jump to its definition. Three seconds of waiting.
+
+First, get one thing straight: **when you click "Go to Definition," you're using VS Code's built-in tsserver — not the TypeScript installed in your project's `node_modules`.**
+
+VS Code ships with its own TypeScript compiler, stored under `~/.vscode-server/`. This tsserver handles all IDE features: go-to-definition, autocomplete, hover tooltips, red squiggly lines. The `typescript` package in your project only gets used when you run `npx tsc --noEmit`. The two don't interfere with each other.
+
+So why is tsserver slow? Because on startup it doesn't "fully load all file types" — it loads **on demand**.
+
+When you open a monorepo, tsserver only parses the few files currently visible plus the files they import. It doesn't load the entire monorepo's type graph. This is an intentional design choice — if it fully loaded all 500 files, you'd wait 30 seconds just to start typing after opening the project.
+
+JetBrains (WebStorm, PHPStorm) takes the opposite approach. When you open a project, it shows a progress bar and builds a full index, during which you can't do anything. After indexing, go-to-definition is instant — but you pay that wait every time you open the project. VS Code chose a different experience: let you start working immediately, load in the background gradually, at the cost of having to read, parse, and check type relationships on the fly when you jump to a file that hasn't been loaded yet.
+
+Monorepo + Remote SSH makes this problem dramatically worse. Every time tsserver needs to read a file that hasn't been loaded yet, the path is: local VS Code → SSH → remote file system → read file → transmit back → parse. There's an extra network round-trip in there.
+
+You can use VS Code's built-in diagnostics to confirm exactly where the bottleneck is. Add these two lines to `.vscode/settings.json`:
+
+```json
+{
+  "typescript.tsserver.log": "verbose",
+  "typescript.tsserver.trace": "verbose"
+}
+```
+
+Reload the window, then open the Command Palette → `TypeScript: Open TS Server Log`. Trigger a go-to-definition, then immediately look at the last 50 lines of the log. Find the timestamp delta between `Event: request` and `Event: response`, and check the `Duration` field to see which file took the longest. More often than not, it's some enormous `node_modules/@types/` declaration file dragging everything down.
+
+---
+
+# 7. Six Things You Can Do Right Now
+
+The Go-based tsc hasn't shipped yet. But these six things don't require waiting.
+
+**First: Use a VS Code Workspace to open only the packages you're touching.**
+
+Don't run `code /path/to/monorepo` directly. Create a `.code-workspace` file:
+
+```json
+{
+  "folders": [
+    { "path": "packages/shared" },
+    { "path": "apps/dashboard" }
+  ],
+  "settings": {
+    "typescript.tsserver.maxTsServerMemory": 8192
+  }
+}
+```
+
+tsserver will only load the directories listed under `folders`. The other 30 packages in your monorepo — it won't even look at them. This is the single most impactful step: autocomplete and go-to-definition scopes shrink immediately, speed improves qualitatively.
+
+**Second: Split out Project References.**
+
+In your monorepo root `tsconfig.json`, only list references — don't directly include source code:
+
+```json
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./apps/web" }
+  ]
+}
+```
+
+Each sub-project gets its own `tsconfig.json`; type checking only runs within its own boundaries. When you modify a file in `apps/web`, tsserver won't reload the source of `packages/shared` — it will only read the pre-built `.d.ts` files. Run `npx tsc --build --incremental` once to pre-build type declarations for all dependency packages. After that, jumping to types in other packages reads declaration files that are tens of KB, not source files that are several MB.
+
+**Third: Turn off automatic type acquisition.**
+
+```json
+{
+  "typescript.disableAutomaticTypeAcquisition": true
+}
+```
+
+VS Code defaults to auto-downloading `@types/*` packages. In a monorepo, this triggers massive background network requests and parsing. Turn it off; manage types manually with `npm install @types/xxx`.
+
+**Fourth: Exclude unnecessary directories in tsconfig.**
+
+```json
+{
+  "exclude": [
+    "node_modules",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "packages/legacy-app"
+  ]
+}
+```
+
+Also constrain tsserver's file watching scope:
+
+```json
+{
+  "typescript.tsserver.watchOptions": {
+    "excludeDirectories": ["**/node_modules", "**/.git", "**/dist"]
+  }
+}
+```
+
+**Fifth: Give tsserver more memory, and turn off background full-project diagnostics.**
+
+```json
+{
+  "typescript.tsserver.maxTsServerMemory": 8192,
+  "typescript.tsserver.experimental.enableProjectDiagnostics": false
+}
+```
+
+Memory consumption in a monorepo far exceeds defaults — giving it 8GB avoids frequent GC pauses. Disabling project-level diagnostics prevents tsserver from running full-project checks in the background competing for your CPU.
+
+**Sixth: Turn on verbose logging to diagnose the real problem — don't guess.**
+
+We already covered how to enable it. Open the logs, reproduce the slow operation, read the last few lines. Find the file that's dragging everything down and deal with it individually — most of the time, it's some gigantic `.d.ts` inside `node_modules`.
+
+---
+
+# 8. Three Generations of Toolchains, One Dividing Line That Never Moved
+
+Look back across these three generations:
+
+| | Webpack Era | Vite Era | Rust/Go Era |
+|---|---|---|---|
+| **Transpilation** | babel-loader | esbuild (Go) | SWC (Rust) |
+| **Type Checking** | fork-ts-checker | tsc --noEmit | Go-based tsc |
+| **Bundling** | Webpack | Rollup (production) | Turbopack (Rust) |
+| **Are transpilation and type checking the same thing?** | No. Separate from day one. | Even more separated. | Language changed. Division didn't. |
+
+2016. You write TypeScript. babel-loader handles stripping types. fork-ts-checker handles checking them. Webpack handles bundling. Three people's jobs.
+
+2026. Still you. Still TypeScript. SWC handles stripping types. Go-based tsc handles checking them. Turbopack handles bundling. Still three people. Just all three have been rewritten in Rust and Go.
+
+The underlying engines are standardizing: Vercel maintains Turbopack, Microsoft maintains Go-based tsc, evanw maintains esbuild. Framework authors are no longer building engines from scratch — Next.js uses Turbopack, UmiJS uses Turbopack, the only difference is the adapter layer.
+
+Which brings us back to the UmiJS story. Why did Mako die? Not because Rust isn't fast enough — Rust is plenty fast. It's because building a bundler from scratch isn't about "how to write a parser in Rust." It's about "how to match the tens of thousands of corner cases Webpack's ecosystem accumulated over a decade." That problem has nothing to do with language. It has everything to do with time. Turbopack has all of Vercel maintaining it. esbuild has Evan Wallace working on it full-time. One team at Ant Group, no matter how strong, can't catch up.
+
+So utoopack made the right call. Don't rewrite the engine. Use the one that exists. Put your energy into the adapter layer.
+
+The future of the frontend toolchain has never been "one unified tool to rule them all." It wasn't then, it isn't now, and it won't be later. From Webpack to Vite to Rust to Go, the dividing line between transpilation and type checking is right there, and nobody — no matter who — can erase it.

@@ -1,0 +1,278 @@
+---
+title: '三代工具链，一条不变的分界线：从 Webpack 到 Vite 到 Rust，TypeScript 编译到底谁在干活'
+summary: 'UmiJS 自研 Rust 打包器又推倒重来，Anders Hejlsberg 用 Go 重写 TypeScript 编译器——前端工具链正在经历第三代重构。但很多人没注意到一个事实：从 Webpack 时代到 Vite 时代再到 Rust 时代，转译和类型检查从来都是两个人干的活，从来没有合并过，以后也不会。本文从三代工具链的演进出发，拆解 Babel、esbuild、SWC、Turbopack、Go 版 TSC 各自的角色和边界，最后落到一个真实问题：你的 VS Code 在远程大仓上点跳转定义为什么卡三秒，以及六件现在就能做的事。'
+category: 'Frontend'
+tags:
+  [
+    'typescript',
+    'webpack',
+    'vite',
+    'esbuild',
+    'swc',
+    'turbopack',
+    'babel',
+    'rust',
+    'go',
+    'umijs',
+    'tsserver',
+    'vscode',
+    'monorepo',
+    'toolchain',
+  ]
+author: 'Max Zhang'
+date: '2026-07-08'
+---
+
+## 一、UmiJS 自研 Rust 打包器，做了一年又推倒了
+
+2024 年，蚂蚁集团的 UmiJS 团队干了一件大事：用 Rust 从零写一个 Webpack 的替代品，叫 Mako。
+
+Mako 是真正的"从零造轮子"——不基于任何现有引擎，纯 Rust 实现，目标是把 Ant Design Pro 这种体量的项目构建时间从 Webpack 的 16 秒压到 4 秒以内。npm 包叫 `@umijs/mako`，GitHub 上攒了上千个 star，社区一度很兴奋。
+
+一年后，2025 年 4 月，团队在 GitHub 上发了一个 Issue，标题是 `[Mako Next]: A new bundler on top of Turbopack`。正文第一句话：
+
+> *"The previous Mako bundler faced numerous design challenges and persistent bugs."*
+
+翻译过来：从零写一个 Rust bundler 太难了。Webpack 积累了十年的生态兼容性——loader、plugin、resolve alias、code splitting 的边界 case——Mako 要一个一个追，永远追不完，bug 永远修不完。
+
+然后他们做了一个非常务实的决定：**不写了。直接在 Turbopack 上面搭。**
+
+新项目叫 utoopack，代码在 `utooland/utoo`，核心逻辑就一句话——把 Vercel 的 Turbopack 当引擎嵌进来，自己只做 UmiJS 框架的适配层。怎么嵌的？仓库的 `next.js/` 目录是 Turbopack 源码的 Git 子模块，指向他们自己的 `utooland/next.js` fork。Rust 代码在 `crates/pack-core` 里依赖这些 Turbopack crate，TypeScript 代码在 `packages/pack/` 里把 UmiJS 的配置翻译给底层引擎。
+
+utoopack 的 README 写得很直白：
+
+> *"Core logic in Rust + Turbopack for extreme speed."*
+
+这不是"借鉴"Turbopack——这是把 Turbopack 直接拿过来用。跟 Next.js 用 Turbopack 的方式没有本质区别，都是把 Vercel 维护的引擎当底座，各自写框架适配层。
+
+Mako 的故事不是孤例。前端工具链的 Rust/Go 重写潮里，有一条线一直没变过。
+
+---
+
+## 二、Webpack 时代：TS 编译从来就不是一个人干的活
+
+很多人有一个错觉：Webpack 时代，TypeScript 编译是 TSC 一个人包揽的。
+
+完全不是。
+
+Webpack 本身是一个**打包器**——它的本职工作是把几十上百个 JS 文件拼成一个 bundle。它不认识 TypeScript。TS 的处理靠 loader 插进来干。
+
+当时有两个流派。
+
+**流派一：ts-loader。** 这个 loader 内部直接调 `tsc`，转译和类型检查一起做。好处是简单，装一个包就行。坏处是慢——tsc 本身就要构建全局类型图，每次改一个文件它都重新检查整个项目。HMR 基本不可用。
+
+**流派二：babel-loader + fork-ts-checker-webpack-plugin。** 这才是工业界的主流做法。babel-loader 配合 `@babel/preset-typescript`，只做一件事：把 TypeScript 语法里的类型注解删掉，输出纯 JavaScript。它不检查类型——`const x: number = "hello"` 也不会报错，只是把 `: number` 删了。类型检查交给另一个进程跑 `fork-ts-checker-webpack-plugin`，它内部调 `tsc`，但不阻塞 Webpack 的构建流程。
+
+所以 Webpack 时代的分工就是这样的：
+
+| 谁 | 干什么 |
+|---|---|
+| babel-loader | 盯着你改的那个 TS 文件，闭眼删类型注解，输出 JS |
+| Webpack | 把 babel-loader 的输出跟其他模块拼成 bundle |
+| fork-ts-checker | 在另一个进程跑 tsc，做全局类型检查，不阻塞构建 |
+
+从第一天开始，转译和类型检查就是**两条并行的线**。从来没有一个人把两件事都干了。TSC 自己其实也能做转译——`tsc` 命令不加 `--noEmit` 就会输出 JS 文件——但**从来没有人用 TSC 做热更新**。太慢了。
+
+---
+
+## 三、Babel 为什么快：它从来不知道你的代码对不对
+
+Babel 的架构是经典的三段式流水线。
+
+第一步，**Parse**。把源代码字符串读进来，生成 AST（抽象语法树）。`const x: number = 1` 变成一棵树，根节点是 `VariableDeclaration`，子节点是 `Identifier("x")`、`TypeAnnotation("number")`、`NumericLiteral(1)`。
+
+第二步，**Transform**。遍历 AST，每个节点走一遍注册的插件。`@babel/preset-typescript` 的插件看到 `TypeAnnotation` 节点，删掉。看到 `TSInterfaceDeclaration` 节点，删掉。看到箭头函数的参数类型，删掉。整个过程就是闭着眼睛做机械删除。
+
+第三步，**Generate**。把改完的 AST 重新打印成字符串。`const x = 1`。完事。
+
+整个过程中 Babel 只看**一个文件**。`import { getUser } from './api'`——它不会去读 `./api.ts` 里有什么，不会验证 `getUser` 的返回类型是什么。它只做语法层面的操作。
+
+为什么这么快？因为 Babel 的插件用的是 **Visitor 模式**。Babel 遍历 AST 时遇到 `FunctionDeclaration` 节点，就把控制权交给所有注册了对 `FunctionDeclaration` 感兴趣的插件。所有插件在一轮遍历里全部执行完，不需要多轮扫描。本质上就是 jQuery 操作 DOM 的思路：找节点、改节点、完事。
+
+那 TSC 在干什么？它在做语义分析。同一个 `const user: User = await getUser(42)`，TSC 要找到 `./api.ts` 里 `getUser` 的定义，解析它的返回类型，验证这个类型跟 `User` 兼容，如果 `User` 是从另一个文件 import 的泛型，还要展开泛型参数，检查条件类型的每个分支。这不是查字典，这是做一道逻辑题。
+
+Babel 快，不是因为它写的语言更快——Babel 也是 JavaScript 写的。它快是因为它做的事少得多。
+
+---
+
+## 四、Vite 快的真相：不是 esbuild 一个人，是两个东西的组合
+
+Vite 出现的时候，所有人都在喊"esbuild 好快"。esbuild 确实快——Go 写的，单文件转译 1-5 毫秒。但 Vite 开发模式快的主要原因，不是 esbuild 的 Go 语言优势，而是**架构设计**。
+
+Vite 快的公式是两个东西的组合：**按需编译 + 不打包**。
+
+先说按需编译。Webpack 启动时要先把整个项目的入口文件及其所有依赖全部编译打包好，才启动 dev server。一个几百个文件的项目，冷启动 30 秒起步。Vite 不这么干。它启动 dev server 时不编译任何文件——你的源代码原样躺在磁盘上。浏览器访问 `http://localhost:5173`，加载 `index.html`，`index.html` 里有 `<script type="module" src="/src/main.ts">`。浏览器看到 `type="module"`，向 Vite dev server 发一个 HTTP 请求：`GET /src/main.ts`。Vite 这时才把 `main.ts` 交给 esbuild，删掉类型注解，返回 JS 给浏览器。浏览器拿到 JS，执行它，发现里面有 `import App from './App.vue'`，又向 Vite 发 HTTP 请求：`GET /src/App.vue`。Vite 编译 `App.vue`，返回 JS。
+
+你一整个项目有 500 个文件，但浏览器只请求了其中 10 个，Vite 就只编译了 10 个。**不改的文件不动。**
+
+再说"不打包"。Webpack 时代，浏览器不认识 `import` 和 `export`，Webpack 必须把所有模块拼成一个 bundle，再自己实现一套模块加载机制。但 2018 年以后，主流浏览器全部原生支持 ES Module。`<script type="module">` 里的 `import` 语句，浏览器能自己解析——顺着 import 路径发 HTTP 请求去拿依赖文件。
+
+所以 Vite 开发模式下根本不需要打包。浏览器自己就是模块加载器。esbuild 只负责把单个 TS 文件删掉类型注解变成 JS，浏览器自己负责把几十个 JS 文件串起来。
+
+Webpack 冷启动 30 秒，Vite 冷启动 300 毫秒。这一百倍的差距，esbuild 的 Go 语言优势贡献了大概两三倍，剩下的全是"不打包"这三个字。
+
+但有一个常见误解要澄清：**浏览器不能解析 TypeScript。** 浏览器这辈子没有见过 TypeScript。Vite dev server 返回给浏览器的永远是纯 JS。esbuild 在服务端把 TS 转成 JS 这件事对浏览器是完全透明的。
+
+---
+
+## 五、Rust 和 Go 重写一切——但分工没有变
+
+2024-2026 年，前端工具链经历了一次语言层面的洗牌。
+
+**esbuild**（Go 语言，Evan Wallace 一个人写的）。冷启动零开销，单文件转译 1-5 毫秒，比 babel-loader 快 50-100 倍。但 Evan 的态度很明确：esbuild 只做转译，不做类型检查。他甚至在文档里写了：esbuild 不保证你的 TypeScript 代码在类型层面是正确的。
+
+**SWC**（Rust 语言，韩国开发者 kdy1 发起）。Next.js 从 12 版本开始把 Babel 换成了 SWC 做转译——Next.js 的 `next dev` 和 `next build` 里的 TS/JSX 转译都是 SWC 在干。和 esbuild 一样，只删类型，不做检查。
+
+**Turbopack**（Rust 语言，Vercel 团队）。Next.js 16 的默认打包器，替代 Webpack。底层是"Turbo Engine"——一个增量计算引擎，核心思想是 memoization：每次文件改动，只重算受影响的那部分，没变的部分直接用缓存。生产构建比 Webpack 快 2-5 倍，HMR 快 10 倍。用 Vercel 的话说："An incremental bundler optimized for JavaScript and TypeScript, written in Rust."
+
+**Go 版 TypeScript 编译器**（Anders Hejlsberg 带队，微软）。2025 年宣布，目前还在开发中。当前 Node.js 写的 `tsc` 跑一个中型项目要 30-60 秒，Go 版预期 3-6 秒——10 倍提速。但 Anders 说过，提速主要来自 Go 的运行时优势（原生二进制、无 JIT 预热、更好的内存管理）和编译器架构的增量化重写。
+
+把这四件事放一起看，规律简单到无聊：**语言换了，但分工没变。**
+
+esbuild、SWC、Turbopack 解决的问题是"把 TS 变成 JS 太慢"——这是转译层的问题。Go 版 tsc 解决的问题是"验证类型关系太慢"——这是类型检查层的问题。两条线的计算量差了不止一个数量级。转译只需要操作一个文件的语法树，类型检查需要遍历整个项目的类型图。你把 tsc 用 Go 重写 10 遍，它也不可能比 esbuild 转译一个单文件更快，因为 tsc 做的事本来就多得多得多。
+
+所以 Go 版 tsc 发布以后，你的开发流程不会有本质变化：esbuild/SWC/Turbopack 继续负责 50 毫秒内完成 HMR 转译，Go 版 tsc 在 IDE 和 CI 里做类型检查——只是从 30 秒变成 3 秒。
+
+---
+
+## 六、你的 VS Code 为什么点跳转定义要卡几秒
+
+这个问题跟我们前面聊的所有东西直接相关。
+
+你现在的情况是：一个大仓 monorepo，代码在远程 Linux 服务器上，你在本地用 VS Code Remote SSH 连上去开发。点一个函数名跳转到它的定义，等三秒。
+
+先搞清楚一件事：**你点跳转定义用的是 VS Code 内置的 tsserver，不是你项目 `node_modules` 里装的 TypeScript。**
+
+VS Code 自带了一个 TypeScript 编译器，装在 `~/.vscode-server/` 下面。这个 tsserver 负责所有 IDE 功能：跳转定义、自动补全、悬停提示、红色波浪线。你项目里的 `typescript` 包只在你跑 `npx tsc --noEmit` 的时候用。两个互不干扰。
+
+那 tsserver 为什么慢？因为它启动时不是"全量加载所有文件类型"，而是**按需加载**。
+
+你打开一个大仓，tsserver 只解析你当前可见的那几个文件，以及它们 import 的文件。它不加载整个 monorepo 的类型图。这是故意的设计选择——如果全量加载所有 500 个文件，每次打开项目要等 30 秒才能开始写代码。
+
+JetBrains（WebStorm、PHPStorm）走的是另一条路。打开项目时先弹出进度条，全量建索引，期间你什么也干不了。建完以后跳转定义秒开，但代价是每次打开项目都等。VS Code 选了另一种体验：先让你用起来，后台慢慢加载，代价是跳到一个还没加载过的文件时要现去读、parse、检查类型关系。
+
+大仓 + 远程 SSH 让这个问题雪上加霜。每一次 tsserver 需要读一个还没加载过的文件，要走：本地 VS Code → SSH → 远程文件系统 → 读文件 → 传回来 → 解析。多了一层网络往返。
+
+你可以用 VS Code 内置的诊断工具确认具体卡在哪。在 `.vscode/settings.json` 里加两行：
+
+```json
+{
+  "typescript.tsserver.log": "verbose",
+  "typescript.tsserver.trace": "verbose"
+}
+```
+
+重新加载窗口，然后打开命令面板 → `TypeScript: Open TS Server Log`。做一次跳转定义，马上看日志最后 50 行。找 `Event: request` 和 `Event: response` 的时间戳差，看 `Duration` 里哪个文件花了最长时间。很多时候是一个巨大的 `node_modules/@types/` 声明文件拖慢了全场。
+
+---
+
+## 七、六件现在就做的事
+
+Go 版 tsc 还没发布。但下面这六件事不需要等。
+
+**第一件：用 VS Code Workspace 只打开你改的包。**
+
+不要直接 `code /path/to/monorepo`。建一个 `.code-workspace` 文件：
+
+```json
+{
+  "folders": [
+    { "path": "packages/shared" },
+    { "path": "apps/dashboard" }
+  ],
+  "settings": {
+    "typescript.tsserver.maxTsServerMemory": 8192
+  }
+}
+```
+
+tsserver 只会加载 `folders` 里列出的目录。大仓里其它 30 个包它连看都不看。这是最立竿见影的一步——自动补全和跳转定义的范围直接缩小，速度质变。
+
+**第二件：拆 Project References。**
+
+在大仓根目录的 `tsconfig.json` 里只列 references，不直接 include 源码：
+
+```json
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./apps/web" }
+  ]
+}
+```
+
+每个子项目有自己的 `tsconfig.json`，类型检查只在自己的边界里跑。改 `apps/web` 里的文件，tsserver 不会重新加载 `packages/shared` 的源码——只会读它上次构建好的 `.d.ts` 文件。跑一次 `npx tsc --build --incremental` 预构建所有依赖包的类型声明。之后开发时跳转到其他包的类型，读的是几十 KB 的声明文件，不是几 MB 的源码。
+
+**第三件：关掉自动类型获取。**
+
+```json
+{
+  "typescript.disableAutomaticTypeAcquisition": true
+}
+```
+
+VS Code 默认会自动下载 `@types/*` 包。在大仓里这会触发大量后台网络请求和解析。关了它，手动用 `npm install @types/xxx` 管理。
+
+**第四件：在 tsconfig 里排除不需要的目录。**
+
+```json
+{
+  "exclude": [
+    "node_modules",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "packages/legacy-app"
+  ]
+}
+```
+
+同时限制 tsserver 的文件监听范围：
+
+```json
+{
+  "typescript.tsserver.watchOptions": {
+    "excludeDirectories": ["**/node_modules", "**/.git", "**/dist"]
+  }
+}
+```
+
+**第五件：给 tsserver 加内存，关掉后台全量诊断。**
+
+```json
+{
+  "typescript.tsserver.maxTsServerMemory": 8192,
+  "typescript.tsserver.experimental.enableProjectDiagnostics": false
+}
+```
+
+大仓的内存消耗远超默认值，给到 8G 避免频繁 GC。关掉项目级诊断，避免 tsserver 后台一直跑全量检查跟你抢 CPU。
+
+**第六件：开 verbose 日志确诊，别靠猜。**
+
+前面已经说了怎么开。打开日志，重现慢操作，看日志最后几行。找到那个拖后腿的文件，单独处理它——大部分时候是某个 `node_modules` 里的巨型 `.d.ts`。
+
+---
+
+## 八、三代工具链，一条不变的分界线
+
+回看这三代：
+
+| | Webpack 时代 | Vite 时代 | Rust/Go 时代 |
+|---|---|---|---|
+| **转译** | babel-loader | esbuild（Go） | SWC（Rust） |
+| **类型检查** | fork-ts-checker | tsc --noEmit | Go 版 tsc |
+| **打包** | Webpack | Rollup（生产） | Turbopack（Rust） |
+| **转译和检查是一个东西吗** | 不是，从第一天就是分开的 | 分得更彻底 | 语言换了，分工没变 |
+
+2016 年，你写 TypeScript。babel-loader 管删类型，fork-ts-checker 管检查，Webpack 管打包。三个人干的活。
+
+2026 年，还是你，还是 TypeScript。SWC 管删类型，Go 版 tsc 管检查，Turbopack 管打包。还是三个人。只是三个人全换了 Rust 和 Go 写的。
+
+底层引擎在标准化：Vercel 维护 Turbopack，微软维护 Go 版 tsc，evanw 维护 esbuild。框架作者不再从零造引擎了——Next.js 用 Turbopack，UmiJS 也用 Turbopack，不同的只是适配层。
+
+回到 UmiJS 那个故事。Mako 为什么会死？不是因为 Rust 不够快——Rust 足够快。是因为从零造一个打包器要解决的问题不是"怎么用 Rust 写 parser"，而是"怎么兼容 Webpack 生态十年攒下来的几万个 corner case"。这个问题跟语言没关系，跟时间有关系。Turbopack 有 Vercel 全公司在维护，esbuild 有 Evan Wallace 全职在写。你蚂蚁一个团队，再强也追不上。
+
+所以 utoopack 做的选择是对的。不要重写引擎，用现成的，精力放在适配层上。
+
+前端工具链的未来从来不是"一个大一统工具"。以前不是，现在不是，以后也不是。从 Webpack 到 Vite 到 Rust 到 Go，转译和类型检查的分界线在那摆着，谁来都没辙。
