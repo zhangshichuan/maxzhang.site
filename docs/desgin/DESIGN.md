@@ -273,12 +273,13 @@ HTML：
 
 ```html
 <header>
-  <div class="logo">ZM::</div>
+  <a href="/" class="logo">MAXZHANG</a>
   <nav>
-    <a href="#">[Projects]</a>
-    <a href="#">[Blog]</a>
-    <a href="#">[Resume]</a>
-    <a href="#">[Contact]</a>
+    <a href="#">[home]</a>
+    <a href="#">[posts]</a>
+    <a href="#">[about]</a>
+    <span>搜索</span>
+    <span>语言切换</span>
   </nav>
 </header>
 ```
@@ -287,7 +288,12 @@ CSS：
 
 ```css
 header {
-  padding: 32px 0 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  padding: 20px 0 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -299,6 +305,7 @@ header {
   text-transform: uppercase;
   color: var(--neon);
   text-shadow: 0 0 20px rgba(255, 45, 149, 0.4);
+  text-decoration: none;
 }
 nav {
   display: flex;
@@ -335,7 +342,7 @@ nav a:hover::after {
 
 ## 六、Hero 区域
 
-HTML：
+HTML（首页）：
 
 ```html
 <div class="hero">
@@ -344,15 +351,14 @@ HTML：
     <div class="glitch-block">
       <h1 class="glitch" data-text="BUILD HARDER. GLITCH LOUDER.">BUILD HARDER. GLITCH LOUDER.</h1>
     </div>
-    <p class="bio">Rust 信徒 · TypeScript 老兵 · K8s 驯兽师。在系统和界面的裂缝里写代码，用粒子重构现实。</p>
     <div class="btn-group">
-      <button class="btn btn-p">Enter the field</button>
-      <button class="btn btn-c">Download resume</button>
+      <button class="btn btn-p">翻阅文章</button>
+      <button class="btn btn-c">关于我</button>
       <button class="btn btn-g">GitHub</button>
     </div>
     <div class="counter-row">
       <div class="counter">
-        <div class="num">12y</div>
+        <div class="num">10y</div>
         <div class="lbl">Experience</div>
       </div>
       <div class="counter">
@@ -367,6 +373,8 @@ HTML：
   </div>
 </div>
 ```
+
+**规则：** Home 页不使用 `.bio` 段落——glitch 标题本身就是完整宣言。About 页覆盖 `.hero` 为 `display: block` 以支持纵向内容流。
 
 CSS：
 
@@ -703,34 +711,21 @@ CSS：
 
 ## 十、技能矩阵 Skill Matrix
 
-HTML 示例：
+数据源：`src/shared/skills.ts`，首页和 About 页面统一引用。同类型合并一行，不同类型各占一行。
 
-```html
-<div class="spec-grid">
-  <div class="spec-item">
-    <div class="icon">&#x2699;</div>
-    <div class="title">Languages</div>
-    <div class="list">Rust<br />TypeScript<br />Go<br />Python</div>
-  </div>
-  <div class="spec-item">
-    <div class="icon">&#x25A3;</div>
-    <div class="title">Frameworks</div>
-    <div class="list">React · Next.js<br />Tokio · Axum<br />Tailwind</div>
-  </div>
-  <div class="spec-item">
-    <div class="icon">&#x2601;</div>
-    <div class="title">Infrastructure</div>
-    <div class="list">Docker · K8s<br />Terraform<br />AWS · Vercel</div>
-  </div>
-  <div class="spec-item">
-    <div class="icon">&#x25C7;</div>
-    <div class="title">Data Layer</div>
-    <div class="list">PostgreSQL<br />Redis · Kafka<br />S3 · DynamoDB</div>
-  </div>
-</div>
-```
+矩阵内容（v2）：
 
-CSS：
+| Languages  | Frameworks | Infrastructure | Data Layer            |
+| ---------- | ---------- | -------------- | --------------------- |
+| TypeScript | Next.js    | Docker · K8s   | PostgreSQL · pgvector |
+| Python     | shadcn     | AWS · 腾讯云   | Redis                 |
+| Go         | Tailwind   | MCP · A2A      | Kafka · RabbitMQ      |
+|            | FastAPI    | Playwright     | S3                    |
+|            |            | CI/CD · Git    | Prisma · SQLAlchemy   |
+|            |            | OpenTelemetry  | zod                   |
+|            |            |                | Elasticsearch         |
+
+CSS 不变，仍使用 `.spec-grid` 和 `.spec-item` 类：
 
 ```css
 .spec-grid {
@@ -871,6 +866,38 @@ footer .note {
   .hero {
     padding: 40px 0;
     min-height: auto;
+  }
+  .posts-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .search-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  section {
+    padding: 40px 0;
+  }
+  .counter-row {
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .about-profile {
+    flex-direction: column;
+    gap: 20px;
+    align-items: stretch;
+    text-align: left;
+  }
+  .exp-card-header {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .learning-grid {
+    grid-template-columns: 1fr;
+  }
+  .edu-card {
+    flex-direction: column;
+    gap: 8px;
   }
 }
 ```
