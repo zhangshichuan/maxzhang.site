@@ -113,7 +113,7 @@ export function SearchClient({ posts }: SearchClientProps) {
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      <div className="search-layout">
         <div>
           <div className="page-title" style={{ marginBottom: 12 }}>
             {t('category')}

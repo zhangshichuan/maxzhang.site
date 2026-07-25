@@ -56,7 +56,7 @@ export function AboutPage() {
               MAXZHANG
             </h1>
           </div>
-          <div style={{ display: 'flex', gap: 40, alignItems: 'flex-start', marginBottom: 24 }}>
+          <div className="about-profile">
             <div
               style={{
                 width: 100,
@@ -141,8 +141,9 @@ export function AboutPage() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {(t.raw('experience') as Experience[]).map((exp, index) => (
-            <div key={index} style={{ display: 'flex', gap: 20, fontSize: 13 }}>
+            <div key={index} className="about-item">
               <div
+                className="about-period"
                 style={{
                   width: 100,
                   flexShrink: 0,
@@ -212,8 +213,9 @@ export function AboutPage() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {(t.raw('educationList') as Education[]).map((education, index) => (
-            <div key={index} style={{ display: 'flex', gap: 20, fontSize: 13 }}>
+            <div key={index} className="about-item">
               <div
+                className="about-period"
                 style={{
                   width: 100,
                   flexShrink: 0,

@@ -391,6 +391,31 @@ section {
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
+.posts-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 32px;
+}
+.search-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.about-profile {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+.about-item {
+  display: flex;
+  gap: 20px;
+  font-size: 13px;
+}
+.about-period {
+  width: 100px;
+  flex-shrink: 0;
+}
 .proj {
   position: relative;
   background: var(--card);
@@ -576,6 +601,34 @@ footer .note {
   .hero {
     padding: 40px 0;
     min-height: auto;
+  }
+  .posts-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .search-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  section {
+    padding: 40px 0;
+  }
+  .counter-row {
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .about-profile {
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+    text-align: center;
+  }
+  .about-item {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .about-item .about-period {
+    width: auto;
   }
 }
 

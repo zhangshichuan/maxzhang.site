@@ -29,7 +29,7 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
         <div className="line"></div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
+      <div className="posts-layout">
         <div
           className="proj-grid"
           style={{ gridTemplateColumns: '1fr', display: 'flex', flexDirection: 'column', gap: '16px' }}
