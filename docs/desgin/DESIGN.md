@@ -139,7 +139,6 @@ document.addEventListener(
   },
   { passive: true },
 )
-
 ;(function a() {
   ctx.fillStyle = 'rgba(2,0,8,.12)'
   ctx.fillRect(0, 0, w, h)

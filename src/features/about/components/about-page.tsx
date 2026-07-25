@@ -20,10 +20,26 @@ interface Education {
 }
 
 const techStack = [
-  'TypeScript', 'Python', 'Next.js', 'FastAPI', 'PostgreSQL', 'Redis',
-  'Docker', 'Prisma', 'Playwright', 'MCP', 'A2A', 'ReAct',
-  'LangChain', 'Dify', 'LLMOps', 'DevOps', 'Taro', 'Flutter',
-  'React Native', 'Electron',
+  'TypeScript',
+  'Python',
+  'Next.js',
+  'FastAPI',
+  'PostgreSQL',
+  'Redis',
+  'Docker',
+  'Prisma',
+  'Playwright',
+  'MCP',
+  'A2A',
+  'ReAct',
+  'LangChain',
+  'Dify',
+  'LLMOps',
+  'DevOps',
+  'Taro',
+  'Flutter',
+  'React Native',
+  'Electron',
 ]
 
 export function AboutPage() {
@@ -60,7 +76,16 @@ export function AboutPage() {
               />
             </div>
             <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,.35)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <p
+                style={{
+                  fontSize: 13,
+                  color: 'rgba(255,255,255,.35)',
+                  marginBottom: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
                 <MapPin style={{ width: 13, height: 13, color: 'var(--neon)' }} />
                 {t('location')}
               </p>
@@ -132,13 +157,23 @@ export function AboutPage() {
               </div>
               <div style={{ flex: 1, borderLeft: '2px solid rgba(255,255,255,.04)', paddingLeft: 16 }}>
                 <div style={{ fontWeight: 700, marginBottom: 4 }}>{exp.role}</div>
-                <div style={{ fontSize: 11, color: 'var(--cyan)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: 'var(--cyan)',
+                    marginBottom: 8,
+                    textTransform: 'uppercase',
+                    letterSpacing: 1,
+                  }}
+                >
                   @ {exp.company}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {exp.points.map((point, i) => (
                     <div key={i} style={{ color: 'rgba(255,255,255,.35)', lineHeight: 1.7, display: 'flex', gap: 8 }}>
-                      <span style={{ color: 'rgba(255,255,255,.1)', flexShrink: 0 }}>{String(i + 1).padStart(2, '0')}</span>
+                      <span style={{ color: 'rgba(255,255,255,.1)', flexShrink: 0 }}>
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
                       <span>{point}</span>
                     </div>
                   ))}
@@ -158,7 +193,9 @@ export function AboutPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {(t.raw('learningList') as string[]).map((item, index) => (
             <div key={index} style={{ display: 'flex', gap: 12, fontSize: 13, color: 'rgba(255,255,255,.45)' }}>
-              <span style={{ color: 'var(--neon)', fontFamily: '"JetBrains Mono", monospace', fontSize: 10, flexShrink: 0 }}>
+              <span
+                style={{ color: 'var(--neon)', fontFamily: '"JetBrains Mono", monospace', fontSize: 10, flexShrink: 0 }}
+              >
                 {String(index + 1).padStart(2, '0')}
               </span>
               <span>{item}</span>

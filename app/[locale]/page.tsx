@@ -8,7 +8,19 @@ const skills = [
   { icon: '◇', title: 'Data Layer', items: ['PostgreSQL', 'Redis · Kafka', 'S3 · DynamoDB'] },
 ]
 
-const MARQUEE_TECHS = ['RUST', 'TYPESCRIPT', 'KUBERNETES', 'DOCKER', 'REACT', 'POSTGRESQL', 'GOLANG', 'AWS', 'TERRAFORM', 'REDIS', 'KAFKA']
+const MARQUEE_TECHS = [
+  'RUST',
+  'TYPESCRIPT',
+  'KUBERNETES',
+  'DOCKER',
+  'REACT',
+  'POSTGRESQL',
+  'GOLANG',
+  'AWS',
+  'TERRAFORM',
+  'REDIS',
+  'KAFKA',
+]
 
 function MarqueeSpan() {
   return (
@@ -16,7 +28,11 @@ function MarqueeSpan() {
       {MARQUEE_TECHS.flatMap((tech, i) => {
         const els = [<span key={tech}>{tech}</span>]
         if (i < MARQUEE_TECHS.length - 1) {
-          els.push(<span key={`d-${i}`} className="dot">{'\u25CF'}</span>)
+          els.push(
+            <span key={`d-${i}`} className="dot">
+              {'\u25CF'}
+            </span>,
+          )
         }
         return els
       })}
@@ -45,10 +61,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             <div key={s.title} className="spec-item">
               <div className="icon">{s.icon}</div>
               <div className="title">{s.title}</div>
-              <div
-                className="list"
-                dangerouslySetInnerHTML={{ __html: s.items.join('<br>') }}
-              />
+              <div className="list" dangerouslySetInnerHTML={{ __html: s.items.join('<br>') }} />
             </div>
           ))}
         </div>
