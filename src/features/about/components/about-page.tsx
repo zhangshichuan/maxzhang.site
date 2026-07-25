@@ -21,11 +21,11 @@ interface Education {
 }
 
 const techCategories: Record<string, string[]> = {
-  'Languages': ['TypeScript', 'Python', 'Go', 'Rust'],
+  Languages: ['TypeScript', 'Python', 'Go', 'Rust'],
   'Frontend & Mobile': ['Next.js', 'React', 'React Native', 'Flutter', 'Taro', 'Electron'],
   'Backend & Data': ['FastAPI', 'PostgreSQL', 'Redis', 'Prisma'],
   'AI Agent': ['MCP', 'A2A', 'ReAct', 'LangChain', 'Dify', 'LLMOps'],
-  'Infra': ['Docker', 'DevOps', 'Playwright'],
+  Infra: ['Docker', 'DevOps', 'Playwright'],
 }
 
 export function AboutPage() {
@@ -35,9 +35,10 @@ export function AboutPage() {
   return (
     <div>
       {/* ===== Hero / 个人介绍 ===== */}
-      <div className="hero" style={{ paddingTop: 40, minHeight: 'auto', paddingBottom: 20 }}>
-        <div className="tagline">{t('role')}</div>
-        <div className="about-profile">
+      <div className="hero" style={{ paddingTop: 40, minHeight: 'auto', paddingBottom: 20, display: 'block' }}>
+        <div>
+          <div className="tagline">{t('role')}</div>
+          <div className="about-profile">
           <div className="about-avatar-wrapper">
             <div className="about-avatar">
               <Image
@@ -65,7 +66,11 @@ export function AboutPage() {
             </p>
             <div className="about-bio">
               {paragraphs.map((para, i) => (
-                <p key={i} className="bio" style={{ fontSize: 14, lineHeight: 1.9, marginBottom: i < paragraphs.length - 1 ? 16 : 0 }}>
+                <p
+                  key={i}
+                  className="bio"
+                  style={{ fontSize: 14, lineHeight: 1.9, marginBottom: i < paragraphs.length - 1 ? 16 : 0 }}
+                >
                   {para}
                 </p>
               ))}
@@ -106,7 +111,9 @@ export function AboutPage() {
               <div className="tech-category-label">{category}</div>
               <div className="tech-tag-row">
                 {skills.map((name) => (
-                  <span key={name} className="tag">{name}</span>
+                  <span key={name} className="tag">
+                    {name}
+                  </span>
                 ))}
               </div>
             </div>
@@ -131,7 +138,9 @@ export function AboutPage() {
               {exp.tags && exp.tags.length > 0 && (
                 <div className="exp-tags">
                   {exp.tags.map((tag) => (
-                    <span key={tag} className="tag">{tag}</span>
+                    <span key={tag} className="tag">
+                      {tag}
+                    </span>
                   ))}
                 </div>
               )}
@@ -181,6 +190,7 @@ export function AboutPage() {
           ))}
         </div>
       </section>
+      </div>
     </div>
   )
 }

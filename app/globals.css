@@ -401,12 +401,6 @@ section {
   grid-template-columns: 1fr 1fr;
   gap: 24px;
 }
-.about-profile {
-  display: flex;
-  gap: 40px;
-  align-items: flex-start;
-  margin-bottom: 24px;
-}
 .proj {
   position: relative;
   background: var(--card);
@@ -611,14 +605,8 @@ footer .note {
   .about-profile {
     flex-direction: column;
     gap: 20px;
-    align-items: center;
-    text-align: center;
-  }
-  .about-profile {
-    flex-direction: column;
-    gap: 20px;
-    align-items: center;
-    text-align: center;
+    align-items: stretch;
+    text-align: left;
   }
   .about-avatar-wrapper {
     margin-bottom: 4px;
@@ -647,10 +635,15 @@ footer .note {
   }
 }
 
+@media (min-width: 701px) {
+  .about-profile {
+    align-items: flex-start;
+  }
+}
+
 /* ==========================================
    扩展样式 — 文章排版 (保留 Glitch Core 主题色)
    ========================================== */
-
 /* 文章内容区域 */
 .article-prose {
   font-size: 16px;
@@ -914,7 +907,6 @@ footer .note {
 .about-profile {
   display: flex;
   gap: 40px;
-  align-items: flex-start;
   margin-bottom: 24px;
 }
 
@@ -947,8 +939,13 @@ footer .note {
 }
 
 @keyframes ring-pulse {
-  0%, 100% { border-color: rgba(255, 45, 149, 0.12); }
-  50% { border-color: rgba(255, 45, 149, 0.3); }
+  0%,
+  100% {
+    border-color: rgba(255, 45, 149, 0.12);
+  }
+  50% {
+    border-color: rgba(255, 45, 149, 0.3);
+  }
 }
 
 .about-bio {
@@ -1001,7 +998,9 @@ footer .note {
   border: 1px solid rgba(255, 255, 255, 0.06);
   padding: 28px;
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%);
-  transition: border-color 0.3s, transform 0.3s;
+  transition:
+    border-color 0.3s,
+    transform 0.3s;
 }
 
 .exp-card:hover {
@@ -1088,7 +1087,9 @@ footer .note {
   background: var(--bg);
   font-size: 13px;
   color: rgba(255, 255, 255, 0.45);
-  transition: color 0.25s, background 0.25s;
+  transition:
+    color 0.25s,
+    background 0.25s;
 }
 
 .learning-item:hover {
