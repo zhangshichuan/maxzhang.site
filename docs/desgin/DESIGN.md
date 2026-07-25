@@ -352,22 +352,22 @@ HTML（首页）：
       <h1 class="glitch" data-text="BUILD HARDER. GLITCH LOUDER.">BUILD HARDER. GLITCH LOUDER.</h1>
     </div>
     <div class="btn-group">
-      <button class="btn btn-p">翻阅文章</button>
-      <button class="btn btn-c">关于我</button>
-      <button class="btn btn-g">GitHub</button>
+      <button class="btn btn-p">主 CTA</button>
+      <button class="btn btn-c">次级 CTA</button>
+      <button class="btn btn-g">三级 CTA</button>
     </div>
     <div class="counter-row">
       <div class="counter">
-        <div class="num">10y</div>
-        <div class="lbl">Experience</div>
+        <div class="num">xx</div>
+        <div class="lbl">Metric A</div>
       </div>
       <div class="counter">
-        <div class="num">50+</div>
-        <div class="lbl">OSS repos</div>
+        <div class="num">xx</div>
+        <div class="lbl">Metric B</div>
       </div>
       <div class="counter">
-        <div class="num">3k</div>
-        <div class="lbl">Stars</div>
+        <div class="num">xx</div>
+        <div class="lbl">Metric C</div>
       </div>
     </div>
   </div>
@@ -711,21 +711,22 @@ CSS：
 
 ## 十、技能矩阵 Skill Matrix
 
-数据源：`src/shared/skills.ts`，首页和 About 页面统一引用。同类型合并一行，不同类型各占一行。
+数据源：`src/shared/skills.ts`，首页和 About 页面统一引用。同类型合并一行，不同类型各占一行。通过 `<br>` 拆行，`·` 连接同类型技术。
 
-矩阵内容（v2）：
+HTML 示例：
 
-| Languages  | Frameworks | Infrastructure | Data Layer            |
-| ---------- | ---------- | -------------- | --------------------- |
-| TypeScript | Next.js    | Docker · K8s   | PostgreSQL · pgvector |
-| Python     | shadcn     | AWS · 腾讯云   | Redis                 |
-| Go         | Tailwind   | MCP · A2A      | Kafka · RabbitMQ      |
-|            | FastAPI    | Playwright     | S3                    |
-|            |            | CI/CD · Git    | Prisma · SQLAlchemy   |
-|            |            | OpenTelemetry  | zod                   |
-|            |            |                | Elasticsearch         |
+```html
+<div class="spec-grid">
+  <div class="spec-item">
+    <div class="icon">⚙</div>
+    <div class="title">Category A</div>
+    <div class="list">Item 1<br />Item 2 · Item 3<br />Item 4</div>
+  </div>
+  <!-- 更多 .spec-item ... -->
+</div>
+```
 
-CSS 不变，仍使用 `.spec-grid` 和 `.spec-item` 类：
+CSS 不变：
 
 ```css
 .spec-grid {
