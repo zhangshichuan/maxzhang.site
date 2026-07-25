@@ -4,6 +4,7 @@ import { Link } from '@/i18n/routing'
 import { Github, Mail, Linkedin, MapPin, ChevronRight } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
+import { flattenSkills, skillMatrix } from '@/src/shared/skills'
 import Avatar from '../avatar.jpg'
 
 interface Experience {
@@ -20,13 +21,7 @@ interface Education {
   degree: string
 }
 
-const techCategories: Record<string, string[]> = {
-  Languages: ['TypeScript', 'Python', 'Go', 'Rust'],
-  'Frontend & Mobile': ['Next.js', 'React', 'React Native', 'Flutter', 'Taro', 'Electron'],
-  'Backend & Data': ['FastAPI', 'PostgreSQL', 'Redis', 'Prisma'],
-  'AI Agent': ['MCP', 'A2A', 'ReAct', 'LangChain', 'Dify', 'LLMOps'],
-  Infra: ['Docker', 'DevOps', 'Playwright'],
-}
+const techCategories = Object.fromEntries(skillMatrix.map((s) => [s.title, flattenSkills(s.items)]))
 
 export function AboutPage() {
   const t = useTranslations('AboutPage')

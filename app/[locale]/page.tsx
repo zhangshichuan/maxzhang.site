@@ -1,37 +1,8 @@
 import { HomeHero } from '@/src/features/home'
 import { FeaturedPosts, getAllPostsWithViews } from '@/src/features/posts'
+import { skillMatrix, marqueeTechs } from '@/src/shared/skills'
 
-const skills = [
-  { icon: '⚙', title: 'Languages', items: ['TypeScript', 'Python', 'Go'] },
-  {
-    icon: '▣',
-    title: 'Frameworks',
-    items: ['Next.js', 'shadcn', 'Tailwind', 'TanStack', 'FastAPI', 'Nest.js'],
-  },
-  {
-    icon: '☁',
-    title: 'Infrastructure',
-    items: ['Docker', 'K8s', 'AWS', 'Vercel', 'MCP', 'A2A', 'Playwright', 'LLMOps', 'CI/CD', 'Git'],
-  },
-  { icon: '◇', title: 'Data Layer', items: ['PostgreSQL', 'Redis', 'pgvector', 'zod'] },
-]
-
-const MARQUEE_TECHS = [
-  'TYPESCRIPT',
-  'PYTHON',
-  'GOLANG',
-  'REACT',
-  'NEXT.JS',
-  'FASTAPI',
-  'POSTGRESQL',
-  'REDIS',
-  'DOCKER',
-  'KUBERNETES',
-  'AWS',
-  'MCP',
-  'A2A',
-  'LLMOPS',
-]
+const MARQUEE_TECHS = marqueeTechs
 
 function MarqueeSpan() {
   return (
@@ -68,7 +39,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           <div className="line"></div>
         </div>
         <div className="spec-grid">
-          {skills.map((s) => (
+          {skillMatrix.map((s) => (
             <div key={s.title} className="spec-item">
               <div className="icon">{s.icon}</div>
               <div className="title">{s.title}</div>

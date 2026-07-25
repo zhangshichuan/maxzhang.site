@@ -15,7 +15,6 @@ export function HomeHero() {
             BUILD HARDER. GLITCH LOUDER.
           </h1>
         </div>
-        <p className="bio">Rust 信徒 · TypeScript 老兵 · K8s 驯兽师。在系统和界面的裂缝里写代码，用粒子重构现实。</p>
         <div className="btn-group">
           <Link href="/posts">
             <button className="btn btn-p">{t('readArticles')}</button>

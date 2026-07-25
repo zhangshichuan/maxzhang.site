@@ -20,7 +20,9 @@ export function Navbar() {
 
   return (
     <header>
-      <div className="logo">MAXZHANG::</div>
+      <Link href="/" className="logo">
+        MAXZHANG
+      </Link>
       <nav>
         <Link href="/" style={isActive('/') ? { color: 'var(--cyan)' } : undefined}>
           [home]
