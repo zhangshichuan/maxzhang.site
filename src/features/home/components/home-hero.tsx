@@ -26,20 +26,6 @@ export function HomeHero() {
             <button className="btn btn-g">GitHub</button>
           </Link>
         </div>
-        <div className="counter-row">
-          <div className="counter">
-            <div className="num">10y</div>
-            <div className="lbl">Experience</div>
-          </div>
-          <div className="counter">
-            <div className="num">50+</div>
-            <div className="lbl">OSS repos</div>
-          </div>
-          <div className="counter">
-            <div className="num">3k</div>
-            <div className="lbl">Stars</div>
-          </div>
-        </div>
       </div>
     </div>
   )

@@ -115,6 +115,7 @@ export default async function PostPage({ params }: Props) {
               marginTop: 12,
               maxWidth: 'none',
               fontSize: 11,
+              lineHeight: 1,
               letterSpacing: 2,
               textTransform: 'uppercase',
               color: 'rgba(255,255,255,.3)',
@@ -141,7 +142,7 @@ export default async function PostPage({ params }: Props) {
               {post.author}
             </span>
             <span className="meta-tag">
-              <Folder style={{ width: 12, height: 12, marginRight: 4 }} />
+              <Folder style={{ width: 12, height: 12 }} />
               {post.category}
             </span>
           </div>
