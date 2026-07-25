@@ -3,13 +3,17 @@ import { FeaturedPosts, getAllPostsWithViews } from '@/src/features/posts'
 
 const skills = [
   { icon: '⚙', title: 'Languages', items: ['TypeScript', 'Python', 'Go'] },
-  { icon: '▣', title: 'Frameworks', items: ['Next.js · shadcn', 'Tailwind · TanStack', 'FastAPI · Nest.js'] },
+  {
+    icon: '▣',
+    title: 'Frameworks',
+    items: ['Next.js', 'shadcn', 'Tailwind', 'TanStack', 'FastAPI', 'Nest.js'],
+  },
   {
     icon: '☁',
     title: 'Infrastructure',
-    items: ['Docker · K8s', 'AWS · Vercel', 'MCP · A2A', 'Playwright · LLMOps', 'CI/CD · Git'],
+    items: ['Docker', 'K8s', 'AWS', 'Vercel', 'MCP', 'A2A', 'Playwright', 'LLMOps', 'CI/CD', 'Git'],
   },
-  { icon: '◇', title: 'Data Layer', items: ['PostgreSQL', 'Redis · pgvector', 'zod'] },
+  { icon: '◇', title: 'Data Layer', items: ['PostgreSQL', 'Redis', 'pgvector', 'zod'] },
 ]
 
 const MARQUEE_TECHS = [
