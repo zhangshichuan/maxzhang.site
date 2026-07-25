@@ -14,12 +14,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 export default async function ChatPage() {
   return (
-    <div className="container mx-auto max-w-3xl px-6 md:px-8">
-      <div className="flex h-[calc(100vh-4rem-6rem)] flex-col py-10">
-        <div className="flex-1 overflow-hidden">
-          <ChatInterface />
-        </div>
-      </div>
+    <div style={{ padding: '40px 0', maxWidth: 700, margin: '0 auto' }}>
+      <ChatInterface />
     </div>
   )
 }

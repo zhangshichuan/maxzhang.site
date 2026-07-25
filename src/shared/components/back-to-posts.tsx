@@ -18,12 +18,18 @@ export function BackToPosts({ label }: { label: string }) {
     <Link
       href="/posts"
       onClick={handleClick}
-      className="group mb-8 inline-flex items-center gap-2 font-serif text-sm tracking-wide text-muted-foreground transition-colors hover:text-primary"
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 24,
+        fontSize: 12, color: 'rgba(255,255,255,.35)', textDecoration: 'none',
+        textTransform: 'uppercase', letterSpacing: 2, transition: 'color .25s',
+      }}
+      onMouseEnter={(e) => { (e.target as HTMLElement).style.color = 'var(--cyan)' }}
+      onMouseLeave={(e) => { (e.target as HTMLElement).style.color = 'rgba(255,255,255,.35)' }}
     >
       {loading ? (
-        <Loader2 className="size-4 animate-spin text-primary" />
+        <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite', color: 'var(--cyan)' }} />
       ) : (
-        <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
+        <ArrowLeft style={{ width: 14, height: 14 }} />
       )}
       {label}
     </Link>

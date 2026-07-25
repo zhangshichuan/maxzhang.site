@@ -35,25 +35,14 @@ export function SearchClient({ posts }: SearchClientProps) {
   }, [posts])
 
   const filteredPosts = useMemo(() => {
-    if (!query && !selectedTag && !selectedCategory) {
-      return []
-    }
-
+    if (!query && !selectedTag && !selectedCategory) return []
     let results = posts
-
     if (query) {
       const fuseResults = fuse.search(query)
       results = fuseResults.map((result) => result.item)
     }
-
-    if (selectedTag) {
-      results = results.filter((post) => post.tags.includes(selectedTag))
-    }
-
-    if (selectedCategory) {
-      results = results.filter((post) => post.category === selectedCategory)
-    }
-
+    if (selectedTag) results = results.filter((post) => post.tags.includes(selectedTag))
+    if (selectedCategory) results = results.filter((post) => post.category === selectedCategory)
     return results
   }, [posts, query, selectedTag, selectedCategory, fuse])
 
@@ -63,98 +52,70 @@ export function SearchClient({ posts }: SearchClientProps) {
       if (query) params.set('q', query)
       if (selectedTag) params.set('tag', selectedTag)
       if (selectedCategory) params.set('category', selectedCategory)
-
       const queryString = params.toString()
       const newUrl = queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname
       window.history.replaceState(null, '', newUrl)
     }, 300)
-
     return () => clearTimeout(timer)
   }, [query, selectedTag, selectedCategory])
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(e.target.value)
-  }
-
-  const handleTagClick = (tag: string) => {
-    setSelectedTag((prev) => (prev === tag ? '' : tag))
-  }
-
-  const handleCategoryClick = (category: string) => {
-    setSelectedCategory((prev) => (prev === category ? '' : category))
-  }
-
-  const clearFilters = () => {
-    setQuery('')
-    setSelectedTag('')
-    setSelectedCategory('')
-  }
-
-  const clearTag = () => {
-    setSelectedTag('')
-  }
-
-  const clearCategory = () => {
-    setSelectedCategory('')
-  }
-
+  const clearFilters = () => { setQuery(''); setSelectedTag(''); setSelectedCategory('') }
   const hasFilters = Boolean(query || selectedTag || selectedCategory)
 
   return (
-    <div className="space-y-8">
-      {/* 搜索输入框 */}
-      <div className="relative">
-        <Search className="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-muted-foreground/50" />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      <div className="sec-head">
+        <span className="bracket">[Search]</span>
+        <div className="line"></div>
+      </div>
+
+      <div style={{ position: 'relative' }}>
+        <Search style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'rgba(255,255,255,.2)' }} />
         <input
           type="text"
           value={query}
-          onChange={handleSearch}
+          onChange={(e) => setQuery(e.target.value)}
           placeholder={t('placeholder')}
-          className="w-full rounded-md border border-border/60 bg-card py-3 pr-4 pl-10 font-serif text-base transition-all placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-1 focus:ring-primary/20 focus:outline-none"
+          className="glitch-input"
+          style={{ paddingLeft: 44 }}
         />
         {query && (
           <button
             onClick={() => setQuery('')}
-            className="absolute top-1/2 right-3 -translate-y-1/2 rounded-sm p-1 text-muted-foreground hover:bg-muted"
+            style={{
+              position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+              background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+              color: 'rgba(255,255,255,.4)',
+            }}
           >
-            <X className="size-4" />
+            <X style={{ width: 14, height: 14 }} />
           </button>
         )}
       </div>
 
-      {/* 分类和标签 */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="space-y-3">
-          <h3 className="font-serif text-sm font-bold text-foreground">{t('category')}</h3>
-          <div className="flex flex-wrap gap-2">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+        <div>
+          <div className="page-title" style={{ marginBottom: 12 }}>{t('category')}</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
             {allCategories.map((category) => (
               <button
                 key={category}
-                onClick={() => handleCategoryClick(category)}
-                className={`inline-flex items-center rounded-sm border px-2.5 py-1 font-sans text-xs font-medium tracking-wide transition-colors focus:outline-none ${
-                  selectedCategory === category
-                    ? 'border-primary/30 bg-primary/10 text-primary'
-                    : 'border-border/40 bg-card text-muted-foreground hover:border-primary/20 hover:text-foreground'
-                }`}
+                onClick={() => setSelectedCategory(prev => prev === category ? '' : category)}
+                className={`glitch-filter-btn ${selectedCategory === category ? 'active' : ''}`}
               >
                 {category}
               </button>
             ))}
           </div>
         </div>
-
-        <div className="space-y-3">
-          <h3 className="font-serif text-sm font-bold text-foreground">{t('tag')}</h3>
-          <div className="flex flex-wrap gap-2">
+        <div>
+          <div className="page-title" style={{ marginBottom: 12 }}>{t('tag')}</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
             {allTags.map((tag) => (
               <button
                 key={tag}
-                onClick={() => handleTagClick(tag)}
-                className={`inline-flex items-center rounded-sm border px-2.5 py-1 font-sans text-xs font-medium tracking-wide transition-colors focus:outline-none ${
-                  selectedTag === tag
-                    ? 'border-primary/30 bg-primary/10 text-primary'
-                    : 'border-border/40 bg-card text-muted-foreground hover:border-primary/20 hover:text-foreground'
-                }`}
+                onClick={() => setSelectedTag(prev => prev === tag ? '' : tag)}
+                className={`glitch-filter-btn ${selectedTag === tag ? 'active' : ''}`}
               >
                 {tag}
               </button>
@@ -163,55 +124,52 @@ export function SearchClient({ posts }: SearchClientProps) {
         </div>
       </div>
 
-      {/* 当前筛选条件 */}
       {hasFilters && (
-        <div className="flex flex-wrap items-center gap-2 border-t border-border/40 pt-4">
-          <span className="font-serif text-sm text-muted-foreground">{t('currentFilter')}:</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, borderTop: '1px solid rgba(255,255,255,.05)', paddingTop: 16 }}>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,.3)' }}>{t('currentFilter')}:</span>
           {selectedCategory && (
-            <span className="inline-flex items-center gap-1 rounded-sm border border-primary/20 bg-primary/5 px-2 py-1 font-sans text-xs font-medium text-primary">
+            <span style={{ fontSize: 10, color: 'var(--cyan)', border: '1px solid rgba(0,229,255,.2)', padding: '3px 10px', textTransform: 'uppercase' }}>
               {t('category')}: {selectedCategory}
-              <button onClick={clearCategory} className="ml-1 hover:text-primary/70">
-                <X className="size-3" />
-              </button>
             </span>
           )}
           {selectedTag && (
-            <span className="inline-flex items-center gap-1 rounded-sm border border-primary/20 bg-primary/5 px-2 py-1 font-sans text-xs font-medium text-primary">
+            <span style={{ fontSize: 10, color: 'var(--cyan)', border: '1px solid rgba(0,229,255,.2)', padding: '3px 10px', textTransform: 'uppercase' }}>
               {t('tag')}: {selectedTag}
-              <button onClick={clearTag} className="ml-1 hover:text-primary/70">
-                <X className="size-3" />
-              </button>
             </span>
           )}
           <button
             onClick={clearFilters}
-            className="font-serif text-xs text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-primary"
+            style={{
+              fontSize: 11, color: 'rgba(255,255,255,.3)', background: 'none',
+              border: 'none', cursor: 'pointer', textDecoration: 'underline',
+            }}
           >
             {t('clearAll')}
           </button>
         </div>
       )}
 
-      {/* 搜索结果状态 */}
       {hasFilters && (
-        <div className="font-serif text-sm text-muted-foreground italic">
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)' }}>
           {t('found', { count: filteredPosts.length })}
         </div>
       )}
 
-      {/* 文章列表 */}
-      <div className="space-y-6">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {filteredPosts.map((post) => (
           <PostItem key={post.slug} post={post} />
         ))}
 
         {hasFilters && filteredPosts.length === 0 && (
-          <div className="py-20 text-center">
-            <Search className="mx-auto mb-4 h-10 w-10 text-muted-foreground/20" />
-            <p className="font-serif text-lg text-muted-foreground italic">{t('noResults')}</p>
+          <div className="empty-state">
+            <Search style={{ width: 32, height: 32, margin: '0 auto 16px', color: 'rgba(255,255,255,.05)' }} />
+            <p>{t('noResults')}</p>
             <button
               onClick={clearFilters}
-              className="mt-4 font-serif text-sm text-primary underline decoration-dotted underline-offset-4 hover:text-primary/80"
+              style={{
+                marginTop: 16, fontSize: 12, color: 'var(--cyan)',
+                background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline',
+              }}
             >
               {t('clearFilters')}
             </button>
@@ -219,9 +177,9 @@ export function SearchClient({ posts }: SearchClientProps) {
         )}
 
         {!hasFilters && (
-          <div className="py-20 text-center">
-            <Search className="mx-auto mb-4 h-10 w-10 text-muted-foreground/10" />
-            <p className="font-serif text-lg text-muted-foreground italic">{t('startSearch')}</p>
+          <div className="empty-state">
+            <Search style={{ width: 32, height: 32, margin: '0 auto 16px', color: 'rgba(255,255,255,.05)' }} />
+            <p>{t('startSearch')}</p>
           </div>
         )}
       </div>

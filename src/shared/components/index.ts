@@ -1,7 +1,5 @@
 /**
  * 共享组件导出文件
- *
- * 集中导出所有共享组件，便于其他模块导入使用
  */
 
 export { AudioPlayer } from './audio-player'
@@ -12,4 +10,4 @@ export { GlassCard } from './glass-card'
 export { Mermaid } from './mdx'
 export { FadeIn, StaggerContainer, StaggerItem } from './motion-wrapper'
 export { Navbar } from './navbar'
-export { ThemeToggle } from './theme-toggle'
+export { ParticleCanvas } from './particle-canvas'

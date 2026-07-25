@@ -1,9 +1,10 @@
 import { Comment, ViewCounter, getCommentCount } from '@/src/features/engagement'
 import { getPostBySlug, getPostSlugs } from '@/src/features/posts'
 import { AudioPlayer, BackToPosts, BackToTop, Mermaid } from '@/src/shared/components'
-import { Calendar, Clock, Folder, User } from 'lucide-react'
+import { Calendar, Clock, Folder, MessageCircle, User } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 import { MDXRemote } from 'next-mdx-remote/rsc'
+import { redirect } from 'next/navigation'
 import * as React from 'react'
 import remarkGfm from 'remark-gfm'
 
@@ -16,15 +17,11 @@ interface Props {
 
 export async function generateStaticParams() {
   const locales = ['en', 'zh']
-
   const params = []
   for (const locale of locales) {
     const posts = getPostSlugs(locale)
     for (const post of posts) {
-      params.push({
-        locale,
-        slug: post.replace(/\.mdx?$/, ''),
-      })
+      params.push({ locale, slug: post.replace(/\.mdx?$/, '') })
     }
   }
   return params
@@ -33,13 +30,9 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props) {
   const { slug, locale } = await params
   const post = getPostBySlug(slug, locale, false)
-
   if (!post) {
-    return {
-      title: 'Post Not Found',
-    }
+    return { title: 'Post Not Found' }
   }
-
   return {
     title: `${post.title} - Max Zhang`,
     description: post.summary,
@@ -70,9 +63,6 @@ const components = {
   },
 }
 
-import { MessageCircle } from 'lucide-react'
-import { redirect } from 'next/navigation'
-
 export default async function PostPage({ params }: Props) {
   const { slug, locale } = await params
   const t = await getTranslations({ locale, namespace: 'Common' })
@@ -91,67 +81,58 @@ export default async function PostPage({ params }: Props) {
 
   return (
     <>
-      <article className="container mx-auto max-w-3xl px-6 py-12 md:px-8">
-        {/* 返回链接 */}
+      <article style={{ padding: '40px 0' }}>
         <BackToPosts label={tPosts('back')} />
 
         {/* 文章头部 */}
-        <header className="mb-12 space-y-6">
-          {/* 装饰线 */}
-          <div className="ornament-divider">&#9670;</div>
+        <div className="article-header" style={{ marginTop: 20 }}>
+          <div className="glitch-divider">
+            <span>&#9670;</span>
+          </div>
 
-          <h1 className="font-serif text-4xl leading-[1.2] font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+          <h1 style={{ fontSize: 'clamp(28px,5vw,48px)', fontWeight: 900, lineHeight: 1.1, color: '#fff', textShadow: '0 0 30px rgba(255,45,149,.2)', marginBottom: 20 }}>
             {post.title}
           </h1>
 
-          {/* 语音播报 */}
           <AudioPlayer slug={slug} lang={locale} />
 
-          {/* 元信息 */}
-          <div className="flex flex-wrap items-center gap-4 font-sans text-sm tracking-wide text-muted-foreground">
-            <time dateTime={post.date} className="flex items-center gap-1.5">
-              <Calendar className="size-4 text-primary/60" />
+          <div className="bio" style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center', marginTop: 12, maxWidth: 'none', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,.3)' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Calendar style={{ width: 14, height: 14, color: 'var(--neon)' }} />
               {post.date}
-            </time>
-            <span className="flex items-center gap-1.5">
-              <Clock className="size-4 text-primary/60" />
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Clock style={{ width: 14, height: 14, color: 'var(--neon)' }} />
               {t('readingTime', { minutes: readingTime })}
             </span>
             <ViewCounter slug={slug} locale={locale} />
-            <a
-              href="#comments"
-              className="flex cursor-pointer items-center gap-1.5 transition-colors hover:text-primary"
-            >
-              <MessageCircle className="size-4 text-primary/60" />
+            <a href="#comments" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--cyan)', textDecoration: 'none' }}>
+              <MessageCircle style={{ width: 14, height: 14 }} />
               <span>{commentCount}</span>
             </a>
-            <span className="flex items-center gap-1.5">
-              <User className="size-4 text-primary/60" />
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <User style={{ width: 14, height: 14, color: 'var(--neon)' }} />
               {post.author}
             </span>
-            <span className="flex items-center gap-1.5 rounded-sm bg-muted/50 px-2 py-0.5 text-primary">
-              <Folder className="size-4" />
+            <span className="meta-tag">
+              <Folder style={{ width: 12, height: 12, marginRight: 4 }} />
               {post.category}
             </span>
           </div>
 
-          {/* 标签 */}
-          <div className="flex flex-wrap gap-2">
+          <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
             {post.tags.map((tag) => (
-              <span
-                key={tag}
-                className="inline-flex items-center rounded-sm border border-border/40 bg-card px-2.5 py-0.5 font-sans text-[10px] font-medium tracking-wide text-muted-foreground uppercase"
-              >
-                {tag}
-              </span>
+              <span key={tag} className="tag">{tag}</span>
             ))}
           </div>
 
-          <div className="ornament-divider">&#9670;</div>
-        </header>
+          <div className="glitch-divider" style={{ marginTop: 16 }}>
+            <span>&#9670;</span>
+          </div>
+        </div>
 
-        {/* MDX 内容 - 首字下沉 */}
-        <div className="drop-cap article-prose">
+        {/* MDX 内容 */}
+        <div className="article-prose">
           <MDXRemote
             source={post.content}
             components={components}
@@ -163,11 +144,13 @@ export default async function PostPage({ params }: Props) {
           />
         </div>
 
-        {/* 文章底部装饰 */}
-        <div className="ornament-divider mt-16">&#9743;</div>
+        {/* 底部装饰 */}
+        <div className="glitch-divider" style={{ marginTop: 40 }}>
+          <span>&#9743;</span>
+        </div>
 
         {/* 评论区域 */}
-        <div id="comments" className="mt-12">
+        <div id="comments" style={{ marginTop: 40 }}>
           <Comment slug={slug} locale={locale} />
         </div>
       </article>

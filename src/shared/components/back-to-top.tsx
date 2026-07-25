@@ -1,9 +1,3 @@
-/**
- * 返回顶部按钮组件
- *
- * 杂志风格 — 低调优雅
- */
-
 'use client'
 
 import { ArrowUp } from 'lucide-react'
@@ -16,7 +10,6 @@ export function BackToTop() {
     const toggleVisibility = () => {
       setIsVisible(window.scrollY > 400)
     }
-
     window.addEventListener('scroll', toggleVisibility, { passive: true })
     return () => window.removeEventListener('scroll', toggleVisibility)
   }, [])
@@ -31,9 +24,22 @@ export function BackToTop() {
     <button
       onClick={scrollToTop}
       aria-label="Back to top"
-      className="fixed right-6 bottom-6 z-50 cursor-pointer rounded-sm border border-border/40 bg-card p-2.5 text-muted-foreground shadow-(--shadow-card) transition-all hover:border-primary/30 hover:text-primary active:scale-95"
+      style={{
+        position: 'fixed', right: 24, bottom: 24, zIndex: 50,
+        background: 'var(--card)', border: '1px solid rgba(255,255,255,.06)',
+        color: 'rgba(255,255,255,.4)', padding: 10, cursor: 'pointer',
+        transition: 'all .25s', clipPath: 'polygon(0 4px, 4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%)',
+      }}
+      onMouseEnter={(e) => {
+        (e.target as HTMLElement).style.color = 'var(--neon)'
+        ;(e.target as HTMLElement).style.borderColor = 'rgba(255,45,149,.3)'
+      }}
+      onMouseLeave={(e) => {
+        (e.target as HTMLElement).style.color = 'rgba(255,255,255,.4)'
+        ;(e.target as HTMLElement).style.borderColor = 'rgba(255,255,255,.06)'
+      }}
     >
-      <ArrowUp className="size-4" />
+      <ArrowUp style={{ width: 16, height: 16 }} />
     </button>
   )
 }

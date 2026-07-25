@@ -19,14 +19,12 @@ export default async function SearchPage({ params }: { params: Promise<{ locale:
   const t = await getTranslations('SearchPage')
 
   return (
-    <div className="container mx-auto max-w-3xl px-6 py-10 md:px-8">
-      <div className="mb-8 border-b border-border/40 pb-6">
-        <p className="font-sans text-xs font-medium tracking-[0.3em] text-muted-foreground uppercase">{t('title')}</p>
-        <h1 className="mt-2 font-serif text-4xl font-bold tracking-tight">{t('title')}</h1>
-      </div>
+    <div style={{ padding: '40px 0' }}>
       <Suspense
         fallback={
-          <div className="py-20 text-center font-serif text-lg text-muted-foreground italic">{t('loading')}</div>
+          <div style={{ textAlign: 'center', padding: '80px 20px', fontSize: 14, color: 'rgba(255,255,255,.2)' }}>
+            {t('loading')}
+          </div>
         }
       >
         <SearchClient posts={posts} />

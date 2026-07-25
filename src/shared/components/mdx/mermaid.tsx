@@ -1,7 +1,7 @@
 /**
  * Mermaid图表组件
  *
- * 渲染Mermaid流程图、时序图等图表，支持主题适配、全屏预览和缩放功能
+ * 渲染Mermaid流程图、时序图等图表，支持全屏预览和缩放功能
  * 包含灯箱模式，用户可点击图表放大查看细节
  */
 
@@ -11,7 +11,6 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Maximize2, RotateCcw, X, ZoomIn, ZoomOut } from 'lucide-react'
 import mermaid from 'mermaid'
 import { useTranslations } from 'next-intl'
-import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
 
 /** Mermaid组件属性接口 */
@@ -19,36 +18,17 @@ interface MermaidProps {
   chart: string // Mermaid图表定义代码
 }
 
-/**
- * Mermaid图表主组件
- *
- * 渲染Mermaid图表，支持主题适配、错误处理和交互功能
- *
- * @param chart - Mermaid图表定义代码
- * @returns 渲染图表元素，包含缩略图和全屏灯箱
- */
 export default function Mermaid({ chart }: MermaidProps) {
-  // 国际化翻译
   const t = useTranslations('Mermaid')
-  // 当前主题（明/暗）
-  const { resolvedTheme } = useTheme()
-  // 渲染后的SVG内容
   const [svg, setSvg] = useState<string>('')
-  // 渲染错误信息
   const [error, setError] = useState<string | null>(null)
-  // 灯箱（全屏模式）是否打开
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
-  // 缩放比例
   const [zoom, setZoom] = useState(1)
 
-  // 初始化Mermaid并渲染图表，依赖图表代码和主题变化
   useEffect(() => {
-    const isDark = resolvedTheme === 'dark'
-
-    // 配置Mermaid初始化参数
     mermaid.initialize({
       startOnLoad: false,
-      theme: isDark ? 'dark' : 'default',
+      theme: 'dark',
       securityLevel: 'loose',
       fontFamily: 'var(--font-sans)',
       themeVariables: {
@@ -67,11 +47,7 @@ export default function Mermaid({ chart }: MermaidProps) {
         try {
           const id = `m${Math.random().toString(36).substring(2, 11)}`
           const { svg: renderedSvg } = await mermaid.render(id, chart)
-
-          // 关键修复：不再强制替换为 100%，而是移除 Mermaid 可能注入的冲突 style
-          // 保留原始的 width/height 属性，让 SVG 拥有原始比例
           const cleanedSvg = renderedSvg.replace(/style="max-width:.*?"/, '')
-
           setSvg(cleanedSvg)
           setError(null)
         } catch (err) {
@@ -82,12 +58,8 @@ export default function Mermaid({ chart }: MermaidProps) {
     }
 
     renderChart()
-  }, [chart, resolvedTheme])
+  }, [chart])
 
-  /**
-   * 切换全屏灯箱显示
-   * 打开时禁用页面滚动，关闭时恢复滚动并重置缩放
-   */
   const toggleLightbox = () => {
     if (!isLightboxOpen) {
       setIsLightboxOpen(true)
@@ -99,40 +71,22 @@ export default function Mermaid({ chart }: MermaidProps) {
     }
   }
 
-  /**
-   * 放大图表
-   * @param e - 鼠标事件，阻止事件冒泡
-   */
   const handleZoomIn = (e: React.MouseEvent) => {
     e.stopPropagation()
     setZoom((prev) => Math.min(prev + 0.2, 4))
   }
 
-  /**
-   * 缩小图表
-   * @param e - 鼠标事件，阻止事件冒泡
-   */
   const handleZoomOut = (e: React.MouseEvent) => {
     e.stopPropagation()
     setZoom((prev) => Math.max(prev - 0.2, 0.3))
   }
 
-  /**
-   * 重置缩放比例到原始大小
-   * @param e - 鼠标事件，阻止事件冒泡
-   */
   const handleReset = (e: React.MouseEvent) => {
     e.stopPropagation()
     setZoom(1)
   }
 
-  /**
-   * 处理鼠标滚轮缩放
-   * 仅在灯箱打开时生效，向上滚动放大，向下滚动缩小
-   * @param e - 滚轮事件
-   */
   const handleWheel = (e: React.WheelEvent) => {
-    // 只有在灯箱打开时才处理滚动缩放
     if (isLightboxOpen) {
       e.preventDefault()
       const delta = e.deltaY > 0 ? -0.1 : 0.1
@@ -142,11 +96,7 @@ export default function Mermaid({ chart }: MermaidProps) {
 
   if (error) {
     return (
-      <div
-        className="
-    my-4 rounded-sm border border-red-500 p-4 text-sm text-red-500
-  "
-      >
+      <div style={{ margin: '16px 0', border: '1px solid var(--neon)', padding: 16, fontSize: 13, color: 'var(--neon)' }}>
         {error}
       </div>
     )
@@ -154,48 +104,39 @@ export default function Mermaid({ chart }: MermaidProps) {
 
   return (
     <>
-      {/* 缩略图模式：利用原始比例进行缩放 */}
       <div className="group relative my-12 cursor-zoom-in">
         <div
           onClick={toggleLightbox}
-          className="
-       not-prose flex max-h-150 w-full items-center justify-center overflow-hidden
-       rounded-2xl border border-border bg-card p-6 shadow-sm
-       transition-all
-       hover:ring-4 hover:ring-primary/10
-       md:p-10
-     "
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            maxHeight: 600, overflow: 'hidden', border: '1px solid rgba(255,255,255,.06)',
+            background: 'var(--card)', padding: '24px 40px', transition: 'all .25s',
+            cursor: 'pointer',
+          }}
         >
           <div
-            className="
-        flex h-full w-full items-center justify-center
-        [&>svg]:size-auto [&>svg]:max-h-135 [&>svg]:max-w-full
-        [&>svg]:object-contain
-      "
+            className="[&>svg]:size-auto [&>svg]:max-h-[540px] [&>svg]:max-w-full [&>svg]:object-contain"
             dangerouslySetInnerHTML={{ __html: svg }}
           />
         </div>
 
         <div
-          className="
-      pointer-events-none absolute top-4 right-4 flex items-center gap-2
-      rounded-full border border-border bg-background/60 px-3 py-1.5 opacity-0
-      shadow-sm backdrop-blur-md transition-all duration-300
-      group-hover:opacity-100
-    "
+          style={{
+            position: 'absolute', top: 16, right: 16,
+            display: 'flex', alignItems: 'center', gap: 8,
+            border: '1px solid rgba(255,255,255,.08)',
+            background: 'rgba(2,0,8,.6)', backdropFilter: 'blur(12px)',
+            padding: '4px 12px', opacity: 0, transition: 'opacity .3s',
+            fontSize: 10, textTransform: 'uppercase', letterSpacing: 1,
+            color: 'rgba(255,255,255,.5)',
+          }}
+          className="group-hover:opacity-100"
         >
-          <Maximize2 className="h-3.5 w-3.5 text-primary" />
-          <span
-            className="
-       text-[10px] font-black tracking-tight text-foreground uppercase
-     "
-          >
-            {t('clickToZoom')} {/* Mermaid/clickToZoom 点击查看高清大图 */}
-          </span>
+          <Maximize2 style={{ width: 14, height: 14, color: 'var(--neon)' }} />
+          <span>{t('clickToZoom')}</span>
         </div>
       </div>
 
-      {/* 全屏高清灯箱 */}
       <AnimatePresence>
         {isLightboxOpen && (
           <motion.div
@@ -203,68 +144,66 @@ export default function Mermaid({ chart }: MermaidProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onWheel={handleWheel}
-            className="
-        fixed inset-0 z-100 flex items-center justify-center bg-background/98
-        backdrop-blur-xl
-      "
+            style={{
+              position: 'fixed', inset: 0, zIndex: 100,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(2,0,8,.98)', backdropFilter: 'blur(24px)',
+            }}
           >
             <button
               onClick={toggleLightbox}
-              className="
-         group absolute top-6 left-6 z-110 rounded-xl border-2 border-border
-         bg-card p-3 shadow-xl transition-all
-         hover:bg-muted
-       "
+              style={{
+                position: 'absolute', top: 24, left: 24, zIndex: 110,
+                background: 'var(--card)', border: '1px solid rgba(255,255,255,.06)',
+                padding: 12, cursor: 'pointer', transition: 'all .25s',
+              }}
             >
-              <X
-                className="
-         h-6 w-6 text-foreground transition-transform
-         group-hover:scale-110
-       "
-              />
+              <X style={{ width: 24, height: 24, color: 'var(--fg)' }} />
             </button>
 
             <div
-              className="
-        absolute top-6 right-6 z-110 flex items-center gap-2 rounded-2xl border-2
-        border-border bg-card p-1.5 shadow-2xl
-      "
+              style={{
+                position: 'absolute', top: 24, right: 24, zIndex: 110,
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: 'var(--card)', border: '1px solid rgba(255,255,255,.06)',
+                padding: 6,
+              }}
             >
               <button
                 onClick={handleZoomIn}
-                className="
-         rounded-xl p-2.5 text-foreground transition-colors
-         hover:bg-muted
-       "
+                style={{
+                  padding: 10, background: 'transparent', border: 'none',
+                  cursor: 'pointer', color: 'var(--fg)',
+                }}
               >
-                <ZoomIn className="size-5" />
+                <ZoomIn style={{ width: 20, height: 20 }} />
               </button>
               <button
                 onClick={handleZoomOut}
-                className="
-         rounded-xl p-2.5 text-foreground transition-colors
-         hover:bg-muted
-       "
+                style={{
+                  padding: 10, background: 'transparent', border: 'none',
+                  cursor: 'pointer', color: 'var(--fg)',
+                }}
               >
-                <ZoomOut className="size-5" />
+                <ZoomOut style={{ width: 20, height: 20 }} />
               </button>
               <button
                 onClick={handleReset}
-                className="
-         rounded-xl p-2.5 text-foreground transition-colors
-         hover:bg-muted
-       "
+                style={{
+                  padding: 10, background: 'transparent', border: 'none',
+                  cursor: 'pointer', color: 'var(--fg)',
+                }}
               >
-                <RotateCcw className="size-5" />
+                <RotateCcw style={{ width: 20, height: 20 }} />
               </button>
             </div>
 
-            {/* 大图滚动区域 */}
             <div
-              className="
-         flex h-full w-full items-center justify-center overflow-auto p-4 pt-24
-         md:p-20
-       "
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '100%', height: '100%', overflow: 'auto',
+                padding: '80px 16px 16px',
+              }}
               onClick={toggleLightbox}
             >
               <motion.div
@@ -275,27 +214,23 @@ export default function Mermaid({ chart }: MermaidProps) {
                   transition: { type: 'spring', damping: 30, stiffness: 200 },
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="relative flex items-center justify-center"
               >
                 <div
-                  className="
-           not-prose
-           [&>svg]:h-auto! [&>svg]:min-h-100 [&>svg]:max-w-none!
-           [&>svg]:overflow-visible
-         "
+                  className="[&>svg]:h-auto! [&>svg]:min-h-[400px] [&>svg]:max-w-none! [&>svg]:overflow-visible"
                   dangerouslySetInnerHTML={{ __html: svg }}
                 />
               </motion.div>
             </div>
 
             <div
-              className="
-        pointer-events-none absolute bottom-8 left-1/2 -translate-x-1/2
-        rounded-full border-2 border-primary/20 bg-primary/10 px-5 py-2
-        text-[11px] font-black tracking-widest text-primary uppercase shadow-lg
-      "
+              style={{
+                position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)',
+                background: 'rgba(255,45,149,.1)', border: '1px solid rgba(255,45,149,.2)',
+                padding: '8px 20px', fontSize: 11, fontWeight: 700,
+                textTransform: 'uppercase', letterSpacing: 2, color: 'var(--neon)',
+              }}
             >
-              {t('zoomInstruction')} {/* Mermaid/zoomInstruction 使用上方工具栏缩放 • 移动端可双指操作 */}
+              {t('zoomInstruction')}
             </div>
           </motion.div>
         )}

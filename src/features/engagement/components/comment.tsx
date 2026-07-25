@@ -355,7 +355,7 @@ export function Comment({ slug, locale }: CommentProps) {
         )}
 
         {success && (
-          <div className="mt-3 flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-sm text-green-600 dark:text-green-400">
+          <div className="mt-3 flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-sm text-green-400">
             {t('success')}
           </div>
         )}
@@ -364,7 +364,8 @@ export function Comment({ slug, locale }: CommentProps) {
           <button
             type="submit"
             disabled={!content.trim() || isSubmitting || remaining === 0}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn btn-p"
+            style={{ fontSize: 12, padding: '8px 20px' }}
           >
             <Send className="size-4" />
             {isSubmitting ? t('submitting') : t('submit')}
@@ -374,7 +375,7 @@ export function Comment({ slug, locale }: CommentProps) {
 
       {/* Reply Success Message */}
       {replySuccess && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-sm text-green-600 dark:text-green-400">
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-sm text-green-400">
           {t('replySuccess')}
         </div>
       )}
