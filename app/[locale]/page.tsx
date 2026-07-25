@@ -2,24 +2,31 @@ import { HomeHero } from '@/src/features/home'
 import { FeaturedPosts, getAllPostsWithViews } from '@/src/features/posts'
 
 const skills = [
-  { icon: '⚙', title: 'Languages', items: ['TypeScript', 'Python', 'Go', 'Rust'] },
-  { icon: '▣', title: 'Frameworks', items: ['React · Next.js', 'Tokio · Axum', 'Tailwind'] },
-  { icon: '☁', title: 'Infrastructure', items: ['Docker · K8s', 'Terraform', 'AWS · Vercel'] },
-  { icon: '◇', title: 'Data Layer', items: ['PostgreSQL', 'Redis · Kafka', 'S3 · DynamoDB'] },
+  { icon: '⚙', title: 'Languages', items: ['TypeScript', 'Python', 'Go'] },
+  { icon: '▣', title: 'Frameworks', items: ['Next.js · shadcn', 'Tailwind · TanStack', 'FastAPI · Nest.js'] },
+  {
+    icon: '☁',
+    title: 'Infrastructure',
+    items: ['Docker · K8s', 'AWS · Vercel', 'MCP · A2A', 'Playwright · LLMOps', 'CI/CD · Git'],
+  },
+  { icon: '◇', title: 'Data Layer', items: ['PostgreSQL', 'Redis · pgvector', 'zod'] },
 ]
 
 const MARQUEE_TECHS = [
-  'RUST',
   'TYPESCRIPT',
-  'KUBERNETES',
-  'DOCKER',
-  'REACT',
-  'POSTGRESQL',
+  'PYTHON',
   'GOLANG',
-  'AWS',
-  'TERRAFORM',
+  'REACT',
+  'NEXT.JS',
+  'FASTAPI',
+  'POSTGRESQL',
   'REDIS',
-  'KAFKA',
+  'DOCKER',
+  'KUBERNETES',
+  'AWS',
+  'MCP',
+  'A2A',
+  'LLMOPS',
 ]
 
 function MarqueeSpan() {
