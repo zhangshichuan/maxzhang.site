@@ -96,7 +96,9 @@ export default function Mermaid({ chart }: MermaidProps) {
 
   if (error) {
     return (
-      <div style={{ margin: '16px 0', border: '1px solid var(--neon)', padding: 16, fontSize: 13, color: 'var(--neon)' }}>
+      <div
+        style={{ margin: '16px 0', border: '1px solid var(--neon)', padding: 16, fontSize: 13, color: 'var(--neon)' }}
+      >
         {error}
       </div>
     )
@@ -108,9 +110,15 @@ export default function Mermaid({ chart }: MermaidProps) {
         <div
           onClick={toggleLightbox}
           style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            maxHeight: 600, overflow: 'hidden', border: '1px solid rgba(255,255,255,.06)',
-            background: 'var(--card)', padding: '24px 40px', transition: 'all .25s',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            maxHeight: 600,
+            overflow: 'hidden',
+            border: '1px solid rgba(255,255,255,.06)',
+            background: 'var(--card)',
+            padding: '24px 40px',
+            transition: 'all .25s',
             cursor: 'pointer',
           }}
         >
@@ -122,12 +130,21 @@ export default function Mermaid({ chart }: MermaidProps) {
 
         <div
           style={{
-            position: 'absolute', top: 16, right: 16,
-            display: 'flex', alignItems: 'center', gap: 8,
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
             border: '1px solid rgba(255,255,255,.08)',
-            background: 'rgba(2,0,8,.6)', backdropFilter: 'blur(12px)',
-            padding: '4px 12px', opacity: 0, transition: 'opacity .3s',
-            fontSize: 10, textTransform: 'uppercase', letterSpacing: 1,
+            background: 'rgba(2,0,8,.6)',
+            backdropFilter: 'blur(12px)',
+            padding: '4px 12px',
+            opacity: 0,
+            transition: 'opacity .3s',
+            fontSize: 10,
+            textTransform: 'uppercase',
+            letterSpacing: 1,
             color: 'rgba(255,255,255,.5)',
           }}
           className="group-hover:opacity-100"
@@ -145,17 +162,28 @@ export default function Mermaid({ chart }: MermaidProps) {
             exit={{ opacity: 0 }}
             onWheel={handleWheel}
             style={{
-              position: 'fixed', inset: 0, zIndex: 100,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(2,0,8,.98)', backdropFilter: 'blur(24px)',
+              position: 'fixed',
+              inset: 0,
+              zIndex: 100,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(2,0,8,.98)',
+              backdropFilter: 'blur(24px)',
             }}
           >
             <button
               onClick={toggleLightbox}
               style={{
-                position: 'absolute', top: 24, left: 24, zIndex: 110,
-                background: 'var(--card)', border: '1px solid rgba(255,255,255,.06)',
-                padding: 12, cursor: 'pointer', transition: 'all .25s',
+                position: 'absolute',
+                top: 24,
+                left: 24,
+                zIndex: 110,
+                background: 'var(--card)',
+                border: '1px solid rgba(255,255,255,.06)',
+                padding: 12,
+                cursor: 'pointer',
+                transition: 'all .25s',
               }}
             >
               <X style={{ width: 24, height: 24, color: 'var(--fg)' }} />
@@ -163,17 +191,26 @@ export default function Mermaid({ chart }: MermaidProps) {
 
             <div
               style={{
-                position: 'absolute', top: 24, right: 24, zIndex: 110,
-                display: 'flex', alignItems: 'center', gap: 8,
-                background: 'var(--card)', border: '1px solid rgba(255,255,255,.06)',
+                position: 'absolute',
+                top: 24,
+                right: 24,
+                zIndex: 110,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                background: 'var(--card)',
+                border: '1px solid rgba(255,255,255,.06)',
                 padding: 6,
               }}
             >
               <button
                 onClick={handleZoomIn}
                 style={{
-                  padding: 10, background: 'transparent', border: 'none',
-                  cursor: 'pointer', color: 'var(--fg)',
+                  padding: 10,
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--fg)',
                 }}
               >
                 <ZoomIn style={{ width: 20, height: 20 }} />
@@ -181,8 +218,11 @@ export default function Mermaid({ chart }: MermaidProps) {
               <button
                 onClick={handleZoomOut}
                 style={{
-                  padding: 10, background: 'transparent', border: 'none',
-                  cursor: 'pointer', color: 'var(--fg)',
+                  padding: 10,
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--fg)',
                 }}
               >
                 <ZoomOut style={{ width: 20, height: 20 }} />
@@ -190,8 +230,11 @@ export default function Mermaid({ chart }: MermaidProps) {
               <button
                 onClick={handleReset}
                 style={{
-                  padding: 10, background: 'transparent', border: 'none',
-                  cursor: 'pointer', color: 'var(--fg)',
+                  padding: 10,
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--fg)',
                 }}
               >
                 <RotateCcw style={{ width: 20, height: 20 }} />
@@ -200,8 +243,12 @@ export default function Mermaid({ chart }: MermaidProps) {
 
             <div
               style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: '100%', height: '100%', overflow: 'auto',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
+                height: '100%',
+                overflow: 'auto',
                 padding: '80px 16px 16px',
               }}
               onClick={toggleLightbox}
@@ -224,10 +271,18 @@ export default function Mermaid({ chart }: MermaidProps) {
 
             <div
               style={{
-                position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)',
-                background: 'rgba(255,45,149,.1)', border: '1px solid rgba(255,45,149,.2)',
-                padding: '8px 20px', fontSize: 11, fontWeight: 700,
-                textTransform: 'uppercase', letterSpacing: 2, color: 'var(--neon)',
+                position: 'absolute',
+                bottom: 32,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                background: 'rgba(255,45,149,.1)',
+                border: '1px solid rgba(255,45,149,.2)',
+                padding: '8px 20px',
+                fontSize: 11,
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: 2,
+                color: 'var(--neon)',
               }}
             >
               {t('zoomInstruction')}

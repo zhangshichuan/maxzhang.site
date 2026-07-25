@@ -20,24 +20,15 @@ export function Navbar() {
 
   return (
     <header>
-      <div className="logo">ZM::</div>
+      <div className="logo">MAXZHANG::</div>
       <nav>
-        <Link
-          href="/"
-          style={isActive('/') ? { color: 'var(--cyan)' } : undefined}
-        >
+        <Link href="/" style={isActive('/') ? { color: 'var(--cyan)' } : undefined}>
           [home]
         </Link>
-        <Link
-          href="/posts"
-          style={isActive('/posts') ? { color: 'var(--cyan)' } : undefined}
-        >
+        <Link href="/posts" style={isActive('/posts') ? { color: 'var(--cyan)' } : undefined}>
           [posts]
         </Link>
-        <Link
-          href="/about"
-          style={isActive('/about') ? { color: 'var(--cyan)' } : undefined}
-        >
+        <Link href="/about" style={isActive('/about') ? { color: 'var(--cyan)' } : undefined}>
           [about]
         </Link>
         <Link href="/search">

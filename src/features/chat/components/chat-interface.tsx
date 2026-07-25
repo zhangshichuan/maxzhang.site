@@ -35,7 +35,9 @@ export function ChatInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  useEffect(() => { scrollToBottom() }, [messages])
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
 
   const clearTypewriter = useCallback(() => {
     if (typewriterRef.current) {
@@ -44,7 +46,9 @@ export function ChatInterface() {
     }
   }, [])
 
-  useEffect(() => { return () => clearTypewriter() }, [clearTypewriter])
+  useEffect(() => {
+    return () => clearTypewriter()
+  }, [clearTypewriter])
 
   const tick = useCallback(
     (id: string) => {
@@ -194,10 +198,7 @@ export function ChatInterface() {
           </div>
         )}
         {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`chat-bubble ${message.role}`}
-          >
+          <div key={message.id} className={`chat-bubble ${message.role}`}>
             <pre style={{ fontFamily: 'inherit', fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap', margin: 0 }}>
               {message.content}
             </pre>

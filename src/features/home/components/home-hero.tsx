@@ -11,11 +11,11 @@ export function HomeHero() {
       <div>
         <div className="tagline">Fullstack Developer</div>
         <div className="glitch-block">
-          <h1 className="glitch" data-text="MAX ZHANG">MAX ZHANG</h1>
+          <h1 className="glitch" data-text="BUILD HARDER. GLITCH LOUDER.">
+            BUILD HARDER. GLITCH LOUDER.
+          </h1>
         </div>
-        <p className="bio">
-          Rust 信徒 · TypeScript 老兵 · K8s 驯兽师。在系统和界面的裂缝里写代码，用粒子重构现实。
-        </p>
+        <p className="bio">Rust 信徒 · TypeScript 老兵 · K8s 驯兽师。在系统和界面的裂缝里写代码，用粒子重构现实。</p>
         <div className="btn-group">
           <Link href="/posts">
             <button className="btn btn-p">{t('readArticles')}</button>

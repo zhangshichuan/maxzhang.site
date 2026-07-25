@@ -19,12 +19,23 @@ export function BackToPosts({ label }: { label: string }) {
       href="/posts"
       onClick={handleClick}
       style={{
-        display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 24,
-        fontSize: 12, color: 'rgba(255,255,255,.35)', textDecoration: 'none',
-        textTransform: 'uppercase', letterSpacing: 2, transition: 'color .25s',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 24,
+        fontSize: 12,
+        color: 'rgba(255,255,255,.35)',
+        textDecoration: 'none',
+        textTransform: 'uppercase',
+        letterSpacing: 2,
+        transition: 'color .25s',
       }}
-      onMouseEnter={(e) => { (e.target as HTMLElement).style.color = 'var(--cyan)' }}
-      onMouseLeave={(e) => { (e.target as HTMLElement).style.color = 'rgba(255,255,255,.35)' }}
+      onMouseEnter={(e) => {
+        ;(e.target as HTMLElement).style.color = 'var(--cyan)'
+      }}
+      onMouseLeave={(e) => {
+        ;(e.target as HTMLElement).style.color = 'rgba(255,255,255,.35)'
+      }}
     >
       {loading ? (
         <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite', color: 'var(--cyan)' }} />

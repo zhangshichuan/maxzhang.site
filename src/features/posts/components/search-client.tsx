@@ -59,7 +59,11 @@ export function SearchClient({ posts }: SearchClientProps) {
     return () => clearTimeout(timer)
   }, [query, selectedTag, selectedCategory])
 
-  const clearFilters = () => { setQuery(''); setSelectedTag(''); setSelectedCategory('') }
+  const clearFilters = () => {
+    setQuery('')
+    setSelectedTag('')
+    setSelectedCategory('')
+  }
   const hasFilters = Boolean(query || selectedTag || selectedCategory)
 
   return (
@@ -70,7 +74,17 @@ export function SearchClient({ posts }: SearchClientProps) {
       </div>
 
       <div style={{ position: 'relative' }}>
-        <Search style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'rgba(255,255,255,.2)' }} />
+        <Search
+          style={{
+            position: 'absolute',
+            left: 14,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: 16,
+            height: 16,
+            color: 'rgba(255,255,255,.2)',
+          }}
+        />
         <input
           type="text"
           value={query}
@@ -83,8 +97,14 @@ export function SearchClient({ posts }: SearchClientProps) {
           <button
             onClick={() => setQuery('')}
             style={{
-              position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-              background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+              position: 'absolute',
+              right: 12,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 4,
               color: 'rgba(255,255,255,.4)',
             }}
           >
@@ -95,12 +115,14 @@ export function SearchClient({ posts }: SearchClientProps) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
         <div>
-          <div className="page-title" style={{ marginBottom: 12 }}>{t('category')}</div>
+          <div className="page-title" style={{ marginBottom: 12 }}>
+            {t('category')}
+          </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
             {allCategories.map((category) => (
               <button
                 key={category}
-                onClick={() => setSelectedCategory(prev => prev === category ? '' : category)}
+                onClick={() => setSelectedCategory((prev) => (prev === category ? '' : category))}
                 className={`glitch-filter-btn ${selectedCategory === category ? 'active' : ''}`}
               >
                 {category}
@@ -109,12 +131,14 @@ export function SearchClient({ posts }: SearchClientProps) {
           </div>
         </div>
         <div>
-          <div className="page-title" style={{ marginBottom: 12 }}>{t('tag')}</div>
+          <div className="page-title" style={{ marginBottom: 12 }}>
+            {t('tag')}
+          </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
             {allTags.map((tag) => (
               <button
                 key={tag}
-                onClick={() => setSelectedTag(prev => prev === tag ? '' : tag)}
+                onClick={() => setSelectedTag((prev) => (prev === tag ? '' : tag))}
                 className={`glitch-filter-btn ${selectedTag === tag ? 'active' : ''}`}
               >
                 {tag}
@@ -125,23 +149,51 @@ export function SearchClient({ posts }: SearchClientProps) {
       </div>
 
       {hasFilters && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, borderTop: '1px solid rgba(255,255,255,.05)', paddingTop: 16 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            borderTop: '1px solid rgba(255,255,255,.05)',
+            paddingTop: 16,
+          }}
+        >
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,.3)' }}>{t('currentFilter')}:</span>
           {selectedCategory && (
-            <span style={{ fontSize: 10, color: 'var(--cyan)', border: '1px solid rgba(0,229,255,.2)', padding: '3px 10px', textTransform: 'uppercase' }}>
+            <span
+              style={{
+                fontSize: 10,
+                color: 'var(--cyan)',
+                border: '1px solid rgba(0,229,255,.2)',
+                padding: '3px 10px',
+                textTransform: 'uppercase',
+              }}
+            >
               {t('category')}: {selectedCategory}
             </span>
           )}
           {selectedTag && (
-            <span style={{ fontSize: 10, color: 'var(--cyan)', border: '1px solid rgba(0,229,255,.2)', padding: '3px 10px', textTransform: 'uppercase' }}>
+            <span
+              style={{
+                fontSize: 10,
+                color: 'var(--cyan)',
+                border: '1px solid rgba(0,229,255,.2)',
+                padding: '3px 10px',
+                textTransform: 'uppercase',
+              }}
+            >
               {t('tag')}: {selectedTag}
             </span>
           )}
           <button
             onClick={clearFilters}
             style={{
-              fontSize: 11, color: 'rgba(255,255,255,.3)', background: 'none',
-              border: 'none', cursor: 'pointer', textDecoration: 'underline',
+              fontSize: 11,
+              color: 'rgba(255,255,255,.3)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              textDecoration: 'underline',
             }}
           >
             {t('clearAll')}
@@ -150,9 +202,7 @@ export function SearchClient({ posts }: SearchClientProps) {
       )}
 
       {hasFilters && (
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)' }}>
-          {t('found', { count: filteredPosts.length })}
-        </div>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)' }}>{t('found', { count: filteredPosts.length })}</div>
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -167,8 +217,13 @@ export function SearchClient({ posts }: SearchClientProps) {
             <button
               onClick={clearFilters}
               style={{
-                marginTop: 16, fontSize: 12, color: 'var(--cyan)',
-                background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline',
+                marginTop: 16,
+                fontSize: 12,
+                color: 'var(--cyan)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                textDecoration: 'underline',
               }}
             >
               {t('clearFilters')}

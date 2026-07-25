@@ -17,7 +17,9 @@ function ProjectCard({ post, idx }: { post: PostSummaryWithViews; idx: number })
         <p>{post.summary}</p>
         <div className="tags">
           {post.tags.map((tag) => (
-            <span key={tag} className="tag">{tag}</span>
+            <span key={tag} className="tag">
+              {tag}
+            </span>
           ))}
         </div>
       </div>

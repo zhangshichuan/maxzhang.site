@@ -90,13 +90,36 @@ export default async function PostPage({ params }: Props) {
             <span>&#9670;</span>
           </div>
 
-          <h1 style={{ fontSize: 'clamp(28px,5vw,48px)', fontWeight: 900, lineHeight: 1.1, color: '#fff', textShadow: '0 0 30px rgba(255,45,149,.2)', marginBottom: 20 }}>
+          <h1
+            style={{
+              fontSize: 'clamp(28px,5vw,48px)',
+              fontWeight: 900,
+              lineHeight: 1.1,
+              color: '#fff',
+              textShadow: '0 0 30px rgba(255,45,149,.2)',
+              marginBottom: 20,
+            }}
+          >
             {post.title}
           </h1>
 
           <AudioPlayer slug={slug} lang={locale} />
 
-          <div className="bio" style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center', marginTop: 12, maxWidth: 'none', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,.3)' }}>
+          <div
+            className="bio"
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 16,
+              alignItems: 'center',
+              marginTop: 12,
+              maxWidth: 'none',
+              fontSize: 11,
+              letterSpacing: 2,
+              textTransform: 'uppercase',
+              color: 'rgba(255,255,255,.3)',
+            }}
+          >
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Calendar style={{ width: 14, height: 14, color: 'var(--neon)' }} />
               {post.date}
@@ -106,7 +129,10 @@ export default async function PostPage({ params }: Props) {
               {t('readingTime', { minutes: readingTime })}
             </span>
             <ViewCounter slug={slug} locale={locale} />
-            <a href="#comments" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--cyan)', textDecoration: 'none' }}>
+            <a
+              href="#comments"
+              style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--cyan)', textDecoration: 'none' }}
+            >
               <MessageCircle style={{ width: 14, height: 14 }} />
               <span>{commentCount}</span>
             </a>
@@ -122,7 +148,9 @@ export default async function PostPage({ params }: Props) {
 
           <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
             {post.tags.map((tag) => (
-              <span key={tag} className="tag">{tag}</span>
+              <span key={tag} className="tag">
+                {tag}
+              </span>
             ))}
           </div>
 

@@ -2,7 +2,23 @@
 title: 'Three Generations of Toolchains, One Dividing Line That Never Moved: From Webpack to Vite to Rust — Who Actually Compiles Your TypeScript?'
 summary: 'UmiJS scrapped its custom Rust bundler after a year, and Anders Hejlsberg is rewriting the TypeScript compiler in Go — the frontend toolchain is undergoing its third wave of reconstruction. But here is what most people miss: from the Webpack era through the Vite era to the Rust era, transpilation and type checking have always been two separate jobs. They never merged, and they never will. This article traces the evolution across three generations of toolchains, breaks down the roles and boundaries of Babel, esbuild, SWC, Turbopack, and Go-based TSC, and lands on a real problem: why does "Go to Definition" in VS Code freeze for three seconds on a remote monorepo — and six things you can do about it right now.'
 category: 'Frontend'
-tags: ['typescript', 'webpack', 'vite', 'esbuild', 'swc', 'turbopack', 'babel', 'rust', 'go', 'umijs', 'tsserver', 'vscode', 'monorepo', 'toolchain']
+tags:
+  [
+    'typescript',
+    'webpack',
+    'vite',
+    'esbuild',
+    'swc',
+    'turbopack',
+    'babel',
+    'rust',
+    'go',
+    'umijs',
+    'tsserver',
+    'vscode',
+    'monorepo',
+    'toolchain',
+  ]
 author: 'Max Zhang'
 date: '2026-07-08'
 ---
@@ -15,7 +31,7 @@ Mako was a true "from scratch" effort — no existing engine underneath, pure Ru
 
 A year later, in April 2025, the team posted an Issue on GitHub titled `[Mako Next]: A new bundler on top of Turbopack`. The opening line:
 
-> *"The previous Mako bundler faced numerous design challenges and persistent bugs."*
+> _"The previous Mako bundler faced numerous design challenges and persistent bugs."_
 
 Translation: writing a Rust bundler from scratch is brutally hard. Webpack accumulated a decade of ecosystem compatibility — loaders, plugins, resolve aliases, code-splitting edge cases — and Mako had to chase every single one of them. The chase never ends, and the bugs never stop.
 
@@ -25,7 +41,7 @@ The new project is called utoopack, living under `utooland/utoo`. The core logic
 
 utoopack's README doesn't mince words:
 
-> *"Core logic in Rust + Turbopack for extreme speed."*
+> _"Core logic in Rust + Turbopack for extreme speed."_
 
 This isn't "inspired by" Turbopack — this is Turbopack, taken wholesale and used directly. It's no different from how Next.js itself uses Turbopack. Both treat Vercel's engine as the base layer and write their own framework adapters around it.
 
@@ -49,13 +65,13 @@ There were two schools of thought.
 
 So here is the actual division of labor in the Webpack era:
 
-| Who | Does What |
-|---|---|
-| babel-loader | Takes the one TS file you changed, blindly strips type annotations, spits out JS |
-| Webpack | Stitches babel-loader's output together with other modules into a bundle |
+| Who             | Does What                                                                         |
+| --------------- | --------------------------------------------------------------------------------- |
+| babel-loader    | Takes the one TS file you changed, blindly strips type annotations, spits out JS  |
+| Webpack         | Stitches babel-loader's output together with other modules into a bundle          |
 | fork-ts-checker | Runs tsc in a separate process, does global type checking, never blocks the build |
 
-From day one, transpilation and type checking have been **two parallel tracks**. Nobody ever had a single tool doing both. Sure, TSC itself *can* transpile — running `tsc` without `--noEmit` will output JS files — but **nobody has ever used TSC for hot reload**. It's just too slow.
+From day one, transpilation and type checking have been **two parallel tracks**. Nobody ever had a single tool doing both. Sure, TSC itself _can_ transpile — running `tsc` without `--noEmit` will output JS files — but **nobody has ever used TSC for hot reload**. It's just too slow.
 
 ---
 
@@ -85,13 +101,13 @@ When Vite arrived, everyone shouted "esbuild is so fast." And esbuild is fast �
 
 The Vite speed formula is two things combined: **on-demand compilation + no bundling.**
 
-First, on-demand compilation. Webpack, on startup, compiles and bundles the entry file and all its dependencies before the dev server even opens. A project with a few hundred files? Cold start takes 30 seconds minimum. Vite doesn't do that. It starts the dev server without compiling a single file — your source code sits untouched on disk. The browser hits `http://localhost:5173`, loads `index.html`, which contains `<script type="module" src="/src/main.ts">`. The browser sees `type="module"` and sends an HTTP request to Vite's dev server: `GET /src/main.ts`. Only *then* does Vite hand `main.ts` to esbuild, strip the type annotations, and return JS to the browser. The browser executes that JS, finds `import App from './App.vue'`, and fires another HTTP request: `GET /src/App.vue`. Vite compiles `App.vue`, returns JS.
+First, on-demand compilation. Webpack, on startup, compiles and bundles the entry file and all its dependencies before the dev server even opens. A project with a few hundred files? Cold start takes 30 seconds minimum. Vite doesn't do that. It starts the dev server without compiling a single file — your source code sits untouched on disk. The browser hits `http://localhost:5173`, loads `index.html`, which contains `<script type="module" src="/src/main.ts">`. The browser sees `type="module"` and sends an HTTP request to Vite's dev server: `GET /src/main.ts`. Only _then_ does Vite hand `main.ts` to esbuild, strip the type annotations, and return JS to the browser. The browser executes that JS, finds `import App from './App.vue'`, and fires another HTTP request: `GET /src/App.vue`. Vite compiles `App.vue`, returns JS.
 
 Your project has 500 files, but the browser only requested 10 of them — so Vite only compiled 10. **Files you don't touch don't move.**
 
 Second, "no bundling." In the Webpack era, browsers didn't understand `import` and `export`, so Webpack had to concatenate all modules into a single bundle and implement its own module loading system. But since 2018, all major browsers natively support ES Modules. An `import` statement inside `<script type="module">` — the browser can resolve it on its own, following the import path to fetch dependency files via HTTP.
 
-So in development mode, Vite doesn't need to bundle at all. The browser *is* the module loader. esbuild's only job is to strip type annotations from individual TS files and turn them into JS. The browser handles threading dozens of JS files together.
+So in development mode, Vite doesn't need to bundle at all. The browser _is_ the module loader. esbuild's only job is to strip type annotations from individual TS files and turn them into JS. The browser handles threading dozens of JS files together.
 
 Webpack cold start: 30 seconds. Vite cold start: 300 milliseconds. Of that 100x gap, esbuild's Go advantage contributes maybe 2–3x. The rest is those three words: "no bundling."
 
@@ -160,10 +176,7 @@ Don't run `code /path/to/monorepo` directly. Create a `.code-workspace` file:
 
 ```json
 {
-  "folders": [
-    { "path": "packages/shared" },
-    { "path": "apps/dashboard" }
-  ],
+  "folders": [{ "path": "packages/shared" }, { "path": "apps/dashboard" }],
   "settings": {
     "typescript.tsserver.maxTsServerMemory": 8192
   }
@@ -179,10 +192,7 @@ In your monorepo root `tsconfig.json`, only list references — don't directly i
 ```json
 {
   "files": [],
-  "references": [
-    { "path": "./packages/shared" },
-    { "path": "./apps/web" }
-  ]
+  "references": [{ "path": "./packages/shared" }, { "path": "./apps/web" }]
 }
 ```
 
@@ -202,12 +212,7 @@ VS Code defaults to auto-downloading `@types/*` packages. In a monorepo, this tr
 
 ```json
 {
-  "exclude": [
-    "node_modules",
-    "**/*.test.ts",
-    "**/*.spec.ts",
-    "packages/legacy-app"
-  ]
+  "exclude": ["node_modules", "**/*.test.ts", "**/*.spec.ts", "packages/legacy-app"]
 }
 ```
 
@@ -242,16 +247,16 @@ We already covered how to enable it. Open the logs, reproduce the slow operation
 
 Look back across these three generations:
 
-| | Webpack Era | Vite Era | Rust/Go Era |
-|---|---|---|---|
-| **Transpilation** | babel-loader | esbuild (Go) | SWC (Rust) |
-| **Type Checking** | fork-ts-checker | tsc --noEmit | Go-based tsc |
-| **Bundling** | Webpack | Rollup (production) | Turbopack (Rust) |
+|                                                         | Webpack Era                | Vite Era             | Rust/Go Era                        |
+| ------------------------------------------------------- | -------------------------- | -------------------- | ---------------------------------- |
+| **Transpilation**                                       | babel-loader               | esbuild (Go)         | SWC (Rust)                         |
+| **Type Checking**                                       | fork-ts-checker            | tsc --noEmit         | Go-based tsc                       |
+| **Bundling**                                            | Webpack                    | Rollup (production)  | Turbopack (Rust)                   |
 | **Are transpilation and type checking the same thing?** | No. Separate from day one. | Even more separated. | Language changed. Division didn't. |
 
 2016. You write TypeScript. babel-loader handles stripping types. fork-ts-checker handles checking them. Webpack handles bundling. Three people's jobs.
 
-2026. Still you. Still TypeScript. SWC handles stripping types. Go-based tsc handles checking them. Turbopack handles bundling. Still three people. Just all three have been rewritten in Rust and Go.
+2017. Still you. Still TypeScript. SWC handles stripping types. Go-based tsc handles checking them. Turbopack handles bundling. Still three people. Just all three have been rewritten in Rust and Go.
 
 The underlying engines are standardizing: Vercel maintains Turbopack, Microsoft maintains Go-based tsc, evanw maintains esbuild. Framework authors are no longer building engines from scratch — Next.js uses Turbopack, UmiJS uses Turbopack, the only difference is the adapter layer.
 

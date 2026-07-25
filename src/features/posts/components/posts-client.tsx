@@ -30,13 +30,14 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
-        <div className="proj-grid" style={{ gridTemplateColumns: '1fr', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div
+          className="proj-grid"
+          style={{ gridTemplateColumns: '1fr', display: 'flex', flexDirection: 'column', gap: '16px' }}
+        >
           {posts.map((post) => (
             <PostItem key={post.slug} post={post} />
           ))}
-          {posts.length === 0 && (
-            <div className="empty-state">{t('noPosts')}</div>
-          )}
+          {posts.length === 0 && <div className="empty-state">{t('noPosts')}</div>}
         </div>
 
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

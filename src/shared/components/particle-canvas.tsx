@@ -34,7 +34,9 @@ export function ParticleCanvas() {
       vy!: number
       r!: number
       hue!: number
-      constructor() { this.reset() }
+      constructor() {
+        this.reset()
+      }
       reset() {
         this.x = Math.random() * w
         this.y = Math.random() * h
@@ -48,7 +50,11 @@ export function ParticleCanvas() {
         this.x += this.vx
         this.y += this.vy
         this.z -= 0.3
-        if (this.z < 8) { this.z = 400; this.x = Math.random() * w; this.y = Math.random() * h }
+        if (this.z < 8) {
+          this.z = 400
+          this.x = Math.random() * w
+          this.y = Math.random() * h
+        }
         if (this.x < 0 || this.x > w) this.vx *= -1
         if (this.y < 0 || this.y > h) this.vy *= -1
       }
@@ -68,8 +74,14 @@ export function ParticleCanvas() {
 
     for (let i = 0; i < 150; i++) particles.push(new Particle())
 
-    const onMouseMove = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY }
-    const onTouchMove = (e: TouchEvent) => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY }
+    const onMouseMove = (e: MouseEvent) => {
+      mouse.x = e.clientX
+      mouse.y = e.clientY
+    }
+    const onTouchMove = (e: TouchEvent) => {
+      mouse.x = e.touches[0].clientX
+      mouse.y = e.touches[0].clientY
+    }
 
     document.addEventListener('mousemove', onMouseMove)
     document.addEventListener('touchmove', onTouchMove, { passive: true })
@@ -78,7 +90,10 @@ export function ParticleCanvas() {
     ;(function anim() {
       ctx!.fillStyle = 'rgba(2,0,8,.12)'
       ctx!.fillRect(0, 0, w, h)
-      for (const p of particles) { p.update(); p.draw() }
+      for (const p of particles) {
+        p.update()
+        p.draw()
+      }
       animId = requestAnimationFrame(anim)
     })()
 

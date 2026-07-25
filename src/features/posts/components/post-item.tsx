@@ -21,7 +21,9 @@ export function PostItem({ post }: PostItemProps) {
         <p style={{ marginTop: 8 }}>{post.summary}</p>
         <div className="tags">
           {post.tags.map((tag) => (
-            <span key={tag} className="tag">{tag}</span>
+            <span key={tag} className="tag">
+              {tag}
+            </span>
           ))}
         </div>
       </div>
