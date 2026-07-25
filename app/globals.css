@@ -35,12 +35,16 @@
    ========================================== */
 :root {
   --bg: #020008;
+  --bg-rgb: 2 0 8;
   --fg: #e0e0f0;
   --neon: #ff2d95;
+  --neon-rgb: 255 45 149;
   --cyan: #00e5ff;
+  --cyan-rgb: 0 229 255;
   --purple: #b347ea;
   --yellow: #ffee00;
   --card: #0a0a16;
+  --card-rgb: 10 10 22;
 }
 
 /* ==========================================
@@ -146,12 +150,13 @@ header {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--bg);
-  padding: 20px 0 12px;
+  background: rgba(2, 0, 8, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 20px 28px 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 .logo {
   font-size: 16px;
@@ -160,10 +165,13 @@ header {
   text-transform: uppercase;
   color: var(--neon);
   text-shadow: 0 0 20px rgba(255, 45, 149, 0.4);
+  white-space: nowrap;
 }
 nav {
   display: flex;
   gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 nav a {
   color: rgba(255, 255, 255, 0.35);
@@ -223,6 +231,18 @@ nav a:hover::after {
   position: relative;
   color: #fff;
   text-shadow: 0 0 40px rgba(255, 45, 149, 0.3);
+  animation: glitchFlicker 3.6s steps(1) infinite;
+}
+@keyframes glitchFlicker {
+  0%,
+  89%,
+  91%,
+  100% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 0.85;
+  }
 }
 .glitch::before,
 .glitch::after {
@@ -235,51 +255,69 @@ nav a:hover::after {
   overflow: hidden;
 }
 .glitch::before {
-  left: 2px;
-  text-shadow: -2px 0 var(--cyan);
-  animation: ga 3s infinite linear alternate-reverse;
+  left: 4px;
+  text-shadow: -3px 0 var(--cyan);
+  animation: ga 2s infinite linear alternate-reverse;
   clip: rect(30px, 9999px, 90px, 0);
 }
 .glitch::after {
-  left: -2px;
-  text-shadow: 2px 0 var(--neon);
-  animation: gb 2.5s infinite linear alternate-reverse;
+  left: -4px;
+  text-shadow: 3px 0 var(--neon);
+  animation: gb 1.8s infinite linear alternate-reverse;
   clip: rect(70px, 9999px, 40px, 0);
 }
 @keyframes ga {
   0%,
   100% {
-    clip: rect(20px, 9999px, 60px, 0);
+    clip: rect(0px, 9999px, 40px, 0);
+    transform: translate(0, 0);
   }
-  20% {
-    clip: rect(80px, 9999px, 20px, 0);
+  15% {
+    clip: rect(20px, 9999px, 100px, 0);
+    transform: translate(-2px, -1px);
   }
-  40% {
-    clip: rect(10px, 9999px, 90px, 0);
+  30% {
+    clip: rect(80px, 9999px, 10px, 0);
+    transform: translate(1px, 2px);
+  }
+  45% {
+    clip: rect(10px, 9999px, 70px, 0);
+    transform: translate(-1px, 0);
   }
   60% {
-    clip: rect(50px, 9999px, 30px, 0);
+    clip: rect(50px, 9999px, 90px, 0);
+    transform: translate(2px, -2px);
   }
-  80% {
-    clip: rect(70px, 9999px, 10px, 0);
+  75% {
+    clip: rect(70px, 9999px, 20px, 0);
+    transform: translate(0, 1px);
   }
 }
 @keyframes gb {
   0%,
   100% {
-    clip: rect(60px, 9999px, 10px, 0);
+    clip: rect(60px, 9999px, 0px, 0);
+    transform: translate(0, 0);
   }
-  20% {
-    clip: rect(30px, 9999px, 70px, 0);
+  15% {
+    clip: rect(30px, 9999px, 80px, 0);
+    transform: translate(2px, 1px);
   }
-  40% {
-    clip: rect(90px, 9999px, 30px, 0);
+  30% {
+    clip: rect(90px, 9999px, 40px, 0);
+    transform: translate(-2px, 2px);
+  }
+  45% {
+    clip: rect(0px, 9999px, 100px, 0);
+    transform: translate(1px, -1px);
   }
   60% {
-    clip: rect(10px, 9999px, 80px, 0);
+    clip: rect(40px, 9999px, 60px, 0);
+    transform: translate(-1px, 0);
   }
-  80% {
-    clip: rect(40px, 9999px, 50px, 0);
+  75% {
+    clip: rect(100px, 9999px, 10px, 0);
+    transform: translate(0, -2px);
   }
 }
 
