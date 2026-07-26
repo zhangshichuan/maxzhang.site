@@ -341,9 +341,7 @@ this.logger.info({ userId: user.id, email: dto.email }, '用户创建成功')
 ```typescript
 WinstonModule.forRoot({
   transports: [
-    new transports.Console({
-      /* ... */
-    }),
+    new transports.Console({/* ... */}),
     new transports.DailyRotateFile({
       filename: 'logs/error-%DATE%.log',
       level: 'error',

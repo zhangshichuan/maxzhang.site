@@ -345,9 +345,7 @@ Three rules: block sensitive fields at the serializer, put context in the struct
 ```typescript
 WinstonModule.forRoot({
   transports: [
-    new transports.Console({
-      /* ... */
-    }),
+    new transports.Console({/* ... */}),
     new transports.DailyRotateFile({
       filename: 'logs/error-%DATE%.log',
       level: 'error',

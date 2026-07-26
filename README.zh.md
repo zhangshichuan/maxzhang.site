@@ -36,30 +36,29 @@
 ## 📂 项目结构
 
 ```bash
-├── app/                         # 只保留 Next.js 路由入口
-│   └── [locale]/                # 国际化页面
-├── articles/                    # MDX 文章源文件
-│   ├── en/
-│   └── zh/
-├── src/
-│   ├── features/                # 业务功能域
-│   │   ├── about/
-│   │   ├── chat/
-│   │   ├── engagement/          # 评论 / 阅读量
-│   │   ├── home/
-│   │   └── posts/
-│   ├── shared/                  # 跨业务共享组件与工具
-│   │   ├── components/
-│   │   └── utils/
-│   └── server/                  # 纯服务端基础设施
-│       └── db/
-├── tests/                       # Vitest 测试集
-├── i18n/                        # 国际化配置
-├── messages/                    # 翻译文件
-├── prisma/                      # Prisma schema 与迁移
-├── public/                      # 静态资源
-├── .github/                     # GitHub Actions 工作流
-└── proxy.ts                     # Next.js 代理 (v16 推荐模式)
+├── apps/
+│   └── web/                     # Next.js 前端（当前主体应用）
+│       ├── app/                 # 路由入口
+│       ├── src/
+│       │   ├── features/        # 业务功能域
+│       │   │   ├── about/
+│       │   │   ├── chat/
+│       │   │   ├── engagement/  # 评论 / 阅读量
+│       │   │   ├── home/
+│       │   │   └── posts/
+│       │   ├── shared/          # 跨业务共享组件与工具
+│       │   └── server/          # 纯服务端基础设施 (Prisma)
+│       ├── articles/            # MDX 文章源文件
+│       │   ├── en/
+│       │   └── zh/
+│       ├── prisma/              # Prisma schema 与迁移
+│       ├── public/              # 静态资源
+│       └── tests/               # Vitest 测试集
+├── services/                    # 未来微服务插槽 (Go / Python)
+├── packages/                    # 未来共享包
+├── docker-compose.yml           # 多服务编排
+├── pnpm-workspace.yaml          # pnpm workspace 配置
+└── .github/                     # GitHub Actions 工作流
 ```
 
 ## 🧱 架构说明
@@ -69,7 +68,7 @@
 - `src/shared` 只放跨业务稳定复用的组件和工具。
 - `src/server` 放纯服务端基础设施，例如 Prisma 客户端。
 
-更完整的分层约束见 [ARCHITECTURE.md](./ARCHITECTURE.md)。
+更完整的分层约束见 [`apps/web/ARCHITECTURE.md`](./apps/web/ARCHITECTURE.md)。
 
 ## 🚀 快速开始
 

@@ -36,30 +36,29 @@ A modern personal blog built with **Next.js 16 (App Router)** and **Tailwind CSS
 ## 📂 Project Structure
 
 ```bash
-├── app/                         # Next.js route entrypoints only
-│   └── [locale]/                # Localized pages
-├── articles/                    # MDX source files
-│   ├── en/
-│   └── zh/
-├── src/
-│   ├── features/                # Business domains
-│   │   ├── about/
-│   │   ├── chat/
-│   │   ├── engagement/          # comments / views
-│   │   ├── home/
-│   │   └── posts/
-│   ├── shared/                  # Cross-feature components and utils
-│   │   ├── components/
-│   │   └── utils/
-│   └── server/                  # Pure server infrastructure
-│       └── db/
-├── tests/                       # Vitest test suite
-├── i18n/                        # i18n config
-├── messages/                    # Translation files
-├── prisma/                      # Prisma schema and migrations
-├── public/                      # Static assets
-├── .github/                     # GitHub Actions workflows
-└── proxy.ts                     # Next.js proxy (v16 pattern)
+├── apps/
+│   └── web/                     # Next.js frontend (the current app)
+│       ├── app/                 # Route entrypoints only
+│       ├── src/
+│       │   ├── features/        # Business domains
+│       │   │   ├── about/
+│       │   │   ├── chat/
+│       │   │   ├── engagement/  # comments / views
+│       │   │   ├── home/
+│       │   │   └── posts/
+│       │   ├── shared/          # Cross-feature utils
+│       │   └── server/          # Server infrastructure (Prisma)
+│       ├── articles/            # MDX source files
+│       │   ├── en/
+│       │   └── zh/
+│       ├── prisma/              # Prisma schema & migrations
+│       ├── public/              # Static assets
+│       └── tests/               # Vitest test suite
+├── services/                    # Future microservice slots (Go / Python)
+├── packages/                    # Future shared packages
+├── docker-compose.yml           # Multi-service orchestration
+├── pnpm-workspace.yaml          # pnpm workspace config
+└── .github/                     # GitHub Actions workflows
 ```
 
 ## 🧱 Architecture Notes
@@ -69,7 +68,7 @@ A modern personal blog built with **Next.js 16 (App Router)** and **Tailwind CSS
 - `src/shared` is reserved for stable cross-feature UI and utilities.
 - `src/server` contains server-only infrastructure such as the Prisma client.
 
-For the detailed layering guideline used in this repo, see [ARCHITECTURE.md](./ARCHITECTURE.md).
+For the detailed layering guideline used in this repo, see [`apps/web/ARCHITECTURE.md`](./apps/web/ARCHITECTURE.md).
 
 ## 🚀 Getting Started
 

@@ -1,7 +1,7 @@
 services:
   migrate:
     build:
-      context: .
+      context: ./apps/web
       dockerfile: Dockerfile.prisma
     volumes:
       - sqlite_data:/app/data
@@ -12,7 +12,7 @@ services:
 
   app:
     build:
-      context: .
+      context: ./apps/web
       dockerfile: Dockerfile
     volumes:
       - sqlite_data:/app/data

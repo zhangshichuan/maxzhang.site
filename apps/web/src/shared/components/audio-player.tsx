@@ -29,6 +29,7 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
   // 处理路由跳转或参数变化时重置播放器状态
   // 注意：不要调用 audio.load()，否则会打断浏览器 preload="auto" 的加载，
   // 导致首次进入页面时音频无法正常加载。改用 key 属性让 React 重建 audio 元素。
+  /* eslint-disable react-hooks/set-state-in-effect -- reset audio state by design */
   useEffect(() => {
     setIsPlaying(false)
     setIsLoading(false)
@@ -37,6 +38,7 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
     setShow(true)
     durationSet.current = false
   }, [slug, lang])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const voice = lang === 'zh' ? 'xiaoxiao' : 'jenny'
 
@@ -171,7 +173,7 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
       <select
         value={rate}
         onChange={(e) => handleRateChange(parseFloat(e.target.value))}
-        className="rounded-sm border border-border/40 bg-card px-1 py-1 text-[10px] text-muted-foreground outline-none"
+        className="rounded-sm border border-border/40 bg-card p-1 text-[10px] text-muted-foreground outline-none"
       >
         <option value={0.75}>0.75x</option>
         <option value={1}>1x</option>

@@ -32,22 +32,22 @@ jobs:
 
       - name: Prepare deployment artifacts
         run: |
-          mkdir -p deployment
+          mkdir -p deployment/apps/web
 
-          # 复制 standalone 输出 (包含 server.js 和 必要的 node_modules)
-          cp -r .next/standalone/. deployment/standalone
+          # 复制 standalone 输出
+          cp -r apps/web/.next/standalone/. deployment/apps/web/standalone
 
-          # 复制静态资源 (standalone 模式不包含这两部分，需要手动复制)
-          cp -r .next/static/. deployment/static
-          cp -r public/. deployment/public
+          # 复制静态资源
+          cp -r apps/web/.next/static/. deployment/apps/web/static
+          cp -r apps/web/public/. deployment/apps/web/public
 
           # 复制 prisma 配置和 schema
-          cp -r prisma/. deployment/prisma
-          cp prisma.config.ts deployment
+          cp -r apps/web/prisma/. deployment/apps/web/prisma
+          cp apps/web/prisma.config.ts deployment/apps/web
 
-          # 复制 Dockerfile、docker-compose.yml 和 Prisma 需要的 package.json
-          cp Dockerfile deployment/
-          cp Dockerfile.prisma deployment/
+          # 复制 Dockerfile、docker-compose.yml
+          cp apps/web/Dockerfile deployment/apps/web/
+          cp apps/web/Dockerfile.prisma deployment/apps/web/
           cp docker-compose.yml deployment/
 
       - name: Archive production artifacts
@@ -75,7 +75,7 @@ jobs:
             echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
 
             # 清理旧的构建文件
-            rm -rf standalone static public prisma prisma.config.ts Dockerfile Dockerfile.prisma docker-compose.yml
+            rm -rf apps docker-compose.yml
 
             # 解压新文件
             tar -xzf release.tar.gz
@@ -85,7 +85,7 @@ jobs:
             docker compose build
             docker compose build --no-cache migrate
 
-            # 运行迁移（migrate 服务有 profiles: [migrate]，up -d 不会自动启动它）
+            # 运行迁移
             docker compose run --rm migrate
 
             # 启动应用
