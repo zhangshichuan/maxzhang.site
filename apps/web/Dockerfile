@@ -12,8 +12,8 @@ WORKDIR /app
 
 # 复制 standalone 构建产物
 COPY --chown=nextjs:nodejs standalone/ ./
-COPY --chown=nextjs:nodejs static/ ./.next/static
-COPY --chown=nextjs:nodejs public/ ./public
+COPY --chown=nextjs:nodejs static/ ./apps/web/.next/static
+COPY --chown=nextjs:nodejs public/ ./apps/web/public
 
 # 创建数据目录
 RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data
