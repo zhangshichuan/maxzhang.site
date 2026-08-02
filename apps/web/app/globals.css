@@ -56,6 +56,11 @@
   box-sizing: border-box;
 }
 
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
 body {
   font-family:
     'Inter',
@@ -831,6 +836,10 @@ footer .note {
   border-color: var(--cyan);
   outline: none;
   box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);
+}
+.glitch-input:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
 }
 .glitch-input::placeholder {
   color: rgba(255, 255, 255, 0.15);
