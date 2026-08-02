@@ -32,7 +32,7 @@ export function AboutPage() {
       {/* ===== Hero / 个人介绍 ===== */}
       <div className="hero" style={{ paddingTop: 40, minHeight: 'auto', paddingBottom: 20, display: 'block' }}>
         <div>
-          <div className="tagline">{t('role')}</div>
+          <h1 className="tagline">{t('role')}</h1>
           <div className="about-profile">
             <div className="about-avatar-wrapper">
               <div className="about-avatar">

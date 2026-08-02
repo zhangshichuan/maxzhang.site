@@ -69,7 +69,7 @@ export function SearchClient({ posts }: SearchClientProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       <div className="sec-head">
-        <span className="bracket">[Search]</span>
+        <h1 className="bracket">[Search]</h1>
         <div className="line"></div>
       </div>
 

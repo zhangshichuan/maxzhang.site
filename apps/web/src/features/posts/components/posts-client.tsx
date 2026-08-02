@@ -23,7 +23,7 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
 
   return (
     <div>
-      <div className="page-title">[Article library]</div>
+      <h1 className="page-title">[Article library]</h1>
       <div className="sec-head">
         <span className="bracket">[All articles]</span>
         <div className="line"></div>

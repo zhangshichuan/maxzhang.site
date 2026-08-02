@@ -187,7 +187,7 @@ export function ChatInterface() {
   return (
     <div className="glitch-chat">
       <div className="sec-head">
-        <span className="bracket">[AI Chat]</span>
+        <h1 className="bracket">[AI Chat]</h1>
         <div className="line"></div>
       </div>
 
