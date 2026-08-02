@@ -2,11 +2,16 @@ import { Footer } from '@/src/shared/components'
 import { Navbar } from '@/src/shared/components'
 import { ParticleCanvas } from '@/src/shared/components/particle-canvas'
 import { routing } from '@/i18n/routing'
+import { Inter, JetBrains_Mono } from 'next/font/google'
 import type { Metadata, Viewport } from 'next'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages, getTranslations } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import '../globals.css'
+
+// DESIGN.md D5：正文 Inter，标签/标题 JetBrains Mono — 自托管保证所有设备一致
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' })
+const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jb-mono', display: 'swap' })
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }))
@@ -45,7 +50,7 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <body>
+      <body className={`${inter.variable} ${jetbrainsMono.variable}`}>
         <ParticleCanvas />
         <div className="overlay">
           <div className="container">

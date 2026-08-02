@@ -64,6 +64,7 @@
 
 body {
   font-family:
+    var(--font-inter),
     'Inter',
     -apple-system,
     BlinkMacSystemFont,
@@ -237,7 +238,7 @@ nav a::before {
 }
 
 .tagline {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-jb-mono), 'JetBrains Mono', monospace;
   font-size: 11px;
   font-weight: 400;
   color: var(--cyan);
@@ -744,7 +745,7 @@ footer .note {
   font-weight: 700;
 }
 .article-prose code {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-jb-mono), 'JetBrains Mono', monospace;
   font-size: 0.875em;
   background: var(--card);
   padding: 0.15em 0.35em;
@@ -821,7 +822,7 @@ footer .note {
 
 /* 页面标题 */
 .page-title {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-jb-mono), 'JetBrains Mono', monospace;
   font-size: 11px;
   font-weight: 400;
   color: var(--cyan);
@@ -1057,7 +1058,7 @@ footer .note {
 
 .tech-category-label {
   font-size: 10px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-jb-mono), 'JetBrains Mono', monospace;
   color: var(--cyan);
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -1102,7 +1103,7 @@ footer .note {
 }
 
 .exp-period {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-jb-mono), 'JetBrains Mono', monospace;
   font-size: 11px;
   color: var(--neon);
   text-transform: uppercase;
@@ -1150,7 +1151,7 @@ footer .note {
 }
 
 .exp-point-num {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-jb-mono), 'JetBrains Mono', monospace;
   font-size: 10px;
   color: rgba(255, 255, 255, 0.12);
   flex-shrink: 0;
@@ -1183,7 +1184,7 @@ footer .note {
 }
 
 .learning-num {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-jb-mono), 'JetBrains Mono', monospace;
   font-size: 10px;
   color: var(--neon);
   flex-shrink: 0;
@@ -1220,7 +1221,7 @@ footer .note {
 }
 
 .edu-period {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-jb-mono), 'JetBrains Mono', monospace;
   font-size: 10px;
   color: var(--neon);
   text-transform: uppercase;
