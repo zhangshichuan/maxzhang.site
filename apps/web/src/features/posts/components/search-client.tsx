@@ -206,8 +206,8 @@ export function SearchClient({ posts }: SearchClientProps) {
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {filteredPosts.map((post) => (
-          <PostItem key={post.slug} post={post} />
+        {filteredPosts.map((post, idx) => (
+          <PostItem key={post.slug} post={post} idx={idx} />
         ))}
 
         {hasFilters && filteredPosts.length === 0 && (

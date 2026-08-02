@@ -5,15 +5,16 @@ import { Link } from '@/i18n/routing'
 
 interface PostItemProps {
   post: PostSummaryWithViews
+  idx?: number
 }
 
-export function PostItem({ post }: PostItemProps) {
+export function PostItem({ post, idx }: PostItemProps) {
   const readingTime = Math.ceil(post.readTime.minutes)
 
   return (
     <Link href={`/posts/${post.slug}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
       <div className="proj">
-        <div className="idx">{String(0).padStart(2, '0')}</div>
+        <div className="idx">{String((idx ?? 0) + 1).padStart(2, '0')}</div>
         <h3>{post.title}</h3>
         <p>
           {post.date} · {readingTime} min read

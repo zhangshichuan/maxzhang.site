@@ -34,8 +34,8 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
           className="proj-grid"
           style={{ gridTemplateColumns: '1fr', display: 'flex', flexDirection: 'column', gap: '16px' }}
         >
-          {posts.map((post) => (
-            <PostItem key={post.slug} post={post} />
+          {posts.map((post, idx) => (
+            <PostItem key={post.slug} post={post} idx={idx} />
           ))}
           {posts.length === 0 && <div className="empty-state">{t('noPosts')}</div>}
         </div>
