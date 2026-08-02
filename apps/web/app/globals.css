@@ -681,6 +681,18 @@ footer .note {
   }
 }
 
+/* 动效偏好：减少动态效果时关闭所有无限动画 */
+@media (prefers-reduced-motion: reduce) {
+  .noise,
+  .glitch::before,
+  .glitch::after,
+  .marquee-inner,
+  .glitch-divider::before,
+  .glitch-divider::after {
+    animation: none;
+  }
+}
+
 /* ==========================================
    扩展样式 — 文章排版 (保留 Glitch Core 主题色)
    ========================================== */

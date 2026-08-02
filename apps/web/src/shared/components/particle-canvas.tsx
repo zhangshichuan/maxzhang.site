@@ -87,15 +87,22 @@ export function ParticleCanvas() {
     document.addEventListener('touchmove', onTouchMove, { passive: true })
 
     let animId: number
-    ;(function anim() {
+    const renderFrame = () => {
       ctx!.fillStyle = 'rgba(2,0,8,.12)'
       ctx!.fillRect(0, 0, w, h)
       for (const p of particles) {
         p.update()
         p.draw()
       }
-      animId = requestAnimationFrame(anim)
-    })()
+    }
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      renderFrame() // 静态单帧，不做动画
+    } else {
+      ;(function anim() {
+        renderFrame()
+        animId = requestAnimationFrame(anim)
+      })()
+    }
 
     return () => {
       window.removeEventListener('resize', resize)
