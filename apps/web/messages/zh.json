@@ -7,7 +7,8 @@
       "posts": "故事会",
       "chat": "聊天",
       "about": "关于",
-      "switchLanguage": "切换至英文"
+      "switchLanguage": "切换至英文",
+      "search": "搜索"
     },
     "footer": {
       "builtBy": "由 <name>Max Zhang</name> 构建。© {year} 保留所有权利。"

@@ -33,7 +33,7 @@ export function Navbar() {
         <Link href="/about" style={isActive('/about') ? { color: 'var(--cyan)' } : undefined}>
           [about]
         </Link>
-        <Link href="/search">
+        <Link href="/search" aria-label={t('search')}>
           <Search className="size-3.5" />
         </Link>
         <button
@@ -48,6 +48,7 @@ export function Navbar() {
             alignItems: 'center',
           }}
           title={t('switchLanguage')}
+          aria-label={t('switchLanguage')}
         >
           <Languages className="size-3.5" />
         </button>

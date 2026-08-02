@@ -7,7 +7,8 @@
       "posts": "Journal",
       "chat": "Chat",
       "about": "About",
-      "switchLanguage": "Switch to Chinese"
+      "switchLanguage": "Switch to Chinese",
+      "search": "搜索"
     },
     "footer": {
       "builtBy": "Built by <name>Max Zhang</name>. © {year} All rights reserved."
