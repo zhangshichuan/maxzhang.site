@@ -212,6 +212,19 @@ nav a:hover {
 nav a:hover::after {
   width: 100%;
 }
+/* 命中区域扩展：视觉不变，触摸/点击目标达到 44px */
+nav button {
+  position: relative;
+}
+nav a::before,
+nav button::before {
+  content: '';
+  position: absolute;
+  inset: -15px -6px;
+}
+nav a::before {
+  inset: -13px -6px;
+}
 
 /* ==========================================
    六、Hero 区域
@@ -866,6 +879,12 @@ footer .note {
   cursor: pointer;
   transition: 0.25s;
   font-family: inherit;
+  position: relative;
+}
+.glitch-filter-btn::before {
+  content: '';
+  position: absolute;
+  inset: -11px -4px;
 }
 .glitch-filter-btn:hover {
   border-color: rgba(0, 229, 255, 0.3);
@@ -900,6 +919,12 @@ footer .note {
   text-decoration: none;
   font-size: 13px;
   transition: 0.25s;
+  position: relative;
+}
+.glitch-link::before {
+  content: '';
+  position: absolute;
+  inset: -8px -6px;
 }
 .glitch-link:hover {
   color: var(--cyan);
