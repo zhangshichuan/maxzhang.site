@@ -75,6 +75,14 @@ body {
   cursor: crosshair;
   -webkit-font-smoothing: antialiased;
 }
+a,
+.proj,
+.glitch-link {
+  cursor: pointer;
+}
+nav button {
+  cursor: pointer;
+}
 
 /* ==========================================
    三、背景层
