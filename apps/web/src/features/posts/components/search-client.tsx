@@ -16,9 +16,9 @@ export function SearchClient({ posts }: SearchClientProps) {
   const searchParams = useSearchParams()
   const t = useTranslations('SearchPage')
 
-  const [query, setQuery] = useState(() => searchParams.get('q') || '')
-  const [selectedTag, setSelectedTag] = useState(() => searchParams.get('tag') || '')
-  const [selectedCategory, setSelectedCategory] = useState(() => searchParams.get('category') || '')
+  const [query, setQuery] = useState(() => searchParams?.get('q') || '')
+  const [selectedTag, setSelectedTag] = useState(() => searchParams?.get('tag') || '')
+  const [selectedCategory, setSelectedCategory] = useState(() => searchParams?.get('category') || '')
 
   const fuse = useMemo(() => {
     return new Fuse(posts, {
