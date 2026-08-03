@@ -65,28 +65,54 @@ export const Route = createFileRoute('/api/tts/$locale/$slug')({
           return new Response('TTS upstream error', { status: 502 })
         }
 
-        // 未命中：POST 文本触发实时合成；生成中（409）则退避重试
-        for (let attempt = 0; attempt < 4; attempt += 1) {
-          let generated: Response
-          try {
-            generated = await fetch(ttsUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ text, voice }),
-            })
-          } catch {
-            return new Response('TTS service unavailable', { status: 503 })
+        // 未命中：POST 文本触发实时合成
+        let generated: Response
+        try {
+          generated = await fetch(ttsUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, voice }),
+          })
+        } catch {
+          return new Response('TTS service unavailable', { status: 503 })
+        }
+
+        if (generated.ok) {
+          return new Response(generated.body, {
+            headers: {
+              'Content-Type': 'audio/mpeg',
+              'Cache-Control': 'public, max-age=86400',
+            },
+          })
+        }
+
+        // 409 = 已在生成中：轮询缓存，就绪后返回文件（支持 Range/拖动）
+        if (generated.status === 409) {
+          for (let attempt = 0; attempt < 90; attempt += 1) {
+            await new Promise((resolve) => setTimeout(resolve, 2000))
+            let ready: Response
+            try {
+              ready = await fetch(ttsUrl, {
+                headers: range ? { range } : {},
+              })
+            } catch {
+              break
+            }
+            if (ready.ok || ready.status === 206) {
+              return new Response(ready.body, {
+                status: ready.status,
+                headers: {
+                  'Content-Type': 'audio/mpeg',
+                  'Accept-Ranges': ready.headers.get('accept-ranges') ?? 'bytes',
+                  ...(ready.headers.get('content-range')
+                    ? { 'Content-Range': ready.headers.get('content-range')! }
+                    : {}),
+                  'Cache-Control': 'public, max-age=86400',
+                },
+              })
+            }
           }
-          if (generated.ok) {
-            return new Response(generated.body, {
-              headers: {
-                'Content-Type': 'audio/mpeg',
-                'Cache-Control': 'public, max-age=86400',
-              },
-            })
-          }
-          if (generated.status !== 409) break
-          await new Promise((resolve) => setTimeout(resolve, 1500 * (attempt + 1)))
+          return new Response('TTS generation timeout', { status: 504 })
         }
 
         return new Response('TTS upstream error', { status: 502 })

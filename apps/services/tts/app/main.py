@@ -213,12 +213,8 @@ async def post_tts(hash_value: str, payload: TtsRequest) -> Response:
 
     lock = _generation_locks.setdefault(hash_value, asyncio.Lock())
 
-    # 已在生成中：等待完成后直接返回缓存（最多等 3 分钟）
+    # 已在生成中：立刻返回 409，由调用方轮询缓存
     if lock.locked():
-        for _ in range(360):
-            if target.exists() and target.stat().st_size > 0:
-                return serve_file(hash_value)
-            await asyncio.sleep(0.5)
         raise HTTPException(status_code=409, detail="generation in progress")
 
     target.parent.mkdir(parents=True, exist_ok=True)

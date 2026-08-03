@@ -22,23 +22,26 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [rate, setRate] = useState(1)
-  const [show, setShow] = useState(true)
   const audioRef = useRef<HTMLAudioElement>(null)
   const durationSet = useRef(false)
+  const retriedRef = useRef(false)
 
   // 处理路由跳转或参数变化时重置播放器状态
-  // 注意：不要调用 audio.load()，否则会打断浏览器 preload="auto" 的加载，
-  // 导致首次进入页面时音频无法正常加载。改用 key 属性让 React 重建 audio 元素。
+  // 用 key 属性让 React 重建 audio 元素，避免旧源残留。
   useEffect(() => {
     setIsPlaying(false)
     setIsLoading(false)
     setCurrentTime(0)
     setDuration(0)
-    setShow(true)
     durationSet.current = false
+    retriedRef.current = false
   }, [slug, lang])
 
-  const handleError = useCallback(() => setShow(false), [])
+  const handleError = useCallback(() => {
+    // TTS 首次生成较慢/服务重启会中断流，不隐藏播放器，允许用户重试
+    setIsPlaying(false)
+    setIsLoading(false)
+  }, [])
   const handleLoadedMetadata = useCallback(() => {
     const audio = audioRef.current
     if (audio && audio.duration && isFinite(audio.duration)) {
@@ -72,12 +75,27 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
     if (audio.paused) {
       audio.playbackRate = rate
       setIsLoading(true)
+      retriedRef.current = false
       try {
         await audio.play()
         setIsPlaying(true)
       } catch (error) {
-        console.error('Audio play failed:', error)
-        setIsPlaying(false)
+        // 首次失败：重载资源（源可能已被服务重启打断），再试一次
+        if (!retriedRef.current) {
+          retriedRef.current = true
+          audio.load()
+          audio.playbackRate = rate
+          try {
+            await audio.play()
+            setIsPlaying(true)
+          } catch (retryError) {
+            console.error('Audio play failed after retry:', retryError)
+            setIsPlaying(false)
+          }
+        } else {
+          console.error('Audio play failed:', error)
+          setIsPlaying(false)
+        }
       } finally {
         setIsLoading(false)
       }
@@ -104,8 +122,6 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
     const s = Math.floor(t % 60)
     return `${m}:${s.toString().padStart(2, '0')}`
   }
-
-  if (!show) return null
 
   return (
     <div className={cn('inline-flex flex-wrap items-center gap-2 font-sans', className)}>
@@ -182,7 +198,7 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
         ref={audioRef}
         key={`${slug}-${lang}`}
         src={`/api/tts/${lang}/${slug}.mp3`}
-        preload="auto"
+        preload="none"
         onError={handleError}
         onLoadedMetadata={handleLoadedMetadata}
         onCanPlay={handleCanPlay}
