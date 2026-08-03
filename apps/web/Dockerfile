@@ -33,6 +33,9 @@ ENV HOSTNAME=0.0.0.0
 
 WORKDIR /app
 
+# Prisma 引擎需要 libssl 探测；node:22-slim 未预装，补上避免运行期告警
+RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
+
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nodejs
 
 COPY --from=builder --chown=nodejs:nodejs /repo/apps/web/.output ./.output

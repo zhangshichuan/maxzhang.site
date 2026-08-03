@@ -24,7 +24,8 @@ services:
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     depends_on:
-      - tts
+      tts:
+        condition: service_healthy
 
   tts:
     build:
@@ -34,6 +35,16 @@ services:
       - tts_data:/data/tts
     environment:
       - TTS_CACHE_DIR=/data/tts
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/healthz', timeout=2)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 # 数据持久化：SQLite 在 sqlite_data，TTS 音频缓存（30天/1GB 自动清理）在 tts_data
 volumes:

@@ -14,10 +14,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
 
@@ -37,6 +37,8 @@ jobs:
           # 服务器上用 docker compose build 重新构建镜像，
           # 需要完整的仓库源码（TanStack 多阶段构建 + TTS 服务）
           cp -r apps deployment/apps
+          # 去掉本地安装/构建产物：node_modules 符号链接、.output、.next 都不进 tar
+          rm -rf deployment/apps/web/node_modules deployment/apps/web/.output deployment/apps/web/.next
           cp docker-compose.yml .dockerignore deployment/
           cp package.json pnpm-lock.yaml pnpm-workspace.yaml deployment/
 
@@ -65,16 +67,16 @@ jobs:
             echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
 
             # 清理旧的构建文件
-            rm -rf apps services docker-compose.yml .dockerignore package.json pnpm-lock.yaml pnpm-workspace.yaml
+            rm -rf apps docker-compose.yml .dockerignore package.json pnpm-lock.yaml pnpm-workspace.yaml
 
             # 解压新文件
             tar -xzf release.tar.gz
             rm release.tar.gz
 
             # 构建镜像
-            docker compose build --no-cache app
-            docker compose build --no-cache tts
-            docker compose build --no-cache migrate
+            docker compose build app
+            docker compose build tts
+            docker compose build migrate
 
             # 运行迁移
             docker compose run --rm migrate
