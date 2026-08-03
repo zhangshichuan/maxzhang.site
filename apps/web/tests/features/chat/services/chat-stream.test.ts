@@ -80,9 +80,15 @@ describe('流式聊天服务', () => {
     })
   })
 
-  it('会将去除空白后的消息发送给上游并在成功时返回响应体', async () => {
+  it('会将去除空白后的消息发送给上游并流式产出 SSE 内容块', async () => {
     findFirstMock.mockResolvedValue({ id: 1 })
-    const body = new ReadableStream()
+    const encoder = new TextEncoder()
+    const body = new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode('data: hello\ndata: world\n\ndata: 中文\n'))
+        controller.close()
+      },
+    })
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       body,
@@ -90,7 +96,14 @@ describe('流式聊天服务', () => {
     vi.stubGlobal('fetch', fetchMock)
     const { streamChat } = await import('@/src/features/chat/services')
 
-    await expect(streamChat('  hello  ', 'fp-1')).resolves.toBe(body)
+    const result = await streamChat('  hello  ', 'fp-1')
+    expect(result).not.toHaveProperty('error')
+
+    const chunks: string[] = []
+    if (!('error' in result)) {
+      for await (const chunk of result) chunks.push(chunk)
+    }
+    expect(chunks).toEqual(['hello', 'world', '中文'])
     expect(fetchMock).toHaveBeenCalledWith(
       'http://host.docker.internal:8000/api/v1/chat/stream',
       expect.objectContaining({
@@ -102,17 +115,23 @@ describe('流式聊天服务', () => {
 
   it('会按指纹执行内存中的频率限制', async () => {
     findFirstMock.mockResolvedValue({ id: 1 })
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
+    const encoder = new TextEncoder()
+    vi.stubGlobal('fetch', () =>
+      Promise.resolve({
         ok: true,
-        body: new ReadableStream(),
+        body: new ReadableStream({
+          start(controller) {
+            controller.enqueue(encoder.encode('data: ok\n'))
+            controller.close()
+          },
+        }),
       }),
     )
     const { streamChat } = await import('@/src/features/chat/services')
 
     for (let index = 0; index < 50; index += 1) {
-      await expect(streamChat(`hello-${index}`, 'fp-1')).resolves.toBeInstanceOf(ReadableStream)
+      const result = await streamChat(`hello-${index}`, 'fp-1')
+      expect(result).not.toHaveProperty('error')
     }
 
     await expect(streamChat('blocked', 'fp-1')).resolves.toEqual({

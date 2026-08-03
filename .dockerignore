@@ -1,0 +1,13 @@
+.git
+.gitignore
+.env*
+**/node_modules
+**/.next
+**/.output
+**/generated
+**/__pycache__
+**/.venv
+**/*.pyc
+**/*.db
+**/*.db-journal
+*.tsbuildinfo

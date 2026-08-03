@@ -1,7 +1,8 @@
 /**
  * 聊天流式传输服务
  *
- * 处理聊天消息的流式传输，包括频率限制、指纹验证和上游API调用
+ * 处理聊天消息的流式传输，包括频率限制、指纹验证和上游API调用。
+ * 上游返回 SSE，这里在服务端解析成字符串块（AsyncGenerator）。
  */
 
 import { prisma } from '@/src/server/db'
@@ -51,12 +52,12 @@ export const chatStreamTestUtils = {
  *
  * @param message - 用户输入的聊天消息
  * @param fingerprint - 浏览器指纹，用于识别和频率限制
- * @returns 可读流（用于SSE传输）或包含错误码的错误对象
+ * @returns 字符串块异步生成器（内容流）或包含错误码的错误对象
  */
 export async function streamChat(
   message: string,
   fingerprint: string,
-): Promise<ReadableStream | { error: ChatErrorCode }> {
+): Promise<AsyncGenerator<string> | { error: ChatErrorCode }> {
   // 清理过期的频率限制记录
   cleanupExpired()
 
@@ -110,6 +111,37 @@ export async function streamChat(
     return { error: 'UPSTREAM_ERROR' }
   }
 
-  // 返回响应体作为可读流，用于SSE传输
-  return response.body as ReadableStream
+  const body = response.body
+  if (!body) {
+    return { error: 'UPSTREAM_ERROR' }
+  }
+
+  // 服务端解析上游 SSE，逐块产出 `data: ` 内容字符串
+  return (async function* () {
+    const reader = body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        let start = 0
+        while (true) {
+          const dataIndex = buffer.indexOf('data: ', start)
+          if (dataIndex === -1) break
+          const lineEnd = buffer.indexOf('\n', dataIndex)
+          if (lineEnd === -1) break
+          const content = buffer.slice(dataIndex + 6, lineEnd)
+          buffer = buffer.slice(lineEnd + 1)
+          start = 0
+          if (content) yield content
+        }
+      }
+    } finally {
+      reader.releaseLock()
+    }
+  })()
 }

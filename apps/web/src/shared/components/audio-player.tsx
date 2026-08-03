@@ -29,7 +29,6 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
   // 处理路由跳转或参数变化时重置播放器状态
   // 注意：不要调用 audio.load()，否则会打断浏览器 preload="auto" 的加载，
   // 导致首次进入页面时音频无法正常加载。改用 key 属性让 React 重建 audio 元素。
-  /* eslint-disable react-hooks/set-state-in-effect -- reset audio state by design */
   useEffect(() => {
     setIsPlaying(false)
     setIsLoading(false)
@@ -38,9 +37,6 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
     setShow(true)
     durationSet.current = false
   }, [slug, lang])
-  /* eslint-enable react-hooks/set-state-in-effect */
-
-  const voice = lang === 'zh' ? 'xiaoxiao' : 'jenny'
 
   const handleError = useCallback(() => setShow(false), [])
   const handleLoadedMetadata = useCallback(() => {
@@ -185,7 +181,7 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
       <audio
         ref={audioRef}
         key={`${slug}-${lang}`}
-        src={`/audio/${slug}/${voice}.mp3`}
+        src={`/api/tts/${lang}/${slug}.mp3`}
         preload="auto"
         onError={handleError}
         onLoadedMetadata={handleLoadedMetadata}

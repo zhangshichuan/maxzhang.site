@@ -1,17 +1,18 @@
-'use client'
-
-import { useState } from 'react'
-import { useRouter, Link } from '@/i18n/routing'
+import { useRouter } from '@tanstack/react-router'
+import { Link, useLocale } from '@/src/i18n/client'
+import { localizePath } from '@/i18n/routing'
 import { ArrowLeft, Loader2 } from 'lucide-react'
+import { useState } from 'react'
 
 export function BackToPosts({ label }: { label: string }) {
   const router = useRouter()
+  const locale = useLocale()
   const [loading, setLoading] = useState(false)
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault()
     setLoading(true)
-    router.push('/posts')
+    router.navigate({ href: localizePath('/posts', locale) })
   }
 
   return (

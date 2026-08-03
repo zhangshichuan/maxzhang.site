@@ -1,15 +1,13 @@
-'use client'
-
 import {
   addComment,
   getCommentCount,
   getComments,
   getRemainingComments,
-} from '@/src/features/engagement/server-actions'
+} from '@/src/features/engagement/server-functions'
 import type { CommentWithReplies } from '@/src/features/engagement/model'
+import { useTranslations } from '@/src/i18n/client'
 import { getThumbmark } from '@thumbmarkjs/thumbmarkjs'
 import { AlertCircle, Clock, MessageCircle, Reply, Send, X } from 'lucide-react'
-import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useState } from 'react'
 
 interface CommentProps {
@@ -216,7 +214,10 @@ export function Comment({ slug, locale }: CommentProps) {
   const [replySuccess, setReplySuccess] = useState(false)
 
   const refreshComments = useCallback(async () => {
-    const [loadedComments, commentCount] = await Promise.all([getComments(slug), getCommentCount(slug)])
+    const [loadedComments, commentCount] = await Promise.all([
+      getComments({ data: { slug } }),
+      getCommentCount({ data: { slug } }),
+    ])
     setComments(loadedComments)
     setCount(commentCount)
   }, [slug])
@@ -227,7 +228,9 @@ export function Comment({ slug, locale }: CommentProps) {
         await refreshComments()
 
         const response = await getThumbmark()
-        const remainingCount = await getRemainingComments(slug, response.thumbmark)
+        const remainingCount = await getRemainingComments({
+          data: { slug, fingerprint: response.thumbmark },
+        })
         setRemaining(remainingCount)
       } catch (err) {
         console.error('Failed to load comment data:', err)
@@ -250,7 +253,7 @@ export function Comment({ slug, locale }: CommentProps) {
       try {
         const response = await getThumbmark()
         const fingerprint = response.thumbmark
-        const result = await addComment(slug, content, fingerprint)
+        const result = await addComment({ data: { slug, content, fingerprint } })
 
         if (result.success) {
           setContent('')
@@ -282,7 +285,9 @@ export function Comment({ slug, locale }: CommentProps) {
       try {
         const response = await getThumbmark()
         const fingerprint = response.thumbmark
-        const result = await addComment(slug, replyContent, fingerprint, parentId)
+        const result = await addComment({
+          data: { slug, content: replyContent, fingerprint, parentId },
+        })
 
         if (result.success) {
           setReplyContent('')

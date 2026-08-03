@@ -13,8 +13,8 @@
 ## 2. 当前分层
 
 ```text
-app/
-  ... Next.js 路由入口
+src/routes/
+  ... TanStack Router 路由入口（含 Server Route）
 
 src/
   features/
@@ -28,14 +28,15 @@ tests/
   ... 测试
 ```
 
-### `app`
+### `src/routes`
 
-`app` 只放 Next.js 约定文件：
+`src/routes` 只放 TanStack Router 约定文件（由文件系统自动生成路由树）：
 
-- `page.tsx`
-- `layout.tsx`
-- `route.ts`
-- 其他路由相关入口文件
+- `__root.tsx`（根文档壳）
+- `{locale 布局}/...`（zh 无前缀、en 带 `/en` 前缀）
+- `*.tsx`（页面路由）
+- `api/**`（Server Route，如 `/api/tts/{locale}/{slug}.mp3`）
+- `routeTree.gen.ts`（构建时自动生成）
 
 职责：
 
@@ -43,13 +44,14 @@ tests/
 - 布局组合
 - HTTP 入口暴露
 - 路由参数接入
+- 路由 loader 数据预取
 
 禁止：
 
-- 在 `page.tsx` 中堆复杂业务编排
+- 在路由文件里堆复杂业务编排
 - 在页面里直接查库
 - 在页面里直接实现认证、权限、校验等复杂细节
-- 在 `app` 下新增可复用业务 Hook
+- 在 `src/routes` 下新增可复用业务 Hook
 
 ### `src/features`
 
@@ -66,7 +68,7 @@ tests/
 - `model`
 - `queries`
 - `services`
-- `server-actions`
+- `server-functions`（TanStack Server Function 包装，`createServerFn`）
 - 其他业务专属目录，例如 `filters`、`editor`、`analytics`
 
 判断标准：

@@ -555,7 +555,7 @@ Kafka：基于自己的存储引擎，消息日志（append-only）。适合"多
 
 一个日志采集系统用 Kafka 做缓冲。Topic 配置了 3 副本、`acks=all`、`min.insync.replicas=2`。一切正常的时候，端到端延迟稳定在 40ms。
 
-某天一台 Broker 的磁盘出现坏道，IO 延迟从 2ms 飙升到 200ms。这个 Broker 上的所有 Follower 开始追不上 Leader——`replica.lag.time.max.ms`（默认 10 秒）一过，这些 Follower 被踢出 ISR。ISR 从 {1,2,3} 缩成 {1,2}。
+某天一台 Broker 的磁盘出现坏道，IO 延迟从 2ms 飙升到 200ms。这个 Broker 上的所有 Follower 开始追不上 Leader——`replica.lag.time.max.ms`（默认 10 秒）一过，这些 Follower 被踢出 ISR。ISR 从 \{1,2,3\} 缩成 \{1,2\}。
 
 但 `min.insync.replicas=2`，ISR 还剩 2 个，写入还能继续。只是写入延迟从 40ms 涨到了 120ms——因为 Follower 少了一个确认快的副本。
 

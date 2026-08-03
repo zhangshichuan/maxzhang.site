@@ -124,10 +124,19 @@ export async function getAllPostsWithViews(locale: string = routing.defaultLocal
     .filter((post): post is PostSummary => post !== null)
 
   const slugsForQuery = slugs.map((slug) => slug.replace(/\.mdx?$/, ''))
-  const [viewCounts, commentCounts] = await Promise.all([
-    getViewCounts(slugsForQuery, locale),
-    getCommentCounts(slugsForQuery),
-  ])
+
+  // 预渲染/构建期可能没有数据库（SQLite 文件不入库），
+  // 指标查询失败时降级为 0，保证内容页仍可静态生成。
+  let viewCounts: Record<string, number> = {}
+  let commentCounts: Record<string, number> = {}
+  try {
+    ;[viewCounts, commentCounts] = await Promise.all([
+      getViewCounts(slugsForQuery, locale),
+      getCommentCounts(slugsForQuery),
+    ])
+  } catch (error) {
+    console.warn('Failed to load interaction metrics, fallback to zero:', error)
+  }
 
   return composePostsWithMetrics(posts, viewCounts, commentCounts)
 }

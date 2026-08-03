@@ -1,9 +1,5 @@
-'use client'
-
-import { Link } from '@/i18n/routing'
+import { Link, useTranslations } from '@/src/i18n/client'
 import { Github, Mail, Linkedin, MapPin, ChevronRight } from 'lucide-react'
-import { useTranslations } from 'next-intl'
-import Image from 'next/image'
 import { flattenSkills, skillMatrix } from '@/src/shared/skills'
 import Avatar from '../avatar.jpg'
 
@@ -36,11 +32,10 @@ export function AboutPage() {
           <div className="about-profile">
             <div className="about-avatar-wrapper">
               <div className="about-avatar">
-                <Image
+                <img
                   src={Avatar}
                   alt="Max Zhang"
                   style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(30%)' }}
-                  priority
                 />
               </div>
               <div className="about-avatar-ring" />

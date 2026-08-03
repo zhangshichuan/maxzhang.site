@@ -1,6 +1,4 @@
-'use client'
-
-import { incrementView } from '@/src/features/engagement/server-actions'
+import { incrementView } from '@/src/features/engagement/server-functions'
 import { getThumbmark } from '@thumbmarkjs/thumbmarkjs'
 import { Eye } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -17,7 +15,9 @@ export function ViewCounter({ slug, locale }: ViewCounterProps) {
     const trackView = async () => {
       try {
         const response = await getThumbmark()
-        const count = await incrementView(slug, locale, response.thumbmark)
+        const count = await incrementView({
+          data: { slug, locale, fingerprint: response.thumbmark },
+        })
         if (count !== null) {
           setViews(count)
         }

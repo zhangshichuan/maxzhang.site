@@ -1,7 +1,5 @@
-'use client'
-
 import type { PostSummaryWithViews } from '@/src/features/posts/model'
-import { Link } from '@/i18n/routing'
+import { Link } from '@/src/i18n/client'
 
 interface PostItemProps {
   post: PostSummaryWithViews

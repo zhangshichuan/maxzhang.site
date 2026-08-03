@@ -20,9 +20,12 @@
 /.next/
 /apps/web/.next/
 /out/
+.output
 
 # production
 /build
+/apps/web/public/audio/
+/apps/web/src/features/posts/generated/
 
 # misc
 .DS_Store
@@ -57,3 +60,9 @@ apps/web/next-env.d.ts
 /apps/web/prisma/*.db-journal
 .codex
 .gstack/
+
+# Python / uv（apps/services/tts）
+**/.venv
+**/.cache
+**/__pycache__
+**/*.pyc

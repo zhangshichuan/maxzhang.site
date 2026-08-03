@@ -1,10 +1,7 @@
-'use client'
-
 import { PostItem } from '@/src/features/posts/components'
 import type { PostSummaryWithViews } from '@/src/features/posts/model'
-import { Link, useRouter } from '@/i18n/routing'
+import { Link, useTranslations } from '@/src/i18n/client'
 import { Folder } from 'lucide-react'
-import { useTranslations } from 'next-intl'
 
 interface PostsClientProps {
   posts: PostSummaryWithViews[]
@@ -14,12 +11,6 @@ interface PostsClientProps {
 
 export function PostsClient({ posts, allTags, allCategories }: PostsClientProps) {
   const t = useTranslations('PostsPage')
-  const router = useRouter()
-
-  const handleNavigate = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    e.preventDefault()
-    router.push(href)
-  }
 
   return (
     <div>
@@ -46,13 +37,7 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
             {allCategories.map((category) => {
               const href = `/search?category=${encodeURIComponent(category)}`
               return (
-                <Link
-                  key={category}
-                  href={href}
-                  prefetch={false}
-                  onClick={(e) => handleNavigate(e, href)}
-                  className="glitch-link"
-                >
+                <Link key={category} href={href} className="glitch-link">
                   <Folder style={{ width: 14, height: 14, color: 'var(--cyan)' }} />
                   {category}
                 </Link>
@@ -66,13 +51,7 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
               {allTags.map((tag) => {
                 const href = `/search?tag=${encodeURIComponent(tag)}`
                 return (
-                  <Link
-                    key={tag}
-                    href={href}
-                    prefetch={false}
-                    onClick={(e) => handleNavigate(e, href)}
-                    className="glitch-filter-btn"
-                  >
+                  <Link key={tag} href={href} className="glitch-filter-btn">
                     {tag}
                   </Link>
                 )

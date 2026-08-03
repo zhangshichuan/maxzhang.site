@@ -1,8 +1,5 @@
-'use client'
-
 import type { PostSummaryWithViews } from '@/src/features/posts/model'
-import { Link } from '@/i18n/routing'
-import { useTranslations } from 'next-intl'
+import { Link } from '@/src/i18n/client'
 
 interface FeaturedPostsProps {
   posts: PostSummaryWithViews[]
@@ -28,8 +25,6 @@ function ProjectCard({ post, idx }: { post: PostSummaryWithViews; idx: number })
 }
 
 export function FeaturedPosts({ posts }: FeaturedPostsProps) {
-  const t = useTranslations('HomePage.featuredPosts')
-
   return (
     <section>
       <div className="sec-head">

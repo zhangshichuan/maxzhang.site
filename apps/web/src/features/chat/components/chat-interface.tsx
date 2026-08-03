@@ -1,10 +1,8 @@
-'use client'
-
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { chatStream } from '@/src/features/chat/server-actions'
+import { chatStream } from '@/src/features/chat/server-functions'
 import type { ChatErrorCode } from '@/src/features/chat/services/chat-stream'
+import { useTranslations } from '@/src/i18n/client'
 import { getThumbmark } from '@thumbmarkjs/thumbmarkjs'
-import { useTranslations } from 'next-intl'
 
 interface Message {
   id: string
@@ -129,7 +127,9 @@ export function ChatInterface() {
 
     try {
       const thumbmark = await getThumbmark()
-      const result = await chatStream(userMessage.content, thumbmark.thumbmark)
+      const result = await chatStream({
+        data: { message: userMessage.content, fingerprint: thumbmark.thumbmark },
+      })
 
       if ('error' in result) {
         setError(result.error)
@@ -137,29 +137,9 @@ export function ChatInterface() {
         return
       }
 
-      const reader = result.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        const chunk = decoder.decode(value, { stream: true })
-        buffer += chunk
-
-        let contentStart = 0
-        while (true) {
-          const dataIndex = buffer.indexOf('data: ', contentStart)
-          if (dataIndex === -1) break
-          const lineEnd = buffer.indexOf('\n', dataIndex)
-          if (lineEnd === -1) break
-          const content = buffer.slice(dataIndex + 6, lineEnd)
-          buffer = buffer.slice(lineEnd + 1)
-          contentStart = 0
-          fullContentRef.current += content
-          startTypewriter(assistantMessage.id)
-        }
+      for await (const chunk of result) {
+        fullContentRef.current += chunk
+        startTypewriter(assistantMessage.id)
       }
     } catch (error) {
       console.error('Error:', error)

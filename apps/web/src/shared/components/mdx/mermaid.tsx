@@ -10,7 +10,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Maximize2, RotateCcw, X, ZoomIn, ZoomOut } from 'lucide-react'
 import mermaid from 'mermaid'
-import { useTranslations } from 'next-intl'
+import { useTranslations } from '@/src/i18n/client'
 import { useEffect, useState } from 'react'
 
 /** Mermaid组件属性接口 */

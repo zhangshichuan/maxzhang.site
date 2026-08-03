@@ -32,23 +32,14 @@ jobs:
 
       - name: Prepare deployment artifacts
         run: |
-          mkdir -p deployment/apps/web
+          mkdir -p deployment
 
-          # 复制 standalone 输出
-          cp -r apps/web/.next/standalone/. deployment/apps/web/standalone
-
-          # 复制静态资源
-          cp -r apps/web/.next/static/. deployment/apps/web/static
-          cp -r apps/web/public/. deployment/apps/web/public
-
-          # 复制 prisma 配置和 schema
-          cp -r apps/web/prisma/. deployment/apps/web/prisma
-          cp apps/web/prisma.config.ts deployment/apps/web
-
-          # 复制 Dockerfile、docker-compose.yml
-          cp apps/web/Dockerfile deployment/apps/web/
-          cp apps/web/Dockerfile.prisma deployment/apps/web/
-          cp docker-compose.yml deployment/
+          # 服务器上用 docker compose build 重新构建镜像，
+          # 需要完整的仓库源码（TanStack 多阶段构建 + TTS 服务）
+          cp -r apps deployment/apps
+          cp -r services deployment/services
+          cp docker-compose.yml .dockerignore deployment/
+          cp package.json pnpm-lock.yaml pnpm-workspace.yaml deployment/
 
       - name: Archive production artifacts
         run: |
@@ -75,14 +66,15 @@ jobs:
             echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
 
             # 清理旧的构建文件
-            rm -rf apps docker-compose.yml
+            rm -rf apps services docker-compose.yml .dockerignore package.json pnpm-lock.yaml pnpm-workspace.yaml
 
             # 解压新文件
             tar -xzf release.tar.gz
             rm release.tar.gz
 
             # 构建镜像
-            docker compose build
+            docker compose build --no-cache app
+            docker compose build --no-cache tts
             docker compose build --no-cache migrate
 
             # 运行迁移

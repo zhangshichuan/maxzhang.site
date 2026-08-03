@@ -10,5 +10,5 @@ export {
   getViewCount,
   getViewCounts,
 } from './queries'
-export { addComment, incrementView } from './server-actions'
+export { addComment, incrementView } from './server-functions'
 export type { Comment as CommentModel, CommentWithReplies } from './model'

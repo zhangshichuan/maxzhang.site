@@ -12,17 +12,30 @@ services:
 
   app:
     build:
-      context: ./apps/web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/web/Dockerfile
     volumes:
       - sqlite_data:/app/data
     environment:
       - DATABASE_URL
+      - TTS_BASE_URL=http://tts:8001
     ports:
       - '3000:3000'
     extra_hosts:
       - 'host.docker.internal:host-gateway'
+    depends_on:
+      - tts
 
-# 查看真实路径：docker volume inspect maxzhangsite_sqlite_data
+  tts:
+    build:
+      context: ./apps/services/tts
+      dockerfile: Dockerfile
+    volumes:
+      - tts_data:/data/tts
+    environment:
+      - TTS_CACHE_DIR=/data/tts
+
+# 数据持久化：SQLite 在 sqlite_data，TTS 音频缓存（30天/1GB 自动清理）在 tts_data
 volumes:
   sqlite_data:
+  tts_data:

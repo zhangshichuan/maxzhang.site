@@ -1,22 +1,23 @@
-'use client'
-
-import { Link, usePathname, useRouter } from '@/i18n/routing'
-import { cn } from '@/src/shared/utils'
+import { useRouter, useRouterState } from '@tanstack/react-router'
+import { Link, useLocale, useTranslations } from '@/src/i18n/client'
+import { localizePath, stripLocale } from '@/i18n/routing'
 import { Languages, Search } from 'lucide-react'
-import { useLocale, useTranslations } from 'next-intl'
 
 export function Navbar() {
   const t = useTranslations('Common.nav')
   const locale = useLocale()
-  const pathname = usePathname()
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
   const router = useRouter()
 
   const toggleLanguage = () => {
     const nextLocale = locale === 'zh' ? 'en' : 'zh'
-    router.replace(pathname, { locale: nextLocale })
+    router.navigate({
+      href: localizePath(stripLocale(pathname), nextLocale),
+      replace: true,
+    })
   }
 
-  const isActive = (path: string) => pathname === path
+  const isActive = (path: string) => pathname === localizePath(path, locale)
 
   return (
     <header>

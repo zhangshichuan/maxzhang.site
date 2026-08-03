@@ -1,7 +1,4 @@
-'use client'
-
-import { Link } from '@/i18n/routing'
-import { useTranslations } from 'next-intl'
+import { Link, useTranslations } from '@/src/i18n/client'
 
 export function HomeHero() {
   const t = useTranslations('HomePage.hero')

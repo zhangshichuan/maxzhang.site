@@ -1,24 +1,25 @@
-'use client'
-
 import { PostItem } from '@/src/features/posts/components'
 import type { PostSummaryWithViews } from '@/src/features/posts/model'
+import { useTranslations } from '@/src/i18n/client'
 import Fuse from 'fuse.js'
 import { Search, X } from 'lucide-react'
-import { useSearchParams } from 'next/navigation'
-import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 
 interface SearchClientProps {
   posts: PostSummaryWithViews[]
+  initialSearch: {
+    q: string
+    tag: string
+    category: string
+  }
 }
 
-export function SearchClient({ posts }: SearchClientProps) {
-  const searchParams = useSearchParams()
+export function SearchClient({ posts, initialSearch }: SearchClientProps) {
   const t = useTranslations('SearchPage')
 
-  const [query, setQuery] = useState(() => searchParams?.get('q') || '')
-  const [selectedTag, setSelectedTag] = useState(() => searchParams?.get('tag') || '')
-  const [selectedCategory, setSelectedCategory] = useState(() => searchParams?.get('category') || '')
+  const [query, setQuery] = useState(initialSearch.q)
+  const [selectedTag, setSelectedTag] = useState(initialSearch.tag)
+  const [selectedCategory, setSelectedCategory] = useState(initialSearch.category)
 
   const fuse = useMemo(() => {
     return new Fuse(posts, {
