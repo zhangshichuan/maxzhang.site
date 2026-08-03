@@ -37,7 +37,6 @@ jobs:
           # 服务器上用 docker compose build 重新构建镜像，
           # 需要完整的仓库源码（TanStack 多阶段构建 + TTS 服务）
           cp -r apps deployment/apps
-          cp -r services deployment/services
           cp docker-compose.yml .dockerignore deployment/
           cp package.json pnpm-lock.yaml pnpm-workspace.yaml deployment/
 
