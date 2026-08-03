@@ -93,7 +93,7 @@ tests/
 - 允许在 feature 内部继续深层 import 自己的实现文件
 - 不推荐页面层和其他 feature 深层 import `features/<feature>/*`
 
-例如 `src/features/posts/index.ts` 暴露 `getAllPostsWithViews`、`getPostBySlug`、`PostsClient` 等公共能力；
+例如 `src/features/posts/index.ts` 暴露 `getAllPostsWithViewsFn`、`loadPostPageFn`、`PostsClient` 等公共能力；
 而格式转换、排序细节、内部映射函数等实现细节继续留在内部模块中。
 
 ### `src/shared`
@@ -152,6 +152,8 @@ tests/
 - 只读，不写
 - 可以依赖 `src/server/db`
 - 不承载 UI 状态
+- 服务端查询模块以 `.server.ts` 结尾（如 `queries/posts.server.ts`）；
+  TanStack 构建会在客户端引用时报错，确保 fs/Prisma 不进浏览器 bundle
 
 ### `services`
 
@@ -161,7 +163,7 @@ tests/
 
 - 多步骤业务动作
 - 校验、读取、转换、持久化的组合流程
-- 被 Server Action、Route Handler、其他服务共同复用的业务逻辑
+- 被 Server Function、Server Route、其他服务共同复用的业务逻辑
 
 约束：
 
@@ -169,19 +171,20 @@ tests/
 - 可以依赖 `queries`
 - 可以依赖 `src/server/*`
 
-### `server-actions`
+### `server-functions`
 
-`server-actions` 是给前端直接调用的服务端入口。
+`server-functions` 是用 `createServerFn` 暴露给前端调用的服务端入口（客户端编译为 RPC 存根）。
 
 约束：
 
 - 入口尽量薄
-- 不把复杂业务细节直接堆在 Action 中
+- 不把复杂业务细节直接堆在 Server Function 中
 - 真实业务流程优先下沉到 `services`
+- handler 内只引用 `*.server.ts` 模块；公共 barrel 不得转发服务端模块
 
-### `route.ts`
+### Server Route（`src/routes/api/**`）
 
-`route.ts` 是 HTTP 边界，不是业务逻辑仓库。
+Server Route 是 HTTP 边界，不是业务逻辑仓库（如 `/api/tts/{locale}/{slug}.mp3`）。
 
 职责：
 
@@ -260,7 +263,7 @@ Hook 只承载 React 状态逻辑。
 
 - `features/*/queries`
 - `features/*/services`
-- 必要时的 `app/api/**/route.ts`
+- 必要时的 Server Route（`src/routes/api/**`）
 
 服务端组件如果要查库，优先调用 `queries`，不要在组件文件里直接内联 Prisma 查询。
 
@@ -280,8 +283,8 @@ UI 层只调用明确暴露的能力，不直接实现底层细节。
 
 新增一个文件时，按下面顺序判断：
 
-1. 它是不是 Next.js 路由入口文件？
-   如果是，放 `app`
+1. 它是不是 TanStack Router 路由入口文件（页面 / Server Route）？
+   如果是，放 `src/routes`
 
 2. 它是不是某个业务专属代码？
    如果是，放对应 `src/features/<feature>`
