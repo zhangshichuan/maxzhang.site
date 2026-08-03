@@ -20,6 +20,8 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '22'
+          # v5 默认会尝试在 corepack 启用前执行 pnpm，这里关掉，交给下一步 corepack enable
+          package-manager-cache: false
 
       - name: Enable Corepack
         run: corepack enable
