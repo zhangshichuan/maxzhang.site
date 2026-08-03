@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
-import { streamChat } from '@/src/features/chat/services'
-import type { ChatErrorCode } from '@/src/features/chat/services/chat-stream'
+import { streamChat } from '@/src/features/chat/services/chat-stream.server'
+import type { ChatErrorCode } from '@/src/features/chat/services/chat-stream.server'
 
 /**
  * 聊天流式传输服务端操作

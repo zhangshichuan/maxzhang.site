@@ -1,3 +1,3 @@
-export { addComment } from './comments'
+export { addComment } from './comments.server'
 export { engagementRules, validateCommentInput } from './comment-validation'
-export { incrementView } from './views'
+export { incrementView } from './views.server'

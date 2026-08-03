@@ -1,5 +1,3 @@
-'use server'
-
 import { getRemainingComments } from '@/src/features/engagement/queries'
 import { engagementRules, validateCommentInput } from '@/src/features/engagement/services/comment-validation'
 import { escapeHtml } from '@/src/shared/utils'

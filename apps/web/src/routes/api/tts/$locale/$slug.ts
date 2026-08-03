@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { createHash } from 'node:crypto'
-import { getPostBySlug, preprocessForTts, stripMdxToPlainText } from '@/src/features/posts'
+import { getPostBySlug } from '@/src/features/posts/queries/posts.server'
+import { preprocessForTts, stripMdxToPlainText } from '@/src/features/posts/services'
 
 const VOICES: Record<string, string> = {
   zh: 'zh-CN-XiaoxiaoNeural',

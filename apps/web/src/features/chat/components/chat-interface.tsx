@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { chatStream } from '@/src/features/chat/server-functions'
-import type { ChatErrorCode } from '@/src/features/chat/services/chat-stream'
+import type { ChatErrorCode } from '@/src/features/chat/services/chat-stream.server'
 import { useTranslations } from '@/src/i18n/client'
 import { getThumbmark } from '@thumbmarkjs/thumbmarkjs'
 

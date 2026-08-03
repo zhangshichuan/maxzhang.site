@@ -4,8 +4,9 @@ import {
   getCommentCount as getCommentCountQuery,
   getComments as getCommentsQuery,
   getRemainingComments as getRemainingCommentsQuery,
-} from '@/src/features/engagement/queries'
-import { addComment as addCommentService, engagementRules } from '@/src/features/engagement/services'
+} from '@/src/features/engagement/queries/comments.server'
+import { engagementRules } from '@/src/features/engagement/services/comment-validation'
+import { addComment as addCommentService } from '@/src/features/engagement/services/comments.server'
 
 /**
  * 评论相关 Server Actions

@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { incrementView as incrementViewService } from '@/src/features/engagement/services'
+import { incrementView as incrementViewService } from '@/src/features/engagement/services/views.server'
 
 /**
  * 阅读数 +1（TanStack Server Function）

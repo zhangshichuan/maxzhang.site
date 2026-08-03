@@ -6,4 +6,4 @@
 
 export { ChatInterface } from './components'
 export { chatStream } from './server-functions'
-export type { ChatErrorCode } from './services/chat-stream'
+export type { ChatErrorCode } from './services/chat-stream.server'

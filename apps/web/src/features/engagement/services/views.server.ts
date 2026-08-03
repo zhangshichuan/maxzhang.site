@@ -1,5 +1,3 @@
-'use server'
-
 import { getViewCount } from '@/src/features/engagement/queries'
 import { prisma } from '@/src/server/db'
 

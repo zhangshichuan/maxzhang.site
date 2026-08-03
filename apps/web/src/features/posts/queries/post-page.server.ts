@@ -1,5 +1,5 @@
 import { getCommentCount } from '@/src/features/engagement/queries'
-import { getAllPostsWithViews, getPostBySlug } from './posts'
+import { getPostBySlug } from './posts.server'
 
 /**
  * 文章详情页数据。
@@ -18,16 +18,4 @@ export async function loadPostPage(slug: string, locale: string) {
   }
 
   return { post, commentCount }
-}
-
-/**
- * 文章列表页数据：文章 + 标签/分类聚合。
- */
-export async function loadPostsIndex(locale: string) {
-  const posts = await getAllPostsWithViews(locale)
-  return {
-    posts,
-    allTags: Array.from(new Set(posts.flatMap((post) => post.tags))),
-    allCategories: Array.from(new Set(posts.map((post) => post.category).filter(Boolean))),
-  }
 }

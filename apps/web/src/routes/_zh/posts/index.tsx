@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { loadPostsIndex, PostsClient } from '@/src/features/posts'
+import { loadPostsIndexFn, PostsClient } from '@/src/features/posts'
 
 export const Route = createFileRoute('/_zh/posts/')({
-  loader: ({ context }) => loadPostsIndex(context.locale),
+  loader: ({ context }) => loadPostsIndexFn({ data: { locale: context.locale } }),
   head: () => ({
     meta: [{ title: '故事会 - Max Zhang' }, { name: 'description', content: '技术、设计与生活的交汇之地。' }],
   }),
