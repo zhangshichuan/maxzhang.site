@@ -4,3 +4,6 @@ dist
 pnpm-lock.yaml
 .next
 out
+.output
+src/features/posts/generated
+generated
