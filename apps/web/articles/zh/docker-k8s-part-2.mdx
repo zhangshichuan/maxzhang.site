@@ -1,0 +1,235 @@
+---
+title: 'Docker·K8s 核心实战（中）：工作负载与服务'
+summary: 'Kubernetes 的核心不是容器，而是声明式编排。这篇文章讲透 Pod、Deployment、Service、ConfigMap 这些核心对象，以及滚动更新、健康检查、配置注入的工作机制，让你能读懂任何一份 K8s 配置。'
+category: 'Infrastructure'
+tags: ['Kubernetes', 'Pod', 'Deployment']
+author: 'Max Zhang'
+date: '2023-05-14'
+---
+
+### 背景
+
+你学会了 Docker，开始在服务器上手动 `docker run`。三个服务、两台机器还能撑住，当服务到十个、机器到五台，问题开始失控：谁挂了谁重启？新版本怎么灰度？配置怎么下发？端口冲突怎么处理？每个问题都有一套手工流程，事故时根本来不及执行。
+
+Kubernetes 回答这些问题的方式是"声明式"：你告诉它"最终要什么状态"，它负责把现状收敛到目标状态。Pod 挂了自动重建，副本数少了自动补齐，镜像更新了自动滚动替换。你写的 YAML 不是脚本，是意图。
+
+这一篇讲 Kubernetes 最核心的对象模型：Pod、Deployment、Service、ConfigMap 和 Secret，以及健康检查与滚动更新。读完你能读懂大部分 K8s 配置，也能自己写出一个服务的完整部署清单。
+
+开始之前，先建立一个最重要的心智模型：Kubernetes 不是"容器编排工具"，而是一个"声明式状态系统"。你提交的 YAML 是期望状态，API Server 存储它，控制器不断对比实际状态并执行调和（reconcile）。Pod 被删了，Deployment 控制器会重建；副本数不够，ReplicaSet 会补齐；镜像更新了，控制器会滚动替换。这套"声明期望、自动收敛"的机制，才是 K8s 和脚本化运维的本质区别——脚本描述"怎么做"，声明描述"要什么"。
+
+这个心智模型还有一个推论：K8s 的问题几乎都是"期望状态和实际状态不一致"的问题。排查时不要问"哪里坏了"，要问"期望是什么、实际是什么、谁在调和、为什么没收敛"。`kubectl get` 看期望，`kubectl describe` 看事件，`kubectl logs` 看应用——三步定位，是 K8s 排障的通用方法论。
+
+本篇的结构：先讲 Pod（最小单元），再讲 Deployment（工作负载与更新），然后讲探针（健康检查）、Service 与配置注入（ConfigMap/Secret），最后给对象速查表、陷阱和进阶预告。建议按顺序读，对象之间的关系是层层叠加的。
+
+这一篇默认你已经会用 Docker 跑容器——K8s 不改变容器本身，它改变的是"谁来决定容器跑在哪、怎么跑、挂了怎么办"。如果你还停留在 `docker run` 的手工阶段，建议先把上篇的镜像、网络、卷过一遍，否则中篇的每个对象都会显得像天书。反过来，单机 Docker 熟练的人，看 K8s 对象其实是在看"把 Docker 的每次手工操作声明化"。
+
+开始之前，先建立一个最重要的心智模型：Kubernetes 不是"容器编排工具"，而是一个"声明式状态系统"。你提交的 YAML 是期望状态，API Server 存储它，控制器不断对比实际状态并执行调和（reconcile）。Pod 被删了，Deployment 控制器会重建；副本数不够，ReplicaSet 会补齐；镜像更新了，控制器会滚动替换。这套"声明期望、自动收敛"的机制，才是 K8s 和脚本化运维的本质区别——脚本描述"怎么做"，声明描述"要什么"。
+
+### 核心原理
+
+#### 第一层：Pod——最小调度单元
+
+Pod 是 Kubernetes 能调度和运行的最小单元，一个或多个容器共享网络和存储。多数情况下一个 Pod 只有一个业务容器，但"主容器 + 边车容器"（日志收集、代理）也是常见组合。
+
+Pod 有两个容易混淆的属性：`restartPolicy` 控制容器重启策略（Always/OnFailure/Never），`terminationGracePeriodSeconds` 控制优雅终止的宽限时间。生产环境里，应用要处理 `SIGTERM` 信号完成在途请求，再在宽限期内退出；如果应用直接忽略信号，Pod 会被 `SIGKILL` 强杀，请求静默丢失。配合探针和优雅退出，Pod 的生命周期才算完整。
+
+Pod 的标签（labels）和选择器（selector）是整个 K8s 的"胶水"：Service 用选择器找到 Pod，Deployment 用选择器管理自己的 Pod，监控和日志也用标签做分组。命名标签要遵守团队约定（`app`、`tier`、`env`），避免出现 `app: myapp` 和 `name: myapp` 两套体系互相对不上。标签错了，最典型的现象就是"Service 没后端"——`kubectl get endpoints` 显示空，先查标签。
+
+Pod 还有一个"不可变"的哲学：Pod 是一次性的，任何变更都通过创建新 Pod 完成（通常由 Deployment 滚动替换），而不是进入 Pod 修改。这个哲学保证了"运行状态"永远可以追溯到"声明状态"，也是"声明式"能够成立的前提。理解了"Pod 是奶牛不是宠物"，你就不会试图"救活"一个 Pod，而是让它被正确地替换。
+
+Pod 有两个容易混淆的属性：`restartPolicy` 控制容器重启策略（Always/OnFailure/Never），`terminationGracePeriodSeconds` 控制优雅终止的宽限时间。生产环境里，应用要处理 `SIGTERM` 信号完成在途请求，再在宽限期内退出；如果应用直接忽略信号，Pod 会被 `SIGKILL` 强杀，请求静默丢失。配合探针和优雅退出，Pod 的生命周期才算完整。
+
+Pod 的标签（labels）和选择器（selector）是整个 K8s 的"胶水"：Service 用选择器找到 Pod，Deployment 用选择器管理自己的 Pod，监控和日志也用标签做分组。命名标签要遵守团队约定（`app`、`tier`、`env`），避免出现 `app: myapp` 和 `name: myapp` 两套体系互相对不上。标签错了，最典型的现象就是"Service 没后端"——`kubectl get endpoints` 显示空，先查标签。
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp
+spec:
+  containers:
+    - name: app
+      image: myapp:1.0
+      ports:
+        - containerPort: 3000
+```
+
+重要认知：Pod 是"奶牛"不是"宠物"。Pod 会被删除、重建、迁移，IP 每次变化，数据默认不保留。生产环境几乎不直接创建 Pod，而是通过 Deployment 管理。
+
+#### 第二层：Deployment——声明副本与更新策略
+
+Deployment 声明"我要几个副本、什么镜像、怎么更新"，ReplicaSet 负责维持副本数，滚动更新由 Deployment 编排：
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+        - name: app
+          image: myapp:1.0
+          ports:
+            - containerPort: 3000
+```
+
+更新镜像时（`kubectl set image` 或修改 YAML），Deployment 会先创建新 ReplicaSet，逐个替换旧 Pod，默认策略是"先起新的、等就绪、再停旧的"。滚动更新期间服务不断，回滚也只是切换 ReplicaSet。
+
+滚动更新还有三个参数值得理解：`maxSurge`（允许超出期望副本数的比例）、`maxUnavailable`（允许不可用副本的最大比例）、`minReadySeconds`（新 Pod 就绪后至少稳定多少秒才继续滚动）。默认值适合大多数场景，但大版本升级时建议调低 `maxUnavailable`，避免一半实例同时被替换；数据库 schema 变更的版本要配合 `minReadySeconds`，给新版本留出足够长的验证窗口。
+
+回滚是滚动更新的另一半：`kubectl rollout undo deployment/myapp` 一键回到上一个 ReplicaSet，但前提是你没有手动删过历史 ReplicaSet，且镜像 tag 是可追溯的。工程上的最佳实践是"部署即记录"：每次发布在 CI 里生成 commit SHA 对应的镜像 tag，部署记录写入变更日志，回滚时知道"回到的是哪个 commit"。没有记录的回滚，和盲人开车没有区别。
+
+Deployment 的发布策略还有一个进阶选项：`strategy.type: Recreate`（先删旧再建新，适合不能并存的版本，但会有停机窗口）和蓝绿/金丝雀（通过多个 Deployment 加 Service 切换实现）。默认的 RollingUpdate 覆盖大多数场景；需要精细控制流量比例时，再引入 Argo Rollouts 或 Istio 这类工具。策略的复杂度要和业务的容忍度匹配，不要为了"高级"而高级。
+
+滚动更新还有三个参数值得理解：`maxSurge`（允许超出期望副本数的比例）、`maxUnavailable`（允许不可用副本的最大比例）、`minReadySeconds`（新 Pod 就绪后至少稳定多少秒才继续滚动）。默认值适合大多数场景，但大版本升级时建议调低 `maxUnavailable`，避免一半实例同时被替换；数据库 schema 变更的版本要配合 `minReadySeconds`，给新版本留出足够长的验证窗口。
+
+回滚是滚动更新的另一半：`kubectl rollout undo deployment/myapp` 一键回到上一个 ReplicaSet，但前提是你没有手动删过历史 ReplicaSet，且镜像 tag 是可追溯的。工程上的最佳实践是"部署即记录"：每次发布在 CI 里生成 commit SHA 对应的镜像 tag，部署记录写入变更日志，回滚时知道"回到的是哪个 commit"。没有记录的回滚，和盲人开车没有区别。
+
+#### 第三层：健康检查——就绪与存活
+
+Kubernetes 靠探针判断 Pod 是否健康：`livenessProbe` 决定要不要重启（应用死锁），`readinessProbe` 决定要不要把流量打进来（还没准备好）。
+
+```yaml
+spec:
+  containers:
+    - name: app
+      livenessProbe:
+        httpGet:
+          path: /healthz
+          port: 3000
+        initialDelaySeconds: 5
+      readinessProbe:
+        httpGet:
+          path: /readyz
+          port: 3000
+```
+
+只配置存活探针不配置就绪探针是常见错误：应用启动慢时，旧版本还在接收流量，新 Pod 被反复重启。就绪探针让流量只进"能服务"的 Pod，滚动更新才不会出现 5xx 潮。
+
+探针的路径选择也有讲究：`/healthz` 和 `/readyz` 最好分开。`/healthz` 只检查进程是否存活，`/readyz` 检查依赖（数据库、缓存）是否可用——依赖挂了时应用不该被重启（重启也没用），但该从负载均衡摘除。把两个探针指向同一个"裸 200 接口"，等于放弃了就绪探针的核心价值。
+
+还有一个和探针配合的机制：`preStop` 钩子。滚动更新删 Pod 前会先执行 `preStop`（比如 `sleep 5`），让负载均衡器有时间把 Pod 摘掉，再发 `SIGTERM`。没有 `preStop`，新 Pod 就绪的瞬间旧 Pod 可能还在收流量，更新窗口内出现偶发 5xx。三个机制（探针、优雅终止、preStop）是一套完整的"流量交接协议"，缺一个都会在滚动更新时露馅。
+
+探针的"依赖检查"还有一个设计红线：就绪探针不要依赖外部系统（比如探针里查数据库）。数据库抖动会让所有 Pod 同时标记为不健康，流量清空，雪崩。就绪探针只检查"本地进程能不能服务"，外部依赖的故障应该由告警和降级处理，而不是让探针把整个服务摘除。
+
+探针的路径选择也有讲究：`/healthz` 和 `/readyz` 最好分开。`/healthz` 只检查进程是否存活，`/readyz` 检查依赖（数据库、缓存）是否可用——依赖挂了时应用不该被重启（重启也没用），但该从负载均衡摘除。把两个探针指向同一个"裸 200 接口"，等于放弃了就绪探针的核心价值。
+
+还有一个和探针配合的机制：`preStop` 钩子。滚动更新删 Pod 前会先执行 `preStop`（比如 `sleep 5`），让负载均衡器有时间把 Pod 摘掉，再发 `SIGTERM`。没有 `preStop`，新 Pod 就绪的瞬间旧 Pod 可能还在收流量，更新窗口内出现偶发 5xx。三个机制（探针、优雅终止、preStop）是一套完整的"流量交接协议"，缺一个都会在滚动更新时露馅。
+
+#### 第四层：Service 与配置注入
+
+Pod 的 IP 会变，Service 提供稳定的访问入口：它有一组标签选择器，把请求负载均衡到匹配的 Pod 上。
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp
+spec:
+  selector:
+    app: myapp
+  ports:
+    - port: 80
+      targetPort: 3000
+```
+
+集群内其他服务通过 `http://myapp` 访问它。要暴露到集群外，再用 Ingress（下篇讲）。
+
+配置用 ConfigMap 和 Secret 注入，而不是写死在镜像里：ConfigMap 存非敏感配置（环境变量、配置文件），Secret 存敏感信息（密码、token），两者都能挂载成文件或环境变量。改配置后 Pod 需要重启或滚动重建才生效，这是"改了配置没变化"的常见原因。
+
+ConfigMap 的更新传播还有两个细节。一是挂载为文件时，更新会异步同步到容器（通常几秒），但进程未必会重新读取；环境变量方式则需要重建 Pod。二是 Secret 默认只做 base64 编码，不是加密——真正的加密要靠云厂商的 KMS 或外部密钥管理（如 External Secrets Operator）。把 Secret 提交进 Git 仓库是严重事故，正确做法是只存引用，运行时注入。
+
+配置设计上还有一条原则：ConfigMap 只放"环境相关的差异"，不放"代码相关的默认值"。数据库地址、日志级别、功能开关属于前者，业务规则、错误文案属于后者。把代码默认值塞进 ConfigMap，会让"改配置"变成"改业务"，配置漂移越来越严重。判断标准很简单：同一个配置，换个环境必须不同吗？不必，就写死在代码里。
+
+Secret 的轮换流程也值得提前设计：密钥泄露时，要能快速轮换而不重启全部 Pod。做法是"双密钥滚动"：新老密钥同时有效，先更新 Secret 对象，等所有 Pod 滚动到新密钥后再废弃旧密钥。没有轮换流程的 Secret 管理，等于把"泄露后的恢复时间"押在运气上。
+
+ConfigMap 的更新传播还有两个细节。一是挂载为文件时，更新会异步同步到容器（通常几秒），但进程未必会重新读取；环境变量方式则需要重建 Pod。二是 Secret 默认只做 base64 编码，不是加密——真正的加密要靠云厂商的 KMS 或外部密钥管理（如 External Secrets Operator）。把 Secret 提交进 Git 仓库是严重事故，正确做法是只存引用，运行时注入。
+
+配置设计上还有一条原则：ConfigMap 只放"环境相关的差异"，不放"代码相关的默认值"。数据库地址、日志级别、功能开关属于前者，业务规则、错误文案属于后者。把代码默认值塞进 ConfigMap，会让"改配置"变成"改业务"，配置漂移越来越严重。判断标准很简单：同一个配置，换个环境必须不同吗？不必，就写死在代码里。
+
+### 实战应用
+
+#### 模式速查：核心对象速查表
+
+| 对象       | 职责           | 什么时候用           |
+| ---------- | -------------- | -------------------- |
+| Pod        | 最小调度单元   | 几乎不直接用         |
+| Deployment | 副本与滚动更新 | 无状态服务           |
+| Service    | 稳定访问入口   | 所有需要被访问的服务 |
+| ConfigMap  | 非敏感配置     | 环境变量、配置文件   |
+| Secret     | 敏感数据       | 密码、token、证书    |
+| Namespace  | 逻辑隔离       | 环境/团队分区        |
+
+速查表的用法是"先选对象，再写配置"：无状态服务用 Deployment，需要稳定入口加 Service，配置用 ConfigMap/Secret，多环境隔离用 Namespace。新手最容易犯的错是跳过 Service，直接给 Pod 配 NodePort 或 hostPort——Pod 重建后 IP 变了，所有调用方都要跟着改。从第一天就把 Service 加上，后面扩展成本最低。
+
+#### 检查清单：服务部署 YAML 自检
+
+| 检查项   | 通过标准                  |
+| -------- | ------------------------- |
+| 标签     | app/tier/env 齐全且一致   |
+| 副本     | 生产 ≥ 2，可容忍单点故障  |
+| 探针     | liveness + readiness 都有 |
+| 资源     | requests/limits 已配置    |
+| 配置     | 敏感信息走 Secret         |
+| 更新策略 | maxUnavailable 符合预期   |
+| 优雅退出 | 应用处理 SIGTERM          |
+| 回滚     | 镜像 tag 可追溯           |
+
+八项过完，一份 Deployment 才算"生产级"。
+
+#### 陷阱与正确做法
+
+**陷阱一：只配 liveness 不配 readiness。** 反面案例：应用启动要 30 秒，探针 5 秒后就开始重启，流量还打到没就绪的 Pod 上。正确做法：两个探针都配，readiness 管流量，liveness 管重启，路径用独立的健康检查接口。
+
+**陷阱二：配置写死在镜像里。** 反面案例：数据库地址和环境变量打进镜像，换环境就要重新构建。正确做法：ConfigMap/Secret 注入，镜像只包含代码和运行时。
+
+**陷阱三：直接改线上 Pod。** 反面案例：`kubectl exec` 进 Pod 改文件，Pod 一重建全部丢失，还和镜像不一致。正确做法：一切变更走 Deployment 镜像版本，配置走 ConfigMap，Pod 永远可重建。
+
+**陷阱四：镜像 tag 用 latest。** 反面案例：`image: myapp:latest`，无法追踪线上跑的是哪个版本，回滚也不知道回到哪。正确做法：用不可变 tag（`myapp:1.0.3` 或 git SHA），发布记录可追溯。
+
+**陷阱五：删除 Deployment 导致数据丢失的误解。** 反面案例：以为 Deployment 删了 Pod 会连带删数据，实际没有 PVC 的 Pod 数据本来就随 Pod 消失；有 PVC 时，删 Deployment 不删 PVC，数据还在。正确做法：先想清楚"无状态服务删了重来、有状态数据必须挂 PVC"，再决定删除动作。
+
+**陷阱六：探针路径和生产接口混用。** 反面案例：把业务接口当健康检查路径，流量一大探针超时，Pod 被反复标记不健康并重启，形成雪崩。正确做法：健康检查用独立的轻量接口，不查数据库、不依赖外部服务，只回答"进程能服务吗"。
+
+**陷阱七：忘记 `kubectl get events`。** 反面案例：Pod 一直 Pending，看 `kubectl get pods` 只有状态，不知道原因，只能干等。正确做法：`kubectl describe pod <name>` 的 Events 段会直接告诉你"节点资源不足""镜像拉取失败""PVC 未绑定"等真实原因——K8s 的排障入口永远是 Events，不是日志。
+
+### 进阶思考
+
+理解 Deployment 和 Service 后，Kubernetes 的下一层是"入口与状态"：Ingress 做域名路由和 TLS，PVC/StorageClass 管持久化存储，HPA 做自动扩缩容。这些是下篇的主题。
+
+在进入下篇之前，先把控制循环这个底层模型刻进脑子：API Server 是唯一事实来源，etcd 存数据，kubelet 在节点上执行，控制器负责调和。遇到"为什么没生效"，排查顺序永远是：先 `kubectl get` 看期望状态，再 `kubectl describe` 看事件，最后 `kubectl logs` 看应用输出。K8s 的问题几乎都能在这三步里定位，直接翻文档反而慢。
+
+还有一个值得现在就想清楚的问题：谁负责更新 YAML？早期团队用"运维手动 kubectl apply"，后来发现线上状态和 Git 仓库越差越远，没人知道集群里实际跑的是什么。答案是把 YAML 也纳入 Git 和 CI（GitOps），让集群状态由仓库驱动——这会在下篇的进阶部分展开。现在记住一条：任何对集群的手工修改，都应该能追溯到一次提交，否则它就是一笔无法审计的负债。
+
+最后总结中篇：Pod 是最小单元，Deployment 是工作负载，探针是健康协议，Service 是访问入口，ConfigMap/Secret 是配置边界。五个对象串起来，就是一个服务在 K8s 上的完整生命周期。下篇进入 Ingress、存储、HPA 和本地开发，把"单个服务"扩展成"完整集群"。
+
+如果只允许你带走一个概念，带走"声明式"：写 YAML 不是"告诉 K8s 怎么做"，而是"告诉 K8s 要什么"——控制器负责把现实收敛到声明。这个概念在接下来的 Ingress、PVC、HPA 里反复出现，也是你将来理解 ArgoCD、Terraform 等一切云原生工具的钥匙。中篇结束，下篇见。
+
+再补一个学习资源建议：K8s 官方文档的 Concepts 章节（特别是 Pod Lifecycle 和 Deployment）是必读，但不要一次读完——先读目录，挑"你现在要解决的问题"对应的章节，边用边读。K8s 的知识是"问题驱动的"：没有真实部署需求时读文档，很快就会忘；带着问题读，每个概念都会落地。
+
+最后补一段"声明式 vs 命令式"的对比：`kubectl run` 这类命令式操作适合临时调试，`kubectl apply -f` 这类声明式操作适合长期管理——前者"改了就完"，后者"改了可追溯"。生产环境的铁律是"所有变更走声明式 + Git"，命令式操作只留给调试。记住这个区别，你就不会在"为什么线上状态和仓库不一致"的问题上反复踩坑。
+
+再补一个"命名空间（Namespace）"的工程实践：环境（dev/staging/prod）用 Namespace 隔离，资源配额（ResourceQuota）按 Namespace 限制，权限（RBAC）按 Namespace 划分。Namespace 不是"文件夹"（K8s 没有文件夹），它是"隔离和治理的边界"——从第一天就把环境分 Namespace，比事后迁移省事得多。
+
+最后补一段"调试工具箱"：K8s 排障的五个命令按频率排列——`kubectl get`（看状态）、`kubectl describe`（看事件）、`kubectl logs`（看应用）、`kubectl exec`（进容器）、`kubectl port-forward`（本地调试）。再加两个高级工具：`kubectl debug`（临时调试容器）和 `kubectl top`（资源用量）。把这七个命令练成肌肉记忆，K8s 的问题就不可怕了——大部分时候，答案已经在 describe 的 Events 里等着你。
+
+再补一句"中篇的收尾"：Pod、Deployment、Service、探针、ConfigMap/Secret——五个对象你已经全部掌握，这意味着你能把"一个无状态服务"完整地跑在 K8s 上并保证它自愈。下篇的 Ingress、存储、HPA 是把"单服务"扩展成"完整系统"的下一步，但中篇的这五个对象，是你理解一切 K8s 配置的基石。基石稳了，往上盖楼就不慌。
+
+再补一段"动手练习"：今天就用 kind 或 k3d 起一个本地集群，部署一个 Deployment（2 副本）+ Service，然后做三个实验——`kubectl scale` 扩缩容、`kubectl rollout restart` 滚动更新、`kubectl delete pod` 看自动重建。三个实验做完，声明式的心智模型就长在你身上了——比读十遍文档都有效。
+
+再补一句"中篇的行动收尾"：把"一个服务在 K8s 上自愈"当作中篇的验收标准——它能做到，你就已经超过大多数"会写 YAML 但不懂为什么"的开发者了。下篇见。
+
+还有一个值得现在就想清楚的问题：谁负责更新 YAML？早期团队用"运维手动 kubectl apply"，后来发现线上状态和 Git 仓库越差越远，没人知道集群里实际跑的是什么。答案是把 YAML 也纳入 Git 和 CI（GitOps），让集群状态由仓库驱动——这会在下篇的进阶部分展开。现在记住一条：任何对集群的手工修改，都应该能追溯到一次提交，否则它就是一笔无法审计的负债。
+
+更底层值得研究的是控制循环（control loop）：API Server 存期望状态，控制器不断把实际状态收敛到期望状态。理解这个模型，你就能理解 K8s 几乎所有行为——为什么删了 Pod 会自动重建、为什么改 YAML 不等于立即生效、为什么"声明式"是这套系统的心脏。
+
+学习路径：用 `kind` 或 `k3d` 在本地起一个集群，部署一个"Deployment + Service"的完整示例，练习 `kubectl rollout status`、`kubectl describe` 和滚动更新回滚。配置能跑通之后，再去看官方文档的 Pod Lifecycle 章节，把探针和终止流程搞明白。
