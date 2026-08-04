@@ -28,14 +28,21 @@ export function AppearancePanel({ open, onClose }: AppearancePanelProps) {
     <AnimatePresence>
       {open && (
         <>
-          <div className="appearance-backdrop" onClick={onClose} aria-hidden="true" />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.15, ease: 'easeOut' } }}
+            className="appearance-backdrop"
+            onClick={onClose}
+            aria-hidden="true"
+          />
           <motion.div
             role="dialog"
             aria-label={t('title')}
             className="appearance-panel glass-panel"
             initial={{ opacity: 0, y: 10, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.97 }}
+            exit={{ opacity: 0, y: 8, scale: 0.98, transition: { duration: 0.15, ease: 'easeOut' } }}
             transition={{ type: 'spring', stiffness: 420, damping: 34 }}
           >
             <div className="appearance-panel-header">

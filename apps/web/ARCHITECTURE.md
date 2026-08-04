@@ -33,7 +33,7 @@ tests/
 `src/routes` 只放 TanStack Router 约定文件（由文件系统自动生成路由树）：
 
 - `__root.tsx`（根文档壳）
-- `{locale 布局}/...`（zh 无前缀、en 带 `/en` 前缀）
+- `{locale 布局}/...`（en 无前缀、zh 带 `/zh` 前缀）
 - `*.tsx`（页面路由）
 - `api/**`（Server Route，如 `/api/tts/{locale}/{slug}.mp3`）
 - `routeTree.gen.ts`（构建时自动生成）

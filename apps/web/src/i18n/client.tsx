@@ -94,6 +94,7 @@ export function Link({ href, locale, prefetch = true, ...props }: I18nLinkProps)
       search={search}
       hash={hash || undefined}
       preload={prefetch ? 'intent' : false}
+      activeProps={{ className: undefined }}
       {...props}
     />
   )

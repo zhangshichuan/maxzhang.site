@@ -2,7 +2,7 @@ import { createFileRoute, notFound } from '@tanstack/react-router'
 import { loadPostPageFn, PostPage } from '@/src/features/posts'
 import { NotFoundPage } from '@/src/shared/components'
 
-export const Route = createFileRoute('/_zh/posts/$slug')({
+export const Route = createFileRoute('/_en/posts/$slug')({
   loader: async ({ params, context }) => {
     try {
       return await loadPostPageFn({ data: { slug: params.slug, locale: context.locale } })

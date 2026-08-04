@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { getFeaturedPosts, HomePage } from '@/src/features/home'
+import { getFeaturedPosts } from '@/src/features/home'
+import { HomePage } from '@/src/features/home'
 
-export const Route = createFileRoute('/en/')({
+export const Route = createFileRoute('/zh/')({
   loader: ({ context }) => getFeaturedPosts(context.locale),
   head: () => ({
     meta: [{ title: 'Max Zhang' }, { name: 'description', content: 'Personal website of Max Zhang' }],

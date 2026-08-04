@@ -9,7 +9,7 @@ export type Locale = (typeof locales)[number]
 
 export const routing = {
   locales,
-  defaultLocale: 'zh' as Locale,
+  defaultLocale: 'en' as Locale,
   // 兼容旧配置语义：默认语言不使用前缀
   localePrefix: 'as-needed' as const,
 }

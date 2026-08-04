@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { AboutPage } from '@/src/features/about'
 
-export const Route = createFileRoute('/en/about')({
+export const Route = createFileRoute('/_en/about')({
   component: AboutPage,
   head: () => ({
     meta: [

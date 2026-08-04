@@ -6,7 +6,7 @@ import { SiteLayout } from '@/src/shared/components'
  *
  * 非默认语言带 /en 前缀：`/en`、`/en/about`、`/en/posts/...`。
  */
-export const Route = createFileRoute('/en')({
+export const Route = createFileRoute('/_en')({
   beforeLoad: () => ({ locale: 'en' as const }),
   component: SiteLayout,
   head: () => ({

@@ -9,57 +9,32 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as ZhRouteRouteImport } from './routes/_zh/route'
-import { Route as EnRouteRouteImport } from './routes/en/route'
-import { Route as ZhIndexRouteImport } from './routes/_zh/index'
-import { Route as ZhAboutRouteImport } from './routes/_zh/about'
-import { Route as ZhChatRouteImport } from './routes/_zh/chat'
-import { Route as ZhPostsRouteRouteImport } from './routes/_zh/posts/route'
-import { Route as ZhSearchRouteImport } from './routes/_zh/search'
-import { Route as EnIndexRouteImport } from './routes/en/index'
-import { Route as EnAboutRouteImport } from './routes/en/about'
-import { Route as EnChatRouteImport } from './routes/en/chat'
-import { Route as EnPostsRouteRouteImport } from './routes/en/posts/route'
-import { Route as EnSearchRouteImport } from './routes/en/search'
-import { Route as ZhPostsIndexRouteImport } from './routes/_zh/posts/index'
-import { Route as ZhPostsSlugRouteImport } from './routes/_zh/posts/$slug'
-import { Route as EnPostsIndexRouteImport } from './routes/en/posts/index'
-import { Route as EnPostsSlugRouteImport } from './routes/en/posts/$slug'
+import { Route as EnRouteRouteImport } from './routes/_en/route'
+import { Route as ZhRouteRouteImport } from './routes/zh/route'
+import { Route as EnIndexRouteImport } from './routes/_en/index'
+import { Route as EnAboutRouteImport } from './routes/_en/about'
+import { Route as EnChatRouteImport } from './routes/_en/chat'
+import { Route as EnPostsRouteRouteImport } from './routes/_en/posts/route'
+import { Route as EnSearchRouteImport } from './routes/_en/search'
+import { Route as ZhIndexRouteImport } from './routes/zh/index'
+import { Route as ZhAboutRouteImport } from './routes/zh/about'
+import { Route as ZhChatRouteImport } from './routes/zh/chat'
+import { Route as ZhPostsRouteRouteImport } from './routes/zh/posts/route'
+import { Route as ZhSearchRouteImport } from './routes/zh/search'
+import { Route as EnPostsIndexRouteImport } from './routes/_en/posts/index'
+import { Route as EnPostsSlugRouteImport } from './routes/_en/posts/$slug'
+import { Route as ZhPostsIndexRouteImport } from './routes/zh/posts/index'
+import { Route as ZhPostsSlugRouteImport } from './routes/zh/posts/$slug'
 import { Route as ApiTtsLocaleSlugRouteImport } from './routes/api/tts/$locale/$slug'
 
-const ZhRouteRoute = ZhRouteRouteImport.update({
-  id: '/_zh',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const EnRouteRoute = EnRouteRouteImport.update({
-  id: '/en',
-  path: '/en',
+  id: '/_en',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ZhIndexRoute = ZhIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ZhRouteRoute,
-} as any)
-const ZhAboutRoute = ZhAboutRouteImport.update({
-  id: '/about',
-  path: '/about',
-  getParentRoute: () => ZhRouteRoute,
-} as any)
-const ZhChatRoute = ZhChatRouteImport.update({
-  id: '/chat',
-  path: '/chat',
-  getParentRoute: () => ZhRouteRoute,
-} as any)
-const ZhPostsRouteRoute = ZhPostsRouteRouteImport.update({
-  id: '/posts',
-  path: '/posts',
-  getParentRoute: () => ZhRouteRoute,
-} as any)
-const ZhSearchRoute = ZhSearchRouteImport.update({
-  id: '/search',
-  path: '/search',
-  getParentRoute: () => ZhRouteRoute,
+const ZhRouteRoute = ZhRouteRouteImport.update({
+  id: '/zh',
+  path: '/zh',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const EnIndexRoute = EnIndexRouteImport.update({
   id: '/',
@@ -86,15 +61,30 @@ const EnSearchRoute = EnSearchRouteImport.update({
   path: '/search',
   getParentRoute: () => EnRouteRoute,
 } as any)
-const ZhPostsIndexRoute = ZhPostsIndexRouteImport.update({
+const ZhIndexRoute = ZhIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => ZhPostsRouteRoute,
+  getParentRoute: () => ZhRouteRoute,
 } as any)
-const ZhPostsSlugRoute = ZhPostsSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => ZhPostsRouteRoute,
+const ZhAboutRoute = ZhAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => ZhRouteRoute,
+} as any)
+const ZhChatRoute = ZhChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => ZhRouteRoute,
+} as any)
+const ZhPostsRouteRoute = ZhPostsRouteRouteImport.update({
+  id: '/posts',
+  path: '/posts',
+  getParentRoute: () => ZhRouteRoute,
+} as any)
+const ZhSearchRoute = ZhSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => ZhRouteRoute,
 } as any)
 const EnPostsIndexRoute = EnPostsIndexRouteImport.update({
   id: '/',
@@ -106,6 +96,16 @@ const EnPostsSlugRoute = EnPostsSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => EnPostsRouteRoute,
 } as any)
+const ZhPostsIndexRoute = ZhPostsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ZhPostsRouteRoute,
+} as any)
+const ZhPostsSlugRoute = ZhPostsSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ZhPostsRouteRoute,
+} as any)
 const ApiTtsLocaleSlugRoute = ApiTtsLocaleSlugRouteImport.update({
   id: '/api/tts/$locale/$slug',
   path: '/api/tts/$locale/$slug',
@@ -113,232 +113,232 @@ const ApiTtsLocaleSlugRoute = ApiTtsLocaleSlugRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof ZhIndexRoute
-  '/en': typeof EnRouteRouteWithChildren
-  '/posts': typeof ZhPostsRouteRouteWithChildren
-  '/en/posts': typeof EnPostsRouteRouteWithChildren
-  '/about': typeof ZhAboutRoute
-  '/chat': typeof ZhChatRoute
-  '/search': typeof ZhSearchRoute
-  '/en/about': typeof EnAboutRoute
-  '/en/chat': typeof EnChatRoute
-  '/en/search': typeof EnSearchRoute
-  '/en/': typeof EnIndexRoute
-  '/posts/$slug': typeof ZhPostsSlugRoute
-  '/en/posts/$slug': typeof EnPostsSlugRoute
-  '/posts/': typeof ZhPostsIndexRoute
-  '/en/posts/': typeof EnPostsIndexRoute
+  '/': typeof EnIndexRoute
+  '/zh': typeof ZhRouteRouteWithChildren
+  '/posts': typeof EnPostsRouteRouteWithChildren
+  '/zh/posts': typeof ZhPostsRouteRouteWithChildren
+  '/about': typeof EnAboutRoute
+  '/chat': typeof EnChatRoute
+  '/search': typeof EnSearchRoute
+  '/zh/about': typeof ZhAboutRoute
+  '/zh/chat': typeof ZhChatRoute
+  '/zh/search': typeof ZhSearchRoute
+  '/zh/': typeof ZhIndexRoute
+  '/posts/$slug': typeof EnPostsSlugRoute
+  '/zh/posts/$slug': typeof ZhPostsSlugRoute
+  '/posts/': typeof EnPostsIndexRoute
+  '/zh/posts/': typeof ZhPostsIndexRoute
   '/api/tts/$locale/$slug': typeof ApiTtsLocaleSlugRoute
 }
 export interface FileRoutesByTo {
-  '/about': typeof ZhAboutRoute
-  '/chat': typeof ZhChatRoute
-  '/search': typeof ZhSearchRoute
-  '/en/about': typeof EnAboutRoute
-  '/en/chat': typeof EnChatRoute
-  '/en/search': typeof EnSearchRoute
-  '/': typeof ZhIndexRoute
-  '/en': typeof EnIndexRoute
-  '/posts/$slug': typeof ZhPostsSlugRoute
-  '/en/posts/$slug': typeof EnPostsSlugRoute
-  '/posts': typeof ZhPostsIndexRoute
-  '/en/posts': typeof EnPostsIndexRoute
+  '/about': typeof EnAboutRoute
+  '/chat': typeof EnChatRoute
+  '/search': typeof EnSearchRoute
+  '/zh/about': typeof ZhAboutRoute
+  '/zh/chat': typeof ZhChatRoute
+  '/zh/search': typeof ZhSearchRoute
+  '/': typeof EnIndexRoute
+  '/zh': typeof ZhIndexRoute
+  '/posts/$slug': typeof EnPostsSlugRoute
+  '/zh/posts/$slug': typeof ZhPostsSlugRoute
+  '/posts': typeof EnPostsIndexRoute
+  '/zh/posts': typeof ZhPostsIndexRoute
   '/api/tts/$locale/$slug': typeof ApiTtsLocaleSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_zh': typeof ZhRouteRouteWithChildren
-  '/en': typeof EnRouteRouteWithChildren
-  '/_zh/posts': typeof ZhPostsRouteRouteWithChildren
-  '/en/posts': typeof EnPostsRouteRouteWithChildren
-  '/_zh/about': typeof ZhAboutRoute
-  '/_zh/chat': typeof ZhChatRoute
-  '/_zh/search': typeof ZhSearchRoute
-  '/en/about': typeof EnAboutRoute
-  '/en/chat': typeof EnChatRoute
-  '/en/search': typeof EnSearchRoute
-  '/_zh/': typeof ZhIndexRoute
-  '/en/': typeof EnIndexRoute
-  '/_zh/posts/$slug': typeof ZhPostsSlugRoute
-  '/en/posts/$slug': typeof EnPostsSlugRoute
-  '/_zh/posts/': typeof ZhPostsIndexRoute
-  '/en/posts/': typeof EnPostsIndexRoute
+  '/_en': typeof EnRouteRouteWithChildren
+  '/zh': typeof ZhRouteRouteWithChildren
+  '/_en/posts': typeof EnPostsRouteRouteWithChildren
+  '/zh/posts': typeof ZhPostsRouteRouteWithChildren
+  '/_en/about': typeof EnAboutRoute
+  '/_en/chat': typeof EnChatRoute
+  '/_en/search': typeof EnSearchRoute
+  '/zh/about': typeof ZhAboutRoute
+  '/zh/chat': typeof ZhChatRoute
+  '/zh/search': typeof ZhSearchRoute
+  '/_en/': typeof EnIndexRoute
+  '/zh/': typeof ZhIndexRoute
+  '/_en/posts/$slug': typeof EnPostsSlugRoute
+  '/zh/posts/$slug': typeof ZhPostsSlugRoute
+  '/_en/posts/': typeof EnPostsIndexRoute
+  '/zh/posts/': typeof ZhPostsIndexRoute
   '/api/tts/$locale/$slug': typeof ApiTtsLocaleSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/en'
+    | '/zh'
     | '/posts'
-    | '/en/posts'
+    | '/zh/posts'
     | '/about'
     | '/chat'
     | '/search'
-    | '/en/about'
-    | '/en/chat'
-    | '/en/search'
-    | '/en/'
+    | '/zh/about'
+    | '/zh/chat'
+    | '/zh/search'
+    | '/zh/'
     | '/posts/$slug'
-    | '/en/posts/$slug'
+    | '/zh/posts/$slug'
     | '/posts/'
-    | '/en/posts/'
+    | '/zh/posts/'
     | '/api/tts/$locale/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/about'
     | '/chat'
     | '/search'
-    | '/en/about'
-    | '/en/chat'
-    | '/en/search'
+    | '/zh/about'
+    | '/zh/chat'
+    | '/zh/search'
     | '/'
-    | '/en'
+    | '/zh'
     | '/posts/$slug'
-    | '/en/posts/$slug'
+    | '/zh/posts/$slug'
     | '/posts'
-    | '/en/posts'
+    | '/zh/posts'
     | '/api/tts/$locale/$slug'
   id:
     | '__root__'
-    | '/_zh'
-    | '/en'
-    | '/_zh/posts'
-    | '/en/posts'
-    | '/_zh/about'
-    | '/_zh/chat'
-    | '/_zh/search'
-    | '/en/about'
-    | '/en/chat'
-    | '/en/search'
-    | '/_zh/'
-    | '/en/'
-    | '/_zh/posts/$slug'
-    | '/en/posts/$slug'
-    | '/_zh/posts/'
-    | '/en/posts/'
+    | '/_en'
+    | '/zh'
+    | '/_en/posts'
+    | '/zh/posts'
+    | '/_en/about'
+    | '/_en/chat'
+    | '/_en/search'
+    | '/zh/about'
+    | '/zh/chat'
+    | '/zh/search'
+    | '/_en/'
+    | '/zh/'
+    | '/_en/posts/$slug'
+    | '/zh/posts/$slug'
+    | '/_en/posts/'
+    | '/zh/posts/'
     | '/api/tts/$locale/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  ZhRouteRoute: typeof ZhRouteRouteWithChildren
   EnRouteRoute: typeof EnRouteRouteWithChildren
+  ZhRouteRoute: typeof ZhRouteRouteWithChildren
   ApiTtsLocaleSlugRoute: typeof ApiTtsLocaleSlugRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_zh': {
-      id: '/_zh'
+    '/_en': {
+      id: '/_en'
       path: ''
       fullPath: '/'
-      preLoaderRoute: typeof ZhRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/en': {
-      id: '/en'
-      path: '/en'
-      fullPath: '/en'
       preLoaderRoute: typeof EnRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_zh/': {
-      id: '/_zh/'
+    '/zh': {
+      id: '/zh'
+      path: '/zh'
+      fullPath: '/zh'
+      preLoaderRoute: typeof ZhRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_en/': {
+      id: '/_en/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof ZhIndexRouteImport
-      parentRoute: typeof ZhRouteRoute
-    }
-    '/_zh/about': {
-      id: '/_zh/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof ZhAboutRouteImport
-      parentRoute: typeof ZhRouteRoute
-    }
-    '/_zh/chat': {
-      id: '/_zh/chat'
-      path: '/chat'
-      fullPath: '/chat'
-      preLoaderRoute: typeof ZhChatRouteImport
-      parentRoute: typeof ZhRouteRoute
-    }
-    '/_zh/posts': {
-      id: '/_zh/posts'
-      path: '/posts'
-      fullPath: '/posts'
-      preLoaderRoute: typeof ZhPostsRouteRouteImport
-      parentRoute: typeof ZhRouteRoute
-    }
-    '/_zh/search': {
-      id: '/_zh/search'
-      path: '/search'
-      fullPath: '/search'
-      preLoaderRoute: typeof ZhSearchRouteImport
-      parentRoute: typeof ZhRouteRoute
-    }
-    '/en/': {
-      id: '/en/'
-      path: '/'
-      fullPath: '/en/'
       preLoaderRoute: typeof EnIndexRouteImport
       parentRoute: typeof EnRouteRoute
     }
-    '/en/about': {
-      id: '/en/about'
+    '/_en/about': {
+      id: '/_en/about'
       path: '/about'
-      fullPath: '/en/about'
+      fullPath: '/about'
       preLoaderRoute: typeof EnAboutRouteImport
       parentRoute: typeof EnRouteRoute
     }
-    '/en/chat': {
-      id: '/en/chat'
+    '/_en/chat': {
+      id: '/_en/chat'
       path: '/chat'
-      fullPath: '/en/chat'
+      fullPath: '/chat'
       preLoaderRoute: typeof EnChatRouteImport
       parentRoute: typeof EnRouteRoute
     }
-    '/en/posts': {
-      id: '/en/posts'
+    '/_en/posts': {
+      id: '/_en/posts'
       path: '/posts'
-      fullPath: '/en/posts'
+      fullPath: '/posts'
       preLoaderRoute: typeof EnPostsRouteRouteImport
       parentRoute: typeof EnRouteRoute
     }
-    '/en/search': {
-      id: '/en/search'
+    '/_en/search': {
+      id: '/_en/search'
       path: '/search'
-      fullPath: '/en/search'
+      fullPath: '/search'
       preLoaderRoute: typeof EnSearchRouteImport
       parentRoute: typeof EnRouteRoute
     }
-    '/_zh/posts/': {
-      id: '/_zh/posts/'
+    '/zh/': {
+      id: '/zh/'
+      path: '/'
+      fullPath: '/zh/'
+      preLoaderRoute: typeof ZhIndexRouteImport
+      parentRoute: typeof ZhRouteRoute
+    }
+    '/zh/about': {
+      id: '/zh/about'
+      path: '/about'
+      fullPath: '/zh/about'
+      preLoaderRoute: typeof ZhAboutRouteImport
+      parentRoute: typeof ZhRouteRoute
+    }
+    '/zh/chat': {
+      id: '/zh/chat'
+      path: '/chat'
+      fullPath: '/zh/chat'
+      preLoaderRoute: typeof ZhChatRouteImport
+      parentRoute: typeof ZhRouteRoute
+    }
+    '/zh/posts': {
+      id: '/zh/posts'
+      path: '/posts'
+      fullPath: '/zh/posts'
+      preLoaderRoute: typeof ZhPostsRouteRouteImport
+      parentRoute: typeof ZhRouteRoute
+    }
+    '/zh/search': {
+      id: '/zh/search'
+      path: '/search'
+      fullPath: '/zh/search'
+      preLoaderRoute: typeof ZhSearchRouteImport
+      parentRoute: typeof ZhRouteRoute
+    }
+    '/_en/posts/': {
+      id: '/_en/posts/'
       path: '/'
       fullPath: '/posts/'
-      preLoaderRoute: typeof ZhPostsIndexRouteImport
-      parentRoute: typeof ZhPostsRouteRoute
-    }
-    '/_zh/posts/$slug': {
-      id: '/_zh/posts/$slug'
-      path: '/$slug'
-      fullPath: '/posts/$slug'
-      preLoaderRoute: typeof ZhPostsSlugRouteImport
-      parentRoute: typeof ZhPostsRouteRoute
-    }
-    '/en/posts/': {
-      id: '/en/posts/'
-      path: '/'
-      fullPath: '/en/posts/'
       preLoaderRoute: typeof EnPostsIndexRouteImport
       parentRoute: typeof EnPostsRouteRoute
     }
-    '/en/posts/$slug': {
-      id: '/en/posts/$slug'
+    '/_en/posts/$slug': {
+      id: '/_en/posts/$slug'
       path: '/$slug'
-      fullPath: '/en/posts/$slug'
+      fullPath: '/posts/$slug'
       preLoaderRoute: typeof EnPostsSlugRouteImport
       parentRoute: typeof EnPostsRouteRoute
+    }
+    '/zh/posts/': {
+      id: '/zh/posts/'
+      path: '/'
+      fullPath: '/zh/posts/'
+      preLoaderRoute: typeof ZhPostsIndexRouteImport
+      parentRoute: typeof ZhPostsRouteRoute
+    }
+    '/zh/posts/$slug': {
+      id: '/zh/posts/$slug'
+      path: '/$slug'
+      fullPath: '/zh/posts/$slug'
+      preLoaderRoute: typeof ZhPostsSlugRouteImport
+      parentRoute: typeof ZhPostsRouteRoute
     }
     '/api/tts/$locale/$slug': {
       id: '/api/tts/$locale/$slug'
@@ -350,36 +350,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface ZhPostsRouteRouteChildren {
-  ZhPostsSlugRoute: typeof ZhPostsSlugRoute
-  ZhPostsIndexRoute: typeof ZhPostsIndexRoute
-}
-
-const ZhPostsRouteRouteChildren: ZhPostsRouteRouteChildren = {
-  ZhPostsSlugRoute: ZhPostsSlugRoute,
-  ZhPostsIndexRoute: ZhPostsIndexRoute,
-}
-
-const ZhPostsRouteRouteWithChildren = ZhPostsRouteRoute._addFileChildren(ZhPostsRouteRouteChildren)
-
-interface ZhRouteRouteChildren {
-  ZhPostsRouteRoute: typeof ZhPostsRouteRouteWithChildren
-  ZhAboutRoute: typeof ZhAboutRoute
-  ZhChatRoute: typeof ZhChatRoute
-  ZhSearchRoute: typeof ZhSearchRoute
-  ZhIndexRoute: typeof ZhIndexRoute
-}
-
-const ZhRouteRouteChildren: ZhRouteRouteChildren = {
-  ZhPostsRouteRoute: ZhPostsRouteRouteWithChildren,
-  ZhAboutRoute: ZhAboutRoute,
-  ZhChatRoute: ZhChatRoute,
-  ZhSearchRoute: ZhSearchRoute,
-  ZhIndexRoute: ZhIndexRoute,
-}
-
-const ZhRouteRouteWithChildren = ZhRouteRoute._addFileChildren(ZhRouteRouteChildren)
-
 interface EnPostsRouteRouteChildren {
   EnPostsSlugRoute: typeof EnPostsSlugRoute
   EnPostsIndexRoute: typeof EnPostsIndexRoute
@@ -390,7 +360,9 @@ const EnPostsRouteRouteChildren: EnPostsRouteRouteChildren = {
   EnPostsIndexRoute: EnPostsIndexRoute,
 }
 
-const EnPostsRouteRouteWithChildren = EnPostsRouteRoute._addFileChildren(EnPostsRouteRouteChildren)
+const EnPostsRouteRouteWithChildren = EnPostsRouteRoute._addFileChildren(
+  EnPostsRouteRouteChildren,
+)
 
 interface EnRouteRouteChildren {
   EnPostsRouteRoute: typeof EnPostsRouteRouteWithChildren
@@ -408,14 +380,50 @@ const EnRouteRouteChildren: EnRouteRouteChildren = {
   EnIndexRoute: EnIndexRoute,
 }
 
-const EnRouteRouteWithChildren = EnRouteRoute._addFileChildren(EnRouteRouteChildren)
+const EnRouteRouteWithChildren =
+  EnRouteRoute._addFileChildren(EnRouteRouteChildren)
+
+interface ZhPostsRouteRouteChildren {
+  ZhPostsSlugRoute: typeof ZhPostsSlugRoute
+  ZhPostsIndexRoute: typeof ZhPostsIndexRoute
+}
+
+const ZhPostsRouteRouteChildren: ZhPostsRouteRouteChildren = {
+  ZhPostsSlugRoute: ZhPostsSlugRoute,
+  ZhPostsIndexRoute: ZhPostsIndexRoute,
+}
+
+const ZhPostsRouteRouteWithChildren = ZhPostsRouteRoute._addFileChildren(
+  ZhPostsRouteRouteChildren,
+)
+
+interface ZhRouteRouteChildren {
+  ZhPostsRouteRoute: typeof ZhPostsRouteRouteWithChildren
+  ZhAboutRoute: typeof ZhAboutRoute
+  ZhChatRoute: typeof ZhChatRoute
+  ZhSearchRoute: typeof ZhSearchRoute
+  ZhIndexRoute: typeof ZhIndexRoute
+}
+
+const ZhRouteRouteChildren: ZhRouteRouteChildren = {
+  ZhPostsRouteRoute: ZhPostsRouteRouteWithChildren,
+  ZhAboutRoute: ZhAboutRoute,
+  ZhChatRoute: ZhChatRoute,
+  ZhSearchRoute: ZhSearchRoute,
+  ZhIndexRoute: ZhIndexRoute,
+}
+
+const ZhRouteRouteWithChildren =
+  ZhRouteRoute._addFileChildren(ZhRouteRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  ZhRouteRoute: ZhRouteRouteWithChildren,
   EnRouteRoute: EnRouteRouteWithChildren,
+  ZhRouteRoute: ZhRouteRouteWithChildren,
   ApiTtsLocaleSlugRoute: ApiTtsLocaleSlugRoute,
 }
-export const routeTree = rootRouteImport._addFileChildren(rootRouteChildren)._addFileTypes<FileRouteTypes>()
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
 import type { startInstance } from './start.ts'

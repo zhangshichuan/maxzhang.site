@@ -10,7 +10,7 @@ Max 的个人技术网站：中英双语技术文章、评论与阅读统计、�
 - **样式**：Tailwind CSS 4
 - **数据**：Prisma + SQLite（Better-SQLite3 驱动适配器）
 - **内容**：MDX 构建期编译，中英各 28 篇；支持 remark-gfm 与 Mermaid 图表
-- **国际化**：自建薄 i18n 层，zh 无 URL 前缀，en 走 `/en` 前缀
+- **国际化**：自建薄 i18n 层，en 无 URL 前缀，zh 走 `/zh` 前缀；无前缀首页按浏览器语言/本地偏好自动跳转
 - **TTS**：`apps/services/tts`（FastAPI + edge-tts，依赖用 uv 管理），按内容哈希缓存、流式返回 MP3
 - **部署**：Docker Compose 双服务编排，GitHub Actions 在 push `main` 时自动构建部署
 
@@ -21,7 +21,7 @@ apps/
   web/               # TanStack Start 网站（路由/功能域/共享代码/服务端基础设施）
     articles/        # MDX 文章（zh/en 各 28 篇）
     messages/        # i18n 翻译文件（zh.json / en.json）
-    src/routes/      # 文件路由（zh 无前缀，en 带 /en）
+    src/routes/      # 文件路由（en 无前缀，zh 带 /zh）
     src/features/    # 业务功能域（components/queries/services/server-functions/model）
     src/shared/      # 跨业务复用组件与工具
     src/server/      # Prisma 客户端等服务端基础设施

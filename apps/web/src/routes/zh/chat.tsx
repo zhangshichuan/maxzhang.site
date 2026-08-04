@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { ChatInterface } from '@/src/features/chat'
 
-export const Route = createFileRoute('/_zh/chat')({
+export const Route = createFileRoute('/zh/chat')({
   component: ChatComponent,
   head: () => ({
     meta: [{ title: '聊天 - Max Zhang' }],

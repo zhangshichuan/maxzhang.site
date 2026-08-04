@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { getAllPostsWithViewsFn, SearchClient } from '@/src/features/posts'
 
-export const Route = createFileRoute('/_zh/search')({
+export const Route = createFileRoute('/_en/search')({
   validateSearch: (search: Record<string, unknown>) => ({
     q: typeof search.q === 'string' ? search.q : '',
     tag: typeof search.tag === 'string' ? search.tag : '',
@@ -9,7 +9,10 @@ export const Route = createFileRoute('/_zh/search')({
   }),
   loader: ({ context }) => getAllPostsWithViewsFn({ data: { locale: context.locale } }),
   head: () => ({
-    meta: [{ title: '检索文章 - Max Zhang' }, { name: 'description', content: '按关键词、标签或分类检索文章' }],
+    meta: [
+      { title: 'Search Articles - Max Zhang' },
+      { name: 'description', content: 'Search articles by keyword, tag, or category.' },
+    ],
   }),
   component: SearchComponent,
 })

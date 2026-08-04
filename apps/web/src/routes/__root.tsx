@@ -3,6 +3,7 @@ import { HeadContent, Scripts, createRootRoute, useRouterState } from '@tanstack
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MotionConfig } from 'framer-motion'
 import * as React from 'react'
+import { LOCALE_INLINE_SCRIPT } from '@/i18n/locale-preference'
 import { getLocaleFromPathname } from '@/i18n/routing'
 import { APPEARANCE_INLINE_SCRIPT, AppearanceProvider, BackgroundWallpaper } from '@/src/shared/theme'
 import '@/src/globals.css'
@@ -43,6 +44,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         {/* 水合前应用深浅色与玻璃强度，避免 FOUC */}
         <script dangerouslySetInnerHTML={{ __html: APPEARANCE_INLINE_SCRIPT }} />
+        {/* 水合前按浏览器语言/本地偏好跳转默认语言，避免闪烁 */}
+        <script dangerouslySetInnerHTML={{ __html: LOCALE_INLINE_SCRIPT }} />
         <HeadContent />
       </head>
       <body>

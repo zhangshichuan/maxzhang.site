@@ -2,6 +2,7 @@ import { useRouter, useRouterState } from '@tanstack/react-router'
 import { BookOpen, Home, Languages, Search, SlidersHorizontal, User } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useLocale, useTranslations } from '@/src/i18n/client'
+import { saveLocalePreference } from '@/i18n/locale-preference'
 import { localizePath, stripLocale } from '@/i18n/routing'
 import { cn } from '@/src/shared/utils'
 import { AppearancePanel } from './appearance-panel'
@@ -15,6 +16,7 @@ export function Navbar() {
 
   const toggleLanguage = () => {
     const nextLocale = locale === 'zh' ? 'en' : 'zh'
+    saveLocalePreference(nextLocale)
     router.navigate({
       href: localizePath(stripLocale(pathname), nextLocale),
       replace: true,
@@ -41,7 +43,7 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
-          <Link href="/search" className="nav-icon-btn" aria-label={t('search')}>
+          <Link href="/search" className={cn('nav-icon-btn', isActive('/search') && 'active')} aria-label={t('search')}>
             <Search className="size-4" />
           </Link>
           <button

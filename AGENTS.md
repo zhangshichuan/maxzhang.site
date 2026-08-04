@@ -5,7 +5,7 @@
 This is a pnpm monorepo:
 
 - `apps/web/` — the TanStack Start (Vite + Nitro) website:
-  - `src/routes/` — file-based routes (zh has no URL prefix, en lives under `/en`)
+  - `src/routes/` — file-based routes (en has no URL prefix, zh lives under `/zh`)
   - `src/features/<domain>/` — business code split into `components/`, `queries/`, `services/`, `server-functions/`, `model/`
   - `src/shared/` — cross-domain utilities and components
   - `src/server/` — server infrastructure (Prisma client)
