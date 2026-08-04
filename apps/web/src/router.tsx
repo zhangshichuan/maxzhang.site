@@ -1,5 +1,6 @@
 import { createRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
+import { NotFoundPage } from '@/src/shared/components'
 
 /**
  * TanStack Router 实例
@@ -12,6 +13,7 @@ export function getRouter() {
     routeTree,
     defaultPreload: 'intent',
     scrollRestoration: true,
+    defaultNotFoundComponent: NotFoundPage,
   })
   return router
 }

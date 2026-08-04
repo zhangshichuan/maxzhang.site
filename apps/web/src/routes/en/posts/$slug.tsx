@@ -1,5 +1,6 @@
 import { createFileRoute, notFound } from '@tanstack/react-router'
 import { loadPostPageFn, PostPage } from '@/src/features/posts'
+import { NotFoundPage } from '@/src/shared/components'
 
 export const Route = createFileRoute('/en/posts/$slug')({
   loader: async ({ params, context }) => {
@@ -17,9 +18,7 @@ export const Route = createFileRoute('/en/posts/$slug')({
     ],
   }),
   component: PostComponent,
-  notFoundComponent: () => (
-    <div style={{ padding: '80px 20px', textAlign: 'center', color: 'rgba(255,255,255,.35)' }}>Post not found</div>
-  ),
+  notFoundComponent: NotFoundPage,
 })
 
 function PostComponent() {

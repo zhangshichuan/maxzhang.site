@@ -39,6 +39,11 @@ export function PostMdx({ locale, slug }: PostMdxProps) {
             {children}
           </code>
         ),
+        table: (props: React.ComponentPropsWithoutRef<'table'>) => (
+          <div className="table-scroll">
+            <table {...props} />
+          </div>
+        ),
       }}
     />
   )

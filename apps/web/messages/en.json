@@ -13,6 +13,11 @@
     },
     "footer": {
       "builtBy": "Built by <name>Max Zhang</name>. © {year} All rights reserved."
+    },
+    "notFound": {
+      "title": "Page Not Found",
+      "description": "The page you're looking for may have moved or been removed.",
+      "backHome": "Back to Home"
     }
   },
   "Comment": {
