@@ -68,13 +68,12 @@ export function SearchClient({ posts, initialSearch }: SearchClientProps) {
   const hasFilters = Boolean(query || selectedTag || selectedCategory)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-      <div className="sec-head">
-        <h1 className="bracket">[Search]</h1>
-        <div className="line"></div>
+    <div className="flex flex-col gap-8">
+      <div>
+        <h1 className="page-title">{t('title')}</h1>
       </div>
 
-      <div style={{ position: 'relative' }}>
+      <div className="search-field-wrap">
         <Search
           style={{
             position: 'absolute',
@@ -83,7 +82,7 @@ export function SearchClient({ posts, initialSearch }: SearchClientProps) {
             transform: 'translateY(-50%)',
             width: 16,
             height: 16,
-            color: 'rgba(255,255,255,.2)',
+            color: 'var(--label-tertiary)',
           }}
         />
         <input
@@ -91,24 +90,11 @@ export function SearchClient({ posts, initialSearch }: SearchClientProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t('placeholder')}
-          className="glitch-input"
+          className="search-field"
           style={{ paddingLeft: 44 }}
         />
         {query && (
-          <button
-            onClick={() => setQuery('')}
-            style={{
-              position: 'absolute',
-              right: 12,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 4,
-              color: 'rgba(255,255,255,.4)',
-            }}
-          >
+          <button onClick={() => setQuery('')} className="search-clear" aria-label={t('clearAll')}>
             <X style={{ width: 14, height: 14 }} />
           </button>
         )}
@@ -116,15 +102,15 @@ export function SearchClient({ posts, initialSearch }: SearchClientProps) {
 
       <div className="search-layout">
         <div>
-          <div className="page-title" style={{ marginBottom: 12 }}>
+          <div className="sidebar-title" style={{ marginBottom: 10 }}>
             {t('category')}
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          <div className="chip-row">
             {allCategories.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory((prev) => (prev === category ? '' : category))}
-                className={`glitch-filter-btn ${selectedCategory === category ? 'active' : ''}`}
+                className={`filter-chip ${selectedCategory === category ? 'active' : ''}`}
               >
                 {category}
               </button>
@@ -132,15 +118,15 @@ export function SearchClient({ posts, initialSearch }: SearchClientProps) {
           </div>
         </div>
         <div>
-          <div className="page-title" style={{ marginBottom: 12 }}>
+          <div className="sidebar-title" style={{ marginBottom: 10 }}>
             {t('tag')}
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          <div className="chip-row">
             {allTags.map((tag) => (
               <button
                 key={tag}
                 onClick={() => setSelectedTag((prev) => (prev === tag ? '' : tag))}
-                className={`glitch-filter-btn ${selectedTag === tag ? 'active' : ''}`}
+                className={`filter-chip ${selectedTag === tag ? 'active' : ''}`}
               >
                 {tag}
               </button>
@@ -150,52 +136,21 @@ export function SearchClient({ posts, initialSearch }: SearchClientProps) {
       </div>
 
       {hasFilters && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            borderTop: '1px solid rgba(255,255,255,.05)',
-            paddingTop: 16,
-          }}
-        >
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,.3)' }}>{t('currentFilter')}:</span>
+        <div className="flex flex-wrap items-center gap-2 border-t pt-4" style={{ borderColor: 'var(--separator)' }}>
+          <span style={{ fontSize: 12, color: 'var(--label-secondary)' }}>{t('currentFilter')}:</span>
           {selectedCategory && (
-            <span
-              style={{
-                fontSize: 10,
-                color: 'var(--cyan)',
-                border: '1px solid rgba(0,229,255,.2)',
-                padding: '3px 10px',
-                textTransform: 'uppercase',
-              }}
-            >
+            <span className="chip chip-accent">
               {t('category')}: {selectedCategory}
             </span>
           )}
           {selectedTag && (
-            <span
-              style={{
-                fontSize: 10,
-                color: 'var(--cyan)',
-                border: '1px solid rgba(0,229,255,.2)',
-                padding: '3px 10px',
-                textTransform: 'uppercase',
-              }}
-            >
+            <span className="chip chip-accent">
               {t('tag')}: {selectedTag}
             </span>
           )}
           <button
             onClick={clearFilters}
-            style={{
-              fontSize: 11,
-              color: 'rgba(255,255,255,.3)',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              textDecoration: 'underline',
-            }}
+            className="cursor-pointer border-none bg-transparent text-sm text-primary underline"
           >
             {t('clearAll')}
           </button>
@@ -203,29 +158,23 @@ export function SearchClient({ posts, initialSearch }: SearchClientProps) {
       )}
 
       {hasFilters && (
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)' }}>{t('found', { count: filteredPosts.length })}</div>
+        <div style={{ fontSize: 13, color: 'var(--label-secondary)' }}>
+          {t('found', { count: filteredPosts.length })}
+        </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div className="search-results">
         {filteredPosts.map((post, idx) => (
           <PostItem key={post.slug} post={post} idx={idx} />
         ))}
 
         {hasFilters && filteredPosts.length === 0 && (
           <div className="empty-state">
-            <Search style={{ width: 32, height: 32, margin: '0 auto 16px', color: 'rgba(255,255,255,.05)' }} />
+            <Search style={{ width: 32, height: 32, margin: '0 auto 16px', color: 'var(--label-tertiary)' }} />
             <p>{t('noResults')}</p>
             <button
               onClick={clearFilters}
-              style={{
-                marginTop: 16,
-                fontSize: 12,
-                color: 'var(--cyan)',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                textDecoration: 'underline',
-              }}
+              className="mt-4 cursor-pointer border-none bg-transparent text-sm text-primary underline"
             >
               {t('clearFilters')}
             </button>
@@ -234,7 +183,7 @@ export function SearchClient({ posts, initialSearch }: SearchClientProps) {
 
         {!hasFilters && (
           <div className="empty-state">
-            <Search style={{ width: 32, height: 32, margin: '0 auto 16px', color: 'rgba(255,255,255,.05)' }} />
+            <Search style={{ width: 32, height: 32, margin: '0 auto 16px', color: 'var(--label-tertiary)' }} />
             <p>{t('startSearch')}</p>
           </div>
         )}

@@ -7,6 +7,7 @@
 'use client'
 
 import { cn } from '@/src/shared/utils'
+import { useTranslations } from '@/src/i18n/client'
 import { Pause, SkipBack, SkipForward, Volume2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -17,6 +18,7 @@ interface AudioPlayerProps {
 }
 
 export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
+  const t = useTranslations('AudioPlayer')
   const [isPlaying, setIsPlaying] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -124,18 +126,8 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
   }
 
   return (
-    <div className={cn('inline-flex flex-wrap items-center gap-2 font-sans', className)}>
-      <button
-        onClick={togglePlay}
-        disabled={isLoading}
-        className={cn(
-          'inline-flex cursor-pointer items-center gap-1.5 rounded-sm border border-border/40 px-3 py-1.5 text-sm font-medium tracking-wide transition-all',
-          isLoading && 'cursor-wait opacity-70',
-          isPlaying
-            ? 'border-primary/30 bg-primary/10 text-primary'
-            : 'bg-card text-muted-foreground hover:border-primary/20 hover:text-primary',
-        )}
-      >
+    <div className={cn('audio-player', className)}>
+      <button onClick={togglePlay} disabled={isLoading} className={cn('audio-btn', isPlaying && 'playing')}>
         {isLoading ? (
           <span className="size-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
         ) : isPlaying ? (
@@ -143,12 +135,12 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
         ) : (
           <Volume2 className="size-4" />
         )}
-        <span className="hidden sm:inline">{isLoading ? '加载中' : isPlaying ? '暂停' : '收听'}</span>
+        <span className="hidden sm:inline">{isLoading ? t('loading') : isPlaying ? t('pause') : t('listen')}</span>
       </button>
 
       {duration > 0 && (
-        <div className="inline-flex items-center gap-2">
-          <span className="font-mono text-xs text-muted-foreground tabular-nums">{formatTime(currentTime)}</span>
+        <div className="audio-progress">
+          <span>{formatTime(currentTime)}</span>
           <input
             type="range"
             min={0}
@@ -159,25 +151,17 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
               setCurrentTime(t)
               if (audioRef.current) audioRef.current.currentTime = t
             }}
-            className="h-1 w-20 cursor-pointer appearance-none rounded-full bg-border [&::-webkit-slider-thumb]:size-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
+            aria-label={t('seek')}
           />
-          <span className="font-mono text-xs text-muted-foreground tabular-nums">{formatTime(duration)}</span>
+          <span>{formatTime(duration)}</span>
         </div>
       )}
 
-      <div className="hidden items-center gap-0.5 sm:inline-flex">
-        <button
-          onClick={() => skip(-10)}
-          className="rounded-sm p-1 text-muted-foreground transition-colors hover:text-foreground"
-          title="后退10秒"
-        >
+      <div className="hidden items-center gap-1 sm:inline-flex">
+        <button onClick={() => skip(-10)} className="audio-btn" title={t('back10')} aria-label={t('back10')}>
           <SkipBack className="size-3.5" />
         </button>
-        <button
-          onClick={() => skip(10)}
-          className="rounded-sm p-1 text-muted-foreground transition-colors hover:text-foreground"
-          title="前进10秒"
-        >
+        <button onClick={() => skip(10)} className="audio-btn" title={t('forward10')} aria-label={t('forward10')}>
           <SkipForward className="size-3.5" />
         </button>
       </div>
@@ -185,7 +169,8 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
       <select
         value={rate}
         onChange={(e) => handleRateChange(parseFloat(e.target.value))}
-        className="rounded-sm border border-border/40 bg-card p-1 text-[10px] text-muted-foreground outline-none"
+        className="audio-rate"
+        aria-label={t('rate')}
       >
         <option value={0.75}>0.75x</option>
         <option value={1}>1x</option>

@@ -1,39 +1,28 @@
 import type { PostSummaryWithViews } from '@/src/features/posts/model'
-import { Link } from '@/src/i18n/client'
+import { Link, useTranslations } from '@/src/i18n/client'
+import { ChevronRight } from 'lucide-react'
+import { PostItem } from './post-item'
 
 interface FeaturedPostsProps {
   posts: PostSummaryWithViews[]
 }
 
-function ProjectCard({ post, idx }: { post: PostSummaryWithViews; idx: number }) {
-  return (
-    <Link href={`/posts/${post.slug}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
-      <div className="proj">
-        <div className="idx">{String(idx + 1).padStart(2, '0')}</div>
-        <h3>{post.title}</h3>
-        <p>{post.summary}</p>
-        <div className="tags">
-          {post.tags.map((tag) => (
-            <span key={tag} className="tag">
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
-    </Link>
-  )
-}
-
 export function FeaturedPosts({ posts }: FeaturedPostsProps) {
+  const t = useTranslations('HomePage.featuredPosts')
+
   return (
     <section>
-      <div className="sec-head">
-        <span className="bracket">[Featured articles]</span>
-        <div className="line"></div>
+      <div className="section-head">
+        <span className="section-title">{t('title')}</span>
+        <div className="section-line"></div>
+        <Link href="/posts" className="inline-flex items-center gap-0.5 text-sm font-medium text-primary no-underline">
+          {t('viewAll')}
+          <ChevronRight className="size-4" />
+        </Link>
       </div>
-      <div className="proj-grid">
+      <div className="featured-grid">
         {posts.map((post, idx) => (
-          <ProjectCard key={post.slug} post={post} idx={idx} />
+          <PostItem key={post.slug} post={post} idx={idx} />
         ))}
       </div>
     </section>

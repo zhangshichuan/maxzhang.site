@@ -30,10 +30,13 @@ export function ViewCounter({ slug, locale }: ViewCounterProps) {
   }, [slug, locale])
 
   return (
-    <span className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
-      <Eye className="size-5 text-primary" />
+    <span className="stat-pill">
+      <Eye className="size-3.5 text-primary" />
       {views === null ? (
-        <span className="h-4 w-8 animate-pulse rounded-sm bg-muted-foreground/20"></span>
+        <span
+          className="inline-block h-3 w-7 animate-pulse rounded-full"
+          style={{ background: 'var(--label-tertiary)' }}
+        ></span>
       ) : (
         <span>{views}</span>
       )}

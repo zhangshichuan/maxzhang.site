@@ -13,8 +13,8 @@ interface ViewDisplayProps {
 
 export function ViewDisplay({ views }: ViewDisplayProps) {
   return (
-    <span className="flex items-center gap-1.5 rounded-md border border-border/5 bg-muted px-2 py-1">
-      <Eye className="size-4 text-primary" />
+    <span className="stat-pill">
+      <Eye className="size-3.5 text-primary" />
       <span>{views}</span>
     </span>
   )

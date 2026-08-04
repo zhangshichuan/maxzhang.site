@@ -3,6 +3,7 @@ import { chatStream } from '@/src/features/chat/server-functions'
 import type { ChatErrorCode } from '@/src/features/chat/services/chat-stream.server'
 import { useTranslations } from '@/src/i18n/client'
 import { getThumbmark } from '@thumbmarkjs/thumbmarkjs'
+import { Send } from 'lucide-react'
 
 interface Message {
   id: string
@@ -165,46 +166,34 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="glitch-chat">
-      <div className="sec-head">
-        <h1 className="bracket">[AI Chat]</h1>
-        <div className="line"></div>
+    <div className="flex h-full flex-col">
+      <div className="section-head">
+        <h1 className="section-title">{t('title')}</h1>
+        <div className="section-line"></div>
       </div>
 
-      <div className="glitch-chat-messages" style={{ minHeight: 'calc(100vh - 300px)' }}>
-        {messages.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '80px 20px', color: 'rgba(255,255,255,.2)', fontSize: 14 }}>
-            {t('emptyState')}
-          </div>
-        )}
+      <div className="chat-messages" style={{ minHeight: 'calc(100vh - 360px)' }}>
+        {messages.length === 0 && <div className="empty-state">{t('emptyState')}</div>}
         {messages.map((message) => (
           <div key={message.id} className={`chat-bubble ${message.role}`}>
-            <pre style={{ fontFamily: 'inherit', fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap', margin: 0 }}>
-              {message.content}
-            </pre>
+            {message.content}
           </div>
         ))}
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+      <form onSubmit={handleSubmit} className="chat-input-shell">
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={t('placeholder')}
           disabled={isStreaming}
-          className="glitch-input"
+          className="chat-input"
           rows={1}
-          style={{ resize: 'none', minHeight: 44, maxHeight: 120, flex: 1 }}
         />
-        <button
-          type="submit"
-          disabled={isStreaming || !input.trim()}
-          className="btn btn-p"
-          style={{ fontSize: 12, padding: '0 24px' }}
-        >
-          {isStreaming ? t('sending') : t('send')}
+        <button type="submit" disabled={isStreaming || !input.trim()} className="chat-send" aria-label={t('send')}>
+          <Send className="size-4" />
         </button>
       </form>
     </div>

@@ -14,48 +14,46 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
 
   return (
     <div>
-      <h1 className="page-title">[Article library]</h1>
-      <div className="sec-head">
-        <span className="bracket">[All articles]</span>
-        <div className="line"></div>
-      </div>
+      <h1 className="page-title">{t('title')}</h1>
+      <p className="page-subtitle">{t('description')}</p>
 
       <div className="posts-layout">
-        <div
-          className="proj-grid"
-          style={{ gridTemplateColumns: '1fr', display: 'flex', flexDirection: 'column', gap: '16px' }}
-        >
+        <div className="search-results">
           {posts.map((post, idx) => (
             <PostItem key={post.slug} post={post} idx={idx} />
           ))}
           {posts.length === 0 && <div className="empty-state">{t('noPosts')}</div>}
         </div>
 
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div className="glitch-panel">
-            <h3>{t('categories')}</h3>
-            {allCategories.map((category) => {
-              const href = `/search?category=${encodeURIComponent(category)}`
-              return (
-                <Link key={category} href={href} className="glitch-link">
-                  <Folder style={{ width: 14, height: 14, color: 'var(--cyan)' }} />
-                  {category}
-                </Link>
-              )
-            })}
+        <aside className="flex flex-col gap-4">
+          <div className="sidebar-panel">
+            <h3 className="sidebar-title">{t('categories')}</h3>
+            <div className="sidebar-list">
+              {allCategories.map((category) => {
+                const href = `/search?category=${encodeURIComponent(category)}`
+                return (
+                  <Link key={category} href={href} className="sidebar-link">
+                    <Folder className="size-3.5 text-primary" />
+                    {category}
+                  </Link>
+                )
+              })}
+              {allCategories.length === 0 && <span className="text-xs text-muted-foreground">{t('noCategories')}</span>}
+            </div>
           </div>
 
-          <div className="glitch-panel">
-            <h3>{t('tags')}</h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          <div className="sidebar-panel">
+            <h3 className="sidebar-title">{t('tags')}</h3>
+            <div className="chip-row">
               {allTags.map((tag) => {
                 const href = `/search?tag=${encodeURIComponent(tag)}`
                 return (
-                  <Link key={tag} href={href} className="glitch-filter-btn">
+                  <Link key={tag} href={href} className="chip">
                     {tag}
                   </Link>
                 )
               })}
+              {allTags.length === 0 && <span className="text-xs text-muted-foreground">{t('noTags')}</span>}
             </div>
           </div>
         </aside>

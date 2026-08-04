@@ -13,8 +13,8 @@ interface CommentDisplayProps {
 
 export function CommentDisplay({ comments }: CommentDisplayProps) {
   return (
-    <span className="flex items-center gap-1.5 rounded-md border border-border/5 bg-muted px-2 py-1">
-      <MessageCircle className="size-4 text-primary" />
+    <span className="stat-pill">
+      <MessageCircle className="size-3.5 text-primary" />
       <span>{comments}</span>
     </span>
   )

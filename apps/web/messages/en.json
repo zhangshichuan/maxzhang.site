@@ -8,7 +8,8 @@
       "chat": "Chat",
       "about": "About",
       "switchLanguage": "Switch to Chinese",
-      "search": "搜索"
+      "search": "Search",
+      "appearance": "Appearance"
     },
     "footer": {
       "builtBy": "Built by <name>Max Zhang</name>. © {year} All rights reserved."
@@ -45,6 +46,7 @@
   },
   "HomePage": {
     "hero": {
+      "subtitle": "BUILD HARDER. GLITCH LOUDER.",
       "readArticles": "Browse Journal",
       "aboutMe": "About Me"
     },
@@ -172,6 +174,31 @@
   },
   "Mermaid": {
     "clickToZoom": "Click to view full image",
-    "zoomInstruction": "Use toolbar to zoom • Pinch to zoom on mobile"
+    "zoomInstruction": "Use toolbar to zoom • Pinch to zoom on mobile",
+    "close": "Close",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "reset": "Reset"
+  },
+  "Appearance": {
+    "title": "Appearance",
+    "close": "Close",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "modeLabel": "Appearance mode",
+    "glassIntensity": "Glass Intensity",
+    "clear": "Clear",
+    "tinted": "Tinted",
+    "balanced": "Balanced"
+  },
+  "AudioPlayer": {
+    "loading": "Loading",
+    "pause": "Pause",
+    "listen": "Listen",
+    "seek": "Seek",
+    "back10": "Back 10 seconds",
+    "forward10": "Forward 10 seconds",
+    "rate": "Playback speed"
   }
 }

@@ -1,5 +1,5 @@
 import { Link, useTranslations } from '@/src/i18n/client'
-import { Github, Mail, Linkedin, MapPin, ChevronRight } from 'lucide-react'
+import { ChevronRight, Github, Linkedin, Mail, MapPin } from 'lucide-react'
 import { flattenSkills, skillMatrix } from '@/src/shared/skills'
 import Avatar from '../avatar.jpg'
 
@@ -25,162 +25,154 @@ export function AboutPage() {
 
   return (
     <div>
-      {/* ===== Hero / 个人介绍 ===== */}
-      <div className="hero" style={{ paddingTop: 40, minHeight: 'auto', paddingBottom: 20, display: 'block' }}>
-        <div>
-          <h1 className="tagline">{t('role')}</h1>
-          <div className="about-profile">
-            <div className="about-avatar-wrapper">
-              <div className="about-avatar">
-                <img
-                  src={Avatar}
-                  alt="Max Zhang"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(30%)' }}
-                />
-              </div>
-              <div className="about-avatar-ring" />
+      <h1 className="page-title">{t('role')}</h1>
+
+      <div className="about-profile">
+        <div className="about-avatar-wrap">
+          <div className="about-avatar">
+            <img
+              src={Avatar}
+              alt="Max Zhang"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(25%)' }}
+            />
+          </div>
+          <div className="about-avatar-ring" />
+        </div>
+        <div className="about-bio">
+          <p className="mb-3 inline-flex items-center gap-1.5 text-[13px]" style={{ color: 'var(--label-secondary)' }}>
+            <MapPin className="size-3.5 text-primary" />
+            {t('location')}
+          </p>
+          {paragraphs.map((para, i) => (
+            <p key={i}>{para}</p>
+          ))}
+        </div>
+      </div>
+
+      <div className="btn-group" style={{ marginBottom: 32 }}>
+        <Link href="https://github.com/zhangshichuan" target="_blank">
+          <button
+            className="btn btn-secondary"
+            style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '10px 20px' }}
+          >
+            <Github className="size-4" /> GitHub
+          </button>
+        </Link>
+        <Link href="https://www.linkedin.com/in/maxzhang1010" target="_blank">
+          <button
+            className="btn btn-secondary"
+            style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '10px 20px' }}
+          >
+            <Linkedin className="size-4" /> LinkedIn
+          </button>
+        </Link>
+        <Link href="mailto:zsc.guru@qq.com">
+          <button
+            className="btn btn-secondary"
+            style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '10px 20px' }}
+          >
+            <Mail className="size-4" /> Email
+          </button>
+        </Link>
+      </div>
+
+      <section>
+        <div className="section-head">
+          <span className="section-title">{t('techStack')}</span>
+          <div className="section-line"></div>
+        </div>
+        {Object.entries(techCategories).map(([category, skills]) => (
+          <div key={category}>
+            <div className="tech-category-label">{category}</div>
+            <div className="tech-tag-row">
+              {skills.map((name) => (
+                <span key={name} className="chip">
+                  {name}
+                </span>
+              ))}
             </div>
-            <div style={{ flex: 1 }}>
-              <p
-                style={{
-                  fontSize: 13,
-                  color: 'rgba(255,255,255,.35)',
-                  marginBottom: 16,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-              >
-                <MapPin style={{ width: 13, height: 13, color: 'var(--neon)' }} />
-                {t('location')}
-              </p>
-              <div className="about-bio">
-                {paragraphs.map((para, i) => (
-                  <p
-                    key={i}
-                    className="bio"
-                    style={{ fontSize: 14, lineHeight: 1.9, marginBottom: i < paragraphs.length - 1 ? 16 : 0 }}
-                  >
-                    {para}
-                  </p>
+          </div>
+        ))}
+      </section>
+
+      <section>
+        <div className="section-head">
+          <span className="section-title">{t('workExperience')}</span>
+          <div className="section-line"></div>
+        </div>
+        {(t.raw('experience') as Experience[]).map((exp, index) => (
+          <div key={index} className="exp-card">
+            <div className="exp-card-header">
+              <div className="exp-period">{exp.period}</div>
+              <div className="exp-company">@ {exp.company}</div>
+            </div>
+            <h3 className="exp-role">{exp.role}</h3>
+            {exp.tags && exp.tags.length > 0 && (
+              <div className="exp-tags">
+                {exp.tags.map((tag) => (
+                  <span key={tag} className="chip">
+                    {tag}
+                  </span>
                 ))}
               </div>
-            </div>
+            )}
+            <ul className="exp-points">
+              {exp.points.map((point, i) => (
+                <li key={i}>
+                  <span className="exp-point-num">{String(i + 1).padStart(2, '0')}</span>
+                  <span>{point}</span>
+                </li>
+              ))}
+            </ul>
           </div>
+        ))}
+      </section>
 
-          <div className="bio-divider" />
-
-          <div className="btn-group" style={{ justifyContent: 'center' }}>
-            <Link href="https://github.com/zhangshichuan" target="_blank">
-              <button className="btn btn-c" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-                <Github style={{ width: 14, height: 14 }} /> GitHub
-              </button>
-            </Link>
-            <Link href="https://www.linkedin.com/in/maxzhang1010" target="_blank">
-              <button className="btn btn-c" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-                <Linkedin style={{ width: 14, height: 14 }} /> LinkedIn
-              </button>
-            </Link>
-            <Link href="mailto:zsc.guru@qq.com">
-              <button className="btn btn-g" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-                <Mail style={{ width: 14, height: 14 }} /> Email
-              </button>
-            </Link>
-          </div>
+      <section>
+        <div className="section-head">
+          <span className="section-title">{t('learning')}</span>
+          <div className="section-line"></div>
         </div>
+        <div className="card-group">
+          {(t.raw('learningList') as string[]).map((item, index) => (
+            <div key={index} className="card-row learning-item">
+              <span className="learning-num">{String(index + 1).padStart(2, '0')}</span>
+              <span>{item}</span>
+              <ChevronRight className="learning-arrow size-4" />
+            </div>
+          ))}
+        </div>
+      </section>
 
-        {/* ===== 技术栈 ===== */}
-        <section>
-          <div className="sec-head">
-            <span className="bracket">[Tech stack]</span>
-            <div className="line"></div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {Object.entries(techCategories).map(([category, skills]) => (
-              <div key={category}>
-                <div className="tech-category-label">{category}</div>
-                <div className="tech-tag-row">
-                  {skills.map((name) => (
-                    <span key={name} className="tag">
-                      {name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+      <section>
+        <div className="section-head">
+          <span className="section-title">{t('education')}</span>
+          <div className="section-line"></div>
+        </div>
+        <div className="card-group">
+          {(t.raw('educationList') as Education[]).map((education, index) => (
+            <div key={index} className="card-row edu-card">
+              {education.period && <div className="edu-period">{education.period}</div>}
+              <div className="edu-school">{education.school}</div>
+              <div className="edu-degree">{education.degree}</div>
+            </div>
+          ))}
+        </div>
+      </section>
 
-        {/* ===== 工作经历 ===== */}
-        <section>
-          <div className="sec-head">
-            <span className="bracket">[Work]</span>
-            <div className="line"></div>
-          </div>
-          <div className="exp-timeline">
-            {(t.raw('experience') as Experience[]).map((exp, index) => (
-              <div key={index} className="exp-card">
-                <div className="exp-card-header">
-                  <div className="exp-period">{exp.period}</div>
-                  <div className="exp-company">@ {exp.company}</div>
-                </div>
-                <h3 className="exp-role">{exp.role}</h3>
-                {exp.tags && exp.tags.length > 0 && (
-                  <div className="exp-tags">
-                    {exp.tags.map((tag) => (
-                      <span key={tag} className="tag">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <ul className="exp-points">
-                  {exp.points.map((point, i) => (
-                    <li key={i}>
-                      <span className="exp-point-num">{String(i + 1).padStart(2, '0')}</span>
-                      <span>{point}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ===== 研习方向 ===== */}
-        <section>
-          <div className="sec-head">
-            <span className="bracket">[Learning]</span>
-            <div className="line"></div>
-          </div>
-          <div className="learning-grid">
-            {(t.raw('learningList') as string[]).map((item, index) => (
-              <div key={index} className="learning-item">
-                <span className="learning-num">{String(index + 1).padStart(2, '0')}</span>
-                <span>{item}</span>
-                <ChevronRight className="learning-arrow" />
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ===== 教育经历 ===== */}
-        <section>
-          <div className="sec-head">
-            <span className="bracket">[Education]</span>
-            <div className="line"></div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {(t.raw('educationList') as Education[]).map((education, index) => (
-              <div key={index} className="edu-card">
-                <div className="edu-period">{education.period}</div>
-                <div className="edu-school">{education.school}</div>
-                <div className="edu-degree">{education.degree}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
+      <section>
+        <div className="section-head">
+          <span className="section-title">{t('interests')}</span>
+          <div className="section-line"></div>
+        </div>
+        <div className="chip-row">
+          {(t.raw('interestList') as string[]).map((item) => (
+            <span key={item} className="chip chip-accent">
+              {item}
+            </span>
+          ))}
+        </div>
+      </section>
     </div>
   )
 }

@@ -89,35 +89,36 @@ function CommentItem({
 }: CommentItemProps) {
   const t = useTranslations('Comment')
 
-  // 【缩进计算】每层深度增加 16px，最大 64px 防止太靠右
-  // 时间复杂度: O(1)
-  // 空间复杂度: O(1)
-  const indentPx = Math.min(depth * 16, 64)
+  const indentPx = Math.min(depth * 20, 80)
 
   return (
     <div className="relative">
       {/* 【左侧连接线】仅在子回复层（depth > 0）显示，视觉上连接父子节点 */}
-      {depth > 0 && <div className="absolute top-0 h-full w-px bg-border" style={{ left: `${indentPx - 8}px` }} />}
+      {depth > 0 && (
+        <div
+          className="absolute top-0 h-full w-px"
+          style={{ left: `${indentPx - 10}px`, background: 'var(--separator)' }}
+        />
+      )}
 
       {/* 【评论卡片主体】根据深度应用左侧缩进 */}
-      <div
-        className="cut-card border border-border bg-card p-4"
-        style={{ marginLeft: depth > 0 ? `${indentPx}px` : '0' }}
-      >
-        {/* 评论元信息：指纹（后10位）+ 格式化时间 */}
-        <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-          <span>{comment.fingerprint.slice(-10)}</span>
-          <span>{formatDate(comment.createdAt, locale)}</span>
+      <div className="comment-card" style={{ marginLeft: depth > 0 ? `${indentPx}px` : '0' }}>
+        <div className="comment-head">
+          <div className="comment-avatar">{comment.fingerprint.slice(-1).toUpperCase()}</div>
+          <div className="comment-meta">
+            <span className="comment-author">{comment.fingerprint.slice(-10)}</span>
+            <span className="comment-time">{formatDate(comment.createdAt, locale)}</span>
+          </div>
         </div>
 
         {/* 评论正文：dangerouslySetInnerHTML 输出经 escapeHtml 转义的安全内容 */}
-        <div className="text-sm text-foreground" dangerouslySetInnerHTML={{ __html: comment.content }} />
+        <div className="comment-content" dangerouslySetInnerHTML={{ __html: comment.content }} />
 
         {/* 【回复按钮】剩余次数 > 0 时显示，hover 变为 primary 颜色 */}
         {remaining !== null && remaining > 0 && (
           <button
             onClick={() => onReply(comment.id)}
-            className="mt-2 flex cursor-pointer items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary"
+            className="comment-actions flex cursor-pointer items-center gap-1 border-none bg-transparent text-xs text-primary"
           >
             <Reply className="size-3" />
             {t('reply')}
@@ -134,7 +135,7 @@ function CommentItem({
               maxLength={1000}
               disabled={isReplying}
               autoFocus
-              className="min-h-20 w-full resize-y rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              className="ios-textarea min-h-20 disabled:cursor-not-allowed disabled:opacity-50"
             />
             <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
               <span>{replyContent.length}/1000</span>
@@ -143,7 +144,7 @@ function CommentItem({
                 <button
                   type="button"
                   onClick={onCancelReply}
-                  className="flex cursor-pointer items-center gap-1 px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                  className="flex cursor-pointer items-center gap-1 border-none bg-transparent px-2 py-1 text-xs text-muted-foreground"
                 >
                   <X className="size-3" />
                   {t('cancel')}
@@ -152,7 +153,7 @@ function CommentItem({
                 <button
                   type="submit"
                   disabled={!replyContent.trim() || isReplying}
-                  className="flex cursor-pointer items-center gap-1 px-2 py-1 text-xs text-primary transition-colors hover:text-primary/80 disabled:opacity-50"
+                  className="btn btn-ghost flex cursor-pointer items-center gap-1 px-2 py-1 text-xs disabled:opacity-50"
                 >
                   <Send className="size-3" />
                   {isReplying ? t('submitting') : t('submit')}
@@ -161,7 +162,7 @@ function CommentItem({
             </div>
             {/* 错误提示 */}
             {replyError && (
-              <div className="mt-2 flex items-center gap-2 rounded-lg bg-destructive/10 p-2 text-xs text-destructive">
+              <div className="alert alert-error mt-2 p-2 text-xs">
                 <AlertCircle className="size-3 shrink-0" />
                 {replyError}
               </div>
@@ -321,17 +322,17 @@ export function Comment({ slug, locale }: CommentProps) {
   }, [])
 
   return (
-    <div className="mt-12 border-t border-border pt-8">
-      <div className="mb-6 flex items-center gap-2">
-        <MessageCircle className="size-6 text-primary" />
-        <h2 className="text-2xl font-bold">
+    <div className="comments-section">
+      <div className="comments-title">
+        <MessageCircle className="size-5 text-primary" />
+        <h2>
           {t('title')}
-          {count !== null && <span className="ml-2 text-lg font-normal text-muted-foreground">({count})</span>}
+          {count !== null && <span className="comments-count">({count})</span>}
         </h2>
       </div>
 
       {/* 固定的评论表单，只生产老汉儿 */}
-      <form onSubmit={handleSubmit} className="mb-8">
+      <form onSubmit={handleSubmit} className="comment-form">
         <div className="relative">
           <textarea
             value={content}
@@ -339,9 +340,9 @@ export function Comment({ slug, locale }: CommentProps) {
             placeholder={t('placeholder')}
             maxLength={1000}
             disabled={isSubmitting || remaining === 0}
-            className="min-h-30 w-full resize-y rounded-lg border border-input bg-background px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            className="ios-textarea min-h-30 disabled:cursor-not-allowed disabled:opacity-50"
           />
-          <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+          <div className="comment-form-meta">
             <span>{content.length}/1000</span>
             {remaining !== null && remaining < 5 && (
               <span className="flex items-center gap-1">
@@ -353,24 +354,20 @@ export function Comment({ slug, locale }: CommentProps) {
         </div>
 
         {error && (
-          <div className="mt-3 flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+          <div className="alert alert-error">
             <AlertCircle className="size-4 shrink-0" />
             {error}
           </div>
         )}
 
-        {success && (
-          <div className="mt-3 flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-sm text-green-400">
-            {t('success')}
-          </div>
-        )}
+        {success && <div className="alert alert-success">{t('success')}</div>}
 
-        <div className="mt-4 flex justify-end">
+        <div className="comment-form-actions">
           <button
             type="submit"
             disabled={!content.trim() || isSubmitting || remaining === 0}
-            className="btn btn-p"
-            style={{ fontSize: 12, padding: '8px 20px' }}
+            className="btn btn-primary inline-flex items-center gap-2"
+            style={{ padding: '9px 22px', fontSize: 13 }}
           >
             <Send className="size-4" />
             {isSubmitting ? t('submitting') : t('submit')}
@@ -379,15 +376,11 @@ export function Comment({ slug, locale }: CommentProps) {
       </form>
 
       {/* Reply Success Message */}
-      {replySuccess && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-sm text-green-400">
-          {t('replySuccess')}
-        </div>
-      )}
+      {replySuccess && <div className="alert alert-success mb-4">{t('replySuccess')}</div>}
 
       {/* Comments List */}
       {count !== null && count > 0 ? (
-        <div className="space-y-4">
+        <div className="comment-list">
           {comments.map((comment) => (
             <CommentItem
               key={comment.id}
@@ -408,7 +401,9 @@ export function Comment({ slug, locale }: CommentProps) {
           ))}
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">{t('empty')}</p>
+        <p className="text-sm" style={{ color: 'var(--label-secondary)' }}>
+          {t('empty')}
+        </p>
       )}
     </div>
   )

@@ -5,24 +5,25 @@ export function HomeHero() {
 
   return (
     <div className="hero">
-      <div>
-        <div className="tagline">Fullstack Developer</div>
-        <div className="glitch-block">
-          <h1 className="glitch" data-text="BUILD HARDER. GLITCH LOUDER.">
-            BUILD HARDER. GLITCH LOUDER.
-          </h1>
-        </div>
-        <div className="btn-group">
-          <Link href="/posts">
-            <button className="btn btn-p">{t('readArticles')}</button>
-          </Link>
-          <Link href="/about">
-            <button className="btn btn-c">{t('aboutMe')}</button>
-          </Link>
-          <Link href="https://github.com/zhangshichuan" target="_blank">
-            <button className="btn btn-g">GitHub</button>
-          </Link>
-        </div>
+      <div className="hero-tagline">Fullstack Developer</div>
+      <h1 className="hero-title">Max Zhang</h1>
+      <p className="hero-slogan">{t('subtitle')}</p>
+      <div className="btn-group">
+        <Link href="/posts">
+          <button className="btn btn-primary" style={{ padding: '12px 26px', fontSize: 14 }}>
+            {t('readArticles')}
+          </button>
+        </Link>
+        <Link href="/about">
+          <button className="btn btn-secondary" style={{ padding: '12px 26px', fontSize: 14 }}>
+            {t('aboutMe')}
+          </button>
+        </Link>
+        <Link href="https://github.com/zhangshichuan" target="_blank">
+          <button className="btn btn-ghost" style={{ padding: '12px 20px', fontSize: 14 }}>
+            GitHub
+          </button>
+        </Link>
       </div>
     </div>
   )

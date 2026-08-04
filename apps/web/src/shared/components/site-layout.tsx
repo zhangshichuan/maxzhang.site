@@ -12,7 +12,7 @@ export function SiteLayout() {
   return (
     <>
       <Navbar />
-      <main>
+      <main className="site-main">
         <Outlet />
       </main>
       <Footer />

@@ -1,8 +1,8 @@
 /**
- * 纸质卡片组件
+ * 液态玻璃卡片
  *
- * 杂志风格的卡片组件，模拟纸张质感
- * 柔和阴影、微圆角、暖色边框
+ * iOS 风格圆角玻璃卡片：半透明背景 + 背景模糊 + 高光边框，
+ * 玻璃强度由全站外观变量统一控制。
  */
 
 import { cn } from '@/src/shared/utils'
@@ -15,18 +15,5 @@ interface GlassCardProps {
 }
 
 export function GlassCard({ children, className, hoverEffect = true }: GlassCardProps) {
-  return (
-    <div
-      className={cn(
-        'rounded-[--radius] bg-card text-card-foreground',
-        'border border-border/60',
-        'shadow-(--shadow-card)',
-        'transition-shadow duration-300',
-        hoverEffect && 'hover:shadow-(--shadow-card-hover)',
-        className,
-      )}
-    >
-      {children}
-    </div>
-  )
+  return <div className={cn('glass-card', hoverEffect && 'glass-card-hover', className)}>{children}</div>
 }

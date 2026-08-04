@@ -18,6 +18,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import remarkFrontmatter from 'remark-frontmatter'
 import remarkGfm from 'remark-gfm'
+import rehypePrettyCode from 'rehype-pretty-code'
+import { bundledThemes } from 'shiki/themes'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const articlesDir = path.join(root, 'articles')
@@ -26,12 +28,21 @@ const watch = process.argv.includes('--watch')
 
 const remarkPlugins = [remarkFrontmatter, remarkGfm]
 
+// Shiki 4 默认包不含 Xcode 主题，采用同风格的 VS Code Light+/Dark+ 双主题
+const lightTheme = (await bundledThemes['light-plus']()).default
+const darkTheme = (await bundledThemes['dark-plus']()).default
+
+const rehypePlugins = [
+  [rehypePrettyCode, { theme: { light: lightTheme, dark: darkTheme }, keepBackground: false }],
+]
+
 async function compileMdx(filePath) {
   const source = fs.readFileSync(filePath, 'utf8')
   const code = String(
     await compile(source, {
       jsx: true,
       remarkPlugins,
+      rehypePlugins,
     }),
   )
   return code

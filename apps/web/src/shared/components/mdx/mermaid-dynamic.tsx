@@ -4,7 +4,10 @@ const MermaidInner = lazy(() => import('./mermaid'))
 
 function MermaidFallback() {
   return (
-    <div className="my-12 flex items-center justify-center rounded-2xl border border-border bg-card p-10">
+    <div
+      className="my-12 flex items-center justify-center rounded-lg border p-10"
+      style={{ borderColor: 'var(--separator)', background: 'var(--bg-secondary)' }}
+    >
       <span className="text-sm font-medium text-muted-foreground">Loading diagram...</span>
     </div>
   )

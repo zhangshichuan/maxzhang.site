@@ -8,7 +8,8 @@
       "chat": "聊天",
       "about": "关于",
       "switchLanguage": "切换至英文",
-      "search": "搜索"
+      "search": "搜索",
+      "appearance": "外观"
     },
     "footer": {
       "builtBy": "由 <name>Max Zhang</name> 构建。© {year} 保留所有权利。"
@@ -45,6 +46,7 @@
   },
   "HomePage": {
     "hero": {
+      "subtitle": "BUILD HARDER. GLITCH LOUDER.",
       "readArticles": "翻阅文章",
       "aboutMe": "关于我"
     },
@@ -172,6 +174,31 @@
   },
   "Mermaid": {
     "clickToZoom": "点击查看高清大图",
-    "zoomInstruction": "使用上方工具栏缩放 · 移动端可双指操作"
+    "zoomInstruction": "使用上方工具栏缩放 · 移动端可双指操作",
+    "close": "关闭",
+    "zoomIn": "放大",
+    "zoomOut": "缩小",
+    "reset": "重置"
+  },
+  "Appearance": {
+    "title": "外观",
+    "close": "关闭",
+    "light": "浅色",
+    "dark": "深色",
+    "system": "跟随系统",
+    "modeLabel": "外观模式",
+    "glassIntensity": "玻璃强度",
+    "clear": "Clear",
+    "tinted": "Tinted",
+    "balanced": "均衡"
+  },
+  "AudioPlayer": {
+    "loading": "加载中",
+    "pause": "暂停",
+    "listen": "收听",
+    "seek": "拖动进度",
+    "back10": "后退 10 秒",
+    "forward10": "前进 10 秒",
+    "rate": "播放速度"
   }
 }
