@@ -32,9 +32,7 @@ const remarkPlugins = [remarkFrontmatter, remarkGfm]
 const lightTheme = (await bundledThemes['light-plus']()).default
 const darkTheme = (await bundledThemes['dark-plus']()).default
 
-const rehypePlugins = [
-  [rehypePrettyCode, { theme: { light: lightTheme, dark: darkTheme }, keepBackground: false }],
-]
+const rehypePlugins = [[rehypePrettyCode, { theme: { light: lightTheme, dark: darkTheme }, keepBackground: false }]]
 
 async function compileMdx(filePath) {
   const source = fs.readFileSync(filePath, 'utf8')
@@ -50,6 +48,11 @@ async function compileMdx(filePath) {
 
 async function generate() {
   const entries = []
+
+  // 仓库可能暂时没有文章（删除全部文章后目录不会进入 Git），
+  // 统一补齐目录，让构建在零文章时也能生成空 manifest。
+  fs.mkdirSync(articlesDir, { recursive: true })
+  fs.mkdirSync(outDir, { recursive: true })
 
   for (const locale of fs.readdirSync(articlesDir)) {
     const localeDir = path.join(articlesDir, locale)
