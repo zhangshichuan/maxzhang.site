@@ -8,6 +8,7 @@
       "chat": "Chat",
       "about": "About",
       "switchLanguage": "Switch to Chinese",
+      "language": "Language",
       "search": "Search",
       "appearance": "Appearance"
     },
@@ -63,7 +64,7 @@
   },
   "AboutPage": {
     "title": "About Me - Max Zhang",
-    "role": "AI Full-Stack Engineer / Multi-Agent System Conductor",
+    "heading": "About Me",
     "location": "Chengdu, China",
     "description": "2016. First job. I got lucky.\n\nThe company was already flat back then. Management, tech, and product leadership mostly had overseas backgrounds. The CTO didn't split roles by frontend and backend — one business direction, one person, full ownership from frontend to database to deployment. Later I'd learn this is called an Ownership culture. At the time I didn't realize how unusual it was. I thought all companies worked this way.\n\nFirst task: build a resource system. No mentor, no broken-down tickets. Started from '<input type=\"file\">' and a blank editor. How PHP handles file uploads, how S3 stores them, whether PostgreSQL should use bytea or URLs — every step was figured out by running into a wall and reading through it.\n\nLater, a hospital equipment data platform. PHP7 wasn't officially released yet, so I pulled the PHP source and compiled it myself with cmake. The hospital's internal network ran Windows, logs needed forwarding to Linux, and the SMB protocol was the blocker. PHP had no native support for it, so I dug into libsmbclient's C library docs and compiled a PHP extension module. From C to PHP to the protocol layer — one chain punched through. Felt good when it worked.\n\nThen Yixin Cloud 2.0. Delivered on time, right on the company's demo and fundraising timeline. No delays.\n\nLooking back, that period left me with a habit: goal set, walk it end to end. TypeScript, Go, Python. Docker, K8s, AWS. MCP, A2A, ReAct. The tools kept changing. The habit didn't.\n\nThat's why I care about Agents. Not chasing trends. I spent ten years waiting for something that amplifies one person's will. I used to run a chain with two hands. Now I write intent into a spec, a group of Agents executes. They're faster, but I set the direction, draw the boundaries, judge the results.\n\nNot replacement. Leverage.\n\nIn the AI First era, tools are getting faster, but no one grows your sense of direction or judgment for you. Define the problem. Deliver end to end. Own the result. These haven't changed. Here's to building together.",
     "workExperience": "Work Experience",
@@ -73,7 +74,7 @@
     "interests": "Interests",
     "experience": [
       {
-        "role": "Frontend Lead / AI Full-Stack Engineer / MAS Conductor",
+        "role": "Frontend Lead",
         "company": "Chengdu Ruisheng Tianhe Media Technology Co., Ltd.",
         "department": "Product R&D Department",
         "period": "Feb 2021 - Dec 2025",

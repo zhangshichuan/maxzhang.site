@@ -25,8 +25,7 @@ export function AboutPage() {
 
   return (
     <div>
-      <h1 className="page-title">{t('role')}</h1>
-
+      <h1 className="page-title">{t('heading')}</h1>
       <div className="about-profile">
         <div className="about-avatar-wrap">
           <div className="about-avatar">

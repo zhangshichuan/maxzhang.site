@@ -54,10 +54,10 @@ html.light {
   --bg-secondary: #f2f2f7;
   --bg-tertiary: #ffffff;
   --label: #000000;
-  --label-secondary: rgba(60, 60, 67, 0.62);
+  --label-secondary: rgba(60, 60, 67, 0.74);
   --label-tertiary: rgba(60, 60, 67, 0.32);
   --separator: rgba(60, 60, 67, 0.12);
-  --accent: #007aff;
+  --accent: #0066cc;
   --fill: rgba(120, 120, 128, 0.12);
   --red: #ff3b30;
   --green: #34c759;
@@ -306,6 +306,7 @@ html.dark .wallpaper-orb-3 {
   justify-content: space-between;
   gap: 16px;
   padding: 12px 24px;
+  padding-top: calc(12px + env(safe-area-inset-top));
   border-bottom: 0.5px solid var(--separator);
 }
 
@@ -382,6 +383,11 @@ html.dark .wallpaper-orb-3 {
   border-radius: 28px;
   width: max-content;
   max-width: calc(100vw - 24px);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.mobile-tabbar::-webkit-scrollbar {
+  display: none;
 }
 
 .tabbar-item {
@@ -1419,6 +1425,7 @@ html.dark .article-prose pre code span {
   display: flex;
   align-items: flex-start;
   gap: 28px;
+  margin-top: 18px;
   margin-bottom: 32px;
 }
 .about-avatar-wrap {
@@ -1766,6 +1773,7 @@ html.dark .article-prose pre code span {
     display: none;
   }
   .site-main {
+    padding-top: env(safe-area-inset-top);
     padding-bottom: calc(88px + env(safe-area-inset-bottom));
   }
   .site-footer {
@@ -1794,8 +1802,8 @@ html.dark .article-prose pre code span {
     gap: 18px;
   }
   .tabbar-item {
-    min-width: 52px;
-    padding: 6px 4px;
+    min-width: 45px;
+    padding: 6px 3px;
   }
   .tabbar-label {
     font-size: 9px;

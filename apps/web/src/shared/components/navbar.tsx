@@ -1,11 +1,11 @@
 import { useRouter, useRouterState } from '@tanstack/react-router'
 import { BookOpen, Home, Languages, Search, SlidersHorizontal, User } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { Link, useLocale, useTranslations } from '@/src/i18n/client'
 import { saveLocalePreference } from '@/i18n/locale-preference'
 import { localizePath, stripLocale } from '@/i18n/routing'
 import { cn } from '@/src/shared/utils'
-import { AppearancePanel } from './appearance-panel'
+import { AppearancePanel, PANEL_ID } from './appearance-panel'
 
 export function Navbar() {
   const t = useTranslations('Common.nav')
@@ -13,6 +13,7 @@ export function Navbar() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const router = useRouter()
   const [appearanceOpen, setAppearanceOpen] = useState(false)
+  const appearanceTriggerRef = useRef<HTMLButtonElement | null>(null)
 
   const toggleLanguage = () => {
     const nextLocale = locale === 'zh' ? 'en' : 'zh'
@@ -24,6 +25,18 @@ export function Navbar() {
   }
 
   const isActive = (path: string) => pathname === localizePath(path, locale)
+
+  const toggleAppearance = (event: MouseEvent<HTMLButtonElement>) => {
+    if (!appearanceOpen) appearanceTriggerRef.current = event.currentTarget
+    setAppearanceOpen((prev) => !prev)
+  }
+
+  useEffect(() => {
+    if (!appearanceOpen && appearanceTriggerRef.current) {
+      appearanceTriggerRef.current.focus()
+      appearanceTriggerRef.current = null
+    }
+  }, [appearanceOpen])
 
   const links = [
     { path: '/', label: t('home'), icon: Home },
@@ -58,8 +71,10 @@ export function Navbar() {
           <button
             type="button"
             className={cn('nav-icon-btn', appearanceOpen && 'active')}
-            onClick={() => setAppearanceOpen((prev) => !prev)}
+            onClick={toggleAppearance}
             aria-label={t('appearance')}
+            aria-haspopup="dialog"
+            aria-controls={PANEL_ID}
             aria-expanded={appearanceOpen}
           >
             <SlidersHorizontal className="size-4" />
@@ -86,11 +101,19 @@ export function Navbar() {
           </span>
           <span className="tabbar-label">{t('search')}</span>
         </Link>
+        <button type="button" className="tabbar-item" onClick={toggleLanguage} aria-label={t('switchLanguage')}>
+          <span className="tabbar-icon">
+            <Languages className="size-5" />
+          </span>
+          <span className="tabbar-label">{t('language')}</span>
+        </button>
         <button
           type="button"
           className={cn('tabbar-item tabbar-action', appearanceOpen && 'active')}
-          onClick={() => setAppearanceOpen((prev) => !prev)}
+          onClick={toggleAppearance}
           aria-label={t('appearance')}
+          aria-haspopup="dialog"
+          aria-controls={PANEL_ID}
           aria-expanded={appearanceOpen}
         >
           <span className="tabbar-icon">
