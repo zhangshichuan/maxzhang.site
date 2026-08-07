@@ -11,6 +11,7 @@ jobs:
 
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
 
     steps:
       - name: Checkout code
@@ -67,6 +68,7 @@ jobs:
           script: |
             cd ${{secrets.DEPLOY_PATH}}
             echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
+            echo "DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}" >> .env
 
             # 清理旧的构建文件
             rm -rf apps docker-compose.yml .dockerignore package.json pnpm-lock.yaml pnpm-workspace.yaml
