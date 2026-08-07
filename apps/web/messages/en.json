@@ -43,9 +43,10 @@
     "send": "Ask",
     "sending": "Consulting the stars...",
     "errors": {
-      "invalidFingerprint": "For security, please visit any article first to generate your fingerprint",
+      "invalidFingerprint": "For security, please visit the homepage or any article first to generate your fingerprint",
       "rateLimit": "Sending too fast. Please wait a moment and try again.",
       "dailyLimit": "You've reached today's 100-round limit. Come back tomorrow.",
+      "serviceDailyLimit": "The master has seen enough fortunes today. Come back tomorrow.",
       "messageTooLong": "Message too long. Please keep it under {max} characters.",
       "upstreamError": "Upstream service error. Please try again later.",
       "networkError": "Network error. Please check your connection."

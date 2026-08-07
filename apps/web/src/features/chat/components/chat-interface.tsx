@@ -18,6 +18,7 @@ const ERROR_MESSAGES: Record<ChatErrorCode, string> = {
   INVALID_FINGERPRINT: 'invalidFingerprint',
   RATE_LIMIT: 'rateLimit',
   DAILY_LIMIT: 'dailyLimit',
+  SERVICE_DAILY_LIMIT: 'serviceDailyLimit',
   MESSAGE_TOO_LONG: 'messageTooLong',
   INVALID_MESSAGE: 'networkError',
   UPSTREAM_ERROR: 'upstreamError',

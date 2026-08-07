@@ -17,7 +17,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -37,9 +39,10 @@ const (
 )
 
 const (
-	errInvalidMessage = "INVALID_MESSAGE"
-	errMessageTooLong = "MESSAGE_TOO_LONG"
-	errUpstreamError  = "UPSTREAM_ERROR"
+	errInvalidMessage    = "INVALID_MESSAGE"
+	errMessageTooLong    = "MESSAGE_TOO_LONG"
+	errUpstreamError     = "UPSTREAM_ERROR"
+	errServiceDailyLimit = "SERVICE_DAILY_LIMIT"
 )
 
 type chatMessage struct {
@@ -52,10 +55,11 @@ type chatRequest struct {
 }
 
 type config struct {
-	apiKey  string
-	model   string
-	baseURL string
-	timeout time.Duration
+	apiKey     string
+	model      string
+	baseURL    string
+	timeout    time.Duration
+	dailyLimit int
 }
 
 func envOr(name, fallback string) string {
@@ -73,11 +77,44 @@ func loadConfig() config {
 		}
 	}
 	return config{
-		apiKey:  os.Getenv("DEEPSEEK_API_KEY"),
-		model:   envOr("DEEPSEEK_MODEL", defaultModel),
-		baseURL: strings.TrimRight(envOr("DEEPSEEK_BASE_URL", defaultBaseURL), "/"),
-		timeout: timeout,
+		apiKey:     os.Getenv("DEEPSEEK_API_KEY"),
+		model:      envOr("DEEPSEEK_MODEL", defaultModel),
+		baseURL:    strings.TrimRight(envOr("DEEPSEEK_BASE_URL", defaultBaseURL), "/"),
+		timeout:    timeout,
+		dailyLimit: envInt("DEEPSEEK_DAILY_LIMIT", 1000),
 	}
+}
+
+func envInt(name string, fallback int) int {
+	if raw := os.Getenv(name); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
+			return parsed
+		}
+	}
+	return fallback
+}
+
+// 服务每日总对话上限：跨指纹、跨 IP 的全局兜底，防止单日成本失控
+var (
+	dailyLimitMu    sync.Mutex
+	dailyLimitDate  string
+	dailyLimitCount int
+)
+
+func acquireDailySlot(limit int) bool {
+	dailyLimitMu.Lock()
+	defer dailyLimitMu.Unlock()
+
+	today := time.Now().Format("2006-01-02")
+	if dailyLimitDate != today {
+		dailyLimitDate = today
+		dailyLimitCount = 0
+	}
+	if dailyLimitCount >= limit {
+		return false
+	}
+	dailyLimitCount++
+	return true
 }
 
 // validateMessages 返回错误码与错误详情；仅校验结构，不记录消息内容。
@@ -169,6 +206,12 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			status = http.StatusRequestEntityTooLarge
 		}
 		writeError(w, status, code)
+		return
+	}
+
+	if !acquireDailySlot(cfg.dailyLimit) {
+		log.Print("daily service limit reached")
+		writeError(w, http.StatusTooManyRequests, errServiceDailyLimit)
 		return
 	}
 

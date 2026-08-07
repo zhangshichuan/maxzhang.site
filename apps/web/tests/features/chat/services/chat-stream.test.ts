@@ -165,6 +165,32 @@ describe('流式聊天服务', () => {
     })
   })
 
+  it('会按 IP 执行内存中的小时频率限制', async () => {
+    findFirstMock.mockResolvedValue({ id: 1 })
+    const encoder = new TextEncoder()
+    vi.stubGlobal('fetch', () =>
+      Promise.resolve({
+        ok: true,
+        body: new ReadableStream({
+          start(controller) {
+            controller.enqueue(encoder.encode('data: ok\n'))
+            controller.close()
+          },
+        }),
+      }),
+    )
+    const { streamChat } = await import('@/src/features/chat/services')
+
+    for (let index = 0; index < 50; index += 1) {
+      const result = await streamChat(userMessage(`hello-${index}`), 'fp-ip', '1.2.3.4')
+      expect(result).not.toHaveProperty('error')
+    }
+
+    await expect(streamChat(userMessage('blocked'), 'fp-ip', '1.2.3.4')).resolves.toEqual({
+      error: 'RATE_LIMIT',
+    })
+  })
+
   it('会按指纹执行每日 100 轮上限', async () => {
     findFirstMock.mockResolvedValue({ id: 1 })
     const encoder = new TextEncoder()
@@ -189,6 +215,49 @@ describe('流式聊天服务', () => {
 
     await expect(streamChat(userMessage('blocked'), 'fp-1')).resolves.toEqual({
       error: 'DAILY_LIMIT',
+    })
+  })
+
+  it('会按 IP 执行每日 100 轮上限', async () => {
+    findFirstMock.mockResolvedValue({ id: 1 })
+    const encoder = new TextEncoder()
+    vi.stubGlobal('fetch', () =>
+      Promise.resolve({
+        ok: true,
+        body: new ReadableStream({
+          start(controller) {
+            controller.enqueue(encoder.encode('data: ok\n'))
+            controller.close()
+          },
+        }),
+      }),
+    )
+    const { chatStreamTestUtils, streamChat } = await import('@/src/features/chat/services')
+    chatStreamTestUtils.setDailyLimitForTest(3)
+
+    for (let index = 0; index < 3; index += 1) {
+      const result = await streamChat(userMessage(`hello-${index}`), 'fp-ip-2', '2.3.4.5')
+      expect(result).not.toHaveProperty('error')
+    }
+
+    await expect(streamChat(userMessage('blocked'), 'fp-ip-2', '2.3.4.5')).resolves.toEqual({
+      error: 'DAILY_LIMIT',
+    })
+  })
+
+  it('会透传上游的服务每日总量限制', async () => {
+    findFirstMock.mockResolvedValue({ id: 1 })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: () => Promise.resolve({ error: 'SERVICE_DAILY_LIMIT' }),
+      }),
+    )
+    const { streamChat } = await import('@/src/features/chat/services')
+
+    await expect(streamChat(userMessage('hello'), 'fp-1', '3.4.5.6')).resolves.toEqual({
+      error: 'SERVICE_DAILY_LIMIT',
     })
   })
 })

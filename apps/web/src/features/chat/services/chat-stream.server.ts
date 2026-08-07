@@ -6,6 +6,7 @@
  */
 
 import { prisma } from '@/src/server/db'
+import { getRequestIP } from '@tanstack/react-start/server'
 
 export type ChatMessage = {
   role: 'user' | 'assistant'
@@ -16,6 +17,10 @@ export type ChatMessage = {
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
 // 每日轮数限制内存存储：指纹 -> { 计数, 日期 }
 const dailyLimitMap = new Map<string, { count: number; date: string }>()
+// 小时频率限制内存存储：IP -> { 计数, 重置时间 }
+const ipRateLimitMap = new Map<string, { count: number; resetTime: number }>()
+// 每日轮数限制内存存储：IP -> { 计数, 日期 }
+const ipDailyLimitMap = new Map<string, { count: number; date: string }>()
 
 // 频率限制配置：每小时最多50条消息
 const RATE_LIMIT = 50
@@ -37,6 +42,7 @@ export type ChatErrorCode =
   | 'INVALID_FINGERPRINT' // 无效的浏览器指纹
   | 'RATE_LIMIT' // 小时频率限制超限
   | 'DAILY_LIMIT' // 每日轮数限制超限
+  | 'SERVICE_DAILY_LIMIT' // 服务每日总量超限
   | 'MESSAGE_TOO_LONG' // 消息过长
   | 'INVALID_MESSAGE' // 无效消息格式
   | 'UPSTREAM_ERROR' // 上游API错误
@@ -60,10 +66,20 @@ const cleanupExpired = () => {
       rateLimitMap.delete(key)
     }
   }
+  for (const [key, record] of ipRateLimitMap.entries()) {
+    if (now >= record.resetTime) {
+      ipRateLimitMap.delete(key)
+    }
+  }
   const today = localDateKey()
   for (const [key, record] of dailyLimitMap.entries()) {
     if (record.date !== today) {
       dailyLimitMap.delete(key)
+    }
+  }
+  for (const [key, record] of ipDailyLimitMap.entries()) {
+    if (record.date !== today) {
+      ipDailyLimitMap.delete(key)
     }
   }
 }
@@ -74,11 +90,22 @@ export const chatStreamTestUtils = {
   resetRateLimitState() {
     rateLimitMap.clear()
     dailyLimitMap.clear()
+    ipRateLimitMap.clear()
+    ipDailyLimitMap.clear()
   },
   /** 调整每日轮数上限（仅测试用） */
   setDailyLimitForTest(limit: number) {
     dailyLimit = limit
   },
+}
+
+/** 从当前请求提取客户端 IP；非请求上下文（如单元测试）返回 unknown */
+const getClientIp = () => {
+  try {
+    return getRequestIP({ xForwardedFor: true }) ?? 'unknown'
+  } catch {
+    return 'unknown'
+  }
 }
 
 /**
@@ -93,8 +120,10 @@ export const chatStreamTestUtils = {
 export async function streamChat(
   messages: ChatMessage[],
   fingerprint: string,
+  clientIp?: string,
 ): Promise<AsyncGenerator<string> | { error: ChatErrorCode }> {
   cleanupExpired()
+  const ip = clientIp ?? getClientIp()
 
   // 验证指纹是否有效
   if (!fingerprint) {
@@ -123,10 +152,25 @@ export async function streamChat(
     rateLimitMap.set(fingerprint, { count: 1, resetTime: now + RATE_WINDOW })
   }
 
+  // IP 小时频率限制检查
+  const ipRecord = ipRateLimitMap.get(ip)
+  if (ipRecord && now < ipRecord.resetTime) {
+    if (ipRecord.count >= RATE_LIMIT) {
+      return { error: 'RATE_LIMIT' }
+    }
+    ipRecord.count += 1
+  } else {
+    ipRateLimitMap.set(ip, { count: 1, resetTime: now + RATE_WINDOW })
+  }
+
   // 每日轮数限制检查
   const today = localDateKey()
   const dailyRecord = dailyLimitMap.get(fingerprint)
   if (dailyRecord && dailyRecord.date === today && dailyRecord.count >= dailyLimit) {
+    return { error: 'DAILY_LIMIT' }
+  }
+  const ipDailyRecord = ipDailyLimitMap.get(ip)
+  if (ipDailyRecord && ipDailyRecord.date === today && ipDailyRecord.count >= dailyLimit) {
     return { error: 'DAILY_LIMIT' }
   }
 
@@ -160,6 +204,11 @@ export async function streamChat(
   } else {
     dailyLimitMap.set(fingerprint, { count: 1, date: today })
   }
+  if (ipDailyRecord && ipDailyRecord.date === today) {
+    ipDailyRecord.count += 1
+  } else {
+    ipDailyLimitMap.set(ip, { count: 1, date: today })
+  }
 
   // 调用上游聊天服务
   const response = await fetch(`${CHAT_BASE_URL}/api/v1/chat/stream`, {
@@ -178,7 +227,11 @@ export async function streamChat(
     // 上游返回的已知错误码直接透传
     try {
       const payload = (await response.json()) as { error?: ChatErrorCode }
-      if (payload.error === 'INVALID_MESSAGE' || payload.error === 'MESSAGE_TOO_LONG') {
+      if (
+        payload.error === 'INVALID_MESSAGE' ||
+        payload.error === 'MESSAGE_TOO_LONG' ||
+        payload.error === 'SERVICE_DAILY_LIMIT'
+      ) {
         return { error: payload.error }
       }
     } catch {

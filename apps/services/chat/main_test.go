@@ -23,6 +23,13 @@ func postStream(t *testing.T, handler http.Handler, body string) *httptest.Respo
 	return recorder
 }
 
+func resetDailyCounter() {
+	dailyLimitMu.Lock()
+	defer dailyLimitMu.Unlock()
+	dailyLimitDate = ""
+	dailyLimitCount = 0
+}
+
 func TestHealthz(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	recorder := httptest.NewRecorder()
@@ -150,4 +157,35 @@ func TestStreamReturnsBadGatewayOnUpstreamError(t *testing.T) {
 	if recorder.Code != http.StatusBadGateway {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadGateway)
 	}
+}
+
+func TestStreamEnforcesDailyServiceLimit(t *testing.T) {
+	resetDailyCounter()
+	t.Setenv("DEEPSEEK_API_KEY", "test-key")
+	t.Setenv("DEEPSEEK_DAILY_LIMIT", "3")
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = fmt.Fprint(w, "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"}}]}\n")
+	}))
+	defer upstream.Close()
+	t.Setenv("DEEPSEEK_BASE_URL", upstream.URL)
+
+	mux := newTestMux()
+	for index := 0; index < 3; index += 1 {
+		recorder := postStream(t, mux, `{"messages":[{"role":"user","content":"hi"}]}`)
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("request %d status = %d, want %d", index+1, recorder.Code, http.StatusOK)
+		}
+	}
+
+	recorder := postStream(t, mux, `{"messages":[{"role":"user","content":"hi"}]}`)
+	if recorder.Code != http.StatusTooManyRequests {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusTooManyRequests)
+	}
+	var payload map[string]string
+	_ = json.Unmarshal(recorder.Body.Bytes(), &payload)
+	if payload["error"] != errServiceDailyLimit {
+		t.Fatalf("error = %q, want %q", payload["error"], errServiceDailyLimit)
+	}
+	resetDailyCounter()
 }
