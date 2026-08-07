@@ -1,5 +1,5 @@
 import { useRouter, useRouterState } from '@tanstack/react-router'
-import { BookOpen, Home, Languages, Search, SlidersHorizontal, User } from 'lucide-react'
+import { BookOpen, Home, Languages, Search, SlidersHorizontal, Sparkles, User } from 'lucide-react'
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { Link, useLocale, useTranslations } from '@/src/i18n/client'
 import { saveLocalePreference } from '@/i18n/locale-preference'
@@ -41,6 +41,7 @@ export function Navbar() {
   const links = [
     { path: '/', label: t('home'), icon: Home },
     { path: '/posts', label: t('posts'), icon: BookOpen },
+    { path: '/chat', label: t('chat'), icon: Sparkles },
     { path: '/about', label: t('about'), icon: User },
   ]
 

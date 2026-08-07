@@ -1,5 +1,6 @@
 export { Comment } from './components'
 export { CommentDisplay } from './components'
+export { FingerprintRegistrar } from './components'
 export { ViewCounter } from './components'
 export { ViewDisplay } from './components'
 export { addComment, incrementView } from './server-functions'

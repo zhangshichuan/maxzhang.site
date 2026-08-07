@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { FingerprintRegistrar } from '@/src/features/engagement'
 import { getFeaturedPosts } from '@/src/features/home'
 import { HomePage } from '@/src/features/home'
 
@@ -12,5 +13,10 @@ export const Route = createFileRoute('/zh/')({
 
 function HomeComponent() {
   const posts = Route.useLoaderData()
-  return <HomePage posts={posts} />
+  return (
+    <>
+      <FingerprintRegistrar />
+      <HomePage posts={posts} />
+    </>
+  )
 }
