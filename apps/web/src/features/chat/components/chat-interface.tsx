@@ -11,24 +11,88 @@ interface Message {
   content: string
 }
 
+const STORAGE_PREFIX = 'maxzhang.chat.'
+const DAILY_ROUND_LIMIT = 100
+
 const ERROR_MESSAGES: Record<ChatErrorCode, string> = {
   INVALID_FINGERPRINT: 'invalidFingerprint',
   RATE_LIMIT: 'rateLimit',
+  DAILY_LIMIT: 'dailyLimit',
   MESSAGE_TOO_LONG: 'messageTooLong',
   INVALID_MESSAGE: 'networkError',
   UPSTREAM_ERROR: 'upstreamError',
 }
 
+/** 本地日期 key（YYYY-MM-DD） */
+const localDateKey = (date = new Date()) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const sessionKey = (date: string) => `${STORAGE_PREFIX}${date}`
+
+/** 清理 3 天前的会话（只保留最近 3 天） */
+const pruneOldSessions = () => {
+  const twoDaysAgo = new Date()
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
+  const cutoff = localDateKey(twoDaysAgo)
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index)
+    if (!key?.startsWith(STORAGE_PREFIX)) continue
+    if (key.slice(STORAGE_PREFIX.length) < cutoff) {
+      localStorage.removeItem(key)
+    }
+  }
+}
+
+/** 读取今天的会话；空助手消息（流式中断残留）会被过滤 */
+const loadTodaySession = (): Message[] => {
+  try {
+    pruneOldSessions()
+    const raw = localStorage.getItem(sessionKey(localDateKey()))
+    if (!raw) return []
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(
+      (message): message is Message =>
+        typeof message === 'object' &&
+        message !== null &&
+        typeof (message as Message).id === 'string' &&
+        ((message as Message).role === 'user' || (message as Message).role === 'assistant') &&
+        typeof (message as Message).content === 'string' &&
+        (message as Message).content.trim().length > 0,
+    )
+  } catch {
+    return []
+  }
+}
+
+/** 按日期持久化会话到 localStorage */
+const persistSession = (session: Message[]) => {
+  try {
+    localStorage.setItem(sessionKey(localDateKey()), JSON.stringify(session))
+  } catch {
+    // 隐私模式或存储满时静默失败
+  }
+}
+
 export function ChatInterface() {
   const t = useTranslations('Chat')
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<Message[]>(loadTodaySession)
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
+  const [errorText, setErrorText] = useState<string | null>(null)
+  const [isLimited, setIsLimited] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const fullContentRef = useRef('')
   const displayIndexRef = useRef(0)
   const messageIdRef = useRef<string | null>(null)
+
+  const rounds = messages.filter((message) => message.role === 'user').length
+  const limited = isLimited || rounds >= DAILY_ROUND_LIMIT
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -82,36 +146,32 @@ export function ChatInterface() {
     [clearTypewriter, tick],
   )
 
-  const setError = useCallback(
+  const showError = useCallback(
     (errorCode: ChatErrorCode) => {
       clearTypewriter()
-      setMessages((prev) => {
-        const updated = [...prev]
-        const lastMsg = updated[updated.length - 1]
-        if (lastMsg?.id === messageIdRef.current) {
-          if (errorCode === 'MESSAGE_TOO_LONG') {
-            lastMsg.content = t('errors.messageTooLong', { max: 2000 })
-          } else {
-            lastMsg.content = t(`errors.${ERROR_MESSAGES[errorCode]}`)
-          }
-        }
-        return updated
-      })
+      setMessages((prev) => prev.filter((message) => message.id !== messageIdRef.current))
+      setErrorText(t(`errors.${ERROR_MESSAGES[errorCode]}`))
+      if (errorCode === 'DAILY_LIMIT') {
+        setIsLimited(true)
+      }
     },
     [clearTypewriter, t],
   )
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim() || isStreaming) return
+    const content = input.trim()
+    if (!content || isStreaming || limited) return
 
+    setErrorText(null)
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input.trim(),
+      content,
     }
-
-    setMessages((prev) => [...prev, userMessage])
+    const nextMessages = [...messages, userMessage]
+    setMessages(nextMessages)
+    persistSession(nextMessages)
     setInput('')
     setIsStreaming(true)
 
@@ -129,11 +189,18 @@ export function ChatInterface() {
     try {
       const thumbmark = await getThumbmark()
       const result = await chatStream({
-        data: { message: userMessage.content, fingerprint: thumbmark.thumbmark },
+        data: {
+          messages: nextMessages.map((message) => ({
+            role: message.role,
+            content: message.content,
+          })),
+          fingerprint: thumbmark.thumbmark,
+        },
       })
 
       if ('error' in result) {
-        setError(result.error)
+        showError(result.error)
+        persistSession(nextMessages)
         setIsStreaming(false)
         return
       }
@@ -142,17 +209,13 @@ export function ChatInterface() {
         fullContentRef.current += chunk
         startTypewriter(assistantMessage.id)
       }
+      persistSession([...nextMessages, { ...assistantMessage, content: fullContentRef.current }])
     } catch (error) {
       console.error('Error:', error)
       clearTypewriter()
-      setMessages((prev) => {
-        const updated = [...prev]
-        const lastMsg = updated[updated.length - 1]
-        if (lastMsg?.id === assistantMessage.id) {
-          lastMsg.content = t('errors.networkError')
-        }
-        return updated
-      })
+      setMessages((prev) => prev.filter((message) => message.id !== assistantMessage.id))
+      setErrorText(t('errors.networkError'))
+      persistSession(nextMessages)
     } finally {
       setIsStreaming(false)
     }
@@ -182,17 +245,24 @@ export function ChatInterface() {
         <div ref={messagesEndRef} />
       </div>
 
+      {(errorText || limited) && <div className="chat-error">{errorText ?? t('errors.dailyLimit')}</div>}
+
       <form onSubmit={handleSubmit} className="chat-input-shell">
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={t('placeholder')}
-          disabled={isStreaming}
+          disabled={isStreaming || limited}
           className="chat-input"
           rows={1}
         />
-        <button type="submit" disabled={isStreaming || !input.trim()} className="chat-send" aria-label={t('send')}>
+        <button
+          type="submit"
+          disabled={isStreaming || limited || !input.trim()}
+          className="chat-send"
+          aria-label={t('send')}
+        >
           <Send className="size-4" />
         </button>
       </form>

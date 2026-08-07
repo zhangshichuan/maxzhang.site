@@ -37,14 +37,15 @@
     "cancel": "Cancel"
   },
   "Chat": {
-    "title": "Chat",
-    "placeholder": "Type a message...",
-    "emptyState": "Start a conversation...",
-    "send": "Send",
-    "sending": "Sending...",
+    "title": "Fortune Chat",
+    "placeholder": "Tell the master your birth details or ask a question...",
+    "emptyState": "The master is in. Care to ask your fortune?",
+    "send": "Ask",
+    "sending": "Consulting the stars...",
     "errors": {
       "invalidFingerprint": "For security, please visit any article first to generate your fingerprint",
       "rateLimit": "Sending too fast. Please wait a moment and try again.",
+      "dailyLimit": "You've reached today's 100-round limit. Come back tomorrow.",
       "messageTooLong": "Message too long. Please keep it under {max} characters.",
       "upstreamError": "Upstream service error. Please try again later.",
       "networkError": "Network error. Please check your connection."

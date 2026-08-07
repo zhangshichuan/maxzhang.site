@@ -19,12 +19,13 @@ services:
     environment:
       - DATABASE_URL
       - TTS_BASE_URL=http://tts:8001
+      - CHAT_BASE_URL=http://chat:9000
     ports:
       - '3000:3000'
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
     depends_on:
       tts:
+        condition: service_healthy
+      chat:
         condition: service_healthy
 
   tts:
@@ -41,6 +42,24 @@ services:
         - python
         - -c
         - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/healthz', timeout=2)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  chat:
+    build:
+      context: ./apps/services/chat
+      dockerfile: Dockerfile
+    environment:
+      - DEEPSEEK_API_KEY
+      - DEEPSEEK_MODEL=deepseek-v4-flash
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -qO-
+        - http://127.0.0.1:9000/healthz
       interval: 30s
       timeout: 5s
       retries: 3

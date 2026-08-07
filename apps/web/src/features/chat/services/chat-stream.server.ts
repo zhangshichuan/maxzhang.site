@@ -1,24 +1,57 @@
 /**
  * 聊天流式传输服务
  *
- * 处理聊天消息的流式传输，包括频率限制、指纹验证和上游API调用。
- * 上游返回 SSE，这里在服务端解析成字符串块（AsyncGenerator）。
+ * 处理聊天消息的流式传输，包括频率限制、指纹验证和上游聊天服务调用。
+ * 上游（apps/services/chat）返回纯文本 SSE，这里在服务端解析成字符串块（AsyncGenerator）。
  */
 
 import { prisma } from '@/src/server/db'
 
-// 频率限制内存存储：指纹 -> { 计数, 重置时间 }
+export type ChatMessage = {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+// 小时频率限制内存存储：指纹 -> { 计数, 重置时间 }
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
+// 每日轮数限制内存存储：指纹 -> { 计数, 日期 }
+const dailyLimitMap = new Map<string, { count: number; date: string }>()
+
 // 频率限制配置：每小时最多50条消息
 const RATE_LIMIT = 50
 // 频率限制时间窗口：1小时（毫秒）
 const RATE_WINDOW = 60 * 60 * 1000
-// 最大消息长度：2000字符
+// 每日轮数上限：每个指纹每天最多 100 轮（测试可通过工具函数调整）
+let dailyLimit = Number(process.env.CHAT_DAILY_LIMIT ?? 100)
+// 最大消息长度：2000字符（用户消息）
 const MAX_MESSAGE_LENGTH = 2000
+// 历史条数上限：100 轮 * 2 条
+const MAX_HISTORY_LENGTH = 200
+// 历史总长度上限（字符）
+const MAX_TOTAL_LENGTH = 200000
+// 上游聊天服务地址：容器内由 docker-compose 注入，本地开发默认 localhost
+const CHAT_BASE_URL = process.env.CHAT_BASE_URL ?? 'http://localhost:9000'
+
+/** 聊天错误码类型定义 */
+export type ChatErrorCode =
+  | 'INVALID_FINGERPRINT' // 无效的浏览器指纹
+  | 'RATE_LIMIT' // 小时频率限制超限
+  | 'DAILY_LIMIT' // 每日轮数限制超限
+  | 'MESSAGE_TOO_LONG' // 消息过长
+  | 'INVALID_MESSAGE' // 无效消息格式
+  | 'UPSTREAM_ERROR' // 上游API错误
+
+/** 本地日期 key（YYYY-MM-DD），用于每日轮数统计 */
+const localDateKey = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 /**
- * 清理过期的频率限制记录
- * 定期清理时间窗口已过期的记录，避免内存泄漏
+ * 清理过期的限制记录：小时窗口过期 / 日期变化的每日记录
  */
 const cleanupExpired = () => {
   const now = Date.now()
@@ -27,38 +60,40 @@ const cleanupExpired = () => {
       rateLimitMap.delete(key)
     }
   }
+  const today = localDateKey()
+  for (const [key, record] of dailyLimitMap.entries()) {
+    if (record.date !== today) {
+      dailyLimitMap.delete(key)
+    }
+  }
 }
-
-/** 聊天错误码类型定义 */
-export type ChatErrorCode =
-  | 'INVALID_FINGERPRINT' // 无效的浏览器指纹
-  | 'RATE_LIMIT' // 频率限制超限
-  | 'MESSAGE_TOO_LONG' // 消息过长
-  | 'INVALID_MESSAGE' // 无效消息格式
-  | 'UPSTREAM_ERROR' // 上游API错误
 
 /** 聊天流测试工具函数，主要用于单元测试 */
 export const chatStreamTestUtils = {
   /** 重置频率限制状态，清理所有记录 */
   resetRateLimitState() {
     rateLimitMap.clear()
+    dailyLimitMap.clear()
+  },
+  /** 调整每日轮数上限（仅测试用） */
+  setDailyLimitForTest(limit: number) {
+    dailyLimit = limit
   },
 }
 
 /**
  * 流式聊天处理函数
  *
- * 处理聊天消息的流式传输，包括验证、频率限制和上游API调用
+ * 处理聊天消息的流式传输，包括验证、频率限制和上游调用
  *
- * @param message - 用户输入的聊天消息
+ * @param messages - 完整消息历史（用户 + 算命师）
  * @param fingerprint - 浏览器指纹，用于识别和频率限制
  * @returns 字符串块异步生成器（内容流）或包含错误码的错误对象
  */
 export async function streamChat(
-  message: string,
+  messages: ChatMessage[],
   fingerprint: string,
 ): Promise<AsyncGenerator<string> | { error: ChatErrorCode }> {
-  // 清理过期的频率限制记录
   cleanupExpired()
 
   // 验证指纹是否有效
@@ -75,39 +110,80 @@ export async function streamChat(
     return { error: 'INVALID_FINGERPRINT' }
   }
 
-  // 频率限制检查
+  // 小时频率限制检查
   const now = Date.now()
   const record = rateLimitMap.get(fingerprint)
 
   if (record && now < record.resetTime) {
-    // 在时间窗口内，检查是否超过限制
     if (record.count >= RATE_LIMIT) {
       return { error: 'RATE_LIMIT' }
     }
-    // 未超限，增加计数
     record.count += 1
   } else {
-    // 新时间窗口，创建新记录
     rateLimitMap.set(fingerprint, { count: 1, resetTime: now + RATE_WINDOW })
   }
 
-  // 验证消息格式和长度
-  if (!message || typeof message !== 'string') {
-    return { error: 'INVALID_MESSAGE' }
-  }
-  if (message.length > MAX_MESSAGE_LENGTH) {
-    return { error: 'MESSAGE_TOO_LONG' }
+  // 每日轮数限制检查
+  const today = localDateKey()
+  const dailyRecord = dailyLimitMap.get(fingerprint)
+  if (dailyRecord && dailyRecord.date === today && dailyRecord.count >= dailyLimit) {
+    return { error: 'DAILY_LIMIT' }
   }
 
-  // 调用上游聊天API（假设运行在Docker容器内的服务）
-  const response = await fetch('http://host.docker.internal:8000/api/v1/chat/stream', {
+  // 验证消息格式和长度
+  if (!Array.isArray(messages) || messages.length === 0 || messages.length > MAX_HISTORY_LENGTH) {
+    return { error: 'INVALID_MESSAGE' }
+  }
+  let totalLength = 0
+  for (const message of messages) {
+    if (
+      !message ||
+      (message.role !== 'user' && message.role !== 'assistant') ||
+      typeof message.content !== 'string' ||
+      !message.content.trim()
+    ) {
+      return { error: 'INVALID_MESSAGE' }
+    }
+    const limit = message.role === 'user' ? MAX_MESSAGE_LENGTH : 50000
+    if (message.content.length > limit) {
+      return { error: 'MESSAGE_TOO_LONG' }
+    }
+    totalLength += message.content.length
+    if (totalLength > MAX_TOTAL_LENGTH) {
+      return { error: 'MESSAGE_TOO_LONG' }
+    }
+  }
+
+  // 验证通过后记录本轮
+  if (dailyRecord && dailyRecord.date === today) {
+    dailyRecord.count += 1
+  } else {
+    dailyLimitMap.set(fingerprint, { count: 1, date: today })
+  }
+
+  // 调用上游聊天服务
+  const response = await fetch(`${CHAT_BASE_URL}/api/v1/chat/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: message.trim() }),
-    signal: AbortSignal.timeout(60 * 1000), // 60秒超时
+    body: JSON.stringify({
+      messages: messages.map((message) => ({
+        role: message.role,
+        content: message.content.trim(),
+      })),
+    }),
+    signal: AbortSignal.timeout(120 * 1000), // 120秒超时
   })
 
   if (!response.ok) {
+    // 上游返回的已知错误码直接透传
+    try {
+      const payload = (await response.json()) as { error?: ChatErrorCode }
+      if (payload.error === 'INVALID_MESSAGE' || payload.error === 'MESSAGE_TOO_LONG') {
+        return { error: payload.error }
+      }
+    } catch {
+      // 忽略解析失败，按上游错误处理
+    }
     return { error: 'UPSTREAM_ERROR' }
   }
 

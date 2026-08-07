@@ -4,7 +4,7 @@ import { ChatInterface } from '@/src/features/chat'
 export const Route = createFileRoute('/_en/chat')({
   component: ChatComponent,
   head: () => ({
-    meta: [{ title: 'Chat - Max Zhang' }],
+    meta: [{ title: 'Fortune Chat - Max Zhang' }],
   }),
 })
 
