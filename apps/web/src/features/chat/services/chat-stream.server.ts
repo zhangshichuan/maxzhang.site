@@ -113,7 +113,7 @@ const getClientIp = () => {
  *
  * 处理聊天消息的流式传输，包括验证、频率限制和上游调用
  *
- * @param messages - 完整消息历史（用户 + 算命师）
+ * @param messages - 完整消息历史（用户 + 树洞）
  * @param fingerprint - 浏览器指纹，用于识别和频率限制
  * @returns 字符串块异步生成器（内容流）或包含错误码的错误对象
  */

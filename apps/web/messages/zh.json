@@ -4,8 +4,8 @@
     "readingTime": "{minutes} 分钟阅读",
     "nav": {
       "home": "首页",
-      "posts": "故事会",
-      "chat": "算一卦",
+      "posts": "文章",
+      "chat": "树洞",
       "about": "关于",
       "switchLanguage": "切换至英文",
       "language": "语言",
@@ -37,16 +37,16 @@
     "cancel": "取消"
   },
   "Chat": {
-    "title": "算一卦",
-    "placeholder": "说说你的生辰八字，或想问的事……",
-    "emptyState": "大师在此，不妨问上一卦。",
-    "send": "问卦",
-    "sending": "掐指算来……",
+    "title": "树洞",
+    "placeholder": "想说什么都可以，我在这里听。",
+    "emptyState": "我在这里。无论你想说什么，都可以说给我听。",
+    "send": "倾诉",
+    "sending": "倾听中……",
     "errors": {
       "invalidFingerprint": "为了安全起见，请先访问首页或任意文章以生成指纹",
       "rateLimit": "消息发送过于频繁，请稍后再试",
       "dailyLimit": "今日已聊满 100 轮，明日再来吧",
-      "serviceDailyLimit": "今日算卦人数已满，明日再来吧",
+      "serviceDailyLimit": "今天的倾诉名额已满，明天再来吧",
       "messageTooLong": "消息过长，请控制在 {max} 字符以内",
       "upstreamError": "上游服务错误，请稍后再试",
       "networkError": "网络错误，请检查网络连接"
@@ -158,14 +158,14 @@
     "interestList": ["开源", "UI/UX 设计", "全栈开发", "AI Agent 应用"]
   },
   "PostsPage": {
-    "title": "故事会",
+    "title": "文章",
     "description": "技术、设计与生活的交汇之地。",
     "categories": "分类浏览",
     "tags": "标签索引",
     "noPosts": "暂无文章，敬请期待。",
     "noCategories": "暂无分类",
     "noTags": "暂无标签",
-    "back": "返回故事会"
+    "back": "返回文章"
   },
   "SearchPage": {
     "title": "检索文章",

@@ -125,7 +125,7 @@ func TestStreamProxiesDeepSeek(t *testing.T) {
 		t.Fatalf("messages = %v", gotPayload["messages"])
 	}
 	system, ok := messages[0].(map[string]any)
-	if !ok || system["role"] != "system" || !strings.Contains(system["content"].(string), "仙长") {
+	if !ok || system["role"] != "system" || !strings.Contains(system["content"].(string), "树洞") {
 		t.Fatalf("system message = %v", messages[0])
 	}
 }

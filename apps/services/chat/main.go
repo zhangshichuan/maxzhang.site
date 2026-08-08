@@ -1,4 +1,4 @@
-// 算卦聊天服务
+// 树洞聊天服务
 //
 // 接收 web 端完整消息历史（{messages: [{role, content}]}），调用 DeepSeek
 // Chat Completions（deepseek-v4-flash，关闭思考模式），把上游 SSE 中的
@@ -307,7 +307,7 @@ func main() {
 	mux.HandleFunc("POST /api/v1/chat/stream", handleStream)
 
 	port := envOr("PORT", defaultPort)
-	log.Printf("算卦聊天服务 listening on :%s", port)
+	log.Printf("树洞聊天服务 listening on :%s", port)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatal(err)
 	}

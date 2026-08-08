@@ -81,7 +81,9 @@ const persistSession = (session: Message[]) => {
 
 export function ChatInterface() {
   const t = useTranslations('Chat')
-  const [messages, setMessages] = useState<Message[]>(loadTodaySession)
+  // 会话只在客户端挂载后从 localStorage 加载，避免 SSR 空状态与客户端
+  // 历史会话不一致导致的 hydration mismatch。
+  const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [errorText, setErrorText] = useState<string | null>(null)
@@ -100,8 +102,49 @@ export function ChatInterface() {
   }
 
   useEffect(() => {
+    const saved = loadTodaySession()
+    if (saved.length > 0) {
+      setMessages(saved)
+    }
+  }, [])
+
+  useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  /**
+   * 聊天页使用整页禁滚 + 内部滚动布局：
+   * 用 visualViewport 的高度实时驱动容器高度，保证移动端键盘弹起时
+   * 输入框始终可见（iOS/Android 的 visualViewport 都会随键盘收缩）。
+   */
+  useEffect(() => {
+    const updateViewport = () => {
+      const viewport = window.visualViewport
+      const height = viewport ? viewport.height : window.innerHeight
+      const root = document.documentElement
+      root.style.setProperty('--chat-vh', `${height}px`)
+      if (viewport && viewport.height < window.innerHeight - 1) {
+        root.classList.add('chat-keyboard-open')
+      } else {
+        root.classList.remove('chat-keyboard-open')
+      }
+    }
+
+    updateViewport()
+    const viewport = window.visualViewport
+    viewport?.addEventListener('resize', updateViewport)
+    viewport?.addEventListener('scroll', updateViewport)
+    window.addEventListener('resize', updateViewport)
+    window.addEventListener('orientationchange', updateViewport)
+    return () => {
+      viewport?.removeEventListener('resize', updateViewport)
+      viewport?.removeEventListener('scroll', updateViewport)
+      window.removeEventListener('resize', updateViewport)
+      window.removeEventListener('orientationchange', updateViewport)
+      document.documentElement.style.removeProperty('--chat-vh')
+      document.documentElement.classList.remove('chat-keyboard-open')
+    }
+  }, [])
 
   const clearTypewriter = useCallback(() => {
     if (typewriterRef.current) {
@@ -230,13 +273,13 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="chat-shell flex h-full flex-col">
       <div className="section-head">
         <h1 className="section-title">{t('title')}</h1>
         <div className="section-line"></div>
       </div>
 
-      <div className="chat-messages" style={{ minHeight: 'calc(100vh - 360px)' }}>
+      <div className="chat-messages">
         {messages.length === 0 && <div className="empty-state">{t('emptyState')}</div>}
         {messages.map((message) => (
           <div key={message.id} className={`chat-bubble ${message.role}`}>

@@ -360,9 +360,7 @@ const EnPostsRouteRouteChildren: EnPostsRouteRouteChildren = {
   EnPostsIndexRoute: EnPostsIndexRoute,
 }
 
-const EnPostsRouteRouteWithChildren = EnPostsRouteRoute._addFileChildren(
-  EnPostsRouteRouteChildren,
-)
+const EnPostsRouteRouteWithChildren = EnPostsRouteRoute._addFileChildren(EnPostsRouteRouteChildren)
 
 interface EnRouteRouteChildren {
   EnPostsRouteRoute: typeof EnPostsRouteRouteWithChildren
@@ -380,8 +378,7 @@ const EnRouteRouteChildren: EnRouteRouteChildren = {
   EnIndexRoute: EnIndexRoute,
 }
 
-const EnRouteRouteWithChildren =
-  EnRouteRoute._addFileChildren(EnRouteRouteChildren)
+const EnRouteRouteWithChildren = EnRouteRoute._addFileChildren(EnRouteRouteChildren)
 
 interface ZhPostsRouteRouteChildren {
   ZhPostsSlugRoute: typeof ZhPostsSlugRoute
@@ -393,9 +390,7 @@ const ZhPostsRouteRouteChildren: ZhPostsRouteRouteChildren = {
   ZhPostsIndexRoute: ZhPostsIndexRoute,
 }
 
-const ZhPostsRouteRouteWithChildren = ZhPostsRouteRoute._addFileChildren(
-  ZhPostsRouteRouteChildren,
-)
+const ZhPostsRouteRouteWithChildren = ZhPostsRouteRoute._addFileChildren(ZhPostsRouteRouteChildren)
 
 interface ZhRouteRouteChildren {
   ZhPostsRouteRoute: typeof ZhPostsRouteRouteWithChildren
@@ -413,17 +408,14 @@ const ZhRouteRouteChildren: ZhRouteRouteChildren = {
   ZhIndexRoute: ZhIndexRoute,
 }
 
-const ZhRouteRouteWithChildren =
-  ZhRouteRoute._addFileChildren(ZhRouteRouteChildren)
+const ZhRouteRouteWithChildren = ZhRouteRoute._addFileChildren(ZhRouteRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   EnRouteRoute: EnRouteRouteWithChildren,
   ZhRouteRoute: ZhRouteRouteWithChildren,
   ApiTtsLocaleSlugRoute: ApiTtsLocaleSlugRoute,
 }
-export const routeTree = rootRouteImport
-  ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+export const routeTree = rootRouteImport._addFileChildren(rootRouteChildren)._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
 import type { startInstance } from './start.ts'

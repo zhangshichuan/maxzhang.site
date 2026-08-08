@@ -1334,9 +1334,12 @@ html.dark .article-prose pre code span {
 .chat-messages {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
   gap: 12px;
   padding: 8px 0 20px;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .chat-bubble {
   max-width: min(85%, 560px);
@@ -1365,11 +1368,46 @@ html.dark .article-prose pre code span {
   display: flex;
   align-items: flex-end;
   gap: 8px;
+  margin-top: 12px;
   padding: 10px 12px;
   border-radius: 24px;
-  position: sticky;
-  bottom: 0;
   z-index: 5;
+}
+
+/* ==========================================
+   树洞聊天页：整页禁滚，聊天内容独立滚动
+   ========================================== */
+html:has(.chat-route),
+body:has(.chat-route) {
+  height: 100%;
+  overflow: hidden;
+}
+.overlay:has(.chat-route),
+.container:has(.chat-route) {
+  height: var(--chat-vh, 100dvh);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.site-main:has(.chat-route) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.chat-route {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 40px 0 0;
+}
+.chat-shell {
+  flex: 1;
+  min-height: 0;
 }
 .chat-input {
   flex: 1;
@@ -1785,6 +1823,18 @@ html.dark .article-prose pre code span {
   .site-main {
     padding-top: env(safe-area-inset-top);
     padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+  .chat-route {
+    padding: 16px 0 0;
+  }
+  .site-main:has(.chat-route) {
+    padding-bottom: 0;
+  }
+  .chat-input-shell {
+    margin-bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+  .chat-keyboard-open .chat-input-shell {
+    margin-bottom: 8px;
   }
   .site-footer {
     padding-bottom: calc(104px + env(safe-area-inset-bottom));

@@ -1,6 +1,6 @@
 # Max Zhang 个人网站
 
-Max 的个人技术网站：中英双语技术文章、评论与阅读统计、流式 AI 聊天，以及由 edge-tts 实时合成的文章语音播报。
+Max 的个人技术网站：中英双语技术文章、评论与阅读统计、树洞式 AI 倾诉陪伴，以及由 edge-tts 实时合成的文章语音播报。
 
 线上地址：<https://maxzhang.site>
 
@@ -12,7 +12,8 @@ Max 的个人技术网站：中英双语技术文章、评论与阅读统计、�
 - **内容**：MDX 构建期编译，中英各 28 篇；支持 remark-gfm 与 Mermaid 图表
 - **国际化**：自建薄 i18n 层，en 无 URL 前缀，zh 走 `/zh` 前缀；无前缀首页按浏览器语言/本地偏好自动跳转
 - **TTS**：`apps/services/tts`（FastAPI + edge-tts，依赖用 uv 管理），按内容哈希缓存、流式返回 MP3
-- **部署**：Docker Compose 双服务编排，GitHub Actions 在 push `main` 时自动构建部署
+- **聊天**：`apps/services/chat`（Go 标准库 + DeepSeek，SSE 流式转发、无状态），树洞人设提示词见 `prompt.md`
+- **部署**：Docker Compose 三服务编排，GitHub Actions 在 push `main` 时自动构建部署
 
 ## 目录结构
 
@@ -28,13 +29,14 @@ apps/
     tests/           # Vitest 测试，镜像 src/features 结构
   services/
     tts/             # FastAPI + edge-tts 流式语音服务（uv 管理）
+    chat/            # Go 树洞聊天服务（DeepSeek 流式转发，端口 9000）
 docs/
   adr/               # 架构决策记录
 ```
 
 ## 本地开发
 
-前置要求：Node.js 22+、pnpm 10、Python 3.12+、uv。
+前置要求：Node.js 22+、pnpm 10、Python 3.12+、uv、Go 1.22+。
 
 ```bash
 pnpm install        # 安装依赖（postinstall 自动 prisma generate）
@@ -49,7 +51,14 @@ uv sync
 uv run uvicorn app.main:app --port 8001
 ```
 
-开发环境变量：`apps/web/.env` 中配置 `DATABASE_URL=file:./prisma/dev.db`；Web 默认访问 `http://localhost:8001` 的 TTS 服务，可用 `TTS_BASE_URL` 覆盖。
+需要树洞聊天时，另起聊天服务：
+
+```bash
+cd apps/services/chat
+DEEPSEEK_API_KEY=... go run .
+```
+
+开发环境变量：`apps/web/.env` 中配置 `DATABASE_URL=file:./prisma/dev.db`；Web 默认访问 `http://localhost:8001` 的 TTS 服务与 `http://localhost:9000` 的聊天服务，分别可用 `TTS_BASE_URL`、`CHAT_BASE_URL` 覆盖；聊天服务需要 `DEEPSEEK_API_KEY`，可用 `DEEPSEEK_MODEL`、`DEEPSEEK_BASE_URL` 覆盖。
 
 ## 常用命令
 
@@ -61,6 +70,7 @@ uv run uvicorn app.main:app --port 8001
 | `pnpm lint` | tsc → eslint --fix → prettier → prisma format |
 | `pnpm test` / `pnpm test:watch` | Vitest 单次 / 监听 |
 | `pnpm db:migrate` / `pnpm db:studio` | Prisma 迁移 / 可视化数据库 |
+| `cd apps/services/chat && go test ./...` | Go 聊天服务测试 |
 
 ## 内容维护
 
@@ -71,10 +81,11 @@ uv run uvicorn app.main:app --port 8001
 
 ## 部署
 
-`docker compose up -d` 编排两个服务：
+`docker compose up -d` 编排三个服务：
 
 - `app`：TanStack Start 应用（:3000），SQLite 数据卷 `sqlite_data`
 - `tts`：语音合成服务（仅内网），音频缓存卷 `tts_data`（30 天 / 1GB 自动清理）
+- `chat`：树洞聊天服务（仅内网，:9000），需注入 `DEEPSEEK_API_KEY`，模型默认 `deepseek-v4-flash`
 
 push `main` 后 GitHub Actions 自动执行：构建 → 打包源码 → SCP 到服务器 → `docker compose build` → 迁移 → 重启。
 
@@ -82,5 +93,5 @@ push `main` 后 GitHub Actions 自动执行：构建 → 打包源码 → SCP �
 
 - [CONTEXT.md](CONTEXT.md) — 领域术语与项目上下文
 - [apps/web/ARCHITECTURE.md](apps/web/ARCHITECTURE.md) — Web 四层架构
-- [docs/adr](docs/adr) — 架构决策记录（技术栈迁移、i18n、MDX、TTS）
+- [docs/adr](docs/adr) — 架构决策记录（技术栈迁移、i18n、MDX、TTS、聊天转向树洞）
 - [AGENTS.md](AGENTS.md) — 贡献者指南

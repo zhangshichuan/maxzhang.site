@@ -4,8 +4,8 @@
     "readingTime": "{minutes} min read",
     "nav": {
       "home": "Home",
-      "posts": "Journal",
-      "chat": "Fortune",
+      "posts": "Articles",
+      "chat": "Tree Hole",
       "about": "About",
       "switchLanguage": "Switch to Chinese",
       "language": "Language",
@@ -37,16 +37,16 @@
     "cancel": "Cancel"
   },
   "Chat": {
-    "title": "Fortune Chat",
-    "placeholder": "Tell the master your birth details or ask a question...",
-    "emptyState": "The master is in. Care to ask your fortune?",
-    "send": "Ask",
-    "sending": "Consulting the stars...",
+    "title": "Tree Hole",
+    "placeholder": "Tell me anything. I'm here to listen.",
+    "emptyState": "I'm here. Say whatever you need to say.",
+    "send": "Send",
+    "sending": "Listening...",
     "errors": {
       "invalidFingerprint": "For security, please visit the homepage or any article first to generate your fingerprint",
       "rateLimit": "Sending too fast. Please wait a moment and try again.",
       "dailyLimit": "You've reached today's 100-round limit. Come back tomorrow.",
-      "serviceDailyLimit": "The master has seen enough fortunes today. Come back tomorrow.",
+      "serviceDailyLimit": "Today's listening slots are full. Come back tomorrow.",
       "messageTooLong": "Message too long. Please keep it under {max} characters.",
       "upstreamError": "Upstream service error. Please try again later.",
       "networkError": "Network error. Please check your connection."
@@ -55,7 +55,7 @@
   "HomePage": {
     "hero": {
       "subtitle": "BUILD HARDER. GLITCH LOUDER.",
-      "readArticles": "Browse Journal",
+      "readArticles": "Browse Articles",
       "aboutMe": "About Me"
     },
     "featuredPosts": {
@@ -158,14 +158,14 @@
     "interestList": ["Open Source", "UI/UX Design", "Full Stack Development", "AI Agent Applications"]
   },
   "PostsPage": {
-    "title": "Journal",
+    "title": "Articles",
     "description": "Where technology, design, and life intersect.",
     "categories": "Categories",
     "tags": "Tags",
     "noPosts": "No articles yet, stay tuned.",
     "noCategories": "No categories",
     "noTags": "No tags",
-    "back": "Back to Journal"
+    "back": "Back to Articles"
   },
   "SearchPage": {
     "title": "Search Articles",

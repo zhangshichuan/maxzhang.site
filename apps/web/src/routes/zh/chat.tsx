@@ -4,13 +4,13 @@ import { ChatInterface } from '@/src/features/chat'
 export const Route = createFileRoute('/zh/chat')({
   component: ChatComponent,
   head: () => ({
-    meta: [{ title: '算命 - Max Zhang' }],
+    meta: [{ title: '树洞 - Max Zhang' }],
   }),
 })
 
 function ChatComponent() {
   return (
-    <div style={{ padding: '40px 0', maxWidth: 700, margin: '0 auto' }}>
+    <div className="chat-route">
       <ChatInterface />
     </div>
   )

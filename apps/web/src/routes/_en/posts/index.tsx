@@ -5,7 +5,7 @@ export const Route = createFileRoute('/_en/posts/')({
   loader: ({ context }) => loadPostsIndexFn({ data: { locale: context.locale } }),
   head: () => ({
     meta: [
-      { title: 'Journal - Max Zhang' },
+      { title: 'Articles - Max Zhang' },
       { name: 'description', content: 'Where technology, design, and life intersect.' },
     ],
   }),
