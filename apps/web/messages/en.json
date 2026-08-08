@@ -203,10 +203,10 @@
     "dark": "Dark",
     "system": "System",
     "modeLabel": "Appearance mode",
-    "glassIntensity": "Glass Intensity",
-    "clear": "Clear",
-    "tinted": "Tinted",
-    "balanced": "Balanced"
+    "glassIntensity": "Glass Texture",
+    "glassLiquid": "Liquid Glass",
+    "glassFrosted": "Frosted Glass",
+    "glassBalanced": "Balanced Glass"
   },
   "AudioPlayer": {
     "loading": "Loading",

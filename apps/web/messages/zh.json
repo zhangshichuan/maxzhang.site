@@ -203,10 +203,10 @@
     "dark": "深色",
     "system": "跟随系统",
     "modeLabel": "外观模式",
-    "glassIntensity": "玻璃强度",
-    "clear": "Clear",
-    "tinted": "Tinted",
-    "balanced": "均衡"
+    "glassIntensity": "玻璃质感",
+    "glassLiquid": "液态玻璃",
+    "glassFrosted": "磨砂玻璃",
+    "glassBalanced": "均衡玻璃"
   },
   "AudioPlayer": {
     "loading": "加载中",

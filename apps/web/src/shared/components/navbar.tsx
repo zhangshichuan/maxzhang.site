@@ -14,6 +14,7 @@ export function Navbar() {
   const router = useRouter()
   const [appearanceOpen, setAppearanceOpen] = useState(false)
   const appearanceTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const headerRef = useRef<HTMLElement | null>(null)
 
   const toggleLanguage = () => {
     const nextLocale = locale === 'zh' ? 'en' : 'zh'
@@ -38,6 +39,24 @@ export function Navbar() {
     }
   }, [appearanceOpen])
 
+  // 滚动后增强导航栏玻璃感（rAF 节流）
+  useEffect(() => {
+    let frame = 0
+    const onScroll = () => {
+      if (frame) return
+      frame = requestAnimationFrame(() => {
+        frame = 0
+        headerRef.current?.classList.toggle('scrolled', window.scrollY > 8)
+      })
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      if (frame) cancelAnimationFrame(frame)
+    }
+  }, [])
+
   const links = [
     { path: '/', label: t('home'), icon: Home },
     { path: '/posts', label: t('posts'), icon: BookOpen },
@@ -47,7 +66,7 @@ export function Navbar() {
 
   return (
     <>
-      <header className="site-header glass-toolbar">
+      <header ref={headerRef} className="site-header glass-toolbar">
         <Link href="/" className="site-logo">
           Max Zhang
         </Link>

@@ -35,7 +35,7 @@ export function AppearancePanel({ open, onClose }: AppearancePanelProps) {
     { value: 'system', label: t('system'), icon: <Monitor className="size-4" /> },
   ]
 
-  const intensityLabel = intensity < 34 ? t('clear') : intensity > 66 ? t('tinted') : t('balanced')
+  const intensityLabel = intensity < 34 ? t('glassLiquid') : intensity > 66 ? t('glassFrosted') : t('glassBalanced')
 
   useEffect(() => {
     if (!open) return
@@ -138,8 +138,8 @@ export function AppearancePanel({ open, onClose }: AppearancePanelProps) {
                 aria-label={t('glassIntensity')}
               />
               <div className="glass-intensity-labels">
-                <span>{t('clear')}</span>
-                <span>{t('tinted')}</span>
+                <span>{t('glassLiquid')}</span>
+                <span>{t('glassFrosted')}</span>
               </div>
             </div>
           </motion.div>

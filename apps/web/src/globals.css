@@ -42,9 +42,11 @@
     'SF Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'JetBrains Mono Variable', 'JetBrains Mono', monospace;
 
   /* 玻璃强度（由外观脚本/Provider 内联写入） */
-  --glass-alpha: 60%;
-  --glass-blur: 24px;
-  --glass-sat: 1.2;
+  --glass-alpha: 66%;
+  --glass-blur: 35px;
+  --glass-sat: 1.58;
+  --glass-brightness: 1.05;
+  --glass-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0) 42%);
   --wallpaper-opacity: 0.7;
 }
 
@@ -64,7 +66,7 @@ html.light {
   --glass-color: #ffffff;
   --glass-border: rgba(0, 0, 0, 0.08);
   --glass-highlight: rgba(255, 255, 255, 0.75);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
 }
 
 html.dark {
@@ -81,9 +83,11 @@ html.dark {
   --red: #ff453a;
   --green: #32d74b;
   --glass-color: #1c1c1e;
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-highlight: rgba(255, 255, 255, 0.16);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-highlight: rgba(255, 255, 255, 0.22);
+  --glass-brightness: 1.05;
+  --glass-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 42%);
+  --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
 
 /* ==========================================
@@ -242,12 +246,13 @@ html.dark .wallpaper-orb-3 {
 .glass-card,
 .glass-input-shell,
 .chat-input-shell {
-  background: color-mix(in srgb, var(--glass-color) var(--glass-alpha), transparent);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  background: var(--glass-sheen), color-mix(in srgb, var(--glass-color) var(--glass-alpha), transparent);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat)) brightness(var(--glass-brightness));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat)) brightness(var(--glass-brightness));
   border: 1px solid var(--glass-border);
   box-shadow:
     inset 0 0.5px 0 var(--glass-highlight),
+    inset 0 -0.5px 0 color-mix(in srgb, var(--glass-highlight) 55%, transparent),
     var(--glass-shadow);
 }
 
@@ -309,6 +314,20 @@ html.dark .wallpaper-orb-3 {
   padding: 12px 24px;
   padding-top: calc(12px + env(safe-area-inset-top));
   border-bottom: 0.5px solid var(--separator);
+}
+
+/* 滚动后导航栏玻璃感增强 */
+.site-header {
+  transition:
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+}
+.site-header.scrolled {
+  --glass-alpha: 84%;
+  --glass-blur: 42px;
+  box-shadow:
+    inset 0 0.5px 0 var(--glass-highlight),
+    0 12px 40px rgba(0, 0, 0, 0.12);
 }
 
 .site-logo {
