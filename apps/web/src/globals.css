@@ -340,9 +340,44 @@ html.dark .wallpaper-orb-3 {
 }
 
 .desktop-nav {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 2px;
+}
+
+.desktop-nav-link,
+.nav-icon-btn,
+.tabbar-item {
+  position: relative;
+  z-index: 1;
+}
+
+/* 玻璃水滴滑动指示器 */
+.nav-glass-indicator {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 0;
+  border-radius: 999px;
+  pointer-events: none;
+  background: var(--glass-sheen), color-mix(in srgb, var(--glass-color) 75%, transparent);
+  backdrop-filter: blur(28px) saturate(1.7) brightness(1.08);
+  -webkit-backdrop-filter: blur(28px) saturate(1.7) brightness(1.08);
+  border: 0.5px solid var(--glass-border);
+  box-shadow:
+    inset 0 0.5px 0 var(--glass-highlight),
+    0 6px 20px rgba(0, 0, 0, 0.1);
+  transition:
+    left 0.55s cubic-bezier(0.22, 1.35, 0.36, 1),
+    width 0.55s cubic-bezier(0.22, 1.35, 0.36, 1);
+}
+.nav-glass-indicator.desktop {
+  height: 32px;
+}
+.nav-glass-indicator.tabbar {
+  height: 54px;
+  transform: none;
 }
 
 .desktop-nav-link {
@@ -360,9 +395,12 @@ html.dark .wallpaper-orb-3 {
   color: var(--label);
 }
 .desktop-nav-link.active {
-  background: color-mix(in srgb, var(--accent) 13%, transparent);
+  background: transparent;
   color: var(--accent);
   font-weight: 600;
+}
+.desktop-nav-link.active:hover {
+  background: transparent;
 }
 
 .nav-icon-btn {
@@ -386,7 +424,7 @@ html.dark .wallpaper-orb-3 {
   color: var(--label);
 }
 .nav-icon-btn.active {
-  background: color-mix(in srgb, var(--accent) 13%, transparent);
+  background: transparent;
   color: var(--accent);
 }
 
@@ -439,10 +477,8 @@ html.dark .wallpaper-orb-3 {
   color: var(--label);
 }
 .tabbar-item.active .tabbar-icon {
-  background: var(--accent);
-  color: #fff;
-  border-radius: 999px;
-  padding: 3px 12px;
+  background: transparent;
+  color: var(--accent);
 }
 
 /* ==========================================
