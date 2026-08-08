@@ -2,7 +2,7 @@ import { Comment, ViewCounter } from '@/src/features/engagement'
 import type { Post } from '@/src/features/posts/model'
 import { AudioPlayer, BackToPosts, BackToTop } from '@/src/shared/components'
 import { useTranslations } from '@/src/i18n/client'
-import { Calendar, Clock, Folder, MessageCircle, User } from 'lucide-react'
+import { Calendar, Clock, Folder, MessageCircle, Sparkles, User } from 'lucide-react'
 import { Suspense } from 'react'
 import { PostMdx } from './post-mdx'
 
@@ -27,6 +27,12 @@ export function PostPage({ post, commentCount, locale }: PostPageProps) {
             <h1 className="article-title">{post.title}</h1>
 
             <div className="article-meta">
+              {post.aiAssisted && (
+                <span className="ai-badge" title={tPosts('aiAssistedHint')}>
+                  <Sparkles className="size-3.5" />
+                  {tPosts('aiAssisted')}
+                </span>
+              )}
               <span className="stat-pill">
                 <Calendar className="size-3.5 text-primary" />
                 {post.date}

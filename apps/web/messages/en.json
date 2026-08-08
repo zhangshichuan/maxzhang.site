@@ -42,6 +42,12 @@
     "emptyState": "I'm here. Say whatever you need to say.",
     "send": "Send",
     "sending": "Listening...",
+    "privacyNote": "All chat history is stored only in your browser. If you're still not sure, you can check the source code I wrote — I won't mislead you.",
+    "privacySource": "Tap GitHub on the About page to see the code",
+    "clear": "Clear chat history",
+    "clearConfirm": "Confirm clear?",
+    "clearCancel": "Cancel",
+    "menu": "More actions",
     "errors": {
       "invalidFingerprint": "For security, please visit the homepage or any article first to generate your fingerprint",
       "rateLimit": "Sending too fast. Please wait a moment and try again.",
@@ -165,6 +171,8 @@
     "noPosts": "No articles yet, stay tuned.",
     "noCategories": "No categories",
     "noTags": "No tags",
+    "aiAssisted": "AI-assisted",
+    "aiAssistedHint": "Written with AI assistance and reviewed by the author",
     "back": "Back to Articles"
   },
   "SearchPage": {

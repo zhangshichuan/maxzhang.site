@@ -14,7 +14,7 @@ Never commit build output: `.output/`, `src/features/posts/generated/`, and `gen
 
 ## Build, Test, and Development Commands
 
-- `pnpm dev` — regenerate MDX and start the Vite dev server on :3000.
+- `pnpm dev` — regenerate MDX, start the Vite dev server on :3000, and spawn TTS (:8001) + chat (:9000) dev services via `scripts/dev.mjs` (use `pnpm dev:web` for web only, `pnpm dev:services` for backends only, `pnpm dev:otel` for the local observability stack). Local env vars live per service in gitignored `.env` files (`apps/web/.env`, `apps/services/chat/.env`, `apps/services/tts/.env`; each has a committed `.env.example`), loaded by Vite/Nitro and `scripts/dev.mjs`; production secrets come from the deploy platform/CI, never `.env`.
 - `pnpm build` — generate MDX, build `.output/`, and type-check.
 - `pnpm start` — run the production server from `.output/`.
 - `pnpm lint` — tsc, ESLint --fix, Prettier, then Prisma format.

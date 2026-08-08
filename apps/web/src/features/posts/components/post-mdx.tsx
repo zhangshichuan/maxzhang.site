@@ -8,6 +8,22 @@ interface PostMdxProps {
 }
 
 /**
+ * 把 React 节点树递归还原成纯文本。
+ *
+ * MDX 经过 rehype-pretty-code 后，代码块内容会被拆成带样式的 span，
+ * 直接 String(children) 只能得到 "[object Object]"。mermaid 图文本
+ * 需要从这里把分散的文本节点拼回去。
+ */
+function collectText(node: React.ReactNode): string {
+  if (typeof node === 'string' || typeof node === 'number') return String(node)
+  if (Array.isArray(node)) return node.map(collectText).join('')
+  if (React.isValidElement<{ children?: React.ReactNode }>(node)) {
+    return collectText(node.props.children)
+  }
+  return ''
+}
+
+/**
  * 渲染构建期编译好的 MDX 组件。
  *
  * ```mermaid 代码块交给 Mermaid 客户端组件渲染，其余代码块原样输出。
@@ -22,15 +38,16 @@ export function PostMdx({ locale, slug }: PostMdxProps) {
     <MdxContent
       components={{
         pre: ({ children, ...props }: React.ComponentPropsWithoutRef<'pre'>) => {
-          if (
-            React.isValidElement(children) &&
-            typeof children.props === 'object' &&
-            children.props !== null &&
-            'className' in children.props &&
-            children.props.className === 'language-mermaid'
-          ) {
-            const chart = 'children' in children.props ? String(children.props.children) : ''
-            return <Mermaid chart={chart.replace(/\n$/, '')} />
+          const codeProps =
+            React.isValidElement(children) && typeof children.props === 'object' && children.props !== null
+              ? (children.props as Record<string, unknown>)
+              : null
+          const preProps = props as Record<string, unknown>
+          const language = preProps['data-language'] ?? codeProps?.['data-language'] ?? codeProps?.className
+
+          if (language === 'mermaid' || language === 'language-mermaid') {
+            const chart = codeProps ? collectText(codeProps.children as React.ReactNode).replace(/\n$/, '') : ''
+            return <Mermaid chart={chart} />
           }
           return <pre {...props}>{children}</pre>
         },

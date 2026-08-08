@@ -3,7 +3,12 @@
   "private": true,
   "packageManager": "pnpm@10.33.0",
   "scripts": {
-    "dev": "pnpm --filter web dev",
+    "dev": "node scripts/dev.mjs",
+    "dev:clean": "node scripts/dev.mjs --clean",
+    "dev:web": "pnpm --filter web dev",
+    "dev:services": "node scripts/dev.mjs --services-only",
+    "dev:otel": "docker compose -f docker-compose.observability.yml up -d",
+    "dev:otel:stop": "docker compose -f docker-compose.observability.yml down",
     "build": "pnpm --filter web build",
     "start": "pnpm --filter web start",
     "test": "pnpm --filter web test",

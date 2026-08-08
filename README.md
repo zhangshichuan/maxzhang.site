@@ -40,31 +40,45 @@ docs/
 
 ```bash
 pnpm install        # 安装依赖（postinstall 自动 prisma generate）
-pnpm dev            # 启动开发服务器 http://localhost:3000
+pnpm dev            # 一键拉起 Web + TTS + 聊天服务
 ```
 
-需要语音播报时，另起 TTS 服务：
+`pnpm dev` 会通过 `scripts/dev.mjs` 同时启动三部分：
+
+- **Web**：Vite + TanStack Start 开发服务器（http://localhost:3000，热更新）；
+- **TTS**：`uv run uvicorn app.main:app --port 8001 --reload`，自动热重载；
+- **聊天**：`go run .`（:9000），需要 `DEEPSEEK_API_KEY`，写入 `apps/services/chat/.env` 即可（`.env` 优先于环境变量，避免残留 key 干扰）。
+
+启动前脚本会自动清理 3000 / 8001 / 9000 上的残留进程（先优雅 SIGTERM，1 秒后仍占用再 SIGKILL），避免上次没退干净的旧实例占住端口。
+
+常用变体：
 
 ```bash
-cd apps/services/tts
-uv sync
-uv run uvicorn app.main:app --port 8001
+pnpm dev:web          # 只起 Web
+pnpm dev:services     # 只起 TTS + 聊天，方便单独联调后端
+pnpm dev:clean        # 清理 TanStack/Vite 缓存后启动（遇到 Invalid server function ID 等脏状态时用）
+pnpm dev:otel         # 起可观测性全家桶（Collector/Jaeger/Prometheus/Grafana/Loki）
+pnpm dev:otel:stop    # 停掉可观测性全家桶
 ```
 
-需要树洞聊天时，另起聊天服务：
+`pnpm dev:otel` 启动后：Jaeger http://localhost:16686、Prometheus http://localhost:9090、Grafana http://localhost:3333（避免与 Web 的 3000 冲突，初始账号 admin/admin）、Loki http://localhost:3100。文章中的 Node/Go/Python demo 服务把 OTLP 发到 `localhost:4318` 即可接入。
 
-```bash
-cd apps/services/chat
-DEEPSEEK_API_KEY=... go run .
-```
+环境变量按服务放各自的 `.env`（均已被 gitignore，示例文件见各目录下的 `.env.example`）：
 
-开发环境变量：`apps/web/.env` 中配置 `DATABASE_URL=file:./prisma/dev.db`；Web 默认访问 `http://localhost:8001` 的 TTS 服务与 `http://localhost:9000` 的聊天服务，分别可用 `TTS_BASE_URL`、`CHAT_BASE_URL` 覆盖；聊天服务需要 `DEEPSEEK_API_KEY`，可用 `DEEPSEEK_MODEL`、`DEEPSEEK_BASE_URL` 覆盖。
+- `apps/web/.env`：`DATABASE_URL`、`PUSH_API_KEY`（可选 `TTS_BASE_URL`、`CHAT_BASE_URL`），由 Vite/Nitro 开发时自动读取；
+- `apps/services/chat/.env`：`DEEPSEEK_API_KEY`、`DEEPSEEK_MODEL`、`DEEPSEEK_BASE_URL` 等，由 `scripts/dev.mjs` 读取并注入 `go run .`（**`.env` 优先于环境变量**，避免终端/父进程残留的旧 key 覆盖服务配置）；
+- `apps/services/tts/.env`：`TTS_CACHE_DIR` 等可选配置，由 `scripts/dev.mjs` 注入。
+
+Web 默认访问 `http://localhost:8001` 的 TTS 服务与 `http://localhost:9000` 的聊天服务。生产环境不读取 `.env`，密钥由部署平台/CI 注入。
 
 ## 常用命令
 
 | 命令 | 说明 |
 | --- | --- |
-| `pnpm dev` | 开发服务器（:3000） |
+| `pnpm dev` | 一键拉起 Web + TTS + 聊天 |
+| `pnpm dev:web` | 只起 Web 开发服务器（:3000） |
+| `pnpm dev:services` | 只起 TTS（:8001）+ 聊天（:9000） |
+| `pnpm dev:otel` / `pnpm dev:otel:stop` | 起 / 停可观测性全家桶 |
 | `pnpm build` | 生成 MDX → 构建 `.output` → 类型检查 |
 | `pnpm start` | 运行生产服务（`node .output/server/index.mjs`） |
 | `pnpm lint` | tsc → eslint --fix → prettier → prisma format |

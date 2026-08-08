@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { chatStream } from '@/src/features/chat/server-functions'
 import type { ChatErrorCode } from '@/src/features/chat/services/chat-stream.server'
-import { useTranslations } from '@/src/i18n/client'
+import { Link, useTranslations } from '@/src/i18n/client'
 import { getThumbmark } from '@thumbmarkjs/thumbmarkjs'
-import { Send } from 'lucide-react'
+import { MoreVertical, Send } from 'lucide-react'
 
 interface Message {
   id: string
@@ -88,8 +88,13 @@ export function ChatInterface() {
   const [isStreaming, setIsStreaming] = useState(false)
   const [errorText, setErrorText] = useState<string | null>(null)
   const [isLimited, setIsLimited] = useState(false)
+  const [confirmClear, setConfirmClear] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const confirmClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fullContentRef = useRef('')
   const displayIndexRef = useRef(0)
   const messageIdRef = useRef<string | null>(null)
@@ -111,6 +116,14 @@ export function ChatInterface() {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // 流式结束后把焦点还给输入框（发送期间输入框是 disabled 的，
+  // 必须在重新可编辑后再聚焦），同时进入页面时自动聚焦。
+  useEffect(() => {
+    if (!isStreaming && !limited) {
+      inputRef.current?.focus()
+    }
+  }, [isStreaming, limited])
 
   /**
    * 聊天页使用整页禁滚 + 内部滚动布局：
@@ -156,6 +169,26 @@ export function ChatInterface() {
   useEffect(() => {
     return () => clearTypewriter()
   }, [clearTypewriter])
+
+  useEffect(() => {
+    return () => {
+      if (confirmClearTimerRef.current) clearTimeout(confirmClearTimerRef.current)
+    }
+  }, [])
+
+  // 点击菜单外部时收起，同时重置确认态
+  useEffect(() => {
+    if (!menuOpen) return
+    const onPointerDown = (event: PointerEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false)
+        setConfirmClear(false)
+        if (confirmClearTimerRef.current) clearTimeout(confirmClearTimerRef.current)
+      }
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [menuOpen])
 
   const tick = useCallback(
     (id: string) => {
@@ -272,15 +305,78 @@ export function ChatInterface() {
     }
   }
 
+  const clearHistory = () => {
+    for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+      const key = localStorage.key(index)
+      if (key?.startsWith(STORAGE_PREFIX)) localStorage.removeItem(key)
+    }
+    setMessages([])
+    setErrorText(null)
+    setConfirmClear(false)
+    setMenuOpen(false)
+    if (confirmClearTimerRef.current) clearTimeout(confirmClearTimerRef.current)
+  }
+
+  const askClear = () => {
+    setConfirmClear(true)
+    if (confirmClearTimerRef.current) clearTimeout(confirmClearTimerRef.current)
+    confirmClearTimerRef.current = setTimeout(() => setConfirmClear(false), 4000)
+  }
+
+  const cancelClear = () => {
+    setConfirmClear(false)
+    if (confirmClearTimerRef.current) clearTimeout(confirmClearTimerRef.current)
+  }
+
+  const toggleMenu = () => {
+    setMenuOpen((open) => !open)
+    if (menuOpen) {
+      setConfirmClear(false)
+      if (confirmClearTimerRef.current) clearTimeout(confirmClearTimerRef.current)
+    }
+  }
+
   return (
     <div className="chat-shell flex h-full flex-col">
-      <div className="section-head">
-        <h1 className="section-title">{t('title')}</h1>
-        <div className="section-line"></div>
-      </div>
+      {messages.length > 0 && (
+        <div className="chat-topbar" ref={menuRef}>
+          <button
+            type="button"
+            className="chat-menu-btn"
+            onClick={toggleMenu}
+            aria-label={t('menu')}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+          >
+            <MoreVertical className="size-4" />
+          </button>
+          {menuOpen && (
+            <div className="chat-menu-panel" role="menu">
+              {confirmClear ? (
+                <>
+                  <button type="button" className="chat-menu-item danger" role="menuitem" onClick={clearHistory}>
+                    {t('clearConfirm')}
+                  </button>
+                  <button type="button" className="chat-menu-item" role="menuitem" onClick={cancelClear}>
+                    {t('clearCancel')}
+                  </button>
+                </>
+              ) : (
+                <button type="button" className="chat-menu-item danger" role="menuitem" onClick={askClear}>
+                  {t('clear')}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="chat-messages">
-        {messages.length === 0 && <div className="empty-state">{t('emptyState')}</div>}
+        {messages.length === 0 && (
+          <div className="chat-empty-block">
+            <div className="empty-state">{t('emptyState')}</div>
+          </div>
+        )}
         {messages.map((message) => (
           <div key={message.id} className={`chat-bubble ${message.role}`}>
             {message.content}
@@ -291,25 +387,35 @@ export function ChatInterface() {
 
       {(errorText || limited) && <div className="chat-error">{errorText ?? t('errors.dailyLimit')}</div>}
 
-      <form onSubmit={handleSubmit} className="chat-input-shell">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={t('placeholder')}
-          disabled={isStreaming || limited}
-          className="chat-input"
-          rows={1}
-        />
-        <button
-          type="submit"
-          disabled={isStreaming || limited || !input.trim()}
-          className="chat-send"
-          aria-label={t('send')}
-        >
-          <Send className="size-4" />
-        </button>
-      </form>
+      <div className="chat-composer">
+        {messages.length === 0 && (
+          <>
+            <p className="chat-privacy-note">
+              {t('privacyNote')} <Link href="/about">{t('privacySource')}</Link>
+            </p>
+          </>
+        )}
+        <form onSubmit={handleSubmit} className="chat-input-shell">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={t('placeholder')}
+            disabled={isStreaming || limited}
+            className="chat-input"
+            rows={1}
+          />
+          <button
+            type="submit"
+            disabled={isStreaming || limited || !input.trim()}
+            className="chat-send"
+            aria-label={t('send')}
+          >
+            <Send className="size-4" />
+          </button>
+        </form>
+      </div>
     </div>
   )
 }

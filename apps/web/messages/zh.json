@@ -42,6 +42,12 @@
     "emptyState": "我在这里。无论你想说什么，都可以说给我听。",
     "send": "倾诉",
     "sending": "倾听中……",
+    "privacyNote": "所有聊天记录只保存在你的浏览器本地，放心倾诉。如果不放心的话，可以去看我写的源代码，张仕传不会骗你。",
+    "privacySource": "去关于页面点击 GitHub 查看代码",
+    "clear": "清除聊天记录",
+    "clearConfirm": "确认清除？",
+    "clearCancel": "取消",
+    "menu": "更多操作",
     "errors": {
       "invalidFingerprint": "为了安全起见，请先访问首页或任意文章以生成指纹",
       "rateLimit": "消息发送过于频繁，请稍后再试",
@@ -165,6 +171,8 @@
     "noPosts": "暂无文章，敬请期待。",
     "noCategories": "暂无分类",
     "noTags": "暂无标签",
+    "aiAssisted": "AI 辅助写作",
+    "aiAssistedHint": "本文由作者与 AI 协作完成，内容经过人工审校",
     "back": "返回文章"
   },
   "SearchPage": {
