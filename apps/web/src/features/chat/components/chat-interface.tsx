@@ -117,10 +117,12 @@ export function ChatInterface() {
     scrollToBottom()
   }, [messages])
 
-  // 流式结束后把焦点还给输入框（发送期间输入框是 disabled 的，
-  // 必须在重新可编辑后再聚焦），同时进入页面时自动聚焦。
+  // 桌面端进入页面时自动聚焦；流式结束后也把焦点还给输入框
+  // （发送期间输入框是 disabled 的，必须在重新可编辑后再聚焦）。
+  // 移动端（触摸为主要指针的设备）不自动聚焦，避免每次进入/回复后
+  // 都弹出输入法，由用户手动点击输入框触发。
   useEffect(() => {
-    if (!isStreaming && !limited) {
+    if (!isStreaming && !limited && !window.matchMedia('(pointer: coarse)').matches) {
       inputRef.current?.focus()
     }
   }, [isStreaming, limited])
