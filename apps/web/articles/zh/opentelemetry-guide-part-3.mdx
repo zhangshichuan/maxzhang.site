@@ -1,772 +1,236 @@
 ---
-title: 'OpenTelemetry 下篇：从落地到整个生态链'
-summary: '上篇让你入门，中篇让你懂原理，下篇让你能治理一个真实系统。本文给出 OpenTelemetry 的完整生态地图：从几十种语言 SDK 到 Collector 两级架构，再到开源、商业、云厂商后端全景与选型框架；深入生产落地必须处理的采样预算、基数控制、成本治理、数据脱敏与 K8s 自动埋点；把边车模式在生产里的三种形态展开讲透；再讲 eBPF 零埋点与 Profiling 第四信号，以及 AI 时代最重要的一章——GenAI 可观测性如何用 gen_ai 语义约定看清 LLM 调用的输入、输出、成本与 Agent 决策链。最后用一个带 LLM 服务的完整演练，把整个系列串成"从零到生产"的闭环。'
+title: 'OpenTelemetry 下篇：生态链与选型落地'
+summary: '一套可观测性方案由产生、采集、分析三层组成。本文介绍 OpenTelemetry 的完整生态：Collector 的部署模式、后端选型框架、浏览器端可观测性、eBPF 零埋点、Profiling 与 GenAI 可观测性，以及团队推行的路线。'
 category: 'DevOps'
-tags: ['OpenTelemetry', '可观测性', '生态', '生产实践', 'GenAI', 'eBPF']
+tags: ['OpenTelemetry', '可观测性', '生态', 'GenAI', 'eBPF']
 author: 'Max Zhang'
 date: '2026-08-09'
 aiAssisted: true
 ---
 
-> 本篇你会得到：
->
-> - 一张完整的生态地图：SDK → OTLP → Collector → 后端，每一环都有谁、怎么选；
-> - 开源、商业、云厂商后端选型对照表，外加一套可复用的选型问题；
-> - 生产落地工程：采样预算怎么算、基数怎么控制、成本怎么治理、PII 怎么脱敏、K8s 怎么自动埋点；
-> - 边车模式在生产里的三种形态，彻底说清"边车到底在干嘛"；
-> - eBPF 零埋点与 Profiling 第四信号的现状与适用场景；
-> - AI 时代最重要的一章：GenAI 可观测性——用 `gen_ai.*` 语义约定看清每次 LLM 调用的输入、输出、成本与 Agent 决策链；
-> - 一个生产风格完整演练：本地跑通"Agent 编排 + RAG 检索 + LLM 调用"的可观测链路。
->
-> 前置要求：完成上篇与中篇的实践；了解三信号与 Collector 的基本概念。
->
-> 预计耗时：完整跟完约 120 分钟。
+## 生态全景：数据从产生到分析的每一环
 
-## 先回答一个现实问题：一个人会了，有什么用
-
-前两篇我们完成了一个人的跨越：先会跑，再懂原理。但真实世界的可观测性从来不是一个人的事，也不是一台机器的事。它是一个**生态**：
-
-- 公司有几十个服务，用了五种语言、三个云、两套遗留系统；
-- 后端要从 Jaeger、Prometheus、Grafana 全家桶、Datadog、云厂商里选，还可能中途换；
-- 数据量从每天几 GB 涨到每天几 TB，账单开始上新闻；
-- AI 应用上线了，模型调用比数据库还贵，而且它"犯错"的方式跟代码 bug 完全不一样；
-- 你还要说服老板、说服同事，让大家按同一套标准干活。
-
-下篇就是为这个现实准备的，分四块：**生态地图 → 后端选型 → 生产治理 → AI 时代**，最后用一个完整演练把整个系列串起来。
-
-## 生态全景图：从埋点到 AI 分析，每一环是谁
-
-先看全局。2026 年的 OpenTelemetry 生态长这样：
+一套完整的可观测性方案由三层组成：产生层负责在应用内外生成数据，采集层负责接收、处理与转发，分析层负责存储、查询与展示。OpenTelemetry 覆盖前两层，分析层由具体后端承担。
 
 ```mermaid
 flowchart LR
-  subgraph 产生["产生层"]
-    SDK["50+ 语言 SDK<br/>自动/手动埋点"]
-    EBPF["eBPF 零埋点<br/>OBI / Beyla / Odigos"]
-    K8S["K8s Operator<br/>自动注入 SDK"]
+  subgraph 产生层
+    SDK["语言 SDK / 自动埋点"]
+    RUM["浏览器 SDK"]
+    EB["eBPF 零埋点"]
   end
-
-  subgraph 传输["传输层"]
-    OTLP["OTLP 协议<br/>gRPC / HTTP"]
+  subgraph 采集层
+    AG["Collector Agent"]
+    GW["Collector Gateway"]
   end
-
-  subgraph 采集["采集层"]
-    AG["Collector Agent<br/>每节点"]
-    GW["Collector Gateway<br/>集中治理"]
+  subgraph 分析层
+    OSS["开源：Prometheus / Grafana / Jaeger / Tempo / Loki"]
+    SAAS["商业：Datadog / Honeycomb / Grafana Cloud"]
+    CLOUD["云厂商：AWS / Azure / GCP"]
   end
-
-  subgraph 后端["后端层"]
-    OSS["开源: Prometheus / Jaeger / Tempo<br/>Loki / ClickHouse / Grafana"]
-    CLOUD["云厂商: AWS / GCP / Azure / 阿里云"]
-    COMM["商业: Datadog / New Relic<br/>Dynatrace / Honeycomb / SigNoz"]
-  end
-
-  subgraph 消费["消费层"]
-    UI["看板 / 查询 / 告警"]
-    AI["AI 分析与自动化"]
-  end
-
-  SDK --> OTLP
-  EBPF --> OTLP
-  K8S --> OTLP
-  OTLP --> AG
+  SDK --> AG
+  RUM --> AG
+  EB --> GW
   AG --> GW
   GW --> OSS
+  GW --> SAAS
   GW --> CLOUD
-  GW --> COMM
-  OSS --> UI
-  CLOUD --> UI
-  COMM --> UI
-  UI --> AI
 ```
 
-一句话总结：**OpenTelemetry 自己不做"最后一公里的展示"，它做的是从产生到传输到采集的公共底座**。所有后端都争着接入 OTLP，因为谁接得好，谁就能成为最终被选中的那个"消费层"。
+三层之间通过 OTLP 解耦。产生层不知道最终后端是谁，分析层不关心数据是怎么产生的，采集层是中间的治理点。这个结构带来的直接收益是：换后端不需要重写埋点，加新的数据来源不需要改分析平台。
 
-这正是 2026 年 5 月 OpenTelemetry 从 CNCF 毕业时行业对它的评价：**厂商不再比拼"谁的遥测采集得好"，而是比拼"谁能在大家都能拿到的遥测之上做出更好的价值"**。
+产生层的来源比想象中多。应用代码里的 SDK 与自动埋点是主力，但还包括：浏览器端的前端 SDK、运行基础设施（节点指标、网络流量、服务网格代理的访问日志）、无法接入 SDK 的第三方组件（通过 eBPF 等零埋点方案）、以及通过协议转换接入的已有系统（Prometheus 端点、Jaeger 格式、云厂商日志）。来源越多样，统一标准的价值越明显——所有来源共享同一套协议与处理管道，分析时才能跨层关联。
 
-### 产生层：不只是语言 SDK
+三层各自的选型逻辑不同。产生层选 SDK 与埋点方式，看语言覆盖与自动埋点能力；采集层选 Collector 部署形态，看规模、数据量与治理需求；分析层选后端，看预算、运维能力与合规约束。下面按这个顺序展开。
 
-除了主流语言的 SDK，2026 年的"产生层"还有三股新力量：
+层间解耦还有一个容易被低估的收益：演进独立。产生层可以先上，采集层可以后补，分析层可以随时换。团队的接入不必一次到位，可以按“先有数据、再治理、后选型”的顺序推进，每一层的变化都不牵动其他层。
 
-1. **K8s Operator**：通过 CRD 声明式注入 SDK 和 Collector，Pod 无感接入；
-2. **eBPF 零埋点（OBI）**：不碰应用代码、不改依赖，在协议层直接抓取 HTTP/gRPC/数据库调用；
-3. **Profiling Agent**：eBPF 剖析器采集 CPU/内存火焰图数据，作为第四信号。
+生态适配器扩大了接入面。Collector 能接收 Prometheus 文本格式、Jaeger 与 Zipkin 的 trace、云厂商日志格式，也能把 OTLP 转成后端需要的格式。已有系统不需要一次迁移，可以通过适配器先汇入统一管道，再逐步替换为原生接入。
 
-### 传输层：OTLP 是唯一的普通话
+遇到任何一个可观测性工具，先问它在三层里处于哪个位置、与 OTLP 是什么关系，比背功能清单更有效。这个框架同样适用于评估新出现的采集方案、后端产品和 AI 观测平台——位置决定职责，协议决定是否兼容。
 
-OTLP 同时支持 gRPC 与 HTTP，一套协议承载 Traces、Metrics、Logs、Profiles。它成功靠三个设计：
+## Collector：Agent 还是 Gateway
 
-- **统一**：所有信号一个协议，SDK 到 Collector、Collector 到后端都是它；
-- **可扩展**：protobuf 定义，向后兼容，未来加新信号不用推翻重来；
-- **中立**：由 CNCF 治理，不属于任何厂商。
+Collector 有两种部署形态，解决不同的问题。
 
-### 采集层：Collector 的双层架构
+Agent 与应用同机部署：容器环境里是边车或 DaemonSet，虚拟机环境里是每台机器一个进程。它的优势是就近采集：数据不出节点，延迟低，可以先做本地过滤与脱敏再转发；缺点是每台机器都要部署和更新，配置分散，单机处理能力有限。
 
-生产标准形态是"每节点 Agent + 集中 Gateway"。Agent 就近收、失败缓冲；Gateway 统一采样、脱敏、路由、鉴权、出口管控。下面生产实践会给出完整 Gateway 配置。
+Agent 在容器环境里还有两种形态。边车（sidecar）每个 Pod 一个，与应用同生命周期，适合需要隔离与独立配置的场景，但资源开销随 Pod 数量线性增长；DaemonSet 每台节点一个，由多个 Pod 共享，资源利用率更高，但所有应用共用同一套处理资源，需要更谨慎的限额配置。
 
-## 后端选型：开源全家桶、商业产品还是云厂商
+Gateway 是独立集群：所有数据汇入一个中心，做全局处理。它适合需要全局视野的治理：尾部采样要看完整链路，基数控制要看所有指标序列，路由和脱敏可以集中管理。Gateway 还有缓冲能力，后端抖动时数据不会立刻丢失；代价是增加一组需要运维的组件，并引入新的网络依赖。
 
-选后端是团队最贵、最难回头的决策。先把主流选项摆开。
+两种形态的取舍可以从五个维度对比：
 
-### 开源全家桶（自托管）
+| 维度       | Agent                      | Gateway                        |
+| ---------- | -------------------------- | ------------------------------ |
+| 部署位置   | 与应用同机                 | 独立集群                       |
+| 数据本地性 | 数据不出节点               | 数据集中                       |
+| 治理能力   | 局部：过滤、脱敏、基础采样 | 全局：尾部采样、基数控制、路由 |
+| 运维成本   | 每台机器一套，随节点增长   | 一套集群，需要高可用规划       |
+| 故障影响   | 只影响本节点               | 影响所有数据来源               |
 
-| 组件                    | 负责什么           | 一句话点评                                                    |
-| ----------------------- | ------------------ | ------------------------------------------------------------- |
-| Prometheus              | 指标存储与查询     | 事实标准，但单机有容量上限；高可用需要 Mimir/Thanos           |
-| Jaeger                  | 链路存储与查询     | 轻量，v2 已基于 OTel Collector，OTLP 原生                     |
-| Grafana Tempo           | 链路存储与查询     | 面向超大链路量，依赖对象存储，支持 trace 与 logs/metrics 关联 |
-| Loki                    | 日志存储与查询     | 标签索引 + 压缩块，性价比高，3.x 原生收 OTLP                  |
-| Grafana                 | 统一 UI            | 一个面板看三信号                                              |
-| ClickHouse              | 列式 OLAP          | 给"想自己造后端"的团队，性能怪兽，社区有 OTel 数据模型        |
-| VictoriaMetrics / Mimir | 高可用指标         | 指标量大时的扩容方案                                          |
-| SigNoz                  | 开箱即用 OTel 后端 | 想"开源版 Datadog"就选它，自带告警和看板                      |
+生产环境常见的是两者结合：Agent 负责就近采集和基础处理，Gateway 负责全局治理与统一出口。数据流通常是 SDK → Agent → Gateway → 后端。规模很小的项目也可以省掉 Agent，让 SDK 直连 Gateway；但网关的高可用和容量仍然需要规划。
 
-自托管的成本不是软件，是**人**：升级、容量、高可用、数据迁移全要自己扛。适合有运维能力、数据敏感、或者想控制长期成本的中大型团队。
+两种形态都引入了同一个问题：中间节点本身可能成为故障点或瓶颈。Agent 与应用同生命周期，应用挂了 Agent 也拿不到数据；Gateway 一旦过载，所有来源的数据都会受影响。规划时需要为 Gateway 留出缓冲与水平扩展能力，并接受一个现实——采集链路不是零成本，任何一跳都可能丢数据，重要数据的留存要靠队列配置、重试机制与后端写入共同兜底。
 
-### 商业产品
+选择没有一个固定答案，决策依据是数据量和治理复杂度。数据量小、团队没有额外运维能力，可以只用一个 Gateway；节点多、需要本地脱敏或边缘过滤，Agent 更有价值。无论哪种形态，Collector 的意义都一样：把治理逻辑从应用代码里拿出来，集中到数据路径上。
 
-| 产品             | 特点                         | 适合谁                       |
-| ---------------- | ---------------------------- | ---------------------------- |
-| Datadog          | 全家桶、生态最全、APM 成熟   | 大厂、混合云、愿意付费买时间 |
-| New Relic        | 全栈、SaaS、有免费额度       | 中小团队快速起步             |
-| Dynatrace        | 自动化程度高、AI 能力强      | 大型企业 IT                  |
-| Honeycomb        | 高基数事件驱动、追问式分析强 | 想做"高保真可观测性"的团队   |
-| Splunk / Elastic | 日志起家，OTLP 接入成熟      | 已有 SIEM/日志体系的组织     |
-| Grafana Cloud    | 开源全家桶的托管版           | 想用 Grafana 栈又不想运维    |
-| SigNoz Cloud     | OTel 原生 SaaS               | 预算有限的团队               |
+处理管线的顺序影响结果：采样放在批量与限流之前还是之后，决定了成本与丢数据的平衡；脱敏放在采样之前，保证被保留的数据已经清理过。先想清楚每个 Processor 的用途，再确定它们在管线里的位置。
 
-商业产品的核心价值不是"采集"，而是**消费层**：查询体验、告警智能、成本洞察、AI 辅助排障。
+配置管理是 Agent 形态的隐藏成本：节点越多，配置同步越容易漂移。常见做法是配置由模板生成，或从统一配置源分发，Gateway 与 Agent 使用同一份版本化配置，变更走评审而不是逐台手工改。
+
+## 后端选型：三种路线
+
+### 自托管开源
+
+自托管路线用 Prometheus、Grafana、Jaeger、Tempo、Loki、Mimir 等组件搭建全家桶。指标用 Prometheus 或 Mimir，日志用 Loki，链路用 Jaeger 或 Tempo；Grafana 统一查询界面，告警、仪表盘、跨信号关联都在同一套界面里完成。
+
+全家桶的职责划分：Prometheus 或 Mimir 管指标，Loki 管日志，Jaeger 或 Tempo 管链路，Grafana 统一查询与告警。每套存储有自己的查询语言（PromQL、LogQL、TraceQL），跨信号关联依赖共同的时间范围与 traceId。
+
+优势是数据完全留在自己手里，成本主要是硬件与运维人力，没有按量计费的压力；功能上开源生态的成熟度已经很高，指标、日志、链路都有对应的存储与查询方案。代价是运维复杂度：每套存储都有自己的扩容、备份、升级节奏，容量规划需要经验；对一个人或小团队，这条路的人力成本经常被低估。适合有基础设施能力、数据量稳定、数据必须留在本地的团队。
+
+### 商业 SaaS
+
+商业产品（Datadog、Honeycomb、Grafana Cloud、New Relic 等）把存储、查询、告警、治理做成托管服务。优势是上手快、功能完整：基数治理、异常检测、SLO、跨信号关联开箱即用；团队不需要维护后端，按量计费让成本与规模线性相关。
+
+商业产品的账单结构通常是按量计费：指标按序列数，日志按 GB，链路按 Span 数。三个计费维度对应三类数据，优化方向也各不相同：指标压基数，日志控采样，链路控采样率与保留期。
+
+代价是数据出域和费用不确定性。遥测数据要发到供应商的云上，需要过合规审查；费用随数据量增长，采样预算直接决定账单，账单反过来倒逼采样治理。对快速迭代、人少的团队，商业产品通常是成本与效率的平衡点；对数据敏感或规模巨大的公司，费用会成为不可忽视的约束。
 
 ### 云厂商
 
-| 云           | 接入方式                    | 后端                                                      |
-| ------------ | --------------------------- | --------------------------------------------------------- |
-| AWS          | ADOT（AWS Distro for OTel） | X-Ray + CloudWatch + Managed Prometheus + Managed Grafana |
-| Google Cloud | 官方 OTel 集成              | Cloud Monitoring + Cloud Trace + Cloud Logging            |
-| Azure        | Azure Monitor OpenTelemetry | Application Insights + Log Analytics                      |
-| 阿里云       | ARMS 支持 OTLP              | ARMS + Prometheus 托管 + SLS                              |
+云厂商的观测产品（AWS、Azure、GCP 各自的监控与追踪服务）与云资源集成最好：实例、网络、服务网格的元数据自动关联，账单合并，数据留在云环境内，合规路径清晰。容器与无服务器环境里，云厂商的探针还能覆盖一部分没有 SDK 的场景。
 
-云厂商的优点是零运维、与云资源集成深（自动补实例/集群信息）；缺点是锁定，且跨云统一时体验割裂。多云的团队通常选"云上采集、自建或商业后端汇聚"。
+代价是生态锁定：跨云或迁回自托管时，数据格式与查询语言不通用；云厂商对 OTLP 的支持深度不同，有的原生接收，有的需要额外的 exporter 或代理。选云厂商路线的前提是接受该云作为长期运行环境；迁移到云厂商时，先把 OTLP 链路跑通再迁移历史数据，避免双轨期的格式混乱。
 
-### 选型框架：问自己四个问题
+三条路线不是只能选一条。混合部署很常见：核心业务数据留在自托管环境，面向外部或快速变化的业务用商业产品，云厂商产品承担与云资源相关的数据。混合的前提仍然是统一标准，否则每个后端一套埋点，等于退回绑定时代。
 
-1. **数据量级**：每天多少 Span、多少日志？百万级和 TB 级是完全不同的架构；
-2. **基数（Cardinality）**：你有没有用户级、请求级的高基数维度？Prometheus 单实例最怕这个，Honeycomb 最擅长这个；
-3. **运维能力**：团队有人能养 ClickHouse 和 Tempo 吗？没有就选 SaaS 或云托管；
-4. **未来需求**：要不要 GenAI 可观测性？要不要 eBPF/Profiling？后端对 OTLP 的原生支持程度，决定了你今天写的埋点明天能不能带走。
+### 选型框架
 
-最后一个问题特别关键：**选择后端时，永远让"OTLP 原生接入"成为硬条件**。这样埋点层和后端解耦，未来换后端不重写埋点——这是 OpenTelemetry 给团队最大的期权。
+后端选型需要明确四个问题：
 
-## 生产落地：从 demo 到能治理的工程
+1. 数据量与预算：全量数据有多少，按量计费是否可承受。
+2. 运维能力：团队能不能长期维护多套存储。
+3. 合规约束：数据能不能出域，需要保留多久。
+4. 锁定容忍度：接受商业产品或云厂商绑定，还是要求随时可迁移。
 
-demo 和生产之间隔着一整座山。这座山有五个必经关口。
+数据量可以先估算再决定。一条链路平均 50 个 Span、每个 Span 约 1KB，每秒 100 个请求的原始链路数据约 5MB/s；按 10% 采样后是 0.5MB/s，一天的存储需求约 40GB，考虑索引与副本还要乘上系数。指标和日志的量级类似，只是结构不同。把这三类数据的估算写下来，再乘以保留期，预算框架就出来了。
 
-### 关口一：采样预算
+四个问题之间互相影响：数据量决定预算，预算影响自托管与 SaaS 的选择；合规约束可能直接排除商业产品；锁定容忍度决定云厂商路线是否可接受。把它们写成一页决策记录，比现场比较功能清单更有效。
 
-先算账，再谈方案。假设：
+两个虚构案例可以说明决策逻辑。案例一：三人小团队、日活十万、无专职运维，选择商业 SaaS，采样率从 10% 起步，优先保证错误链路全量保留。案例二：金融公司、数据不能出域、有基础设施团队，选择自托管全家桶，按季度回顾容量与采样预算。两者的埋点代码都是 OpenTelemetry，区别只在导出配置。
 
-- 业务高峰 5000 QPS；
-- 每个请求平均 30 个 Span；
-- 单个 Span 序列化后约 1 KB；
-- 希望链路保留 30 天。
+保留期是容易被低估的变量。链路保留 7 天与保留 30 天，存储成本相差四倍多；日志的审计要求可能强制保留一年。选型时把每类信号的保留期写进预算，而不是统一按默认值估算。
 
-全量存储一天：5000 × 30 × 1KB × 86400 秒 ≈ 12.4 TB/天。任何团队都扛不住。
+告警与 SLO 不依赖具体后端：无论选哪条路线，都建议先用错误率与延迟定义少量 SLO，再决定告警阈值。后端的查询语言可以不同，SLO 的语义应该一致，这样换后端时业务口径不会变。
 
-生产常见组合：
+硬性条件只有一个：后端必须支持 OTLP 或具备官方适配。不符合这个条件的产品，无论功能多好，都会把埋点重新绑回私有格式。
 
-- **入口 10% 固定采样**（`traceidratio`，跨服务一致）+ **尾部采样保错误**（Collector `tail_sampling`）；
-- 关键业务（支付、登录、AI 调用）单独通道，采样率提到 100% 或 50%；
-- 低价值环境（测试、压测）降到 1% 甚至 0；
-- 按保留时长分层：热数据 30 天、冷数据 90 天、聚合 1 年。
+另一个常被忽略的问题是三类信号是否必须进同一个后端。统一后端（如 Grafana 全家桶）的好处是跨信号查询简单，一条链路可以直接跳到同期指标；分开选型（链路用 Jaeger、指标用 Prometheus、日志用 Elasticsearch）可以各取所长，但关联查询要靠 traceId 在多个系统间跳转。两者都是可行路线，决策取决于团队对“跨信号关联”的依赖程度。
 
-算出你的预算公式：`每天可存 Span 数 = 预算 / 单 Span 成本`，然后反推采样率。这个公式要写进团队文档，不然三个月后没人记得为什么是 10%。
+## 浏览器端可观测性
 
-### 关口二：基数控制
+浏览器是可观测性产生层里容易被忽视的一环。前端 SDK 可以采集页面加载性能、资源加载、脚本错误、用户交互与请求信息。这些数据回答的是“用户实际体验如何”，与后端数据互补。
 
-指标系统最怕高基数标签。`user_id`、`request_id`、`session_id` 这类**每请求都变**的标签一旦上指标，Prometheus 的序列数会爆炸（10 万用户 × 10 个接口 = 百万级序列）。
+前端观测有两种口径。RUM（Real User Monitoring）采集真实用户的真实会话，覆盖所有设备与网络环境，能反映实际体验但数据有噪声；合成监控（synthetic monitoring）用脚本定时访问页面，数据干净、可复现，但只代表测试环境。两者互补，RUM 回答“现在如何”，合成监控回答“是否回归”。
 
-铁律：
+核心 Web 指标（Core Web Vitals）是 RUM 的常见维度：LCP 衡量加载体验，INP 衡量交互响应，CLS 衡量视觉稳定性。它们由浏览器标准定义，可以跨页面、跨版本比较，是前端体验从主观感受变成可量化数据的基础。
 
-- **指标（Metrics）只带低基数标签**：服务、接口、状态码、租户、版本；
-- **高基数信息放 Span attribute 和日志里**，那里没有基数上限；
-- 给属性加白名单，Collector 里用 `attributes` / `transform` processor 删除不该上指标的高基数属性；
-- 用视图（View）在 SDK 侧就限制：哪些属性允许参与聚合。
+前端数据和服务端数据的关联方式是同一套 traceparent：前端发起请求时注入链路上下文，后端 SDK 提取后创建子 Span，整条链路从前端页面延伸到后端服务。实践中，跨域请求、CORS 配置和隐私约束会限制上下文传递，浏览器 SDK 对服务端框架的兼容也需要验证。
 
-### 关口三：成本治理
+前端采集的典型维度包括：页面生命周期与核心 Web 指标、资源加载耗时、未捕获异常、网络请求的成功率与延迟、用户会话的连续性。其中会话概念是前端特有的——同一用户的多条请求通过会话标识关联，用于还原一次使用过程的完整体验。会话数据的保留与匿名化需要单独设计，不能直接沿用服务端的链路采样策略。
 
-成本大头通常按这个顺序出现：
+前端与后端的拼接有时序问题：页面加载发生在请求发出之前，导航性能数据（LCP、CLS）没有对应的后端 Span；只有请求发出之后，traceparent 才把前后端连起来。RUM 里的页面生命周期与后端链路是两段数据，分析时需要按会话或时间窗口对齐，不能期待一条链路覆盖从点击到渲染的全过程。
 
-1. **日志**：最容易失控，先治理；
-2. **链路**：采样率决定一切；
-3. **指标**：基数决定一切；
-4. **Profiling**：2026 年还新，等它进入稳定再全量铺。
+前端遥测的隐私边界比服务端更严格：涉及用户设备、行为与位置信息，需要用户同意机制；采集内容默认匿名化，session ID 与用户 ID 分离；跨域请求头里的 traceparent 不能携带敏感业务字段。
 
-具体手段：
+前端错误定位依赖 sourcemap：生产代码是压缩后的，堆栈只有行列号，需要 sourcemap 还原源码位置。sourcemap 属于敏感资产，托管时要控制访问权限，只对内部可见。
 
-- 日志分级：DEBUG 不进生产后端，ERROR 全量、INFO 按需、访问日志抽样；
-- 体积控制：日志正文截断、重复日志合并（如"同一错误 1000 次"压缩成一条带计数的）；
-- 属性裁剪：Collector 里删掉大字段（如响应体）；
-- 分环境路由：测试环境数据送低配后端或不落盘；
-- 用 `filter` processor 丢掉健康检查、探针、压测流量的遥测。
+浏览器端通常不是落地的第一步。服务端数据覆盖核心链路，前端数据解决体验类问题，两者优先级取决于产品形态。前端重、交互复杂的应用，RUM 的价值更高；对服务端 API 为主的产品，先补齐后端再考虑前端。另外，前端遥测涉及用户设备信息与行为数据，采集范围需要符合隐私政策，避免默认全量采集。
 
-### 关口四：安全与隐私
+## eBPF 零埋点
 
-可观测性数据是**敏感数据的重灾区**：日志里可能带手机号，Span 属性里可能带 SQL 参数，AI 调用里可能带用户原文。
+eBPF 在 Linux 内核中挂载钩子，在系统调用、网络栈和用户态函数边界捕获行为，不需要修改应用代码，也不需要 SDK。对无法改动代码的组件——第三方服务、老系统、没有官方 SDK 的语言——它是唯一现实的接入方式。
 
-治理动作：
+eBPF 的能力边界同样明确。它看到的是系统层语义：连接、系统调用、函数执行；拿不到业务上下文：订单号、用户 ID、业务分支。TLS 流量默认不可见，部分能力依赖内核版本。因此 eBPF 与 SDK 不是替代关系，而是互补：SDK 提供业务深度，eBPF 提供覆盖广度。实践中，eBPF 自动埋点工具（如 Grafana Beyla）可以生成符合 OTLP 的链路数据，供 Collector 与现有管道一起处理。
 
-1. **埋点层克制**：不要把请求体、响应体自动进属性；默认只留方法、路由、状态码；
-2. **Collector 脱敏**：`attributes` / `transform` processor 对 `password`、`token`、`id_card` 等字段做 hash 或删除；
-3. **传输加密**：SDK 与 Collector、Collector 与后端之间全程 TLS；
-4. **权限隔离**：按团队、环境分 Collector 出口；生产链路权限与日志权限分离；
-5. **浏览器隐私**：Web SDK 默认不采集敏感字段；Baggage 严禁携带 PII；
-6. **审计**：谁改了采样配置、谁导出了原始链路，都要有记录。
+eBPF 生成 Span 的方式是近似语义：通过 uprobes 挂钩函数入口与出口，把一次调用映射成一个 Span，函数名成为 Span 名。它能还原调用结构与耗时，但拿不到应用层的状态码、业务属性与错误原因。调试时要注意，eBPF 链路的“错误”可能只是函数返回非零，而不是业务失败。
 
-### 关口五：K8s 自动埋点
+引入 eBPF 还需要考虑运行环境条件：需要内核支持与相应权限，容器与 Kubernetes 环境的权限模型、安全策略和内核版本会直接影响可行性。eBPF 采集的数据量可能很大，尤其是高频系统调用，建议先用采样控制成本，再逐步放开。
 
-K8s 上给几百个 Pod 手动加 SDK 不现实。用 OpenTelemetry Operator：
+eBPF 程序运行在内核上下文，权限与安全边界比普通代理更严格：加载需要高权限，程序本身要有校验与审计。在共享或租户隔离环境里，先做安全评估再启用，避免为了观测引入新的攻击面。
 
-```yaml
-apiVersion: opentelemetry.io/v1alpha1
-kind: Instrumentation
-metadata:
-  name: my-instrumentation
-spec:
-  exporter:
-    endpoint: http://otel-collector:4318
-  propagators:
-    - tracecontext
-    - baggage
-  sampler:
-    type: parentbased_traceidratio
-    argument: '0.1'
-```
-
-然后在目标 Deployment 上打一个注解：
-
-```yaml
-spec:
-  template:
-    metadata:
-      annotations:
-        instrumentation.opentelemetry.io/inject-java: 'true'
-        instrumentation.opentelemetry.io/inject-python: 'true'
-        instrumentation.opentelemetry.io/inject-nodejs: 'true'
-```
-
-Operator 通过 Mutating Webhook 自动注入 SDK 环境变量与 sidecar，业务代码零改动。注意：**自动注入的采样率要全局统一**，否则不同 Pod 之间链路会"半采半不采"。
-
-## 边车模式在生产里到底怎么搭
-
-上篇讲了"不改代码"的三种做法，这里把边车模式展开。你可能会听到两种说法："用边车采集数据"和"用边车转发数据"，它们不是一回事。
-
-### 三种边车，三种分工
-
-**第一种：转发边车（Collector Agent sidecar）。** 应用容器里装了 OTel SDK，SDK 把数据发给同 Pod 里的 Collector 容器（`localhost:4318`），Collector 加工后转发给 Gateway。边车在这里是"小区门口的中转站"，不产生数据，只负责收、处理、传。
-
-```mermaid
-flowchart LR
-  subgraph Pod["一个 Pod"]
-    APP["应用容器<br/>OTel SDK"]
-    SIDE["Collector 边车"]
-  end
-  APP -->|"localhost:4318"| SIDE
-  SIDE -->|OTLP + 批处理/重试/缓冲| GW["Collector Gateway"]
-```
-
-这种形态解决什么问题？应用不再需要知道后端在哪、用什么协议、要不要重试。SDK 只认 `localhost:4318`，边车认 Gateway。换后端、加采样、做脱敏，全在边车这一层完成，应用完全无感。
-
-**第二种：eBPF 边车（零埋点）。** 应用容器里什么都没有，边车里跑一个 eBPF 探针（Beyla/OBI/Odigos），它挂在内核网络栈上旁路观察应用发出的 HTTP/gRPC 流量，自己生成 span 再发出去。
-
-```mermaid
-flowchart LR
-  subgraph Pod2["另一个 Pod"]
-    APP2["应用容器<br/>无 SDK"]
-    EBPF["eBPF 探针边车"]
-  end
-  APP2 -- "内核网络栈（旁路）" --> EBPF
-  EBPF -->|OTLP| GW
-```
-
-**第三种：注入边车（Operator 干的活）。** K8s Operator 在创建 Pod 时自动往里面塞 SDK 环境变量（有时候还会塞一个 Collector 边车）。你什么都没写，Pod 创建出来就自带观测能力。
-
-三种不是互斥的，同一个集群里经常混用：新服务用 Operator 注入 SDK，遗留服务用 eBPF 边车，Gateway 统一收口。
-
-### 边车 vs DaemonSet：什么时候用哪个
-
-Collector 放边车还是放节点级 DaemonSet，是个经典问题：
-
-|          | 边车（每 Pod 一个）                | DaemonSet（每节点一个）      |
-| -------- | ---------------------------------- | ---------------------------- |
-| 资源开销 | 高：每个 Pod 多一个容器            | 低：一个节点一个             |
-| 隔离性   | 好：应用各自独立、互不干扰         | 共享，一个出问题影响全节点   |
-| 适用场景 | 高价值服务、需要独立限流/采样/配额 | 海量低价值 Pod、想控制总成本 |
-| 典型配置 | 资源多、带 memory_limiter          | 轻量、只做转发               |
-
-我的建议：**先 DaemonSet 起步，给高价值服务单独配边车**。别一上来全员边车，成本翻倍。
-
-### eBPF 边车的几个现实问题
-
-再补充几个 eBPF 边车实际部署时绕不开的点：
-
-- **需要特权**：eBPF 探针要挂内核钩子，容器需要 privileged 权限或特定 capability，安全团队一般会问一句"为什么"；
-- **加密流量**：TLS 流量在 eBPF 里看到的是密文，要么配中间人解密，要么接受"只能看到连接级信息"；
-- **看不到业务语义**：它不知道"这是 VIP 用户的下单"，这是和 SDK 最大的差距；
-- **成熟度**：OBI 2025 年底才发布首个 Alpha，大规模生产前要压测。
-
-## eBPF 零埋点：没有 SDK 的世界
-
-总有你碰不到的应用：老服务、第三方二进制、找不到源码的组件。eBPF 方案在 2025 年底迎来里程碑：OpenTelemetry 官方把 Grafana Labs 捐赠的 Beyla 整合为 **OpenTelemetry eBPF Instrumentation（OBI）**，2025 年 11 月发布首个 Alpha。
-
-它的原理是**在协议层观察**：eBPF 钩子挂在内核网络栈上，解析 HTTP/gRPC/TLS 流量，直接生成 span，完全不进应用进程。
-
-适用场景：
-
-- 无法改代码的遗留系统；
-- 语言没有成熟 SDK（或不想引入依赖）；
-- 想快速摸底"我的系统里到底有哪些调用关系"；
-- 覆盖 DNS、TLS 握手、数据库协议等 SDK 不易覆盖的层。
-
-局限也说清楚：
-
-- 看不到应用内部业务语义（拿不到"这笔订单是哪个用户"）；
-- 加密流量需要配置解密的中间人代理；
-- TLS/HTTP2 解析在不同内核版本上有兼容性坑；
-- 2026 年仍是 Alpha，生产大规模使用要评估。
-
-正确姿势是**组合**：核心服务用 SDK（有业务语义），外围和遗留系统用 eBPF（有覆盖），两边数据在 Collector 汇聚，用统一的 OTLP 和 SemConv 对齐。
+选型时可以按优先级排列：需要业务语义的场景用 SDK；只需要连接级视野的场景用 eBPF；两者都做不到的组件，用日志与指标做有限覆盖。eBPF 适合作为“最后一公里”的覆盖手段，而不是默认接入方式。
 
 ## Profiling：正在成型的第四信号
 
-2026 年 3 月，OpenTelemetry Profiling SIG 宣布 Profiles 信号进入公开 Alpha。它回答的是三支柱都回答不了的问题：**代码层面的资源到底花在哪**。
+持续剖析（continuous profiling）按固定频率采样进程调用栈，回答“CPU 和内存花在哪里”。数据以火焰图展示：横轴是时间或样本占比，纵轴是调用栈，宽块即热点。火焰图能直接指出热点函数，不需要先猜测再验证。
 
-- 火焰图告诉你"CPU 时间都烧在哪个函数"；
-- 它可以和 Trace 双向关联：这条慢链路里，哪个函数最贵；
-- 官方同时提供 eBPF 剖析器，Linux 上无需改代码即可采集大部分语言；
-- 2026 年 7 月起 Collector 已支持 Profiles 管道（v0.148+），但生产级后端仍在成熟中。
+它与链路互补：链路描述请求经过了哪些服务，剖析描述这些服务内部的资源消耗集中在哪段代码。一条链路显示某个 Span 耗时异常，但服务端日志和指标都正常，此时剖析数据能指出耗时集中在哪个函数、是 CPU 密集还是锁等待。性能优化的结论如果只来自链路，容易停在“哪个服务慢”的层次；加上剖析才能回答“为什么慢”。
 
-现在的建议：**试点**。把 Profiling 接到一个关键服务上，用它回答"这个 P99 到底是等待还是计算"，但别在 2026 年把它当生产 SLA 依赖。
+剖析信号在 OpenTelemetry 中仍在演进，规范尚未达到链路、指标、日志三类信号的稳定度，但方向已经明确：剖析数据同样携带进程上下文，可以与链路、指标关联，协议也在向 OTLP 生态收敛。接入成本低，存储开销大，适合在性能优化和容量问题出现时作为专项手段，而不是一开始就全量开启。常见使用时机：上线后出现 CPU 峰值、内存持续增长、某个接口延迟异常但日志没有报错。
 
-## AI 时代：GenAI 可观测性
+剖析也分类型：CPU 剖析回答“时间花在哪”，内存剖析回答“内存分配在哪”，锁剖析回答“等待在哪”。类型由采样点决定，同一进程可以同时采集多种，但开销会叠加。采样频率越高，火焰图越精细，额外 CPU 开销越大；生产环境通常用低频率持续采样，专项排障时临时提高频率。
 
-这是下篇最重要的一章，也是整个系列在开篇埋下的问题：**AI 应用到底该观测什么？**
+## GenAI 可观测性
 
-### 传统信号解决不了的新问题
+### 传统信号回答不了的问题
 
-传统三支柱能告诉你"模型调用慢了、超时了"，但回答不了：
+GenAI 应用引入了三类传统信号覆盖不到的问题：答案质量、调用成本和决策链。
 
-- 这次回答用了哪个模型、哪个版本、哪条提示词？
-- 检索（RAG）拿回了哪些片段，为什么模型选了错误的那个？
-- Agent 做了哪几步决策？哪一步把上下文搞坏了？
-- 这一次调用花了多少 token、多少钱？
-- 用户输入里有没有注入攻击、有没有敏感数据？
+质量：模型幻觉、检索召回差、上下文被截断，最终表现为“答非所问”。这类问题没有异常码，错误率可能一直是零。成本：模型选择、输入输出 token 数、失败重试，每一项都直接对应账单；同一功能换模型或换上下文长度，成本可能差一个数量级。决策链：Agent 为什么选择某个工具、为什么放弃某个分支，决定了行为是否可解释、是否可复现。
 
-这些答案藏在**应用语义**里，不在 HTTP 层。所以 GenAI 可观测性 = 传统可观测性 + 一组描述"AI 操作"的标准字段。
+一次 RAG 问答至少包含检索、上下文组装、模型调用、工具调用多个环节，最终答案的质量取决于每一环；Agent 场景还会循环调用工具、根据中间结果改变计划。传统指标只能回答“调用是否成功、延迟多少”，无法回答这三类问题。回答它们，需要把每次推理的完整过程记录成链路。
 
 ### gen_ai.\* 语义约定
 
-OpenTelemetry 社区正在制定 GenAI 语义约定（Semantic Conventions for GenAI），核心是用一套统一属性描述 LLM 调用：
+OpenTelemetry 为 AI 调用定义了 gen_ai.\* 语义约定，统一描述提供方、模型、请求与用量：
 
 ```text
-gen_ai.provider.name            # 提供方：openai、anthropic、ollama……
-gen_ai.request.model            # 请求的模型：gpt-4o、claude-sonnet……
-gen_ai.request.max_tokens       # 最大生成长度
-gen_ai.usage.input_tokens       # 输入 token 数
-gen_ai.usage.output_tokens      # 输出 token 数
-gen_ai.response.model           # 实际响应的模型（可能被降级）
-gen_ai.operation.name           # 操作：chat、embeddings……
-gen_ai.input.messages           # 输入消息（可含敏感内容，谨慎）
-gen_ai.output.messages          # 输出消息
+gen_ai.provider.name: openai
+gen_ai.request.model: gpt-4o
+gen_ai.usage.input_tokens: 812
+gen_ai.usage.output_tokens: 214
 ```
 
-加上 Agent 层面的约定（`gen_ai.agent.*`），可以把"用户问题 → Agent 决策 → 工具调用 → 检索结果 → 模型输入 → 模型输出"完整记录成一棵 span 树。
+一个典型的 AI 链路包含 Agent 编排 Span、检索 Span、模型调用 Span 与工具调用 Span。模型 Span 记录输入输出摘要与 token 用量，检索 Span 记录召回结果，工具 Span 记录外部调用。整条链路的形状与普通分布式链路一致，区别在于属性携带了 AI 特有的业务维度。
 
-**2026 年的状态要说清楚**：GenAI 语义约定仍处于 Experimental / Stable Preview 阶段，需要显式开启：
+### 评估与迭代
 
-```bash
-export OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental
-```
-
-预计很快进入 Stable，但今天写代码时就要按这套命名来，避免以后迁移。
-
-### 开源生态：OpenInference、Langfuse 与朋友们
-
-AI 可观测性的开源生态已经成型：
-
-| 项目                           | 定位                                 | 与 OTel 的关系                                              |
-| ------------------------------ | ------------------------------------ | ----------------------------------------------------------- |
-| OpenInference（Arize Phoenix） | LLM 追踪格式与本地分析平台           | 基于 OTel 扩展，可直接导 OTLP，Phoenix 本身就是个 OTLP 后端 |
-| Langfuse                       | LLM 全生命周期（追踪 + 评测 + 成本） | 支持 OTel/OTLP 接入                                         |
-| OpenLLMetry（Traceloop）       | 一键埋点 OpenAI/LangChain 等         | 生成 OTel 兼容 span                                         |
-| Laminar / Helicone 等          | LLM 网关与追踪                       | 多数支持 OTLP                                               |
-
-选型建议：**团队要的是"标准"就选 OpenInference（和 OTel 最贴近）；要的是"开箱即用产品"就选 Langfuse；两者可以共存**——数据都往 OTLP 里灌，看板随便换。
-
-### 一个 AI 链路的理想 span 树
-
-```mermaid
-flowchart TD
-  A["user message"] --> B["agent.operation<br/>意图识别/决策"]
-  B --> C["retrieval<br/>RAG 检索"]
-  B --> D["tool.call<br/>查订单"]
-  C --> E["gen_ai.client<br/>模型调用 1"]
-  D --> F["gen_ai.client<br/>模型调用 2"]
-  E --> G["response"]
-  F --> G
-```
-
-每一层都带自己的属性：检索层带 `db.system=qdrant` 和命中片段 ID；模型层带 `gen_ai.*`；工具层带工具名与参数。有了这棵树，你才能回答 AI 应用最核心的问题：**这个回答是"想"出来的，还是"找"出来的，还是"编"出来的？**
-
-## 实践：生产风格完整演练（含 LLM 服务）
-
-把全系列知识装进一个场景：一个 AI 客服服务，做"意图判断 → 检索 → 模型回答"，带成本指标和日志关联，再配上生产级 Collector 治理。
-
-### 第一步：本地起一个"LLM 后端"
-
-为了让课程不依赖任何 API Key，我们做一个可切换的实现：
-
-- 设置 `OPENAI_API_KEY` 就用真实的 OpenAI 兼容接口（任何兼容端点都行，包括本地 vLLM/Ollama）；
-- 没设置就返回模拟响应，但**照样生成真实的 gen_ai 属性与 token 用量**，可观测链路完全一致。
-
-新建 `ai-app/`：
-
-```bash
-mkdir -p ai-app && cd ai-app
-python3 -m venv .venv && source .venv/bin/activate
-pip install fastapi uvicorn opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-http
-```
-
-`ai_app.py`：
-
-```python
-import json
-import os
-import random
-
-import uvicorn
-from fastapi import FastAPI
-from opentelemetry import metrics, trace
-from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-from opentelemetry.sdk.resources import SERVICE_NAME, Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-
-resource = Resource.create({SERVICE_NAME: "ai-agent-service"})
-
-trace_provider = TracerProvider(resource=resource)
-trace_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(trace_provider)
-
-meter_provider = MeterProvider(
-    resource=resource,
-    metric_readers=[PeriodicExportingMetricReader(OTLPMetricExporter(), export_interval_millis=5000)],
-)
-metrics.set_meter_provider(meter_provider)
-meter = metrics.get_meter("ai-agent-service")
-token_counter = meter.create_counter("gen_ai.tokens", unit="token")
-cost_counter = meter.create_counter("gen_ai.cost", unit="USD")
-
-app = FastAPI()
-tracer = trace.get_tracer("ai-agent-service")
-
-
-def call_llm(prompt: str, span, model="gpt-4o-mini"):
-    """一次真实的 LLM 调用，走 gen_ai 语义约定。"""
-    input_tokens = len(prompt) // 3
-    output_tokens = random.randint(50, 200)
-    span.set_attributes({
-        "gen_ai.provider.name": "mock" if not os.getenv("OPENAI_API_KEY") else "openai",
-        "gen_ai.request.model": model,
-        "gen_ai.operation.name": "chat",
-        "gen_ai.usage.input_tokens": input_tokens,
-        "gen_ai.usage.output_tokens": output_tokens,
-        "gen_ai.response.model": model,
-        "gen_ai.input.messages": json.dumps([{"role": "user", "content": prompt}]),
-    })
-    if os.getenv("OPENAI_API_KEY"):
-        # 真实调用：这里替换成你的 openai SDK 调用即可
-        answer = f"[real-llm] reply to: {prompt[:20]}"
-    else:
-        answer = f"[mock-llm] reply to: {prompt[:20]}"
-    span.set_attribute("gen_ai.output.messages", json.dumps([{"role": "assistant", "content": answer}]))
-    token_counter.add(input_tokens + output_tokens, {"gen_ai.provider.name": "mock"})
-    cost_counter.add((input_tokens + output_tokens) * 0.000005, {"gen_ai.provider.name": "mock"})
-    return answer
-
-
-@app.get("/chat")
-def chat(q: str):
-    with tracer.start_as_current_span("agent.operation") as op:
-        op.set_attribute("gen_ai.agent.name", "customer-service-agent")
-        op.set_attribute("user.query", q)
-
-        # RAG 检索
-        with tracer.start_as_current_span("retrieval") as rag:
-            rag.set_attribute("db.system", "qdrant")
-            rag.set_attribute("db.query.text", q)
-            hits = random.randint(1, 5)
-            rag.set_attribute("retrieval.hits", hits)
-
-        # LLM 调用
-        with tracer.start_as_current_span("gen_ai.client") as llm:
-            answer = call_llm(f"基于 {hits} 条检索结果回答: {q}", llm)
-
-        op.set_attribute("gen_ai.agent.response", answer)
-        return {"answer": answer}
-
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8083)
-```
-
-跑起来并打流量：
-
-```bash
-python ai_app.py
-for i in 1 2 3 4 5; do curl -s "http://localhost:8083/chat?q=退款政策"; echo; done
-```
-
-打开 Jaeger 选 `ai-agent-service`，你会看到一棵完整的 AI 调用树：
-
-```mermaid
-flowchart TD
-  A["GET /chat"] --> B["agent.operation"]
-  B --> C["retrieval"]
-  B --> D["gen_ai.client"]
-```
-
-点开 `gen_ai.client`，属性里有 `gen_ai.request.model`、输入输出 token、输入消息。Prometheus 里能看到 `gen_ai_tokens_total` 和 `gen_ai_cost_total`——**你的 AI 成本第一次变成了可观测指标**。
-
-### 第二步：给 Collector 上"生产级治理"
-
-把前面的 Collector 配置升级成生产雏形：内存保护、资源补全、属性脱敏、尾部采样一次配齐：
-
-```yaml
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
-      http:
-        endpoint: 0.0.0.0:4318
-
-processors:
-  memory_limiter:
-    check_interval: 1s
-    limit_percentage: 70
-    spike_limit_percentage: 20
-  resource:
-    attributes:
-      - key: deployment.environment
-        value: production
-        action: upsert
-  attributes/redact:
-    actions:
-      - key: password
-        action: delete
-      - key: authorization
-        action: delete
-      - key: user.id
-        action: hash
-  batch:
-    send_batch_size: 1024
-    timeout: 5s
-  tail_sampling:
-    decision_wait: 5s
-    num_traces: 2000
-    policies:
-      - name: errors
-        type: status_code
-        status_code:
-          status_codes: [ERROR]
-        percentage: 100
-      - name: ai-service
-        type: string_attribute
-        string_attribute:
-          key: service.name
-          values: [ai-agent-service]
-        percentage: 50
-      - name: rest
-        type: probabilistic
-        probabilistic:
-          sampling_percentage: 10
-
-exporters:
-  debug:
-    verbosity: basic
-  otlphttp/jaeger:
-    endpoint: http://jaeger:4318
-  prometheus:
-    endpoint: 0.0.0.0:8889
-  otlphttp/loki:
-    endpoint: http://loki:3100/otlp
-
-service:
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [memory_limiter, resource, attributes/redact, tail_sampling, batch]
-      exporters: [debug, otlphttp/jaeger]
-    metrics:
-      receivers: [otlp]
-      processors: [memory_limiter, resource, batch]
-      exporters: [debug, prometheus]
-    logs:
-      receivers: [otlp]
-      processors: [memory_limiter, resource, attributes/redact, batch]
-      exporters: [debug, otlphttp/loki]
-```
-
-这里体现生产治理的四个动作：
-
-1. `memory_limiter` 保护 Collector 自己不死；
-2. `resource` 给所有数据补环境标签；
-3. `attributes/redact` 在数据进入后端前删敏感字段；
-4. `tail_sampling` 三重策略：错误 100%、AI 服务 50%、其他 10%。
-
-重启 Collector，重复打流量，观察 Jaeger 里 `ai-agent-service` 的链路大约只有一半——**按服务差异化采样**就是生产里最常见的治理姿势。
-
-### 第三步（可选）：eBPF 零埋点观察
-
-用 Grafana Beyla（OBI 的前身镜像仍可用）观察你的 Go 服务，全程不改代码：
-
-```bash
-docker run --rm --name beyla \
-  -e BEYLA_OPEN_PORT=8081 \
-  -e OTEL_EXPORTER_OTLP_ENDPOINT=http://host.docker.internal:4318 \
-  --privileged \
-  grafana/beyla:latest
-```
-
-然后在 Jaeger 里看 `stock-service` 的链路是否多了一层"无埋点也能观测"的 span。注意：容器里访问宿主要用 `host.docker.internal`（Docker Desktop 默认支持，Linux 需加 `--add-host`）。这一步是加分项，跑不通不影响主线。
-
-### 怎么确认这一步对了
-
-- Jaeger 里能看到 `ai-agent-service` 的四层 span 树，且 `gen_ai.*` 属性完整；
-- Prometheus 里能查到 `gen_ai_tokens_total` 与 `gen_ai_cost_total`；
-- 采样生效：错误 100%、AI 服务约 50%、其他约 10%；
-- 日志里没有 `password` / `authorization` 字段（脱敏生效）。
-
-## 团队推行路线图：从零到生产
-
-把上面的知识变成团队的现实，我推荐一个四阶段路线：
-
-**第 1 阶段（1–2 周）：地基**。搭 Collector + 一个后端（先用开源全家桶），把 1 个核心服务接上三信号，跑通"日志 ↔ 链路"关联。
-
-**第 2 阶段（2–4 周）：覆盖**。推广到全部服务：统一 SDK 版本、统一环境变量、统一采样策略；接上 K8s Operator 实现新服务自动接入。
-
-**第 3 阶段（4–8 周）：治理**。定采样预算公式、基数白名单、PII 脱敏清单、分环境路由；写一份《可观测性约定》文档：属性命名、保留时长、告警规范。
-
-**第 4 阶段（8–12 周）：AI 化**。接 GenAI 语义约定与成本指标；试点 Profiling；把"AI 调用成本"和"回答质量"做成看板，让可观测性从排障工具变成产品决策工具。
-
-## 全系列知识地图
-
-```mermaid
-flowchart TD
-  subgraph 上篇["上篇：认知"]
-    A1["监控 vs 可观测性"]
-    A2["历史: Dapper→Zipkin→OpenTracing→OpenCensus→OTel"]
-    A3["十概念: Signal/API/SDK/OTLP/Collector..."]
-    A4["三种无侵入做法"]
-  end
-
-  subgraph 中篇["中篇：原理"]
-    B1["Trace: Span/Context/采样"]
-    B2["Metrics: Instrument/Temporality/Aggregation"]
-    B3["Logs: trace_id 关联"]
-    B4["Collector: 管线/尾部采样"]
-  end
-
-  subgraph 下篇["下篇：治理"]
-    C1["生态地图与后端选型"]
-    C2["采样预算/基数/成本/PII"]
-    C3["边车模式三种形态"]
-    C4["K8s 自动埋点/eBPF/Profiling"]
-    C5["GenAI 可观测性"]
-  end
-
-  A1 --> B1
-  A2 --> A3
-  A3 --> B1
-  A3 --> B4
-  A4 --> C3
-  B1 --> C1
-  B2 --> C2
-  B4 --> C2
-  B3 --> C2
-  C1 --> C4
-  C2 --> C4
-  C3 --> C4
-  C4 --> C5
-```
-
-三篇合起来就是一个完整的能力闭环：**看得懂（上）→ 弄得清（中）→ 治得住（下）**。
-
-## 常见坑速查（下篇）
-
-| 坑                        | 后果                          | 解法                                          |
-| ------------------------- | ----------------------------- | --------------------------------------------- |
-| 指标里塞高基数标签        | Prometheus 序列爆炸、账单失控 | 指标只留低基数；高基数进 span/日志            |
-| 采样策略各服务不一致      | 半条链路、孤儿 span           | 全公司统一 `traceidratio` 或 parentbased      |
-| 日志全量进后端            | 成本第一大头                  | 分级、截断、合并、采样                        |
-| 敏感字段进属性            | 数据泄露事故                  | 埋点克制 + Collector 脱敏 + TLS               |
-| 把 GenAI 当普通 HTTP 观测 | 看不到提示词、token、成本     | 用 `gen_ai.*` 语义约定 + OpenInference 类工具 |
-| eBPF 当万能药             | 没有业务语义、兼容性坑        | 核心服务用 SDK，遗留系统用 eBPF，组合使用     |
-| 全员边车                  | 资源翻倍                      | 先 DaemonSet 起步，高价值服务再单独配边车     |
-| 后端不支持 OTLP           | 埋点被锁死                    | 选型时把 OTLP 原生支持设为硬条件              |
-
-## 自测题
-
-1. 为什么说 OpenTelemetry 的成功让厂商竞争从"采集"转移到了"消费"？这对选型意味着什么？
-2. 每天 1000 万 Span、单 Span 0.5 KB、预算 20 GB/天，全量能存几天？采样率该定多少？
-3. 高基数数据应该放在三个信号里的哪一个？为什么？
-4. 转发边车和 eBPF 边车各自产生数据吗？它们分别解决什么问题？
-5. 边车和 DaemonSet 怎么选？什么场景必须用边车？
-6. 生产 Collector 配置里，`memory_limiter` 和 `batch` 为什么缺一不可？
-7. GenAI 可观测性和传统 HTTP 可观测性的本质区别是什么？`gen_ai.*` 至少解决哪三类问题？
-
-## 练习任务
-
-1. 完成本篇演练：AI 服务四层 span 树 + 成本指标 + 差异化采样全部跑通。
-2. 给 `gen_ai.client` span 加一个"模型降级"事件：当 mock 或重试发生时记录 span event，验证在 Jaeger 里可见。
-3. 用 OpenInference 的 instrumentation（`pip install openinference-instrumentation-openai`）替换手动 LLM span，对比生成的属性差异。
-4. 把 Collector 的 `attributes/redact` 扩展：对 `gen_ai.input.messages` 内容做 hash 后再进 Loki，验证脱敏生效。
-5. 画一张你们团队当前系统的数据流图：哪些服务有埋点、数据经过什么、后端是什么、哪里是黑洞。把这张图作为推行路线图的起点。
-
-## 附录：本篇命令与配置汇总
-
-```bash
-# AI 服务
-cd ai-app && source .venv/bin/activate
-python ai_app.py
-for i in 1 2 3 4 5; do curl -s "http://localhost:8083/chat?q=退款政策"; echo; done
-
-# 可选：eBPF 零埋点观察 Go 服务（Docker Desktop / 带 host.docker.internal 的 Linux）
-docker run --rm --name beyla \
-  -e BEYLA_OPEN_PORT=8081 \
-  -e OTEL_EXPORTER_OTLP_ENDPOINT=http://host.docker.internal:4318 \
-  --privileged \
-  grafana/beyla:latest
-
-# 关键 PromQL
-gen_ai_tokens_total
-gen_ai_cost_total
-{__name__=~"http_server_(request_)?duration.*"}
-```
-
-文件清单：`ai-app/ai_app.py`、升级版 `otel-collector.yaml`（含 memory_limiter / resource / attributes / tail_sampling）。
-
-## 写在最后
-
-三篇写到这里，你已经从"听说过 OpenTelemetry"走到了"能带队把它落地"。
-
-上篇回答"是什么"，中篇回答"为什么这么设计"，下篇回答"怎么让它为一个组织服务"。这个顺序本身就是可观测性思维：先建立全局模型，再深入机制，最后回到治理与生态。
-
-2026 年的 OpenTelemetry 已经毕业，GenAI 语义约定即将稳定，eBPF 与 Profiling 正在补上最后两块拼图。这个领域不会再回到"每个厂商一套埋点"的战国时代。今天你花在这三篇文章上的时间，买的不是一套工具的使用说明，而是一个未来十年都在增值的基础能力。
-
-去把第一条链路跑起来吧。凌晨两点再出问题时，你手里会有核磁共振，而不是体温计。
-
-（全文完）
+链路数据在 GenAI 场景有一个额外用途：作为评估与迭代的输入。一次回答质量差，可以顺着链路看到检索召回是否合理、上下文是否被截断、模型输出是否被工具结果覆盖。把链路、评估分数与提示词版本放在一起，质量问题就从“玄学”变成可复现、可比较的数据。
+
+这也是 GenAI 可观测性区别于传统可观测性的地方：数据不仅要用于排障，还要用于改进产品本身。传统链路排完障就归档，AI 链路会成为提示词工程与模型选型的日常输入。
+
+把评估分数写进链路属性的做法正在普及：eval 结果作为 span attribute（如 eval.score）附着在模型 Span 上，查询时按分数过滤，低分样本直接跳进链路看细节。评估循环的输入是链路，输出又回到链路，形成闭环。
+
+### 生态
+
+围绕 GenAI 可观测性已经形成一批工具：OpenInference 定义了面向机器学习与 AI 的开放约定，Langfuse、OpenLLMetry、LangSmith 等平台提供从追踪到评估的完整能力。它们大多建立在 OpenTelemetry 之上或兼容 OTLP，可以接入统一的 Collector 管道。
+
+落地的两个注意点：输入输出可能包含敏感数据，默认应脱敏或只保留摘要；token 用量与成本的统计口径需要与计费侧对齐，否则治理和账单会对不上。
+
+成本治理按三个维度展开：按功能看哪些场景消耗了大部分 token，按模型看是否需要降级或换模型，按天看波动与发布是否相关。三个维度都依赖链路里的模型与用量属性，没有链路，成本只能看账单总量。
+
+## 团队推行路线
+
+从零到生产，推行顺序比工具选择更重要。
+
+第一步，确定试点：选一个后端服务、一种语言、一条核心请求链路，接上 SDK 与自动埋点，数据导到一个后端，验证链路完整。试点阶段的产出物是一条从入口到数据库的完整链路，验证标准是“任意一次请求都能从头追到尾”。目标不是覆盖范围，而是打通。
+
+第二步，定标准：在试点中确定 service.name 命名、Resource 字段、采样策略、属性命名规则。标准先于规模，后面每个服务接入时都套同一套约定，避免每个团队各起炉灶。采样预算在这一步用实际数据校准：先全量跑一周，看数据量与成本，再定采样率。
+
+第三步，集中治理：部署 Collector，把采样、脱敏、路由集中到数据路径上。此后调整治理规则不再需要改应用。验证标准：改一次采样规则，观察所有服务的链路数据同步变化，应用侧零改动。
+
+第四步，扩展：按语言和框架分批接入，每批验证链路完整性。eBPF 用于无法改代码的组件，RUM 按产品需求补充，GenAI 应用按业务优先级单独立项。每批接入都要过同一套验收清单：链路是否完整、Resource 是否正确、采样是否生效。
+
+第五步，让数据被使用：可观测性的价值在使用，不在采集。定期用链路复盘故障，把排查结果沉淀成告警与仪表盘；否则埋点只会变成新的成本项。验证标准是团队在真实故障里实际用上了链路数据，而不是继续从日志开始猜。
+
+常见的失败模式与工具无关：没有预算约束地全量采集链路，数据量在两周内压垮后端；标准未定就铺开，三十个服务出现三十种 service.name；只埋不用，故障时仍然从日志开始猜。避免这三种情况，推行路线就成功了一大半。
+
+推行节奏还需要配套治理机制：采样预算定期回顾，基数增长设阈值提醒，属性命名变更走评审。可观测性数据会随着服务数量自然膨胀，没有治理节奏，前期的标准会被新一轮接入冲散。团队的文档与示例代码同样重要，新服务接入时能直接复制标准配置，而不是重新发明一遍。
+
+推行还需要组织配套：指定可观测性负责人，负责标准与治理；值班流程把“先看链路”写成固定步骤；复盘 SOP 要求每次事故附上链路截图与数据证据。工具能改变能力，流程决定能力是否被使用。
+
+更深入的内容可以从官方文档继续：规范与语义约定是理解设计决策的入口，Collector 文档提供数据路径的细节，各语言 SDK 文档覆盖自动埋点能力。
+
+上一篇：[《OpenTelemetry 中篇：三大信号与内部机制》](/zh/posts/opentelemetry-guide-part-2)

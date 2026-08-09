@@ -1,6 +1,6 @@
 ---
-title: 'OpenTelemetry 上篇：从 0 到 1 认识可观测性'
-summary: 'AI 时代的系统越来越像黑盒：模型答非所问、Agent 链路上千步、一次故障牵扯十几个服务。OpenTelemetry 就是为这种不确定时代准备的"全身核磁共振"。本文从监控与可观测性的本质区别讲起，梳理 OpenTracing 与 OpenCensus 合并的完整历史，再用 Node 和 Go 两个服务搭出你的第一条跨语言调用链，让可观测性从名词变成手里能摸到的东西。'
+title: 'OpenTelemetry 上篇：为什么需要可观测性'
+summary: '可观测性解决的是监控回答不了的问题：系统为什么变成了现在这样。本文讲清楚可观测性是什么、与监控的区别，以及 OpenTelemetry 从何而来、为何成为事实标准，适合想系统理解可观测性概念与生态的全栈开发者。'
 category: 'DevOps'
 tags: ['OpenTelemetry', '可观测性', '分布式追踪', '入门']
 author: 'Max Zhang'
@@ -8,705 +8,208 @@ date: '2026-08-09'
 aiAssisted: true
 ---
 
-> 本篇你会得到：
->
-> - 一套判断"系统到底发生了什么"的思维框架；
-> - OpenTelemetry 的来龙去脉：它从哪来、为什么存在、现在是啥地位；
-> - 十个核心概念的一次讲清；
-> - 一个能跑的实验：Node 服务调用 Go 服务，链路、指标、日志全部落地。
->
-> 前置要求：会装依赖、会写最基本的 Node.js 或 Go；装好 Docker 与 Docker Compose。不需要任何可观测性基础。
->
-> 预计耗时：完整跟完约 90 分钟（只看概念约 30 分钟）。
+## 可观测性是什么
 
-## 先回答一个最基础的问题：监控和可观测性到底差在哪
+可观测性（observability）来自控制理论：如果一个系统能够根据外部输出推断内部状态，就称它是可观测的。软件系统中的外部输出是遥测数据，即日志（logs）、指标（metrics）和链路（traces）。一个服务是否可观测，取决于故障发生时能否只依靠已有数据回答“系统内部发生了什么”，而不是重新部署代码、追加日志、等待故障再次出现。
 
-我写这系列文章时，有个朋友问我：监控和可观测性是不是同一个东西，换了个高级叫法？
+对软件系统来说，“内部状态”并不抽象：某个请求正停留在哪个队列、某次数据库查询为什么慢、某条消息为什么被重试了三次、某个新版本是否带入了回归。可观测的系统能在故障时用已有数据回答这类问题；做不到，就只能复现、加日志、等下次。
 
-不是。这俩的区别决定了你后面搭的每一块东西，所以我先把它讲透。
+遥测数据可以回答三类不同的问题，成本和粒度也完全不同：
 
-先看一个 2026 年天天都在发生的场景。
+| 信号 | 回答的问题           | 数据粒度             | 典型成本与保留期       |
+| ---- | -------------------- | -------------------- | ---------------------- |
+| 日志 | 某个时刻发生了什么   | 每条事件一条记录     | 量最大，通常保留期最短 |
+| 指标 | 系统整体表现如何     | 聚合后的时间序列     | 最便宜，通常保留期最长 |
+| 链路 | 一次请求完整经过什么 | 按请求组织的 Span 树 | 量适中，通常需要采样   |
 
-凌晨两点，告警响了：AI 客服应用的错误率飙升。你打开监控面板，CPU 30%，内存充足，QPS 正常，健康检查一路绿灯。看起来一切正常。
+三句话可以概括：日志给细节，指标给全景，链路给因果。单独使用都有盲区：日志不知道请求从哪里来，指标不知道个体经历了什么，链路不知道业务上下文。组合起来，三类信号才能还原一次故障的完整画面。
 
-但用户说："客服机器人开始胡说八道了。"
+用一次下单请求举例：日志是“10:00:01.234 创建订单失败，库存服务超时”；指标是“错误率 0.3%、P99 延迟 800ms”；链路是“网关 → 订单服务 → 库存服务 → 数据库”，每一步带耗时。三类数据对同一件事的描述粒度不同，拼在一起才是完整事件。
 
-你打开日志，看到几百条一模一样的报错：`upstream timeout`。哪个 upstream？模型 API？知识库检索？向量数据库？还是 Agent 编排层在某个环节超时后，把一段残缺的上下文喂给了模型？
+“已有数据”是定义里的关键词。监控的前提是事先知道要关注什么：CPU 使用率、错误率、队列长度。可观测性的前提是数据本身保留足够的上下文，让开发者能在问题发生时提出事先没有预设的问题：某个请求为什么慢、为什么走了这条分支、为什么只有特定用户失败。
 
-猜不出来。日志只告诉你"超时了"，不告诉你这个请求经历了什么。而这一次请求背后可能有二十个内部服务、三次模型调用、一次向量检索、两次工具调用。任何一个环节出问题，最后都表现为同一个症状：用户觉得 AI 变傻了。
+### 监控与可观测性的区别
 
-更气人的是，错误率现在又恢复正常了。服务自己"好了"。但你心里清楚它没真正好，只是触发条件还没再次出现。
+| 维度       | 监控                           | 可观测性                                   |
+| ---------- | ------------------------------ | ------------------------------------------ |
+| 回答的问题 | 系统是否正常                   | 系统为什么异常                             |
+| 数据来源   | 预定义的指标与告警             | 保留上下文的日志、指标、链路               |
+| 适用场景   | 已知风险：容量、可用性、错误率 | 未知问题：偶发慢请求、跨服务故障、异常数据 |
+| 典型动作   | 阈值告警、仪表盘               | 沿链路下钻、关联数据、事后分析             |
 
-这就是监控和可观测性的分界线。
+监控与可观测性不是替代关系。监控在系统越界时发出信号，可观测性在信号出现后定位原因。没有监控，故障可能等到用户投诉才发现；没有可观测性，告警只能说明“出事了”，不能说明“哪里出事、为什么”。
 
-**监控是"我知道可能会出什么问题，所以我盯着这几个数"。** CPU 超 90% 报警、内存快满报警、支付接口 5 秒没响应报警。你预先写好了故障清单，照着清单检查。这像体检——体检单上没列的项目，医生不会给你查。
+从组织视角看，监控回答的是“系统是否可用”，由值班与告警体系消费；可观测性回答的是“系统为什么这样”，由开发者在排障时消费。两者服务不同角色，这也是它们长期并存而不是互相取代的原因。
 
-**可观测性是"我不知道会出什么鬼问题，但系统发生的每件事都留了可查询的痕迹"。** 它不是不监控了，而是让"追问"成为可能：你不用预先知道故障长什么样，也能顺着痕迹把它找出来。
+可观测性也不排斥监控，它让监控变得更聪明：基于链路数据定义错误率，可以区分业务错误与系统错误；基于 SLO 与错误预算，告警从“数字越线”变成“用户体验受影响”。监控仍然负责发出信号，只是信号的质量依赖底层数据的完整程度。
 
-有个比喻我用了很多年：监控是拿体温计找发烧，可观测性是核磁共振。核磁共振的价值不是扫得快，而是它**不预设病灶**——不知道问题在哪，它也能把全身拍下来。
+可以把问题分成两类。已知的未知（known unknowns）是可以预先枚举的风险：磁盘会满、内存会泄漏、错误率会上升，监控为它们设置阈值。未知的未知（unknown unknowns）是事先无法列举的问题：一次缓存击穿让特定用户群变慢、某个新版本改变了请求路由、模型在特定输入下进入错误分支。这类问题无法预设告警，只能依靠保留上下文的原始数据事后提问。
 
-落到工程上，可观测性通常拆成三根支柱：
+阈值告警的困境在于：阈值设得低，误报多，团队产生告警疲劳，真正的故障被淹没在噪音里；阈值设得高，故障表现为渐变而不是突变，等数字越线时影响已经扩散。更本质的问题是故障形态不会重复，预设的阈值永远落后于新出现的问题。可观测性的价值恰恰体现在这里：不预设问题，而是保证数据能回答任何问题。
 
-| 信号         | 回答的问题               | 例子                               |
-| ------------ | ------------------------ | ---------------------------------- |
-| 日志 Logs    | 发生了什么具体事件       | 一条报错、一次登录                 |
-| 指标 Metrics | 系统整体健康吗、趋势怎样 | QPS、延迟分位数、错误率            |
-| 链路 Traces  | 一个请求完整经过了什么   | 从网关到 A 服务到数据库再到 B 服务 |
+可观测性也不同于调试。调试依赖复现：拿到同样的输入，在本地或测试环境里逐步断点，找到代码路径。分布式系统里，很多故障由流量特征、数据分布、时序竞争触发，无法稳定复现。可观测性不要求复现，它直接在产生问题的环境里用数据提问：数据足够完整，问题就能在线上回答。
 
-三根支柱各有所长，也各有短板：
+## 为什么传统手段不够用
 
-- **日志**信息最丰富，但量最大、最散。没有上下文，一条日志就是一座孤岛。你看到"超时了"，却不知道它是哪个用户、哪条链路上的超时。
-- **指标**最便宜、最适合告警，但信息最薄。它告诉你"慢了"，不告诉你谁慢、为什么慢。
-- **链路**信息最完整，能还原请求的完整旅程，但成本高、必须采样，而且它只覆盖"请求"，覆盖不了进程内部的事。
+### 组件变多，因果关系被拆散
 
-所以生产级的可观测性不是"三样都装"，而是**三样关联**：用同一个 `trace_id` 把一次请求的链路、日志、指标串起来。这正是 OpenTelemetry 的核心设计目标之一。
+单体应用时代，一次请求在一个进程内完成，日志按时间顺序就能还原全过程；进程内还有调用栈，可以看清每一步的调用关系。服务拆分后，一次请求要穿过网关、多个服务、消息队列和数据库。每个组件各自记日志、各自上报指标，数据之间没有共同标识，无法回答“这次请求到底经历了什么”。
 
-另外补一句：2026 年，Profiles（剖析）正在成为第四根支柱，回答"代码层面的资源到底花在哪"，后面下篇会讲。
+分布式系统里连时间都不是天然对齐的。各主机的时钟可能相差几秒，日志时间戳只表示“本地时间”，跨主机按时间排序会把因果顺序排错。链路数据不依赖时钟对齐：父子关系由传播的上下文决定，时间只是展示用。这是关联标识比时间戳更可靠的原因。
 
-### 怎么确认你懂了
-
-试着用自己的话说清三件事：
-
-1. 监控和可观测性的本质区别是什么？
-2. 三支柱各自回答什么问题、短板是什么？
-3. 为什么"用同一个 ID 把日志、指标、链路串起来"在 AI 时代特别重要？
-
-说不出来就翻回去再看一遍，这是全篇的地基。
-
-## AI 时代：为什么这事比从前更急
-
-传统微服务时代，可观测性解决的是"看不见"的问题。AI 时代，问题升级成了"**看起来正常，但行为不对**"。
-
-为什么？四个原因。
-
-**第一，不确定性从边缘变成了核心。** 传统代码是确定性的：同样的输入，同样的输出，查链路、看日志，能还原出它为什么这样。但 LLM 应用的核心是一个概率模型：同一个提示词，这次和下次回答可能不一样。错误不再是"代码 bug"这一种形态，还包括上下文被污染、检索结果差、模型幻觉、工具调用顺序错。这些都不是传统指标能捕捉的，你得看请求内部发生了什么：提示词被注入了什么、检索到了哪些片段、模型返回了什么、Agent 做了哪几步决策。
-
-**第二，调用链变长，而且跨了系统边界。** 一个简单的 AI 客服背后可能是这样一条链：
+下面是一个常见场景：
 
 ```mermaid
-flowchart LR
-  U["用户提问"] --> G["API 网关"]
-  G --> O["Agent 编排"]
-  O --> R["RAG 检索"]
-  O --> M["LLM 调用"]
-  O --> T["工具调用: 查订单/查库存"]
-  T --> D["业务数据库"]
-  R --> V["向量数据库"]
-  M --> O
-  O --> U2["最终回复"]
+sequenceDiagram
+  participant B as 浏览器
+  participant G as 网关
+  participant A as 订单服务
+  participant C as 库存服务
+  B->>G: POST /orders
+  G->>A: 创建订单
+  A->>C: 扣减库存
+  Note over C: 慢查询、超时
+  C-->>A: 超时
+  A-->>G: 500
+  G-->>B: 错误响应
 ```
 
-任何一个环节变慢、失败、返回脏数据，最终都体现为"AI 答错了"。没有链路追踪，你连"这个回答是哪条路径生成的"都说不清。
+浏览器收到“创建订单失败”，网关记录上游返回 500，订单服务日志显示调用库存服务超时，库存服务日志显示 SQL 执行了 8 秒。每条数据都是真的，但任何一条单独拿出来都解释不了完整因果链。定位根因必须把同一请求在多个服务里的片段重新拼接起来，这正是链路追踪做的事。
 
-**第三，成本和安全性变成了运行时问题。** 每一次失败的模型调用、每一次无意义的重试都是真金白银。一个死循环的 Agent 可能一小时烧光预算。提示词注入、敏感数据被塞进上下文，这些是安全事件。可观测性是唯一能让你在运行时看到"钱花哪了、数据去哪了"的手段。
+超时和重试会让症状进一步失真。下游超时后，上游可能重试两次、三次，每个服务各记一条错误日志；从时间线上看，错误分散在十几秒里，像三起独立故障，实际只是同一个根因的三次表现。没有链路，排查者只能按时间把日志拼起来猜，猜错的成本很高。
 
-**第四，AI 系统需要"可解释性"作为工程能力。** 监管、审计、用户投诉、模型迭代，全都要回答同一个问题："这个回答是怎么来的？"可观测性系统就是 AI 应用的飞行记录仪：输入、上下文、检索结果、模型输出、评分，全部留痕。
+异步调用让问题更难追踪。消息队列、定时任务、后台批处理把一次业务操作拆成多个不连续的执行段，日志在不同进程、不同时间出现。同步调用还能靠调用栈定位，异步链路连“谁调了谁”都需要额外信息。链路追踪正是为这种场景设计：每个执行段记录同一个 traceId，并在父子关系上标明调用来源，异步段也能拼回同一条链。
 
-所以这不是一篇运维工具教程。它讲的是一个所有写软件的人都需要的基本能力，而 OpenTelemetry 恰好是这个能力的标准载体。
+### 指标只能回答“有多少”
 
-## 来龙去脉：这玩意儿是怎么被造出来的
+指标是聚合数据：每秒请求数、错误率、P99 延迟。聚合天然丢失个体信息。P99 变差说明系统整体在退化，但指不出是哪个用户、哪条链路、哪个参数导致的。容量规划和告警需要聚合，故障排查则只是起点。
 
-理解了"为什么需要"，再看"为什么是它"。这段历史不是八卦，它解释了 OpenTelemetry 每个设计决策的来源。
+错误率也会稀释问题。0.1% 的整体错误率听起来很低，但如果只有一种请求类型受影响，这部分用户就是 100% 失败。聚合把问题摊薄到看不见，只有按请求维度拆开才能发现，而按请求维度拆开正是链路数据提供的能力。
 
-### 石器时代：日志加脑补
+先看分位数意味着什么。平均值会被长尾掩盖：1% 的请求慢 10 倍，平均值只上升几个百分点，但受影响用户感受到的是灾难。P99 表示 99% 的请求延迟低于该值，它比平均值更能反映尾部体验，但仍然只是一条聚合曲线——它不说这 1% 是哪些请求、什么条件触发的。聚合越靠后，个体信息丢得越干净。
 
-最早的排查手段就是日志加猜。`tail -f`、`grep error`、深夜盯着滚动屏幕。分布式系统出现后，一个请求要经过十几个进程，每个进程的日志各自为政。想从头串到尾？把时间戳对上、把 IP 对上、把用户 ID 对上——这就是最早的"手工链路追踪"。
+一个具体的例子：告警显示订单接口 P99 延迟从 200ms 升到 800ms。这个数字说明系统变慢了，但接下来的问题都需要更细的数据：是哪个版本的部署引起的？是某个地区用户、某个商品分类，还是某个支付渠道？延迟消耗在网关、业务逻辑还是数据库？指标聚合后，这些答案从数据里被抹掉了。要回答它们，需要按请求维度保留的链路数据，而不是聚合后的时间序列。
 
-### 指标时代：StatsD、Graphite、Prometheus
+聚合窗口也会影响结论。同样的数据，按 1 分钟窗口看可能一切正常，按 1 秒窗口看可能有一批明显的超时。窗口越大，瞬时故障越容易被抹平；窗口越小，存储与查询开销越大。团队在不同窗口之间切换时，常常得到互相矛盾的印象，而指标本身无法解释这种矛盾。
 
-2011 年前后，StatsD 在 Etsy 诞生，用极简的 UDP 协议把业务指标推给 Graphite，形成"埋点 → 聚合 → 看板"的经典范式。2016 年，Prometheus 成为 CNCF 第二个托管项目（第一个是 Kubernetes），带来了拉取模型、多维标签、PromQL 查询语言。到今天，Prometheus 的指标模型仍然是 OTel Metrics 底层思想的重要来源。
+指标的正确定位是容量规划与趋势发现：长期增长、季节性波动、版本对比，这些都需要聚合数据。把指标的结论直接当根因，是排查中最常见的误用——指标能指出“哪里变了”，不能指出“为什么变”。
 
-### 追踪的启蒙：从 Dapper 到 Zipkin 到 Jaeger
+### 日志缺少关联
 
-2010 年，Google 公开了论文《Dapper, a Large-Scale Distributed Systems Tracing Infrastructure》。这是现代分布式追踪的圣经：它第一次系统性地回答了如何给每个请求分配全局 ID、如何在跨服务调用时传递这个 ID、如何用低采样率控制成本。
+日志是事件记录，本身没有请求边界。多服务场景下，同一请求在每个服务产生各自日志，若没有 trace_id 之类关联字段，检索只能按时间模糊匹配。日志的价值不在数量，而在能否把同一事件的所有片段关联起来。
 
-2012 年，Twitter 基于 Dapper 的思路开源了 Zipkin。2017 年，Uber 开源了 Jaeger（2019 年从 CNCF 毕业）。一时间分布式追踪工具有了，但没有统一标准——每家 SDK 的数据格式、上下文传递方式、埋点 API 全不一样。
+日志也是最难标准化的信号。指标有固定数值，链路有固定结构，日志是自由文本，可以包含任何信息。结构化的程度决定可检索性：纯文本只能按关键字搜，结构化字段可以按服务、级别、用户过滤。统一日志模型的目标不是限制内容，而是给所有日志一个可关联的外壳。
 
-### 两个阵营：OpenTracing 与 OpenCensus
+即使每个服务都做了结构化日志，跨服务的关联仍然依赖人为约定。一个团队用 request_id，另一个团队用 order_id，网关传了 header，下游却没透传，日志就再次变成孤岛。约定只在写代码的人之间成立，换团队、换系统、换供应商，约定就断了。OpenTelemetry 的解决方式是统一的 trace_id：SDK 自动把链路标识注入日志上下文，日志后端按 trace_id 聚合，任意服务的日志都能和整条链路挂在一起。
 
-2016 年，OpenTracing 作为 CNCF 第三个托管项目成立。它的思路是定义一个**厂商中立的追踪 API**：应用只依赖一套接口，底层接 Jaeger、Zipkin 还是商业产品，都由配置决定。
+日志还有成本和采样问题。高流量服务的全量日志量非常大，存储成本直接随流量增长；为了控成本，常见做法是采样，比如只保留十分之一。一旦采样，故障日志可能恰好落在被丢弃的那部分里，排查时才发现关键证据不存在。日志系统需要的是“在需要时能找到”，而不是“什么都存”，这个矛盾靠日志本身解决不了。
 
-2018 年，Google 推出 OpenCensus。它的思路更"全家桶"：不只追踪，还包含指标，而且自带收集与导出能力，甚至可以直接上报到自家监控产品。
+### AI 应用放大了未知问题
 
-两个项目都想统一世界，结果世界被劈成两半：一部分库只支持 OpenTracing，另一部分只支持 OpenCensus。更尴尬的是，它们都只解决了一半问题——OpenTracing 专注追踪、没有指标；OpenCensus 有指标但追踪生态弱。
+AI 应用把“未知问题”推到新的高度。大模型调用结果不确定，相同输入可能产生不同输出；Agent 自主决定调用哪些工具、按什么顺序执行；一次失败的根因分散在提示词、工具调用、上下文窗口、模型提供方限流等多个环节。
 
-### 2019：合并，OpenTelemetry 诞生
+Agent 场景比单次 RAG 更复杂：一次任务可能循环调用工具、根据中间结果改变计划。每一步的选择都影响最终结果，传统的“成功/失败”二元状态完全不够用。需要记录的是决策过程本身，而不是结果。
 
-2019 年 5 月，CNCF 官宣：OpenTracing 和 OpenCensus 合并为 **OpenTelemetry**，同时进入 CNCF Sandbox。这次合并不是简单地把代码加在一起，而是把两个项目的设计教训揉在一起：
+以一次 RAG 问答为例，它至少包含这些环节：检索召回哪些文档、拼进提示词的上下文有多长、模型调用耗时与 token 数、是否触发了工具调用、工具返回了什么。任何一环都可能决定最终答案的质量。如果只记录“调用成功”，质量问题和成本问题都无从定位。
 
-- 从 OpenTracing 继承：**厂商中立的 API + 可插拔 SDK**；
-- 从 OpenCensus 继承：**多信号（不只追踪）+ 完整采集导出链路**；
-- 双方共同承认：**必须有一个标准的、不依赖任何后端的传输协议**（后来成为 OTLP）；
-- 还加上了前两者都没做好的：**跨厂商的语义约定**（Semantic Conventions），让"HTTP 延迟"在任何语言、任何 SDK 里都叫同一个名字。
+成本也一样：同一功能用不同模型、不同上下文长度，单次成本可能差一个数量级。链路记录模型与 token 用量后，成本问题才能按请求、按功能、按用户拆开分析。
 
-时间线帮你串一下：
+AI 应用引入的问题可以分成三类。质量：模型幻觉、检索召回差、上下文被截断，最终表现为“答非所问”；成本：模型选择、输入输出 token 数、失败重试，每一项都直接对应账单；决策链：Agent 为什么选择某个工具、为什么放弃某个分支，决定了行为是否可解释。传统指标能回答“调用是否成功、延迟多少”，回答不了这三类问题。回答它们，需要把每个环节作为链路的一部分记录下来，让“这个回答为什么不好”变成可以检索、可以比较的问题。这也是可观测性在 AI 时代更受关注的原因。
 
-```mermaid
-flowchart LR
-  D["2010 Dapper 论文"] --> Z["2012 Zipkin 开源"]
-  Z --> OT["2016 OpenTracing 成立"]
-  P["2016 Prometheus 入 CNCF"] --> OC["2018 OpenCensus 发布"]
-  OT --> M["2019 合并为 OpenTelemetry"]
-  OC --> M
-  M --> S["2019 CNCF Sandbox"]
-  S --> I["2021 CNCF Incubation 孵化"]
-  I --> G["2026 正式毕业 Graduated"]
-```
+## OpenTelemetry 是什么
 
-中间还有一个重要的旁支：**W3C Trace Context**。2019 年前后，浏览器、网关、云厂商也需要参与追踪，但 HTTP 头里没有统一标准。W3C 分布式追踪工作组制定了 `traceparent` / `tracestate` 两个头，2020 年成为 W3C 正式推荐标准。这让"从浏览器到网关到微服务到数据库"的全链路追踪第一次有了通用语言。OpenTelemetry 完整实现了它。
+OpenTelemetry 是一个开源、厂商中立的标准与工具集合，用于生成、采集、处理和导出遥测数据，覆盖链路、指标、日志三类信号。
 
-### 2026 年的位置：事实上的标准
+结构上由三部分组成：
 
-到 2026 年，OpenTelemetry 走完了 CNCF 项目生涯的最后一站：
+- 规范（specification）：定义数据模型、API、跨进程上下文传播方式，以及属性名的语义约定（semantic conventions）。
+- SDK 与埋点库：为超过 20 种语言提供官方实现，包含自动埋点和手动埋点 API。
+- Collector：独立组件，负责接收、处理、转发遥测数据，不与应用代码耦合。
 
-- 2021 年 8 月进入孵化（Incubation）；
-- **2026 年 5 月正式毕业（Graduated）**，成为可观测性领域第一个达到毕业级的 CNCF 项目；
-- 所有主流云厂商和可观测性厂商（AWS、Google Cloud、Microsoft、Datadog、Grafana、New Relic、Dynatrace、阿里云等）都在产品里原生支持 OTLP；
-- Traces、Metrics、Logs 三大信号规范全部稳定；Profiles 进入 Alpha；eBPF 自动埋点项目（OBI）发布首个 Alpha；GenAI 语义约定接近稳定。
+| 组成部分  | 职责                         | 典型产物                        |
+| --------- | ---------------------------- | ------------------------------- |
+| 规范      | 定义数据模型、API 与语义约定 | Span 结构、属性命名、上下文传播 |
+| SDK       | 在应用内生成并导出遥测数据   | Node.js、Go、Python 埋点库      |
+| Collector | 接收、处理、导出遥测数据     | OTLP 接收器、采样、数据脱敏     |
 
-一句话总结这段历史：**可观测性经历了"日志时代 → 指标时代 → 追踪时代 → 标准混战 → OpenTelemetry 统一"五个阶段。** 你现在学到的，是这个领域第一次真正收敛出的公共基础设施。
+规范是 OpenTelemetry 与普通 SDK 库的本质区别。普通库把数据格式和上传逻辑绑在一起，换后端就要换库；规范把数据模型、协议和属性命名定下来，SDK 只是规范的实现。这样埋点代码不再绑定具体后端，切换后端只需要改导出配置。
 
-## 十分钟建立地图：十个核心词
+SDK 内部还分 API 与实现两层：业务代码只依赖 API，创建 tracer、meter、logger；具体怎么做（聚合、采样、导出）由 SDK 决定。自动埋点是这个分层的关键收益：对常见的 Web 框架、HTTP 客户端、数据库驱动，SDK 可以在不修改业务代码的情况下，通过钩子自动创建 Span、注入上下文、采集请求属性。业务代码只负责补充领域信息：订单号、用户 ID、业务分支。接入成本低到只需几行初始化代码，这是 OpenTelemetry 能大规模推广的前提。
 
-在动手之前，先建立一张地图。这十个词整个系列都会反复出现，现在用最直白的方式讲一遍。
+Collector 是独立于应用进程的组件，负责接收 SDK 发来的数据，经过一条管线处理（采样、过滤、脱敏、路由），再导出到后端。它的存在让治理逻辑不用写进每个应用：改采样规则、改导出目标，都只改 Collector 配置。
 
-**1. Signal（信号）**：OTel 把要采集的数据统称为 Signal：Traces、Metrics、Logs、Profiles。它是"采集什么"的分类。
+把三个部分串起来看一次请求的完整路径：浏览器请求进入网关，SDK 创建根 Span；网关调用下游时把上下文写入请求头；下游服务提取上下文，创建子 Span；所有 Span 在进程内经过批处理，由 Exporter 编码成 OTLP 发送；Collector 接收后执行采样、过滤等处理，再导出到后端。埋点、采集、分析各自独立，任何一层都可以单独替换。
 
-**2. API 与 SDK**：这是 OTel 最重要也最容易被误解的设计。API 是稳定不变的接口（`tracer.startSpan()`、`meter.createCounter()`），业务代码只依赖 API；SDK 是实现（负责采样、批处理、导出），可以升级、替换，业务代码不用改。打个比方，这像 Java 的 JDBC：你写 JDBC 代码，底层是 MySQL 驱动还是 PostgreSQL 驱动，不关业务的事。OTel 把这个思路搬到了可观测性上，而且更彻底。
+这套路径以 SDK 为主。对无法接入 SDK 的组件，生态里还有 eBPF 等零埋点方案，通过内核钩子生成同样的 OTLP 数据。两条路径互补，覆盖不同场景。
 
-**3. Instrumentation（埋点 / 插桩）**：自动埋点靠拦截 HTTP 库、数据库驱动、消息队列自动生成 span，一行业务代码都不用改；手动埋点是在业务关键路径上自己创建 span，表达"这段代码在做什么业务"。好用的可观测性 = 自动埋点打底 + 手动埋点补业务语义。
+下面是一次 HTTP 请求片段的最小数据形状：
 
-**4. Context 与 Propagation（上下文与传播）**：分布式追踪的魔法核心。一个请求跨服务时，怎么让下游知道"我是同一个 trace"？上游把 `trace_id` 写进 HTTP 头（`traceparent`），下游 SDK 读到后，把新 span 挂到同一个 trace 下。传播发生在 HTTP、gRPC、消息队列，甚至进程内的异步回调里。
-
-**5. Resource（资源）**：描述"这批数据来自哪个东西"：服务名、版本、环境、容器 ID。没有它，所有服务的数据混在一起，无从区分。
-
-**6. OTLP（OpenTelemetry Protocol）**：OTel 定义的标准传输协议，支持 gRPC 和 HTTP，一套协议同时承载 Traces、Metrics、Logs、Profiles。它是可观测性领域的"普通话"。
-
-**7. Collector（采集器）**：一个独立进程，接收各服务发来的 OTLP 数据，做加工（过滤、采样、补标签、脱敏），再转发给后端。两种经典形态：Agent（每节点一个，就近收）和 Gateway（集中部署，统一治理）。
-
-**8. Exporter（导出器）**：负责把数据发给某个后端：Prometheus、Jaeger、Datadog、云厂商……SDK 和 Collector 里都有。
-
-**9. Backend（后端）**：真正存储、查询、展示、告警的地方。OTel 不负责最终展示，它负责把数据以标准格式送到后端。后端可以是开源全家桶，也可以是商业产品。
-
-**10. Semantic Conventions（语义约定）**：最容易被低估的一环。它规定"HTTP 请求延迟"这个指标在所有语言里都叫 `http.server.request.duration`，"服务名"属性在所有地方都叫 `service.name`。没有它，每个 SDK 自己起名，跨系统关联就是灾难。
-
-整条数据流长这样：
-
-```mermaid
-flowchart LR
-  App["应用进程<br/>SDK + 自动埋点"] -->|OTLP| Agent["Collector Agent"]
-  Agent -->|OTLP| GW["Collector Gateway"]
-  GW -->|OTLP/转换| BE["后端 Backend<br/>Jaeger / Prometheus / 云厂商"]
-  BE --> UI["看板 / 查询 / 告警 / AI 分析"]
-```
-
-记住这条主线就够了：**埋点产生数据 → SDK 规范数据 → OTLP 传输 → Collector 加工 → 后端存储展示**。
-
-## 先回答一个常见疑问：可观测性一定要改代码吗？
-
-写到这里，你应该会冒出一个很自然的疑问：我提到的 SDK 都要装进服务里，那是不是意味着每个服务都要改代码？可观测性不能完全不碰业务吗？比如用边车模式？
-
-这是个好问题，而且答案比你想的复杂一点。先说清楚"服务在哪儿跑"，再说"不改代码有几种做法"。
-
-### 容器和 Pod 到底啥区别
-
-你提到"服务可能在某个容器或者某个 Pod 里"，这两个词经常混着用，其实不是一回事：
-
-|            | 容器（Container）                                        | Pod                                            |
-| ---------- | -------------------------------------------------------- | ---------------------------------------------- |
-| 是什么     | 一个隔离的进程运行环境（自己的文件系统、网络、资源限制） | K8s 里最小的调度单元，**可以装一个或多个容器** |
-| 类比       | 一个独立的"房间"                                         | 一层"楼"，房间共用走廊和门牌（网络、存储）     |
-| 共享什么   | 各自隔离                                                 | 同 Pod 的容器共享 IP、端口空间、挂载的卷       |
-| 为什么需要 | 打包和运行应用                                           | 让紧密协作的容器像一台机器一样调度             |
-
-关键点：**同一个 Pod 里的容器可以通过 `localhost` 互相访问**。这是边车模式能成立的物理基础——应用容器和边车容器住在同一层楼，应用喊一声 `localhost:4318`，边车就听到了。
-
-### 不改代码，有三种做法
-
-**第一种：自动埋点 SDK。** 它确实要装进服务进程里（加一个依赖、启动时初始化一行），但不改你的业务代码。OTel SDK 会自动拦截 HTTP 库、数据库驱动、框架路由，帮你生成 80% 的通用数据。代价是进程里多一个库和一点点开销。
-
-**第二种：eBPF 边车（完全无感）。** 边车里跑一个 eBPF 探针（Beyla/OBI/Odigos 这类），它不碰应用进程，而是挂在内核网络栈上，直接观察应用发出的 HTTP/gRPC 流量并生成链路。应用完全无感，连 SDK 都不用装。代价后面说：它只看得见"网络协议层"，看不见业务语义。
-
-**第三种：纯转发边车。** 很多文章说"边车模式采集日志"，指的是 OTel Collector 以边车容器形式跟应用住在一起，接收数据、加工、转发。但注意：**这种边车自己不产生数据**，它只是个中转站。数据还是得靠应用里的 SDK 或旁边的 eBPF 探针产生。
-
-两种边车的正确画法：
-
-```mermaid
-flowchart LR
-  subgraph Pod1["方案 A：SDK + 转发边车"]
-    APP1["应用容器<br/>（含 OTel SDK）"]
-    SIDE1["边车容器<br/>Collector Agent"]
-  end
-  APP1 -->|"localhost:4318"| SIDE1
-  SIDE1 -->|OTLP| GW["Collector Gateway"]
-
-  subgraph Pod2["方案 B：eBPF 边车"]
-    APP2["应用容器<br/>（无 SDK）"]
-    SIDE2["边车容器<br/>eBPF 探针"]
-  end
-  APP2 -- "内核网络栈（旁路抓包）" --> SIDE2
-  SIDE2 -->|OTLP| GW
-```
-
-那是不是"绝对不碰代码"最好？我的观点是**别追求绝对**。eBPF 能告诉你"这个服务调了那个服务、耗时多少"，但看不到"这是哪个用户的下单""这次模型调用的提示词是什么"。业务语义恰恰是 AI 时代排障最需要的东西。所以成熟团队的做法是组合拳：
-
-1. 自动埋点打底，覆盖所有服务，零业务代码改动；
-2. eBPF 兜底，覆盖动不了的遗留系统；
-3. 关键路径手动埋点，只给真正重要的业务（下单、支付、LLM 调用）补语义；
-4. Collector 做统一治理，采样、脱敏、路由全在这一层，业务团队感知不到。
-
-下篇会把边车模式在生产里怎么搭展开讲。现在先回到动手环节，你马上就会理解 SDK 为什么是"最顺手的默认选项"。
-
-## 实践：搭一条能看的链路
-
-现在是动手时间。我们要搭的东西很小，但五脏俱全：
-
-- 一个 Node.js 服务（`order-service`），监听 8080；
-- 一个 Go 服务（`stock-service`），监听 8081；
-- Node 服务调用 Go 服务查库存；
-- 两者把 Traces、Metrics、Logs 发给本地 Collector；
-- Collector 转发：链路到 Jaeger，指标到 Prometheus，日志打到控制台；
-- 你在 Jaeger 里看到一条跨语言、跨进程的完整链路。
-
-```mermaid
-flowchart LR
-  N["Node order-service<br/>:8080"] -->|OTLP HTTP| C["Collector<br/>:4318"]
-  G["Go stock-service<br/>:8081"] -->|OTLP HTTP| C
-  N -- "HTTP 调用" --> G
-  C --> J["Jaeger UI :16686"]
-  C --> P["Prometheus :9090"]
-  C --> D["Debug 控制台"]
-```
-
-### 第一步：起本地基础设施
-
-新建一个目录 `otel-demo`，放三个文件。
-
-`docker-compose.yml`：
-
-```yaml
-services:
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.158.0
-    command: ['--config=/etc/otelcol/config.yaml']
-    volumes:
-      - ./otel-collector.yaml:/etc/otelcol/config.yaml:ro
-    ports:
-      - '4317:4317' # OTLP gRPC
-      - '4318:4318' # OTLP HTTP
-      - '8889:8889' # Prometheus 抓取 Collector 的指标出口
-
-  jaeger:
-    image: jaegertracing/jaeger:2.20.0
-    ports:
-      - '16686:16686' # Jaeger UI
-    depends_on:
-      - otel-collector
-
-  prometheus:
-    image: prom/prometheus:v3
-    volumes:
-      - ./prometheus.yaml:/etc/prometheus/prometheus.yml:ro
-    ports:
-      - '9090:9090'
-    depends_on:
-      - otel-collector
-
-  grafana:
-    image: grafana/grafana:13.0.6
-    volumes:
-      - ./grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
-    ports:
-      - '3000:3000'
-    depends_on:
-      - jaeger
-      - prometheus
-```
-
-版本说明：这里用的是 2026 年 8 月的最新稳定版本，将来有新版把 tag 换掉就行，配置结构不变。Jaeger 用的是 v2（2024 年底发布的新一代，本身就是基于 OTel Collector 定制的发行版），默认开启 OTLP 接收。
-
-`otel-collector.yaml`：
-
-```yaml
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
-      http:
-        endpoint: 0.0.0.0:4318
-
-processors:
-  batch:
-
-exporters:
-  debug:
-    verbosity: detailed
-  otlphttp/jaeger:
-    endpoint: http://jaeger:4318
-  prometheus:
-    endpoint: 0.0.0.0:8889
-
-service:
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [debug, otlphttp/jaeger]
-    metrics:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [debug, prometheus]
-    logs:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [debug]
-```
-
-`prometheus.yaml`：
-
-```yaml
-scrape_configs:
-  - job_name: otel-collector
-    scrape_interval: 5s
-    static_configs:
-      - targets: ['otel-collector:8889']
-```
-
-`grafana-datasources.yaml`：
-
-```yaml
-apiVersion: 1
-datasources:
-  - name: Jaeger
-    type: jaeger
-    access: proxy
-    url: http://jaeger:16686
-    isDefault: false
-  - name: Prometheus
-    type: prometheus
-    access: proxy
-    url: http://prometheus:9090
-    isDefault: true
-```
-
-启动：
-
-```bash
-cd otel-demo
-docker compose up -d
-docker compose ps
-```
-
-等容器全部 Up，先验证 Collector 活着：
-
-```bash
-curl -s -o /dev/null -w '%{http_code}\n' -X POST http://localhost:4318/v1/traces
-```
-
-返回任何 HTTP 状态码（而不是 `connection refused`）就说明端口通了。打开 http://localhost:16686 看 Jaeger UI，http://localhost:9090 看 Prometheus。
-
-### 怎么确认这一步对了
-
-四个容器全部 Up，4318 和 16686 两个端口能访问。任何一步不对，先看 `docker compose logs otel-collector`。
-
-### 第二步：Node 服务
-
-新建 `node-app/`，初始化项目并装依赖：
-
-```bash
-mkdir -p node-app && cd node-app
-npm init -y
-npm install express@4
-npm install @opentelemetry/api@1.9.1 \
-  @opentelemetry/api-logs@0.221.0 \
-  @opentelemetry/sdk-node@0.221.0 \
-  @opentelemetry/auto-instrumentations-node@0.79.0 \
-  @opentelemetry/exporter-trace-otlp-http@0.221.0 \
-  @opentelemetry/exporter-metrics-otlp-http@0.221.0 \
-  @opentelemetry/exporter-logs-otlp-http@0.221.0 \
-  @opentelemetry/sdk-metrics@2.10.0 \
-  @opentelemetry/sdk-logs@0.221.0 \
-  @opentelemetry/resources@2.10.0 \
-  @opentelemetry/semantic-conventions@1.43.0
-```
-
-创建 `tracing.js`——整个 Node 应用的观测入口：
-
-```js
-// tracing.js
-import { NodeSDK } from '@opentelemetry/sdk-node'
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
-import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http'
-import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http'
-import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics'
-import { SimpleLogRecordProcessor } from '@opentelemetry/sdk-logs'
-import { Resource } from '@opentelemetry/resources'
-import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions'
-
-const resource = new Resource({
-  [ATTR_SERVICE_NAME]: 'order-service',
-  [ATTR_SERVICE_VERSION]: '1.0.0',
-})
-
-const sdk = new NodeSDK({
-  resource,
-  traceExporter: new OTLPTraceExporter(),
-  metricReaders: [
-    new PeriodicExportingMetricReader({
-      exporter: new OTLPMetricExporter(),
-      exportIntervalMillis: 5000,
-    }),
-  ],
-  logRecordProcessors: [new SimpleLogRecordProcessor(new OTLPLogExporter())],
-  instrumentations: [getNodeAutoInstrumentations()],
-})
-
-sdk.start()
-```
-
-再创建 `server.js`：
-
-```js
-// server.js
-import './tracing.js'
-import express from 'express'
-import { trace, metrics } from '@opentelemetry/api'
-import { logs } from '@opentelemetry/api-logs'
-
-const app = express()
-const tracer = trace.getTracer('order-service')
-const meter = metrics.getMeter('order-service')
-const logger = logs.getLogger('order-service')
-const orderCounter = meter.createCounter('orders.created')
-
-app.get('/orders', async (req, res) => {
-  await tracer.startActiveSpan('create.order', async (span) => {
-    span.setAttribute('order.user', 'demo-user')
-
-    // 调用 Go 服务查库存
-    const response = await fetch('http://localhost:8081/stock/check')
-    const stock = await response.text()
-    span.setAttribute('order.stock', stock)
-
-    orderCounter.add(1, { status: response.ok ? 'success' : 'failed' })
-
-    span.end()
-    logger.emit({
-      body: `order created, stock=${stock}`,
-      severityText: 'INFO',
-      attributes: { order.user: 'demo-user' },
-    })
-    res.json({ ok: true, stock })
-  })
-})
-
-app.listen(8080, () => console.log('order-service on :8080'))
-```
-
-两件事注意一下：
-
-1. `import './tracing.js'` 必须在最前面，先启动 SDK 再创建服务，否则埋点会错过启动阶段；
-2. `fetch` 调 Go 服务时的上下文传播是自动埋点完成的，你不需要手动传 `traceparent` 头。
-
-跑起来：
-
-```bash
-node server.js
-```
-
-### 第三步：Go 服务
-
-新建 `go-app/`，初始化模块并装依赖：
-
-```bash
-mkdir -p go-app && cd go-app
-go mod init example.com/otel-demo/go-app
-go get go.opentelemetry.io/otel@v1.45.0
-go get go.opentelemetry.io/otel/sdk@v1.45.0
-go get go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp@v1.45.0
-go get go.opentelemetry.io/otel/semconv/v1.30.0
-go get go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp@latest
-```
-
-创建 `main.go`：
-
-```go
-package main
-
-import (
-	"context"
-	"fmt"
-	"log"
-	"net/http"
-	"time"
-
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
-)
-
-func initTracer() (*sdktrace.TracerProvider, error) {
-	exporter, err := otlptracehttp.New(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter),
-		sdktrace.WithResource(resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceName("stock-service"),
-			semconv.ServiceVersion("1.0.0"),
-		)),
-	)
-	otel.SetTracerProvider(tp)
-	return tp, nil
-}
-
-func stockHandler(w http.ResponseWriter, r *http.Request) {
-	ctx, span := otel.Tracer("stock-service").Start(r.Context(), "check.stock")
-	defer span.End()
-
-	time.Sleep(20 * time.Millisecond) // 模拟库存查询
-	span.SetAttributes(attribute.Int("stock", 42))
-
-	fmt.Fprint(w, "42")
-}
-
-func main() {
-	tp, err := initTracer()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func() { _ = tp.Shutdown(context.Background()) }()
-
-	handler := otelhttp.NewHandler(http.HandlerFunc(stockHandler), "GET /stock/check")
-	log.Println("stock-service on :8081")
-	log.Fatal(http.ListenAndServe(":8081", handler))
+```json
+{
+  "name": "GET /orders/:id",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "spanId": "00f067aa0ba902b7",
+  "parentSpanId": "73d1a3f6b3b6a1c5",
+  "startTime": "2026-08-09T10:00:00.000Z",
+  "endTime": "2026-08-09T10:00:00.120Z",
+  "attributes": {
+    "http.request.method": "GET",
+    "server.address": "api.example.com"
+  }
 }
 ```
 
-跑起来：
+traceId 把同一请求的多个片段串成一条完整链路；spanId 标识当前片段；parentSpanId 记录它在链路中的位置；startTime 与 endTime 给出耗时；attributes 提供查询维度。Span 还可以携带状态（OK、Error、Unset）标记成败、事件（span event）记录关键瞬间、links 连接跨链路或异步关系。
 
-```bash
-go run .
-```
+属性名由语义约定（semantic conventions）规定：HTTP 方法叫 http.request.method，数据库系统叫 db.system，模型提供方叫 gen_ai.provider.name。没有这层约定，每个团队各自命名，数据即使格式统一也无法跨服务、跨工具理解。约定让开箱即用的仪表盘、告警模板和跨厂商迁移成为可能。约定按稳定程度分级：stable 表示承诺长期不变，experimental 表示可能调整，并带 schema 版本供工具识别。
 
-### 第四步：制造流量并观察
+语义约定覆盖的不只是 Span 属性，还包括指标名、日志字段和 Resource 字段。统一的是整套命名空间，而不只是某一种信号；三类信号能跨系统关联，正是建立在同一套命名之上。
 
-两个服务都跑在本地（不是容器里），通过 `localhost:4318` 发数据给容器里的 Collector，这是本实验唯一需要理解的网络关系。
+各组件之间使用 OTLP（OpenTelemetry Protocol）通信。OTLP 是基于 protobuf 的二进制协议，走 gRPC 或 HTTP，默认支持批量与压缩，SDK 与 Collector、Collector 与后端之间都使用它。gRPC 适合服务间大批量传输，HTTP 更容易穿透代理和防火墙，SDK 与 Collector 通常默认其中一种，配置可切换。协议统一后，同一份埋点数据可以发给任何支持 OTLP 的后端；云厂商和商业产品也通过支持 OTLP 来兼容整个生态。对比 Prometheus 的文本格式——它面向拉取和自家存储，OTLP 面向推送和任意后端——协议的统一让“采集”与“分析”第一次真正分离。
 
-打几次请求：
+OpenTelemetry 不是监控后端。它不负责存储和查询，也不提供仪表盘。数据最终导出到 Prometheus、Grafana、Jaeger、云厂商或商业可观测平台。OpenTelemetry 处于“采集与标准层”，后端处于“存储与分析层”，两层通过协议解耦。
 
-```bash
-for i in 1 2 3 4 5; do curl -s http://localhost:8080/orders; echo; done
-```
+Prometheus、Grafana 与 OpenTelemetry 的关系经常被误解：前者是存储与分析，后者是采集与标准。Grafana 可以消费 OTel 数据，Prometheus 可以通过 OTLP 接收或由 Collector 转换格式。它们不是竞争关系，而是数据路径上的不同位置。
 
-然后：
+## 它为什么会出现
 
-1. 打开 Jaeger：http://localhost:16686
-2. Service 下拉框选 `order-service`
-3. 点 Find Traces
+OpenTelemetry 的出现，是对两段历史的回应。
 
-你会看到一条链路，展开是四层：
+### 日志时代
 
-```mermaid
-flowchart LR
-  A["order-service<br/>GET /orders"] --> B["order-service<br/>create.order"]
-  B --> C["stock-service<br/>GET /stock/check"]
-  C --> D["stock-service<br/>check.stock"]
-```
+日志是最早的观测手段。单机时代，日志按时间顺序记录事件，开发者在故障后翻日志就能还原过程。分布式系统出现后，日志总量爆炸，不同服务的日志散落在不同主机，按时间对齐本身就变得困难。集中式日志平台的代表是 ELK（Elasticsearch、Logstash、Kibana）体系：Logstash 负责收集，Elasticsearch 负责存储检索，Kibana 负责展示。它把检索能力做到极致，但检索到的仍然是一堆没有关联标识的事件。集中只能解决“找得到”，解决不了“串起来”：日志之间缺少共同标识，检索结果是一堆无法确认先后因果的事件。日志是观测的基础，但只有日志，分布式系统仍然不可观测。
 
-注意四个 span 共享同一个 `trace_id`，但属于两个进程。Node 的 fetch 自动把 `traceparent` 头带给了 Go，Go 的 SDK 自动把它接上。**这一条跨语言链路，就是分布式追踪的全部意义。**
+### 指标时代
 
-再看指标：打开 Prometheus http://localhost:9090 ，执行：
+指标的思路是放弃个体、保留聚合。StatsD 把计数和聚合变得极其简单，应用里一行代码就能上报事件，Graphite 提供时序存储与绘图，两者组合成了早期监控的标准形态。StatsD 通过 UDP 发送数据，丢包不重试，用可能的少量丢失换取极低的性能开销——这个取舍至今影响着指标采集的设计。指标的优势是便宜、稳定、适合告警；代价是个体信息被压缩，一个请求是快是慢、失败发生在哪一步，聚合之后都不可见。
 
-```promql
-{__name__=~"http_server_(request_)?duration.*"}
-```
+Prometheus 进一步定义了云原生环境的指标标准：应用暴露 HTTP 端点，Prometheus 主动拉取，用标签（label）描述维度，用 PromQL 查询。拉取模型与 StatsD 的推送模型是两种设计哲学：推送让应用主动上报，简单直接；拉取让监控系统发现目标、检查存活，也更适合容器环境里不断变化的目标集合。2016 年，Prometheus 成为 CNCF 项目，指标生态随之成熟，但它的边界仍然是聚合——它能回答“有多少”，不能回答“哪一个”。
 
-能看到两个服务的 HTTP 延迟指标（不同版本语义约定下名字略有差异，所以用正则捞）。再执行：
+### 追踪时代
 
-```promql
-orders_created_total
-```
+2010 年，Google 发表 Dapper 论文，给出第三种思路：不聚合，而是按请求记录完整路径。每个请求生成一个 traceId，经过的每个组件记录一个 span，父子关系构成一棵树；用采样控制成本，用注解补充业务信息。论文同时指出追踪的成本问题：全量记录开销不可接受。采样策略后来成为追踪系统设计的分水岭——头部采样简单，尾部采样精准，两者的权衡贯穿整个链路生态。
 
-能看到你埋的计数器，带 `status` 标签。
+这条技术路线催生了 Twitter 的 Zipkin、Uber 的 Jaeger 等开源实现，也让“链路追踪”成为独立的技术方向。链路数据回答的是分布式系统里最尖锐的问题——一次请求完整经过了什么——但早期的追踪系统各有各的 SDK、各有各的传输格式。接入 Jaeger 用 Jaeger 的库，接入 Zipkin 换一套库，接入商业产品再用私有 SDK。埋点代码与后端绑定，切换后端的成本等于重新埋点。
 
-最后看日志：`docker compose logs otel-collector | tail -30`，能看到 OTLP 收到的 Traces、Metrics、Logs 三种数据详情，其中 logs 部分是每次下单时通过 `@opentelemetry/api-logs` 发出的结构化日志。注意：这里日志只是"到了 Collector"，还没接入真正的日志后端，中篇会补上 Loki 链路。
+### 两个标准阵营的合并
 
-### 怎么确认这一步对了
+2016 年，OpenTracing 加入 CNCF，尝试统一追踪 API：它定义一套接口，让应用代码不依赖具体实现。接口标准解决了一部分问题，但没有统一采集与传输，生态仍然碎片化。2018 年，Google 开源 OpenCensus，走另一条路：提供统一的指标与追踪采集库，把采集、处理和导出都实现好。两个项目目标接近、路线不同：OpenTracing 偏重 API 规范，OpenCensus 偏重采集实现，各自吸引了一批生态。
 
-- Jaeger 里能找到 `order-service`，链路跨了 Node 和 Go 两个进程；
-- Prometheus 里能查到 HTTP 延迟指标和 `orders_created_total`；
-- Collector 日志里有来自两个服务的 OTLP 数据。
+开发者被夹在中间：选 OpenTracing，得到标准但缺少完整实现；选 OpenCensus，得到实现但绑定了它的体系。厂商也分阵营，一个项目里的数据迁到另一个体系，埋点要重写。这种分裂持续到 2019 年 5 月，两个项目宣布合并为 OpenTelemetry，以 sandbox 项目身份加入 CNCF。合并把“标准”和“实现”放进同一个项目：规范统一数据模型与语义，SDK 提供多语言实现，Collector 处理数据流转。
 
-做到这三件事，你的第一套 OTel 链路就算通了。
+合并之后的演进同样重要：跨进程追踪上下文由 W3C Trace Context 标准承载，header 格式由开放标准组织定义，而不是某家厂商——任何语言、任何框架只要实现这个标准，就能与其他实现互相串联，这是互操作性的底层保障；OpenCensus 在 2023 年宣布停止维护，生态迁移到 OpenTelemetry。2021 年，OpenTelemetry 进入 CNCF 孵化阶段；2026 年 5 月，从 CNCF 毕业。
 
-## 常见坑速查
+### 2026 年的位置
 
-| 症状                             | 原因                                  | 解法                                                                                 |
-| -------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------ |
-| Jaeger 里搜不到服务              | 埋点没生效 / SDK 启动失败             | 先看服务启动日志有没有报错；`import './tracing.js'` 是否在文件最顶部                 |
-| Collector 没收到数据             | 端口或端点不对                        | 确认 `OTEL_EXPORTER_OTLP_ENDPOINT` 没被设置成别的值；服务与 Collector 之间网络通不通 |
-| 链路只有一半（Node 有、Go 没有） | Go 服务没初始化 SDK                   | 确认 `main()` 里 `initTracer()` 被调用                                               |
-| 指标查不到                       | 指标还没到导出周期                    | 等 5 秒以上再查；示例里把导出周期调成了 5 秒                                         |
-| Docker 端口冲突                  | 4317/4318/8889/16686/9090/3000 被占用 | 换 host 端口映射，并同步改应用和配置文件里的地址                                     |
+今天，OpenTelemetry 已经是可观测性领域事实上唯一的中立标准。官方与社区 SDK 覆盖主流语言，自动埋点支持常见 Web 框架、消息队列和数据库客户端；语义约定从 HTTP 扩展到数据库、浏览器与 GenAI；Collector 提供几十种接收器、处理器与导出器；主流云厂商和商业产品普遍支持 OTLP。
 
-## 小结
+它的地位不是单一厂商推动的结果，而是生态共识：SDK 是标准的，协议是标准的，属性名是标准的，后端百花齐放。标准还有网络效应：接入的语言、框架、厂商越多，新成员的门槛越低，偏离标准的成本越高，这也是后来者很难再建立一个平行标准的原因。对团队来说，选择 OpenTelemetry 意味着把可观测性投资押在标准上——埋点代码与后端解耦，换后端不需要重写埋点；新成员只需要学一套概念；数据可以跨供应商迁移，不会被单一厂商锁定。
 
-上篇的终点不是"会跑一个 demo"，而是建立起三张图：
+## 本系列内容
 
-1. **问题图**：监控与可观测性的区别，三支柱与 AI 时代的新挑战；
-2. **历史图**：从 Dapper、Zipkin、Jaeger，到 OpenTracing 与 OpenCensus 合并，再到 CNCF 毕业；
-3. **架构图**：SDK → OTLP → Collector → Backend，十个核心概念各就各位，以及"不改代码"的三种做法。
+- 中篇《三大信号与内部机制》介绍链路、指标、日志各自的数据模型与采集原理：Span 如何串联、指标如何聚合、日志如何与链路关联，以及 SDK 与 Collector 在数据链路中的分工。
+- 下篇《生态链与选型落地》介绍完整生态：Collector 的部署模式、后端选型框架、浏览器端可观测性、eBPF 零埋点、Profiling 与 GenAI 可观测性，以及团队推行的路线。
 
-中篇会回答下一个层次的问题：**它内部到底怎么工作**——Span 是怎么串起来的、指标是怎么聚合的、日志怎么和链路关联、Collector 怎么帮你做采样治理。我们还会把 Python 加进来，组成三语言全家桶。
+想直接体验 OpenTelemetry，可以从[官方快速开始文档](https://opentelemetry.io/docs/getting-started/)入手。
 
-## 自测题
-
-1. 为什么 OpenTracing 和 OpenCensus 的合并是"1+1 大于 2"？它们各自带来了什么？
-2. API 和 SDK 分离的意义是什么？举一个"只改 SDK 不改业务代码"的场景。
-3. 一次跨服务调用中，下游服务怎么知道自己是同一个 trace？
-4. Collector 在架构里扮演什么角色？如果没有它，直接用 SDK 连后端会缺什么能力？
-5. "不改代码"有哪三种做法？为什么我建议别追求"绝对无侵入"？
-6. AI 应用相比传统微服务，在可观测性上多了哪些必须看的数据？
-
-## 练习任务
-
-1. 把上面的 demo 完整跑通，把 Jaeger 链路的截图保存下来。
-2. 给 `create.order` 这个手动 span 增加两个自定义属性，验证它们在 Jaeger 里显示。
-3. 把 Go 服务也接上指标：用 `go.opentelemetry.io/otel/metric` 创建一个计数器，导到 Prometheus。（提示：`otlpmetrichttp` exporter + `PeriodicReader`）
-4. 思考题：如果 `order-service` 调用的是一个不支持 OTel 的第三方服务，你如何让链路跨过这个"黑洞"？（提示：想想 `traceparent` 头）
-
-## 附录：本篇命令与文件汇总
-
-```bash
-# 基础设施
-docker compose up -d
-docker compose ps
-docker compose logs -f otel-collector
-
-# Node 服务
-cd node-app && npm install && node server.js
-
-# Go 服务
-cd go-app && go run .
-
-# 制造流量
-for i in 1 2 3 4 5; do curl -s http://localhost:8080/orders; echo; done
-
-# 观察
-open http://localhost:16686   # Jaeger
-open http://localhost:9090    # Prometheus
-open http://localhost:3000    # Grafana（初始账号 admin/admin）
-```
-
-文件清单：`docker-compose.yml`、`otel-collector.yaml`、`prometheus.yaml`、`grafana-datasources.yaml`、`node-app/tracing.js`、`node-app/server.js`、`go-app/main.go`。
-
-下一篇：《OpenTelemetry 中篇：从会用到底层原理》。
+下一篇：[《OpenTelemetry 中篇：三大信号与内部机制》](/zh/posts/opentelemetry-guide-part-2)

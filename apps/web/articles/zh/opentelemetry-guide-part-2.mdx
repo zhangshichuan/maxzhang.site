@@ -1,695 +1,269 @@
 ---
-title: 'OpenTelemetry 中篇：从会用到底层原理'
-summary: '上篇我们跑通了第一条链路，但"会跑"和"会用"之间隔着整个规范层。本文深入 Traces、Metrics、Logs 三大信号的内部原理：Span 与 Context 是怎么串起来的、W3C Trace Context 与 Baggage 如何跨服务传播、指标如何聚合与临时性如何决定、日志如何带上 trace_id 与链路关联；再把 Collector 的管线、尾部采样和生产部署拆开，最后用 Python 把三信号完整接起来，看到一条"日志带链路、链路带指标"的闭环。'
+title: 'OpenTelemetry 中篇：三大信号与内部机制'
+summary: '链路、指标、日志三类信号各自怎么产生、怎么关联，是理解 OpenTelemetry 的核心。本文介绍 Span 与上下文传播、指标的聚合与时序、日志的关联机制，以及 SDK 与 Collector 在数据流中的分工。'
 category: 'DevOps'
-tags: ['OpenTelemetry', '分布式追踪', '指标', '日志', 'Collector']
+tags: ['OpenTelemetry', '可观测性', '链路追踪', '指标', '日志']
 author: 'Max Zhang'
 date: '2026-08-09'
 aiAssisted: true
 ---
 
-> 本篇你会得到：
->
-> - Trace 的底层原理：Span、SpanContext、W3C Trace Context、Baggage、采样，以及"为什么有的链路就是串不起来"；
-> - Metrics 的底层原理：五种 Instrument、Temporality、Aggregation、View 与 Exemplar；
-> - Logs 的关联原理：LogRecord 如何带上 `trace_id` 与 `span_id`；
-> - Semantic Conventions 与 Resource：为什么跨语言数据能长成同一个样子；
-> - Collector 深入：管线、尾部采样、Agent 与 Gateway 架构；
-> - 一个完整的 Python 实践：FastAPI 服务把 Traces、Metrics、Logs 全部接上，日志进入 Loki，点击 `trace_id` 直达 Jaeger，再配置尾部采样。
->
-> 前置要求：跟上篇的实践环境（Docker Compose、Node、Go）跑通过；会最基本的 Python。
->
-> 预计耗时：完整跟完约 120 分钟。
+## 三类信号共用一条主线
 
-## 会跑之后，你遇到的第一批"为什么"
+OpenTelemetry 的链路、指标、日志不是三个独立系统，而是一套数据模型的三类视图。它们共用同一套标识体系：traceId、spanId 以及表示上下文传播的 header。任何一类信号都可以携带这套标识，因此查询时可以互相跳转：从一条日志跳到它所属的链路，从一条链路跳到某个时间点的指标，从指标上的示例数据跳回具体请求。
 
-假设你已经把上篇的 demo 跑通，而且真的用在了自己的项目里。两周后，你大概率会撞上这些问题：
+上下文在两类边界上传播。进程内：同一进程的多个函数、异步回调共享当前 Span，新创建的 Span 自动继承；进程间：服务调用时把 SpanContext 编码进请求头，下游取出后继续传递。两类传播缺一不可：进程内断链，同一服务里的 Span 拼不成子树；进程间断链，整条链路在服务边界断成两截。
 
-- 为什么明明加了 SDK，有的请求在 Jaeger 里只有入口一个 span，里面的数据库调用全不见了？
-- 为什么指标的名字和 Prometheus 文档里对不上？`http.server.request.duration` 和 `http_server_duration_seconds` 到底哪个对？
-- 为什么日志里有 `trace_id`，点击跳转却打不开链路？
-- 为什么全量采样一个月后，存储账单让人想报警？可一旦采样，出问题的链路又抓不到？
+主线可以概括为一句话：一切数据先归属上下文，再描述状态。链路描述上下文的形状，指标描述上下文的聚合，日志描述上下文中的事件。三类信号分开看都有盲区，合在一起才能回答“发生了什么、为什么、影响多大”。
 
-这些问题，靠"会用"解决不了，得靠"理解"。中篇就是把上篇那台机器打开，看看里面的齿轮怎么转。
+这套设计有一个直接后果：接入 OpenTelemetry 时，三类信号不是三个独立工程。初始化一次 SDK，链路、指标、日志共用同一个上下文、同一份 Resource、同一条导出管道。这也是它通常以一个 SDK 包的形式出现，而不是三个互相独立的库的原因。
 
-我们按"一条数据从产生到落地"的顺序讲：先 Trace，再 Metrics，再 Logs，然后讲它们共同的底座（语义约定与 Resource），最后讲中转站 Collector。
+关联不依赖时间对齐。日志时间戳来自各自主机，时钟偏移可能让跨服务的事件排序失真；链路数据用传播的上下文确定父子关系，时间只用于展示耗时。排查时以结构为准、以时间为辅，这个顺序不会因为时钟问题出错。
 
-## Trace 深潜：一条链路到底是怎么串起来的
+## Trace：一条链路怎么串起来
 
 ### Span：链路的最小单元
 
-一切追踪都建立在 Span 上。一个 Span 代表**一段有时间范围的操作**："处理一次 HTTP 请求""执行一条 SQL""调用一次模型 API"，都行。
+链路由 Span 组成。一个 Span 表示一次操作的时间片段：一次 HTTP 请求、一次数据库查询、一段业务函数。每个 Span 记录名称、开始与结束时间、状态、属性、事件，以及最重要的三个字段：traceId、spanId、parentSpanId。
 
-一个 Span 由这些部分组成：
+- traceId：整条链路（trace）的全局唯一标识，同一个请求的所有 Span 共享。
+- spanId：当前 Span 的唯一标识。
+- parentSpanId：父 Span 的标识，把每个片段固定在链路中的位置。
 
-| 字段                  | 含义                                                   | 示例                       |
-| --------------------- | ------------------------------------------------------ | -------------------------- |
-| name                  | 操作名                                                 | `GET /orders`              |
-| context               | 自己的身份（trace_id + span_id + flags）               | 见下文                     |
-| parent                | 父 Span 的引用                                         | 调用方的 span              |
-| kind                  | 角色：CLIENT / SERVER / PRODUCER / CONSUMER / INTERNAL | SERVER                     |
-| start_time / end_time | 开始与结束时间                                         | 毫秒精度以上               |
-| attributes            | 键值对，描述这次操作                                   | `http.request.method: GET` |
-| events                | 带时间戳的事件                                         | 一次重试、一次缓存命中     |
-| status                | 结果：UNSET / OK / ERROR                               | ERROR                      |
-| links                 | 关联到其他 Span（不构成父子关系）                      | 关联消息队列里的原始请求   |
+Span 还携带状态（OK、Error、Unset）与事件。状态标记操作成败；事件（span event）记录操作过程中的关键瞬间，比如重试发生、请求被限流；属性（attributes）提供查询维度，例如路由、HTTP 状态码、业务 ID。设计埋点时，属性决定数据能被哪些问题检索到；属性不足，链路只能还原形状，还原不了业务细节。
 
-Span 之间的父子关系构成一棵树，这棵树叫 Trace：
+links 解决父子关系表达不了的两类场景：异步任务从队列取出时，处理 Span 通过 link 指回投递 Span，而不建立父子关系——父子意味着调用包含，异步投递不满足这个语义；聚合服务把多个来源的请求合并处理时，用 links 保留所有上游 trace 的入口，方便从任意上游回溯。父 Span 只有一个，links 可以有很多个。
+
+一个 Span 的完整生命周期是：创建时记录开始时间，执行期间追加属性和事件，结束时记录状态与结束时间。手动埋点的代码形状大致是：创建 Span → 设置属性 → 执行业务 → 结束。自动埋点把这一流程交给框架钩子，业务代码不需要写任何一行追踪代码。
+
+### Span 树：一次请求的完整路径
+
+一次请求经过多个组件时，Span 按调用关系形成树。根 Span 通常由入口组件创建，后续每次下游调用生成一个子 Span：
 
 ```mermaid
 flowchart TD
-  Root["GET /orders<br/>trace_id=abc..."] --> A["DB 查询<br/>span_id=s1"]
-  Root --> B["HTTP 调用 stock-service<br/>span_id=s2"]
-  B --> C["check.stock<br/>span_id=s3"]
+  R["网关: GET /orders/:id"]
+  A["订单服务: createOrder"]
+  B["库存服务: checkStock"]
+  C["数据库: SELECT ..."]
+  R --> A
+  A --> B
+  B --> C
 ```
 
-注意一个细节：**Trace 是树，不是线**。一个请求可能并行调用三个下游，产生三棵子树。所以"链路"这个名字有点误导，它其实是一棵有向树。
+树形结构记录的是因果关系，不是时间顺序。B 是 A 的子 Span，因为 A 调用了 B；即使 B 的日志先落库，结构上它仍然挂在 A 下面。并行调用表现为同一父 Span 下的多个子 Span，各子 Span 的耗时可以独立分析。
 
-### SpanContext：身份三件套
+根 Span 的选择影响整条链路的语义。入口请求的处理器是天然根节点；定时任务以任务执行函数为根；消息消费者以处理消息的函数为根。根选错了，链路虽然不断，但整棵树的边界会偏离“一次业务操作”，统计口径跟着错。
 
-每个 Span 都带着自己的身份，叫 SpanContext，由三部分组成：
+采样直接决定树是否完整。如果每个 Span 独立决定是否记录，同一个 trace 里可能只有一半节点被保存，树变成碎片，耗时分析和错误定位都无法进行。因此采样决策必须在根 Span 创建时做出，并通过上下文传播给所有子 Span。
 
-- `trace_id`：16 字节（32 位十六进制字符），全局唯一，标识整棵树；
-- `span_id`：8 字节（16 位十六进制字符），标识树上的某个节点；
-- `trace_flags`：目前主要用一位——`sampled`（这条链路是否被采样保留）。
+### 上下文传播：Span 怎么穿过进程边界
 
-这三个值就是全链路关联的"主键"。日志、指标、链路要做关联，靠的就是把 `trace_id` 和 `span_id` 写进每条记录。
+一个 Span 单独存在没有意义，跨进程把它串起来才是链路。跨进程传递的是 SpanContext——traceId、spanId 和采样标记的集合。SDK 在发起 HTTP 调用时把上下文写入请求头，下游收到后取出并创建子 Span。
 
-### W3C Trace Context：跨进程的身份证
+W3C Trace Context 标准定义了 HTTP 头的格式，最常用的是 traceparent：
 
-问题来了：一个请求从 Node 服务发到 Go 服务，Go 怎么知道该把新 Span 挂在哪棵树下？
+`00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01`
 
-答案在 HTTP 头里。W3C Trace Context 标准定义了两个头。
+四个字段依次是版本、traceId、spanId、flags。traceId 是 32 个十六进制字符，spanId 是 16 个十六进制字符，flags 末尾的 01 表示这条链路被采样。下游读取 traceparent 后，用其中的 spanId 作为自己 Span 的 parentSpanId，链路就延续了下去。
 
-`traceparent` 长这样：
+traceparent 只承载身份。需要传递供应商特有的补充信息时，使用 tracestate 头，它是一组键值对，按逗号分隔，供不同传播实现写入自己的字段。普通应用不需要读写 tracestate，但理解它有助于排查“为什么某些后端能看到额外上下文”。
 
-```text
-00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
-```
-
-四段分别是：版本号（`00`）、trace_id（32 位 hex）、span_id（16 位 hex）、flags（`01` = sampled）。
-
-`tracestate` 长这样：
-
-```text
-vendor1=opaque-value-1,vendor2=opaque-value-2
-```
-
-它是给**各厂商或团队留的私有扩展位**：比如 Datadog 想带上自己的内部 ID，就写在自己的 key 后面，不污染标准字段。
-
-传播流程是这样的：
-
-1. Node 服务的 SDK 发起 HTTP 调用前，把当前 SpanContext 序列化进 `traceparent` 头；
-2. Go 服务的 SDK 收到请求时，解析 `traceparent`，把新 Span 的父节点设为上游；
-3. 响应返回时同样会传播（用于异步或回调场景）；
-4. `tracestate` 跟着走，但不参与父子关系判定。
-
-这就是分布式追踪的魔法核心：**身份信息跟请求走，而不是存在某个中央数据库里。**
-
-浏览器端也一样：网页里注入 SDK 后，从浏览器发出的请求也会带上 `traceparent`，于是"浏览器 → CDN → 网关 → 微服务 → 数据库"全链路串起来了。这也是 W3C 标准的意义：它不属于任何厂商，浏览器厂商、云厂商、网关厂商都实现它。
+对支持的标准库，SDK 自动完成注入与提取，业务代码无需处理。传播要求调用链路上的每一环都配合：上游注入 header，下游提取 header。缺任何一环，链路就在这里断成两截。最常见的断点包括：中间件或代理删除了未知 header、异步任务丢失了上下文对象、消息队列消费者没有把 header 透传到处理逻辑。SDK 能自动处理的只是它认识的框架，不认识的部分需要手动传播。
 
 ### Baggage：跨服务传业务上下文
 
-有时候你不想只传"追踪身份"，还想传业务上下文，比如"当前用户是 VIP""这次请求来自 A/B 实验组 B"。OTel 提供了 Baggage：
+SpanContext 只传链路身份，不传业务数据。如果希望业务字段（用户 ID、租户、实验分组）跟随请求到达所有下游，使用 Baggage。它通过 baggage 头传输，可以附加到下游 Span 和日志的属性上。
 
-```text
-bageen=battlefield,jwt=eyJhbGciOiJIUzI1NiJ9
+Baggage 的使用需要克制：它随每个请求复制，字段越多，网络开销和隐私风险越大。个人身份信息、令牌这类敏感数据不应放进 Baggage，默认只放高价值、低基数、低敏感的标识字段。一个判断标准：如果字段只对某个服务有用，就不要放进 Baggage；只有所有下游都可能用到的上下文才值得传播。
+
+### 采样：链路的成本控制
+
+链路数据量远大于指标，全量采集在生产环境不可行，采样是必选项。采样发生在两个位置：
+
+- 头部采样（head sampling）：SDK 在请求开始时按概率决定是否记录。决策时结果未知，因此无法针对“是否出错”做选择，但实现简单、开销低。
+- 尾部采样（tail sampling）：Collector 收到完整链路后按规则决定，可以基于错误、延迟、特定属性保留有价值的链路，代价是需要缓冲整条链路。
+
+采样标记随上下文传播。头部采样在根 Span 创建时决策，flags 写入 traceparent，下游 SDK 读到未采样标记后只记录结构、不导出数据，整棵树的决策保持一致。概率一致性是另一个细节：多个入口如果各自独立按 10% 抽签，同一业务操作的不同入口会出现不同的采样率，跨入口统计会失真；一致采样（consistent sampling）用 traceId 的哈希决定是否采样，保证同一 trace 在不同入口得到相同结论。
+
+尾部采样适合“错误优先”场景：链路全部暂存到 Collector，结束后按状态码、延迟或属性决定去留。错误链路通常只占总量的一小部分，全部保留不会显著增加成本，却能让每次故障都有据可查。预算怎么定，依赖数据量与保留期的实际测量，而不是拍脑袋。
+
+## Metrics：指标怎么算出来
+
+### Instrument：指标的入口
+
+指标由埋点代码通过 instrument（计量器）产生。OpenTelemetry 把 instrument 分成同步与异步两类：同步类型在代码路径里直接调用，异步类型由 SDK 定期回调采集。
+
+同步类型有三种：
+
+- Counter：只增不减的计数器，适合请求数、错误数。
+- UpDownCounter：可增可减，适合队列长度、在线人数。
+- Histogram：记录一组观测值的分布，适合延迟、请求体大小。
+
+异步类型有三种：ObservableCounter 与 ObservableUpDownCounter 分别对应递增与增减语义，用于从外部系统读取的数值；ObservableGauge 表示某一时刻的状态值，比如内存用量、连接数。它们不能由请求路径触发，而是由 SDK 按采集周期回调。
+
+埋点代码只需要选择类型并调用：
+
+```ts
+counter.add(1, { 'http.request.method': 'GET', route: '/orders' })
 ```
 
-API 长这样：
+instrument 的另一个重要属性是单位（unit）：请求数、毫秒、字节。单位不一致的数据无法直接比较，语义约定对常见指标的单位有明确规定。埋点代码选定 instrument 类型后，聚合与导出交给 SDK，业务代码只负责在正确的时机调用。
 
-```js
-import { propagation } from '@opentelemetry/api'
-import { createBaggage, setBaggage, getBaggage } from '@opentelemetry/api'
+指标名同样遵循语义约定：HTTP 服务端请求延迟的标准名是 http.server.request.duration，单位是秒，instrument 类型是 Histogram。命名、单位、类型三者一致，指标才能跨团队、跨语言聚合；同一含义起两个名字，等于制造两套无法合并的数据。
 
-// 写入
-const baggage = createBaggage().setEntry('tier', { value: 'vip' })
-propagation.setBaggage(context.active(), baggage)
+### Temporality：两种时间观
 
-// 下游读取
-const received = getBaggage(context.active())
-const tier = received?.getEntry('tier')?.value
-```
+指标点带有时间语义，即 temporality：delta 表示“距上次导出以来的增量”，cumulative 表示“进程启动以来的累计值”。Prometheus 风格是 cumulative，OTLP 两种都支持，由 SDK 与后端协商。
 
-Baggage 强大，也危险，三个坑记住：
+以请求计数为例：delta 视角下，导出周期内新增 120 次请求，数值是 120；cumulative 视角下，导出的是进程启动以来的累计值，比如 48321。告警规则对增量敏感，用 delta 更直观；长期趋势和容量分析依赖累计值。
 
-1. **容量有限**：头总长有上限（实践中超过 8KB 会被很多网关丢弃），别塞大对象；
-2. **隐私风险**：Baggage 会跟着所有出站请求跑，把手机号塞进去等于把 PII 广播给每个下游和第三方；
-3. **它不是指标属性**：默认情况下，Baggage 不会自动变成 span attribute，你需要显式把它写进 span 才能展示。
+选择影响查询语义。cumulative 的数据适合“从开始到现在”的曲线，但服务重启会归零，多次导出需要后端处理重置；delta 的数据适合增量计算，但需要稳定的导出周期。很多“指标看起来不对”的现象都来自 temporality 不一致：服务重启后曲线跳变、跨后端迁移后数值口径不同。
 
-一句话：**Baggage 传"小、通用、不敏感"的上下文**。
-
-### 采样：可观测性的经济学
-
-全量采集在真实流量下不可持续。一个 QPS 1000 的服务，全量保存链路，一天就是 8600 万条 Span。所以采样不是可选项，是生产必需品。
-
-采样发生在两个层面。
-
-**头部采样（Head Sampling）**：请求还没处理完，在入口就决定"这条链路要不要"。优点是简单、开销小；缺点是决策时不知道后面会不会出错。常见实现：
-
-- `always_on` / `always_off`：全采 / 全不采；
-- `traceidratio`：按 trace_id 哈希抽固定比例（如 10%）。同一链路的所有服务用同一个 trace_id，因此会**一致地**采或不采；
-- `parentbased_*`：默认跟随父 Span 的决定（上游没采样，下游也丢掉），避免"半条链路"。
-
-**尾部采样（Tail Sampling）**：请求处理完，看到完整链路后再决定。优点是能"错误全采、正常抽采"；缺点是需要把链路缓冲一段时间（如 5 秒），有内存成本，通常做在 Collector 里。本篇实践会配置它。
-
-```mermaid
-flowchart LR
-  A["请求入口<br/>头部采样: 10%"] --> B["处理中<br/>链路被缓冲"]
-  B --> C{"尾部采样<br/>有错误?"}
-  C -->|是| D["100% 保存"]
-  C -->|否| E["20% 保存"]
-```
-
-### 为什么"链路串不起来"：六个高频原因
-
-1. **中间有一个不带 OTel 的组件**（老服务、第三方 API、消息中间件）：它不解析也不重新生成 `traceparent`，链路就在那断掉。解法：看它支不支持标准头透传；不行就手动传播，或用下篇讲的 eBPF 零埋点。
-2. **异步代码丢了 Context**：Node 的定时器、Python 的线程池、Go 的 goroutine 不会自动继承上下文。Node 用 AsyncLocalStorage 由 SDK 自动处理，但如果你把 Context 存进全局变量再取出来用，就断了。
-3. **采样不一致**：上游没采，下游采了，或者反过来，就会出现"孤儿 Span"。生产上统一用 `traceidratio` 或父采样。
-4. **HTTP 客户端没被埋点**：用了 SDK 但 fetch/axios/requests 的库没在自动埋点清单里，出站调用不带头。
-5. **反向代理/网关改了头**：某些网关会去重或改写自定义头。确认网关透传 `traceparent` 和 `tracestate`。
-6. **手动创建了根 Span**：代码里 `tracer.startSpan('x')` 没传父 Context，它就成了新根。要挂到当前请求下，必须用 `context.with` 或 `startActiveSpan`。
-
-### 怎么确认你理解了
-
-用 `curl -v http://localhost:8080/orders`，在输出里找到 `traceparent` 头，确认它的 trace_id 和 Jaeger 里这条链路的 trace_id 一致。然后故意把 Go 服务停掉再请求一次，观察 Jaeger 里出现的是"半条链路"——这就是传播断裂的样子。
-
-## Metrics 深潜：指标到底是怎么"算"出来的
-
-上篇你看到了 `orders_created_total`，现在把它拆开。
-
-### Instrument（计量器）家族
-
-OTel 定义了几种基础 Instrument，每种回答不同的问题：
-
-| Instrument              | 类型             | 回答的问题             | 例子                 |
-| ----------------------- | ---------------- | ---------------------- | -------------------- |
-| Counter                 | 同步、单调递增   | 发生了多少次 / 多少量  | 订单数、请求字节数   |
-| UpDownCounter           | 同步、可增可减   | 当前水位               | 在线连接数、队列长度 |
-| Histogram               | 同步、记录分布   | 延迟 / 大小的分布      | P99 延迟、响应体大小 |
-| ObservableCounter       | 异步、单调递增   | 由系统回调采集的计数   | CPU 总时间           |
-| ObservableUpDownCounter | 异步、可增可减   | 由系统回调采集的水位   | 当前线程数           |
-| ObservableGauge         | 异步、可任意变化 | 由系统回调采集的瞬时值 | 内存使用、温度       |
-| Gauge                   | 同步、可任意变化 | 实验性：显式记录瞬时值 | 传感器读数           |
-
-"同步"意味着应用代码主动调用（`counter.add(1)`）；"异步"意味着 SDK 定期回调你的函数拿值（比如每 30 秒调一次读取内存）。
-
-### Temporality：同一个指标，两种时间观
-
-这是指标最容易让人困惑的地方。
-
-**Cumulative（累计）**：SDK 保存"从进程启动以来的总量"，每次导出都报累计值。Prometheus 就是这种模型：计数器只增不减（除非进程重启）。
-
-**Delta（增量）**：SDK 只报"上次导出到现在这段时间的变化量"。Datadog、CloudWatch 等更适合这种模型。
-
-同一个 `Counter`，用不同 Temporality 导出，曲线看起来完全不同。所以指标"对不上"经常不是 bug，而是**后端模型不同**。OTel 的做法是：SDK 按 OTLP 的默认（通常 Cumulative）采集，Exporter 或后端按需转换。
+实际排查时，temporality 的坑经常出现在迁移场景：从 Prometheus 迁到支持 OTLP 的后端，如果后端的默认口径不同，同一份埋点数据画出来的曲线形状会不一样，告警阈值也需要重新校准。不是数据错了，是时间观变了。
 
 ### Aggregation：值在 SDK 里怎么被压缩
 
-一次请求记一个延迟值，直接全量发到后端不现实。SDK 会先聚合：
+SDK 不会把每个观测值原样导出，而是先聚合：Counter 默认聚合成 sum，Gauge 取 last value，Histogram 落入分桶（显式桶或指数桶）。
 
-- **Sum**：把计数器加起来；
-- **Last Value**：保留最新值（Gauge 用）；
-- **Histogram（显式分桶）**：按预设桶记录计数，如 `<0.1s, <0.5s, <1s, <5s, +Inf`，后端由此估算分位数；
-- **Exponential Histogram（指数直方图）**：桶按 2 的指数分布，高基数下更省内存、更精确，后端可算出更准的 P99。
+Histogram 的桶决定查询精度。显式桶（explicit bucket）由配置给出边界，例如 5ms、10ms、25ms、50ms、100ms、250ms；指数桶（exponential bucket）按指数增长分布边界，覆盖范围更广、边界数量更少。桶边界越细，P99 等分位数计算越精确，存储开销越大；桶太少，多个量级的延迟被塞进同一个桶，分位数失真。
 
-View 是"自定义聚合规则"的入口：比如"只保留 `http.server.request.duration` 的 P50/P95/P99"，或"把某个指标改名"，或"过滤掉某个标签"。
+聚合发生在进程内还是 Collector 内，语义不同。SDK 端聚合（pre-aggregation）减少网络与存储量，但丢失了聚合前的个体信息；Collector 端聚合可以合并多个实例的数据，适合网关模式的全局视图。指标降采样（downsampling）是另一层压缩：把原始序列按更粗的窗口重聚合，保留长期趋势、牺牲短期精度。
+
+### 基数：指标序列的膨胀问题
+
+属性组合决定指标序列的数量。同一指标带十个属性、每个属性有几十个取值，组合出的序列数量会迅速膨胀，这就是基数（cardinality）问题。基数失控会让存储与查询同时劣化，是生产治理的核心议题之一。
+
+一个真实的失控例子：请求延迟指标带 route、status、region、user_id 四个属性，route 有 20 个值，status 有 5 个，region 有 10 个，user_id 有几十万。前三个属性组合出 1000 个序列，加上 user_id，序列数量直接爆炸。user_id 属于典型的高基数属性，只应该出现在日志或链路里，而不是指标里。
+
+指标属性的设计原则：只放有限枚举的维度，如路由、状态码、实例、区域；不放用户 ID、订单 ID、会话 ID 这类接近无限的标识；确实需要按标识分析时，用链路或日志。基数问题从埋点阶段就决定，后期靠治理只能止损，不能补回。
 
 ### Exemplar：把指标和链路缝起来
 
-指标太"薄"，丢失了单次请求的细节。Exemplar 是补救：**在聚合时，附带一个代表样本的 trace_id + span_id**。
+聚合丢掉了个体，Exemplar 补回一个样本：在聚合过程中，为数据点附带一条具体观测的 traceId 与 spanId。查询指标时，可以顺着 Exemplar 跳进一条真实链路，看这个数据点背后的请求到底发生了什么。
 
-比如直方图记录 1000 次请求延迟，其中桶 `<1s` 里可以挂一个"最慢那次请求"的 trace_id。点击 Prometheus 里的 Exemplar，就能跳到对应链路。这就是"指标能看到趋势，点击趋势能看到真相"的机制。
+Exemplar 不是每个数据点都带，而是按规则挑选，例如每个桶保留最近一次观测。它不会显著增加存储，却能在需要时提供从聚合到个体的跳转入口。这是三类信号关联中最巧妙的一环：指标负责全景，链路负责细节，Exemplar 负责从全景进入细节。
 
-### 怎么确认你理解了
-
-在上篇的 Prometheus 里打开 `orders_created_total`，把鼠标移到某个数据点上，看看有没有 Exemplar 图标。如果后端配置了与 Jaeger 的关联，点它就能跳链路。（本地 Prometheus 默认展示 Exemplar 需要看版本支持，看不到也不影响理解。）
-
-## Logs 深潜：日志怎么不再是一座孤岛
+## Logs：日志怎么不再孤立
 
 ### LogRecord：带身份的事件
 
-OTel 的日志模型叫 LogRecord，核心字段：
+日志是三类信号里接入面最广、历史包袱最重的。OpenTelemetry 的目标不是让所有应用抛弃现有日志框架，而是定义统一的日志模型与管道：日志仍由熟悉的框架产生，SDK 负责补充上下文、统一格式、送往 Collector。这样既保留生态，又让日志不再是一堆孤岛。
 
-| 字段                            | 作用                       |
-| ------------------------------- | -------------------------- |
-| timestamp / observed_timestamp  | 事件发生时间与观察到的时间 |
-| body                            | 日志正文                   |
-| severity_text / severity_number | 级别：INFO、WARN、ERROR……  |
-| attributes                      | 结构化键值                 |
-| trace_id / span_id              | **关联当前链路**           |
+OpenTelemetry 的日志模型是结构化事件，称为 LogRecord。核心字段包括：时间戳、observed timestamp（SDK 观察到日志的时间）、severityText 与 severityNumber（级别）、body（正文）、一组属性，以及可选的 traceId、spanId：
 
-最后两个字段就是"日志孤岛问题"的解药：**只要日志是在某个 Span 上下文里打的，SDK 就自动把 trace_id 和 span_id 写进日志**。后端拿到后，日志就有了"出身"。
-
-### Logs 与 Span Events 的区别
-
-很多人纠结：日志和 span 上的 event 有什么区别？
-
-- **LogRecord 属于日志信号**，是独立的数据流，量大、适合检索、进日志系统；
-- **Span Event 属于 Trace 信号**，挂在具体 span 下，量小、有上下文、跟着链路走。
-
-经验法则：**通用排障日志走 Logs，关键路径上的里程碑事件写进 Span Event**。比如"重试了 3 次"是 span event，"第 3 次重试失败，错误详情如下"是日志。
-
-### 日志关联的完整链路
-
-```mermaid
-flowchart LR
-  App["Python 服务<br/>logging 库"] -->|LoggingHandler| LP["LoggerProvider"]
-  LP -->|OTLP Logs| C["Collector"]
-  C -->|OTLP| Loki["Loki"]
-  C -->|trace_id 索引| J["Jaeger"]
-  Loki --> G["Grafana: 日志"]
-  G -->|点击 trace_id| J
+```json
+{
+  "timestamp": "2026-08-09T10:00:00.123Z",
+  "severityText": "ERROR",
+  "severityNumber": 17,
+  "body": "inventory service timeout",
+  "attributes": {
+    "service.name": "order-service",
+    "http.response.status_code": 500
+  },
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "spanId": "00f067aa0ba902b7"
+}
 ```
 
-实践部分会把它完整跑通。先记住结论：**日志要带 trace_id 才能成为链路的入口，链路要能反查日志才能成为排障的出口**。
+severityNumber 采用 1–24 的数字分级，TRACE、DEBUG、INFO、WARN、ERROR、FATAL 各有固定区间，便于跨框架统一过滤。日志框架的级别与 OTel 级别之间由桥接层映射，应用代码不需要改。
 
-## Semantic Conventions 与 Resource：让数据说同一种语言
+接入方式是桥接而不是替换：主流日志框架提供 OTel appender 或 handler，把日志事件转发给 OTel SDK；没有桥接的框架，可以通过 API 手动创建 LogRecord。桥接层还负责一件事——把当前链路的 traceId、spanId 写进日志，这一步通常自动完成。
 
-### 为什么属性名必须统一
+### LogRecord 与 Span Event
 
-如果 A 服务把 HTTP 方法叫 `method`，B 服务叫 `http_method`，你的告警规则就得写两套，跨服务关联就断了。Semantic Conventions（SemConv）就是**属性的字典**：
+Span 自身也可以携带事件（span event）：某次重试、某个关键分支。两者的区别在于归属：span event 属于某个 Span，离开链路上下文就没有意义；LogRecord 是独立事件，可以脱离链路存在，也可以借助 traceId 关联回链路。
 
-- `service.name`：服务名；
-- `http.request.method`：HTTP 方法；
-- `http.response.status_code`：状态码；
-- `db.system`、`db.namespace`：数据库类型与库名；
-- `gen_ai.provider.name`、`gen_ai.request.model`：AI 提供方与模型（下篇详述）；
-- `user.id`：用户标识。
+保留策略也不同。span event 随链路采样而存在：链路被采样，事件才保存；链路被丢弃，事件跟着丢。日志是否保留由日志管道决定，与链路采样无关。混用会让数据去向难以预期——把重要诊断信息写成 span event，链路采样率调低后，这些信息就悄悄消失了。
 
-所有语言的 SDK 都按这本字典埋点，数据到了后端才能直接互认。
+实践中按用途划分：链路内部的中间步骤用 span event，独立于请求的诊断信息用日志。需要长期审计或独立检索的信息，默认走日志。
 
-### Stable 与 Experimental：约定也有版本
+### 关联机制
 
-SemConv 自己也在演进。约定分两种状态：
+关联发生在 SDK 层。初始化时，日志 SDK 与链路 SDK 共享同一个上下文提供器；logger 写日志时自动取出当前 spanId 与 traceId 写入 LogRecord。后端按 traceId 建索引后，从任意一条日志都能跳到完整链路，从链路也能展开它产生的日志。
 
-- **Stable（稳定）**：进入长期支持，名字不再随便改；
-- **Experimental（实验）**：还在探索，可能改名，需要显式 `OTEL_SEMCONV_STABILITY_OPT_IN` 开启（GenAI 相关约定 2026 年正处于这个阶段）。
+这套机制的关键是“自动”。开发者不需要在每处日志手工拼接 traceId，上下文从当前执行环境获取。手动拼接不仅容易遗漏，还会在异步代码里拿到错误的链路：回调执行时，当前上下文可能已经不属于发起请求的线程或协程。
 
-作为使用者，你要做的只有一件事：**跟着官方字典命名业务属性**，不要自己发明"同义词"。如果非要自定义，用命名空间前缀（如 `order.*`），避免和官方属性冲突。
+## Resource 与语义约定
 
-### Resource：数据的名片
+### Resource：附着在所有信号上的元数据
 
-Resource 描述"这批数据来自谁"：
+Resource 描述数据的来源：服务名、服务版本、命名空间、部署环境、主机信息。它属于进程级元数据，一个进程的所有信号共享同一份，与请求属性不同。
 
-```text
-service.name=order-service
-service.version=1.0.0
-deployment.environment=production
-k8s.pod.name=order-abc123
-host.name=node-01
-```
+常用字段包括 service.name、service.namespace、service.version、service.instance.id、deployment.environment，以及 host.name、os.type 等运行环境信息。多数字段由 resource detector 自动填充：读取环境变量、云平台元数据、容器信息，启动时合并成一份 Resource，不需要手写。
 
-SDK 支持自动探测：K8s 环境自动补 Pod/Node 信息，容器环境自动补容器 ID，云环境自动补实例 ID。有了 Resource，Collector 才能按服务、按环境路由和治理数据。
+Resource 的合并遵循确定的顺序规则：多个来源的字段发生冲突时，合并顺序决定最终值，显式配置通常覆盖自动探测的结果。理解这条规则，能解释为什么容器环境里 service.name 偶尔被覆盖——通常是显式配置与探测结果同时存在。
 
-### Schema：约定的版本号
+一个常见错误是把 service.name 写成请求属性。Resource 用于导出端的路由、过滤与计费，请求属性随每条数据变化。两者放反，查询会立刻失真：按服务过滤时找不到数据，按请求维度聚合时又混入进程级信息。
 
-每个 Resource 还带一个 `SchemaURL`（如 `https://opentelemetry.io/schemas/1.30.0`）。它告诉后端"这份数据按哪个版本的字典命名"，后端可以据此做字段迁移。这是 OTel 为"约定会演进"留的保险丝。
+### 语义约定：为什么属性名必须统一
 
-## 自动埋点 vs 手动埋点：谁干什么活
+属性名由语义约定（semantic conventions）定义：HTTP 方法叫 http.request.method，数据库系统叫 db.system，模型提供方叫 gen_ai.provider.name。约定的价值在互操作：不同团队、不同语言、不同供应商的数据进入同一后端时，名称一致，仪表盘、告警和查询才能复用。
 
-### 自动埋点怎么工作
+约定按稳定程度分级：stable 表示承诺长期不变，experimental 表示可能调整。约定会演进，因此带版本：数据携带 schema URL，标识产生数据时遵循的约定版本；某个属性改名时，工具可以按版本转换或提示，而不是直接当成两个不认识的字段。
 
-自动埋点不是魔法，是**插桩**：每个语言的 instrumentation 库会 hook 常见库的调用点。比如 Node 的 `@opentelemetry/instrumentation-http` 会包装 `http.request`，在发出请求前注入 `traceparent`，在响应回来时结束 span。Python 的 `opentelemetry-instrumentation-fastapi` 同理。
+对开发者来说，先查约定再埋点，比按个人习惯命名更重要。约定已经覆盖 HTTP、数据库、消息、浏览器、云资源与 GenAI 等领域，绝大多数常见场景不需要自定义属性名。
 
-它能覆盖：HTTP 客户端/服务端、数据库驱动、消息队列、缓存、框架路由……而且**不改变业务行为**。
+## SDK 内部：从埋点到导出
 
-### 什么时候必须手动埋点
+### API 与 SDK 分离
 
-自动埋点覆盖不了"业务语义"：
+OpenTelemetry 把“怎么埋点”和“怎么实现”分成两层。业务代码只依赖 API：创建 tracer、meter、logger，调用 span、instrument。真正干活的 SDK 在启动时注入：它提供 Provider、Processor、Exporter，决定数据如何聚合、缓存、导出。
 
-- 这段逻辑算不算一个"下单"操作？
-- 一次 Agent 决策的意图是什么？
-- 一个缓存命中的分支走了哪条路？
+分离的第一个收益是可替换性：SDK 的实现可以升级、换厂商、换配置，业务代码不变。第二个收益是可测试性：测试里注入一个内存版 SDK，断言数据是否被正确记录，不需要真实网络。没有这层边界，埋点代码会和具体实现耦合，厂商中立就无从谈起。
 
-这些必须手动建 span。实践中的比例大致是：**自动埋点覆盖 80% 的传输链路，手动埋点补齐 20% 的业务关键路径**。
+一个进程里也可以并存多个 SDK 实例：迁移期间旧实现与新实现同时运行，或不同团队使用不同配置。全局 Provider 负责默认路径，命名 Provider 供特定模块使用。多实例是平滑迁移的基础，代价是数据会重复导出，需要迁移计划处理。
 
-## SDK 内部：Provider、Processor、Reader、Exporter
+### Provider、Processor、Exporter
 
-把上篇的 SDK 拆开，每个语言都一样，只是 API 名字略不同：
+三类信号各有对应的 Provider（TracerProvider、MeterProvider、LoggerProvider），负责管理组件的生命周期。数据产生后进入 Processor，再交给 Exporter。
 
-```mermaid
-flowchart LR
-  T["TracerProvider"] --> T1["Tracer"]
-  T1 --> S["Span"]
-  S --> P["SpanProcessor<br/>Simple / Batch"]
-  P --> E["SpanExporter<br/>OTLP / 控制台"]
-  M["MeterProvider"] --> M1["Meter"]
-  M1 --> MR["MetricReader<br/>Periodic"]
-  MR --> ME["MetricExporter"]
-  L["LoggerProvider"] --> L1["Logger"]
-  L1 --> LP["LogRecordProcessor"]
-  LP --> LE["LogExporter"]
-```
+Processor 最常见的实现是批处理：把多条数据攒成一个批次，按固定间隔或数量上限发送，显著降低网络请求次数。批处理器还有队列与超时：队列满时丢弃新数据或阻塞调用，取决于配置；超时未发出去的数据会尝试重试。理解这几个参数，就能解释生产中的两种现象：高负载下偶发丢数据（队列满）、后端抖动时出现重试风暴。
 
-每个信号都遵循同一套模式：
+Exporter 负责把数据编码成 OTLP 并发送。SDK 与 Collector 之间的网络中断时，数据在内存队列里等待；进程退出时，未导出的数据会丢失，除非显式触发 flush。优雅停机时调用 flush，是接入清单里容易被忽略的一步。
 
-1. **Provider** 是全局注册的工厂（`TracerProvider` / `MeterProvider` / `LoggerProvider`）；
-2. **Processor/Reader** 决定数据如何被处理（批量还是立即发、多久发一次）；
-3. **Exporter** 决定发给谁（OTLP、控制台、Jaeger、Prometheus……）；
-4. 所有配置都可以用环境变量覆盖（`OTEL_SERVICE_NAME`、`OTEL_TRACES_SAMPLER`、`OTEL_EXPORTER_OTLP_ENDPOINT` 等）。
+### 自动埋点
 
-这意味着：**业务代码只碰 API，SDK 的采样率、导出地址、批处理策略全部可运维化**。这就是"零代码改可观测性配置"的根基。
+自动埋点（auto-instrumentation）是接入成本的关键。对主流 Web 框架、HTTP 客户端、数据库驱动，SDK 通过钩子自动创建 Span、注入上下文、采集标准属性，业务代码不需要改动。手动埋点只用于补充业务语义：订单号、用户 ID、关键分支。
 
-## Collector 深潜：数据的中转与治理中心
+实现方式随语言不同：Java 使用字节码注入，启动时通过 agent 改写类；Node.js 与 Python 通过运行时包装模块，拦截 HTTP 客户端与框架的调用；Go 没有通用的运行时钩子，自动埋点覆盖有限，更依赖手动埋点或 eBPF 方案。选择语言时，自动埋点的成熟度是接入成本的重要变量。
 
-### 管线模型
+零代码方案进一步把初始化也自动化，通过环境变量和启动参数注入 SDK。自动埋点的覆盖范围决定了一个语言生态的接入成本：官方与社区维护的 instrumentation 库覆盖主流 HTTP 框架、数据库客户端、消息客户端与云 SDK；不在列表里的组件只能手动埋点。
 
-Collector 的每个 pipeline 都是三段式：
+### 进程内上下文传播
 
-```yaml
-receivers: # 怎么收
-processors: # 怎么加工
-exporters: # 发给谁
-```
+进程内传播依赖运行时提供的上下文机制：Node.js 的 AsyncLocalStorage、Python 的 contextvars、Java 的线程局部变量。SDK 把当前 Span 存在上下文里，新建 Span、写日志、创建指标时都从上下文取。
 
-之前你已经用过 `otlp` receiver、`batch` processor、`debug`/`otlphttp`/`prometheus` exporters。生产上最常用的 processor：
+异步代码是进程内传播最容易出错的地方：回调、定时器、消息处理器可能运行在另一个执行环境里，上下文不会自动跟随。SDK 在包装异步 API 时负责传递上下文，但绕过 SDK 的裸回调拿不到当前 Span。排查“Span 断在服务内部”的问题时，先看异步边界是否被框架自动处理。
 
-| Processor        | 作用                                     |
-| ---------------- | ---------------------------------------- |
-| `batch`          | 攒一批再发，大幅降低后端压力（必须配）   |
-| `memory_limiter` | 内存超限时丢数据保护进程（必须配）       |
-| `resource`       | 给所有数据补 Resource 属性（环境、团队） |
-| `attributes`     | 增删改属性（脱敏、加租户）               |
-| `transform`      | 用 OTTL 做复杂转换（改名字、删字段）     |
-| `filter`         | 按条件丢弃（如丢掉健康检查的链路）       |
-| `tail_sampling`  | 尾部采样                                 |
-| `k8sattributes`  | 把 K8s Pod 信息关联进数据                |
-
-### Agent 还是 Gateway？
-
-两种形态解决不同问题：
-
-- **Agent**：跟应用同机部署（K8s 里是 DaemonSet），就近收数据。优点：应用与后端解耦、失败有本地缓冲；缺点：节点数多，治理分散。
-- **Gateway**：集中部署（Deployment），统一接收 Agent 转发的数据。优点：统一做采样、脱敏、路由、鉴权、出口管控；缺点：单点压力，需要高可用。
-
-标准生产形态是**两级：每节点 Agent + 集中 Gateway**。
-
-### 高可用与数据保护
-
-- Gateway 无状态，可以随便扩；
-- Agent 崩溃不丢业务数据，最多丢遥测；
-- Collector 自身指标要送监控（`prometheus` exporter 或 OTLP 到自监控）；
-- 网络抖动时 SDK/Collector 有重试与背压，别关掉默认重试。
-
-## 实践：Python 服务接满三信号 + 尾部采样
-
-现在把 Python 加进来，补上日志关联和尾部采样两块拼图。
-
-### 第一步：扩展基础设施（加 Loki）
-
-在 `docker-compose.yml` 里加一个 Loki 服务：
-
-```yaml
-loki:
-  image: grafana/loki:3.7.6
-  command: ['-config.file=/etc/loki/local-config.yaml']
-  ports:
-    - '3100:3100'
-```
-
-（Loki 3.x 起原生支持 OTLP 日志接入，端口 3100 的 `/otlp/v1/logs`。）
-
-在 Grafana 的 datasources 文件里追加：
-
-```yaml
-- name: Loki
-  type: loki
-  access: proxy
-  url: http://loki:3100
-  isDefault: false
-```
-
-再在 Collector 配置里给 logs pipeline 加上 Loki 导出：
-
-```yaml
-exporters:
-  otlphttp/loki:
-    endpoint: http://loki:3100/otlp
-
-service:
-  pipelines:
-    logs:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [debug, otlphttp/loki]
-```
-
-重启：
-
-```bash
-docker compose up -d
-docker compose ps
-```
-
-### 第二步：Python 服务
-
-```bash
-mkdir -p python-app && cd python-app
-python3 -m venv .venv
-source .venv/bin/activate
-pip install fastapi uvicorn
-pip install opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-http
-pip install opentelemetry-instrumentation-fastapi
-```
-
-（2026 年 8 月验证版本：`opentelemetry-sdk 1.44.0`、`opentelemetry-instrumentation-fastapi 0.65b0`。依赖会自动带 instrumentation 所需的库。）
-
-`app.py`：
-
-```python
-import logging
-import random
-
-import uvicorn
-from fastapi import FastAPI
-from opentelemetry import metrics, trace
-from opentelemetry.exporter.otlp.proto.http.log_exporter import OTLPLogExporter
-from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.sdk._logs import LoggingHandler, LoggerProvider
-from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
-from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-from opentelemetry.sdk.resources import SERVICE_NAME, Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.trace import Status, StatusCode
-
-resource = Resource.create(
-    {SERVICE_NAME: "search-service", "service.version": "1.0.0"}
-)
-
-# Traces
-trace_provider = TracerProvider(resource=resource)
-trace_provider.add_span_processor(
-    BatchSpanProcessor(OTLPSpanExporter())
-)
-trace.set_tracer_provider(trace_provider)
-
-# Metrics
-meter_provider = MeterProvider(
-    resource=resource,
-    metric_readers=[
-        PeriodicExportingMetricReader(OTLPMetricExporter(), export_interval_millis=5000)
-    ],
-)
-metrics.set_meter_provider(meter_provider)
-meter = metrics.get_meter("search-service")
-search_latency = meter.create_histogram(
-    "search.latency",
-    unit="ms",
-    description="搜索耗时",
-)
-search_count = meter.create_counter("search.count")
-
-# Logs
-logger_provider = LoggerProvider(resource=resource)
-logger_provider.add_log_record_processor(
-    BatchLogRecordProcessor(OTLPLogExporter())
-)
-logging.basicConfig(level=logging.INFO)
-logging.getLogger().addHandler(LoggingHandler(level=logging.INFO, logger_provider=logger_provider))
-logger = logging.getLogger("search-service")
-
-app = FastAPI()
-tracer = trace.get_tracer("search-service")
-
-
-@app.get("/search")
-def search(q: str, fail: bool = False):
-    with tracer.start_as_current_span("search.execute") as span:
-        span.set_attribute("search.query", q)
-        latency = random.uniform(5, 500)
-
-        # 模拟一个子操作：向量检索
-        with tracer.start_as_current_span("search.vector_query") as child:
-            child.set_attribute("db.system", "qdrant")
-            if fail:
-                child.record_exception(Exception("vector db timeout"))
-                span.set_status(Status(StatusCode.ERROR))
-                logger.error("search failed q=%s", q, extra={"query": q})
-                return {"error": "vector db timeout"}, 500
-
-        search_latency.record(latency)
-        search_count.add(1, {"result": "hit"})
-        span.set_attribute("search.latency_ms", latency)
-        logger.info("search done q=%s latency=%.1fms", q, latency, extra={"query": q})
-        return {"q": q, "hits": random.randint(0, 20)}
-
-
-FastAPIInstrumentor.instrument_app(app)
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8082)
-```
-
-说明：
-
-- `FastAPIInstrumentor.instrument_app(app)` 自动给每个 HTTP 请求生成 server span；
-- 手动 span `search.execute` 挂在自动 span 下，表达"这一步是搜索业务"；
-- 子 span `search.vector_query` 里 `record_exception` 会写 span event 并把状态置为 ERROR；
-- `LoggingHandler` 把 Python 标准日志接到 OTel 的 LoggerProvider，日志自动带上当前 span 的 `trace_id`；
-- `search.latency` 和 `search.count` 是手动指标。
-
-跑起来：
-
-```bash
-python app.py
-```
-
-### 第三步：验证日志关联
-
-制造正常和失败两种流量：
-
-```bash
-for i in 1 2 3 4 5; do curl -s "http://localhost:8082/search?q=otel"; echo; done
-curl -s "http://localhost:8082/search?q=broken&fail=1"; echo
-```
-
-打开 Grafana http://localhost:3000，进 Explore，选 Loki 数据源，查询：
-
-```logql
-{service_name="search-service"}
-```
-
-你会看到两条日志：`search done` 和 `search failed`，且**都带 trace_id**。点开 `search failed` 日志里的 trace_id（Grafana 配置了 Jaeger 数据源后会自动生成链接），跳进 Jaeger，你会看到：
-
-```mermaid
-flowchart LR
-  A["GET /search<br/>自动 span"] --> B["search.execute"]
-  B --> C["search.vector_query<br/>ERROR + exception event"]
-```
-
-这就是"日志 → 链路"的闭环。再切回 Prometheus，查询：
-
-```promql
-search_latency_seconds_bucket
-search_count_total
-```
-
-你的 Python 指标也进来了。到此，三信号齐全。
-
-### 第四步：尾部采样
-
-把 Collector 的 traces pipeline 加上 `tail_sampling`：
-
-```yaml
-processors:
-  tail_sampling:
-    decision_wait: 5s
-    num_traces: 1000
-    expected_new_traces_per_sec: 20
-    policies:
-      - name: errors-always
-        type: status_code
-        status_code:
-          status_codes: [ERROR]
-        percentage: 100
-      - name: sample-rest
-        type: probabilistic
-        probabilistic:
-          sampling_percentage: 20
-
-service:
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [tail_sampling, batch]
-      exporters: [debug, otlphttp/jaeger]
-```
-
-重启 Collector 后，连续打 20 次正常请求 + 2 次失败请求，去 Jaeger 数一下：**失败的都在，正常的只有约 20%**。这就是"错误全保、正常抽采"的生产级策略雏形。
-
-### 怎么确认这一步对了
-
-- Loki 里能看到带 trace_id 的日志，点 trace_id 能跳 Jaeger；
-- Prometheus 里有 `search_latency` 与 `search_count` 指标；
-- 尾部采样生效：正常链路约 20%，错误链路 100%。
-
-## 常见坑速查（中篇）
-
-| 症状                     | 原因                                                             | 解法                                                                                                 |
-| ------------------------ | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| 日志没带 trace_id        | LoggingHandler 与当前 Context 没关联，或日志在 span 外打的       | 确认在请求处理函数里打日志；不要用全局缓存的 logger 在异步线程里打                                   |
-| 指标数字和后端对不上     | Temporality 模型不同                                             | 检查后端期望 Delta 还是 Cumulative；必要时在导出端转换                                               |
-| 尾部采样没生效           | 忘记 `parentbased` 会导致子 span 独立决策，或 decision_wait 太短 | 采样放 Collector 时，SDK 端用 `always_on` 或 `traceidratio`，把决策权交给 Collector                  |
-| `traceparent` 被网关改掉 | 反向代理去重或改写                                               | 配置网关透传标准头                                                                                   |
-| 异步任务里 span 断掉     | Context 没传进线程/任务                                          | Node 用 AsyncLocalStorage（SDK 默认），Python 用 `context.attach` 或传递 `trace_id`，Go 显式传 `ctx` |
-
-## 小结
-
-中篇之后，你拥有的不是"会配 OTel"，而是一张完整的原理图：
-
-- **Trace**：Span 是节点，Context 是胶水，`traceparent` 是跨进程的身份证，采样是经济学；
-- **Metrics**：Instrument 决定语义，Temporality 决定时间观，Aggregation 决定压缩方式，Exemplar 决定怎么跳回链路；
-- **Logs**：LogRecord 带上 `trace_id` 就从孤岛变成入口；
-- **SemConv + Resource**：约定让数据互认，名片让数据可区分；
-- **Collector**：Receiver/Processor/Exporter 三段管线，尾部采样与两级部署是生产标配。
-
-下篇我们走出"单个服务怎么接入"，进入"整个系统怎么规划"：后端怎么选型、生产怎么治理、eBPF 零埋点和 Profiling 第四信号怎么用，以及 AI 时代最重要的一块——**GenAI 可观测性**。
-
-## 自测题
-
-1. `traceparent` 的四个字段分别是什么？为什么采样决策要写在 flags 里？
-2. 头部采样和尾部采样各自的决策时机与代价是什么？什么场景必须用尾部采样？
-3. Counter 和 UpDownCounter 的语义区别是什么？举个例子说明什么时候不能用 Counter。
-4. Cumulative 和 Delta 的区别是什么？为什么 Prometheus 喜欢 Cumulative？
-5. 日志为什么要带 trace_id？它和 span event 的分工是什么？
-6. 如果团队里有人把业务属性随意命名（如 `uid`、`user_id`、`userId` 混用），你会怎么说服他改用 SemConv？
-
-## 练习任务
-
-1. 完成 Python 实践，三信号 + 日志跳链路全部跑通。
-2. 给 `search.latency` 加一个 View：把直方图改成指数直方图，对比 Prometheus 里的 bucket 变化。
-3. 在 Node 服务里把 Baggage 写入 `tier=vip`，在 Python 服务里读出来并写进 span attribute，验证跨语言传递。
-4. 配置 `memory_limiter` 和 `filter`：把健康检查路径的链路在 Collector 里过滤掉。
-5. 读一遍 `docker compose logs otel-collector`，找出 batch processor 和 tail_sampling 的实际效果（吞吐、丢弃）。
-
-## 附录：本篇新增命令与配置
-
-```bash
-# 基础设施（新增 Loki）
-docker compose up -d
-
-# Python
-cd python-app
-source .venv/bin/activate
-python app.py
-
-# 流量
-for i in 1 2 3 4 5; do curl -s "http://localhost:8082/search?q=otel"; echo; done
-curl -s "http://localhost:8082/search?q=broken&fail=1"; echo
-
-# Loki 查询（Grafana Explore）
-{service_name="search-service"}
-
-# 指标
-search_latency_seconds_bucket
-search_count_total
-```
-
-文件清单：`python-app/app.py`，以及更新后的 `docker-compose.yml`、`otel-collector.yaml`、`grafana-datasources.yaml`。
-
-下一篇：《OpenTelemetry 下篇：从落地到整个生态链》。
+## Collector：数据的中转站
+
+Collector 是独立进程，负责从 SDK 或其它来源接收数据，经过一条管线处理，再导出到后端。管线由三部分组成：
+
+- Receiver：接收数据。OTLP 是主要入口，也支持 Prometheus、Jaeger、Zipkin 等格式。
+- Processor：处理数据。常见用途包括采样、过滤、属性增强、数据脱敏、路由。
+- Exporter：把处理后的数据发给一个或多个后端。
+
+Processor 的一个典型例子是属性增强：从 Resource 或外部数据源读取信息，统一附加到每一条数据上，比如把集群名、环境、团队归属写进属性。这类规则集中在一处，应用侧完全无感。
+
+Collector 解决的核心问题：SDK 不需要知道后端是谁，治理逻辑不需要写进每个应用。埋点决策（采样规则、脱敏字段、导出目标）集中在 Collector 一处，改动不影响应用代码。管线可以串行处理，也可以把同一份数据分支发给多个后端：一份进指标系统，一份进日志平台，一份用于审计。
+
+Collector 还承担缓冲、重试与背压。SDK 断网或后端抖动时，数据在 Collector 队列里等待；队列满时，Collector 可以拒绝新数据，让 SDK 侧感知压力而不是无限堆积。数据从产生到落库的每一跳都可能丢，重要数据的留存依赖队列配置、重试上限与后端的幂等写入，而不是假设链路可靠。
+
+它的两种部署模式——与应用同机部署的 Agent、独立集群的 Gateway——分别适合不同的规模与治理需求。
+
+## 三类信号如何协同工作
+
+把整套机制串起来看一次完整的排查：用户反馈某个操作失败，先在日志平台按时间检索，找到一条 ERROR 日志，日志里带着 traceId；顺着 traceId 打开链路，看到根 Span 是网关的 POST 请求，子 Span 里订单服务调用库存服务超时，超时的根因指向数据库查询；回到指标，查看该数据库实例同期的延迟曲线，从 Histogram 的 Exemplar 跳进一条真实链路，确认慢查询的请求特征；最后用 Resource 与属性确认受影响的版本、实例和用户范围。
+
+日志给细节，指标给全景，链路给因果，Exemplar 是三者之间的跳板。单看任何一类信号，这次排查都会停在半路；三类信号靠同一套上下文互相定位，这才是 OpenTelemetry 数据模型设计的最终目的。
+
+## 本系列内容
+
+- 上篇介绍可观测性的概念、历史与 OpenTelemetry 的定位。
+- 下篇《生态链与选型落地》介绍数据走出应用之后的部分：Collector 部署形态、后端选型、浏览器端可观测性、eBPF 零埋点、Profiling、GenAI 可观测性与团队推行路线。
+
+上一篇：[《OpenTelemetry 上篇：为什么需要可观测性》](/zh/posts/opentelemetry-guide-part-1)
+
+下一篇：[《OpenTelemetry 下篇：生态链与选型落地》](/zh/posts/opentelemetry-guide-part-3)
