@@ -76,5 +76,5 @@ node_modules
 # TanStack Start 开发缓存
 .tanstack
 
-# 摄影展示副本（运行时由存储服务写入，Vite dev / 生产卷直接伺服）
+# 摄影模块：上传照片的运行时副本（由存储服务写入，不入库）
 /apps/web/public/photos/
