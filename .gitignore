@@ -67,3 +67,14 @@ apps/web/next-env.d.ts
 **/.cache
 **/__pycache__
 **/*.pyc
+
+# 摄影存储服务：运行时展示副本、构建产物与依赖
+data
+dist
+node_modules
+
+# TanStack Start 开发缓存
+/apps/web/.tanstack/
+
+# 摄影展示副本（运行时由存储服务写入，Vite dev / 生产卷直接伺服）
+/apps/web/public/photos/

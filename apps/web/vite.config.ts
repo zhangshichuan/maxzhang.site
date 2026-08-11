@@ -2,7 +2,47 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import tailwindcss from '@tailwindcss/vite'
 import viteReact from '@vitejs/plugin-react'
 import { nitro } from 'nitro/vite'
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
+
+/**
+ * dev 防盗链中间件
+ *
+ * Vite dev 直接伺服 public/photos，Nitro 全局中间件不会经过静态资源，
+ * 所以在这里做与 server/middleware/hotlink.ts 等价的检查。
+ */
+function hotlinkProtectionPlugin(): Plugin {
+  return {
+    name: 'photo-hotlink-protection',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const url = req.url ?? ''
+        if (!url.startsWith('/photos/photos/')) return next()
+
+        const host = req.headers.host ?? ''
+        const referer = req.headers.referer
+        const secFetchSite = req.headers['sec-fetch-site']
+
+        if (secFetchSite === 'same-origin' || secFetchSite === 'none') return next()
+        if (secFetchSite === 'same-site' || secFetchSite === 'cross-site') {
+          res.statusCode = 403
+          res.end()
+          return
+        }
+        if (referer) {
+          try {
+            if (new URL(referer).host === host) return next()
+          } catch {
+            // 非法 Referer 一律视为外部引用
+          }
+          res.statusCode = 403
+          res.end()
+          return
+        }
+        return next()
+      })
+    },
+  }
+}
 
 /**
  * TanStack Start（Vite + Nitro）配置
@@ -25,6 +65,7 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   plugins: [
+    hotlinkProtectionPlugin(),
     tailwindcss(),
     tanstackStart({
       srcDirectory: 'src',

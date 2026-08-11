@@ -7,7 +7,7 @@ import {
 import type { CommentWithReplies } from '@/src/features/engagement/model'
 import { useTranslations } from '@/src/i18n/client'
 import { getThumbmark } from '@thumbmarkjs/thumbmarkjs'
-import { AlertCircle, Clock, MessageCircle, Reply, Send, X } from 'lucide-react'
+import { AlertCircle, Clock, Reply, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
 interface CommentProps {
@@ -155,7 +155,6 @@ function CommentItem({
                   disabled={!replyContent.trim() || isReplying}
                   className="btn btn-ghost flex cursor-pointer items-center gap-1 px-2 py-1 text-xs disabled:opacity-50"
                 >
-                  <Send className="size-3" />
                   {isReplying ? t('submitting') : t('submit')}
                 </button>
               </div>
@@ -324,7 +323,6 @@ export function Comment({ slug, locale }: CommentProps) {
   return (
     <div className="comments-section">
       <div className="comments-title">
-        <MessageCircle className="size-5 text-primary" />
         <h2>
           {t('title')}
           {count !== null && <span className="comments-count">({count})</span>}
@@ -369,7 +367,6 @@ export function Comment({ slug, locale }: CommentProps) {
             className="btn btn-primary inline-flex items-center gap-2"
             style={{ padding: '9px 22px', fontSize: 13 }}
           >
-            <Send className="size-4" />
             {isSubmitting ? t('submitting') : t('submit')}
           </button>
         </div>

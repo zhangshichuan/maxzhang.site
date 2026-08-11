@@ -12,6 +12,8 @@ jobs:
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      STORAGE_API_KEY: ${{ secrets.STORAGE_API_KEY }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
 
     steps:
       - name: Checkout code
@@ -69,6 +71,8 @@ jobs:
             cd ${{secrets.DEPLOY_PATH}}
             echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
             echo "DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}" >> .env
+            echo "STORAGE_API_KEY=${{ secrets.STORAGE_API_KEY }}" >> .env
+            echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}" >> .env
 
             # 清理旧的构建文件
             rm -rf apps docker-compose.yml .dockerignore package.json pnpm-lock.yaml pnpm-workspace.yaml
@@ -81,6 +85,7 @@ jobs:
             docker compose build app
             docker compose build tts
             docker compose build chat
+            docker compose build storage
             docker compose build migrate
 
             # 运行迁移

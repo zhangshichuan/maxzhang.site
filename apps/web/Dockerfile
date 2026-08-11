@@ -16,6 +16,8 @@ ENV DATABASE_URL="file:./prisma/dev.db"
 # 先安装依赖（利用层缓存）
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json apps/web/package.json
+# workspace 包含存储服务，安装阶段需要它的 package.json 才能对齐 lockfile
+COPY apps/services/storage/package.json apps/services/storage/package.json
 # postinstall 会执行 prisma generate，需要 schema 在场
 COPY apps/web/prisma apps/web/prisma
 COPY apps/web/prisma.config.ts apps/web/prisma.config.ts
@@ -42,7 +44,7 @@ COPY --from=builder --chown=nodejs:nodejs /repo/apps/web/.output ./.output
 # 运行期 loader / TTS 文本提取需要文章源文件
 COPY --from=builder --chown=nodejs:nodejs /repo/apps/web/articles ./articles
 
-RUN mkdir -p /app/data && chown -R nodejs:nodejs /app/data
+RUN mkdir -p /app/data /app/.output/public/photos && chown -R nodejs:nodejs /app/data /app/.output/public/photos
 
 USER nodejs
 

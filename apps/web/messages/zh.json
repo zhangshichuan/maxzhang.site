@@ -10,7 +10,10 @@
       "switchLanguage": "切换至英文",
       "language": "语言",
       "search": "搜索",
-      "appearance": "外观"
+      "appearance": "外观",
+      "photos": "摄影",
+      "more": "更多",
+      "moreClose": "关闭更多"
     },
     "footer": {
       "builtBy": "由 <name>Max Zhang</name> 构建。© {year} 保留所有权利。"
@@ -21,19 +24,84 @@
       "backHome": "返回首页"
     }
   },
+  "PhotosPage": {
+    "title": "摄影",
+    "description": "学拍照",
+    "author": "Max Zhang",
+    "empty": "还没有作品，敬请期待。"
+  },
+  "PhotoDetail": {
+    "prev": "上一张",
+    "next": "下一张",
+    "camera": "机身",
+    "lens": "镜头",
+    "focal": "焦距",
+    "aperture": "光圈",
+    "shutter": "快门",
+    "iso": "感光度",
+    "close": "关闭",
+    "exif": "拍摄参数",
+    "loading": "加载中…",
+    "error": "作品加载失败",
+    "shortcuts": "Esc 关闭 · ← → 切换",
+    "share": "分享链接",
+    "viewFull": "查看原图",
+    "collapse": "收起"
+  },
+  "AdminPage": {
+    "title": "管理登录",
+    "checking": "检查登录状态…",
+    "password": "管理员口令",
+    "submit": "登录",
+    "submitting": "登录中…",
+    "wrongPassword": "口令错误",
+    "rateLimited": "尝试次数过多，登录已临时锁定",
+    "retryAfter": "请在 {seconds} 秒后重试",
+    "ipNotAllowed": "当前网络地址不在允许列表内",
+    "unavailable": "登录服务暂不可用，请稍后重试",
+    "error": "登录失败，请重试"
+  },
+  "AdminConsole": {
+    "title": "管理后台",
+    "description": "摄影作品管理",
+    "checking": "检查登录状态…",
+    "upload": "上传作品",
+    "viewPhotos": "前往摄影页",
+    "logout": "退出登录",
+    "empty": "还没有作品，点上方按钮上传第一组吧",
+    "delete": "删除",
+    "photosCount": "{count} 张照片"
+  },
+  "UploadDialog": {
+    "title": "上传作品",
+    "pickFiles": "选择照片（可多选，最多 10 张）",
+    "selected": "张已选择",
+    "tooMany": "一次最多上传 10 张",
+    "captionZh": "中文图注（必填）",
+    "captionEn": "English caption（可选）",
+    "location": "地点（可选，留空时自动使用 GPS）",
+    "tags": "标签（逗号分隔，可选）",
+    "password": "管理员口令",
+    "loginRequired": "请先输入管理员口令",
+    "invalidPassword": "口令错误",
+    "submit": "发布",
+    "submitting": "上传中…",
+    "error": "上传失败，请重试",
+    "close": "关闭"
+  },
   "Comment": {
-    "title": "读者来信",
-    "placeholder": "写下你的想法...",
-    "submit": "投递",
-    "submitting": "投递中...",
-    "error": "投递失败，请重试",
-    "success": "投递成功！",
-    "empty": "暂无来信，期待你的分享。",
-    "remaining": "今日还可投递 {count} 条",
-    "noRemaining": "今日投递次数已用完",
+    "title": "评论",
+    "placeholder": "写下你的评论...",
+    "submit": "发表",
+    "submitting": "发表中...",
+    "error": "发表失败，请重试",
+    "success": "评论发表成功！",
+    "empty": "暂无评论，期待你的分享。",
+    "remaining": "今日还可发表 {count} 条",
+    "noRemaining": "今日发表次数已用完",
     "reply": "回复",
     "replyPlaceholder": "写下你的回复...",
-    "replySuccess": "回复投递成功！",
+    "replySuccess": "回复发表成功！",
     "cancel": "取消"
   },
   "Chat": {
@@ -165,7 +233,7 @@
   },
   "PostsPage": {
     "title": "文章",
-    "description": "技术、设计与生活的交汇之地。",
+    "description": "随心记",
     "categories": "分类浏览",
     "tags": "标签索引",
     "noPosts": "暂无文章，敬请期待。",

@@ -16,16 +16,23 @@ services:
       dockerfile: apps/web/Dockerfile
     volumes:
       - sqlite_data:/app/data
+      - photos_data:/app/.output/public/photos
     environment:
       - DATABASE_URL
       - TTS_BASE_URL=http://tts:8001
       - CHAT_BASE_URL=http://chat:9000
+      - STORAGE_BASE_URL=http://storage:9001
+      - STORAGE_API_KEY
+      - ADMIN_PASSWORD
+      - COOKIE_SECURE=1
     ports:
       - '3000:3000'
     depends_on:
       tts:
         condition: service_healthy
       chat:
+        condition: service_healthy
+      storage:
         condition: service_healthy
 
   tts:
@@ -65,7 +72,30 @@ services:
       retries: 3
       start_period: 10s
 
-# 数据持久化：SQLite 在 sqlite_data，TTS 音频缓存（30天/1GB 自动清理）在 tts_data
+  storage:
+    build:
+      context: ./apps/services/storage
+      dockerfile: Dockerfile
+    volumes:
+      - photos_data:/data/photos
+    environment:
+      - STORAGE_API_KEY
+      - STORAGE_PROVIDER=local
+      - PHOTOS_DIR=/data/photos
+      - PORT=9001
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:9001/healthz').then((r) => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+# 数据持久化：SQLite 在 sqlite_data，TTS 音频缓存（30天/1GB 自动清理）在 tts_data，摄影展示副本在 photos_data
 volumes:
   sqlite_data:
   tts_data:
+  photos_data:

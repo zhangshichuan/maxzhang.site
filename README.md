@@ -13,6 +13,7 @@ Max 的个人技术网站：中英双语技术文章、评论与阅读统计、�
 - **国际化**：自建薄 i18n 层，en 无 URL 前缀，zh 走 `/zh` 前缀；无前缀首页按浏览器语言/本地偏好自动跳转
 - **TTS**：`apps/services/tts`（FastAPI + edge-tts，依赖用 uv 管理），按内容哈希缓存、流式返回 MP3
 - **聊天**：`apps/services/chat`（Go 标准库 + DeepSeek，SSE 流式转发、无状态），树洞人设提示词见 `prompt.md`
+- **摄影存储**：`apps/services/storage`（NestJS + sharp，Provider 抽象），v1 用服务器本地磁盘适配器，七牛适配器保留待接入
 - **部署**：Docker Compose 三服务编排，GitHub Actions 在 push `main` 时自动构建部署
 
 ## 目录结构
@@ -30,6 +31,7 @@ apps/
   services/
     tts/             # FastAPI + edge-tts 流式语音服务（uv 管理）
     chat/            # Go 树洞聊天服务（DeepSeek 流式转发，端口 9000）
+    storage/         # NestJS 图片加工与对象存储服务（Provider 抽象，v1 本地磁盘，端口 9001）
 docs/
   adr/               # 架构决策记录
 ```
@@ -43,13 +45,14 @@ pnpm install        # 安装依赖（postinstall 自动 prisma generate）
 pnpm dev            # 一键拉起 Web + TTS + 聊天服务
 ```
 
-`pnpm dev` 会通过 `scripts/dev.mjs` 同时启动三部分：
+`pnpm dev` 会通过 `scripts/dev.mjs` 同时启动四部分：
 
 - **Web**：Vite + TanStack Start 开发服务器（http://localhost:3000，热更新）；
 - **TTS**：`uv run uvicorn app.main:app --port 8001 --reload`，自动热重载；
 - **聊天**：`go run .`（:9000），需要 `DEEPSEEK_API_KEY`，写入 `apps/services/chat/.env` 即可（`.env` 优先于环境变量，避免残留 key 干扰）。
+- **存储**：`pnpm --filter storage dev`（:9001），`STORAGE_API_KEY` 与 `PHOTOS_DIR` 写在 `apps/services/storage/.env`。
 
-启动前脚本会自动清理 3000 / 8001 / 9000 上的残留进程（先优雅 SIGTERM，1 秒后仍占用再 SIGKILL），避免上次没退干净的旧实例占住端口。
+启动前脚本会自动清理 3000 / 8001 / 9000 / 9001 上的残留进程（先优雅 SIGTERM，1 秒后仍占用再 SIGKILL），避免上次没退干净的旧实例占住端口。
 
 常用变体：
 
@@ -68,23 +71,24 @@ pnpm dev:otel:stop    # 停掉可观测性全家桶
 - `apps/web/.env`：`DATABASE_URL`、`PUSH_API_KEY`（可选 `TTS_BASE_URL`、`CHAT_BASE_URL`），由 Vite/Nitro 开发时自动读取；
 - `apps/services/chat/.env`：`DEEPSEEK_API_KEY`、`DEEPSEEK_MODEL`、`DEEPSEEK_BASE_URL` 等，由 `scripts/dev.mjs` 读取并注入 `go run .`（**`.env` 优先于环境变量**，避免终端/父进程残留的旧 key 覆盖服务配置）；
 - `apps/services/tts/.env`：`TTS_CACHE_DIR` 等可选配置，由 `scripts/dev.mjs` 注入。
+- `apps/services/storage/.env`：`STORAGE_API_KEY`、`STORAGE_PROVIDER=local`、`PHOTOS_DIR` 等，由 `scripts/dev.mjs` 注入。
 
-Web 默认访问 `http://localhost:8001` 的 TTS 服务与 `http://localhost:9000` 的聊天服务。生产环境不读取 `.env`，密钥由部署平台/CI 注入。
+Web 默认访问 `http://localhost:8001` 的 TTS 服务、`http://localhost:9000` 的聊天服务与 `http://localhost:9001` 的存储服务。生产环境不读取 `.env`，密钥由部署平台/CI 注入。
 
 ## 常用命令
 
-| 命令 | 说明 |
-| --- | --- |
-| `pnpm dev` | 一键拉起 Web + TTS + 聊天 |
-| `pnpm dev:web` | 只起 Web 开发服务器（:3000） |
-| `pnpm dev:services` | 只起 TTS（:8001）+ 聊天（:9000） |
-| `pnpm dev:otel` / `pnpm dev:otel:stop` | 起 / 停可观测性全家桶 |
-| `pnpm build` | 生成 MDX → 构建 `.output` → 类型检查 |
-| `pnpm start` | 运行生产服务（`node .output/server/index.mjs`） |
-| `pnpm lint` | tsc → eslint --fix → prettier → prisma format |
-| `pnpm test` / `pnpm test:watch` | Vitest 单次 / 监听 |
-| `pnpm db:migrate` / `pnpm db:studio` | Prisma 迁移 / 可视化数据库 |
-| `cd apps/services/chat && go test ./...` | Go 聊天服务测试 |
+| 命令                                     | 说明                                            |
+| ---------------------------------------- | ----------------------------------------------- |
+| `pnpm dev`                               | 一键拉起 Web + TTS + 聊天                       |
+| `pnpm dev:web`                           | 只起 Web 开发服务器（:3000）                    |
+| `pnpm dev:services`                      | 只起 TTS（:8001）+ 聊天（:9000）                |
+| `pnpm dev:otel` / `pnpm dev:otel:stop`   | 起 / 停可观测性全家桶                           |
+| `pnpm build`                             | 生成 MDX → 构建 `.output` → 类型检查            |
+| `pnpm start`                             | 运行生产服务（`node .output/server/index.mjs`） |
+| `pnpm lint`                              | tsc → eslint --fix → prettier → prisma format   |
+| `pnpm test` / `pnpm test:watch`          | Vitest 单次 / 监听                              |
+| `pnpm db:migrate` / `pnpm db:studio`     | Prisma 迁移 / 可视化数据库                      |
+| `cd apps/services/chat && go test ./...` | Go 聊天服务测试                                 |
 
 ## 内容维护
 
@@ -93,13 +97,23 @@ Web 默认访问 `http://localhost:8001` 的 TTS 服务与 `http://localhost:900
 - `category` 仅允许 `Frontend` / `Backend` / `DevOps`，标签自由
 - 文章语音按需生成：以文本 SHA-256 为缓存键，内容更新后自动重新生成，仓库不保存任何音频文件
 
+## 摄影模块
+
+- 摄影作品以“作品”为单元：一条作品可含 1～10 张照片（轮播），中英双语图注，读者可评论
+- 管理入口：`/login` 独立登录页，登录成功后进入 `/admin` 管理后台（作品列表、上传、删除、退出）；口令见 `ADMIN_PASSWORD`，Cookie 为 HttpOnly + SameSite=Strict，生产环境追加 Secure
+- 防暴力破解：失败次数持久化在 SQLite，5 次/15 分钟锁 15 分钟，10 次/1 小时锁 1 小时，20 次/24 小时锁 24 小时；可配 `ADMIN_ALLOWED_IPS` 白名单（支持 IPv4/CIDR）
+- 上传链路：浏览器 → Web server function → 内网存储服务 → 本地磁盘；存储服务用 sharp 生成视觉无损展示副本（WebP q95/3000px 大图 + q85/800px 缩略图），剥离 EXIF，拍摄参数与 GPS 提取进 SQLite
+- 原图只保存在站主本地，服务器不留原始文件；展示副本由 Web 静态伺服：dev 写到 `apps/web/public/photos`（Vite 直接服务 `/photos/*`），生产挂载 `photos_data` 卷到 `.output/public/photos`
+- 后端可插拔：当前 `STORAGE_PROVIDER=local`，七牛适配器已就绪，备案可办后切换即可
+
 ## 部署
 
-`docker compose up -d` 编排三个服务：
+`docker compose up -d` 编排四个服务：
 
 - `app`：TanStack Start 应用（:3000），SQLite 数据卷 `sqlite_data`
 - `tts`：语音合成服务（仅内网），音频缓存卷 `tts_data`（30 天 / 1GB 自动清理）
 - `chat`：树洞聊天服务（仅内网，:9000），需注入 `DEEPSEEK_API_KEY`，模型默认 `deepseek-v4-flash`
+- `storage`：摄影存储服务（仅内网，:9001），展示副本卷 `photos_data`，需注入 `STORAGE_API_KEY`、`ADMIN_PASSWORD`
 
 push `main` 后 GitHub Actions 自动执行：构建 → 打包源码 → SCP 到服务器 → `docker compose build` → 迁移 → 重启。
 

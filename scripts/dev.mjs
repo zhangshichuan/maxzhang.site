@@ -24,6 +24,7 @@ const servicesOnly = args.has('--services-only')
 const clean = args.has('--clean')
 const skipTts = args.has('--skip-tts')
 const skipChat = args.has('--skip-chat')
+const skipStorage = args.has('--skip-storage')
 
 const children = []
 let stopping = false
@@ -31,6 +32,7 @@ let stopping = false
 const TAG_COLORS = {
   tts: 36,
   chat: 35,
+  storage: 32,
   web: 34,
   dev: 33,
 }
@@ -136,7 +138,10 @@ function envFromFiles(files) {
       const eq = line.indexOf('=')
       if (eq === -1) continue
       const key = line.slice(0, eq).trim()
-      const value = line.slice(eq + 1).trim().replace(/^['"]|['"]$/g, '')
+      const value = line
+        .slice(eq + 1)
+        .trim()
+        .replace(/^['"]|['"]$/g, '')
       if (key) merged[key] = value
     }
   }
@@ -200,8 +205,15 @@ function startChat() {
     return
   }
   const fileEnv = envFromFiles(['apps/services/chat/.env'])
-  if (process.env.DEEPSEEK_API_KEY && fileEnv.DEEPSEEK_API_KEY && process.env.DEEPSEEK_API_KEY !== fileEnv.DEEPSEEK_API_KEY) {
-    log('dev', '进程环境中存在 DEEPSEEK_API_KEY，但 apps/services/chat/.env 另有配置；本地开发以 .env 为准，环境变量中的 key 会被忽略')
+  if (
+    process.env.DEEPSEEK_API_KEY &&
+    fileEnv.DEEPSEEK_API_KEY &&
+    process.env.DEEPSEEK_API_KEY !== fileEnv.DEEPSEEK_API_KEY
+  ) {
+    log(
+      'dev',
+      '进程环境中存在 DEEPSEEK_API_KEY，但 apps/services/chat/.env 另有配置；本地开发以 .env 为准，环境变量中的 key 会被忽略',
+    )
   }
   // 聊天服务以自身 .env 为配置源：父进程/终端注入的旧 key 不应覆盖服务配置。
   const env = { ...process.env, ...fileEnv }
@@ -213,15 +225,34 @@ function startChat() {
   start('chat', 'go', ['run', '.'], { cwd: chatDir, env })
 }
 
+function startStorage() {
+  const fileEnv = envFromFiles(['apps/services/storage/.env'])
+  const env = mergeEnv(process.env, fileEnv)
+  // 默认写到 Web 的 public/photos，让 Vite dev 直接伺服（生产由 docker-compose 注入 /data/photos）
+  if (!env.PHOTOS_DIR) env.PHOTOS_DIR = path.join(root, 'apps/web/public/photos')
+  log('storage', '正在启动（pnpm --filter storage dev :9001）…')
+  start('storage', 'pnpm', ['--filter', 'storage', 'dev'], { env })
+}
+
 async function startWeb() {
   const webPort = 3000
   if (await isPortInUse(webPort)) {
     const lsof = spawnSync('lsof', ['-ti', `:${webPort}`], { encoding: 'utf8' })
     const pids = lsof.status === 0 ? lsof.stdout.trim().replace(/\n/g, ' ') : ''
-    log('dev', `端口 ${webPort} 已被占用${pids ? `（PID: ${pids}）` : ''}，Vite 会自动改用 3001；如想固定 3000，请先停掉占用进程`)
+    log(
+      'dev',
+      `端口 ${webPort} 已被占用${pids ? `（PID: ${pids}）` : ''}，Vite 会自动改用 3001；如想固定 3000，请先停掉占用进程`,
+    )
   }
   log('web', '正在启动（Vite :3000）…')
-  start('web', 'pnpm', ['--filter', 'web', 'dev'])
+  // 只把 Web 需要的存储配置透传过去；PORT 等存储专用变量不能污染 Web。
+  const storageEnv = envFromFiles(['apps/services/storage/.env'])
+  const sharedEnv = {}
+  if (storageEnv.STORAGE_API_KEY !== undefined) {
+    sharedEnv.STORAGE_API_KEY = storageEnv.STORAGE_API_KEY
+  }
+  const env = mergeEnv(process.env, sharedEnv)
+  start('web', 'pnpm', ['--filter', 'web', 'dev'], { env })
 }
 
 function shutdown(code) {
@@ -262,14 +293,18 @@ async function main() {
     await killPort(3000, 'Web')
     if (!skipTts) await killPort(8001, 'TTS')
     if (!skipChat) await killPort(9000, '聊天')
+    if (!skipStorage) await killPort(9001, '存储')
     if (!skipTts) startTts()
     if (!skipChat) startChat()
+    if (!skipStorage) startStorage()
     await startWeb()
   } else {
     if (!skipTts) await killPort(8001, 'TTS')
     if (!skipChat) await killPort(9000, '聊天')
+    if (!skipStorage) await killPort(9001, '存储')
     if (!skipTts) startTts()
     if (!skipChat) startChat()
+    if (!skipStorage) startStorage()
     log('dev', 'services-only 模式：Web 未启动，Ctrl+C 退出')
   }
 
@@ -277,10 +312,12 @@ async function main() {
   if (servicesOnly) {
     if (!skipTts) log('dev', '  TTS  : http://localhost:8001/healthz')
     if (!skipChat) log('dev', '  Chat : http://localhost:9000/healthz')
+    if (!skipStorage) log('dev', '  Storage : http://localhost:9001/healthz')
   } else {
     log('dev', '  Web  : http://localhost:3000')
     if (!skipTts) log('dev', '  TTS  : http://localhost:8001/healthz')
     if (!skipChat) log('dev', '  Chat : http://localhost:9000/healthz')
+    if (!skipStorage) log('dev', '  Storage : http://localhost:9001/healthz')
   }
   log('dev', '按 Ctrl+C 一键停止全部服务')
 }

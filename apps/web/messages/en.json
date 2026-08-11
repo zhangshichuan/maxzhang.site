@@ -10,7 +10,10 @@
       "switchLanguage": "Switch to Chinese",
       "language": "Language",
       "search": "Search",
-      "appearance": "Appearance"
+      "appearance": "Appearance",
+      "photos": "Photography",
+      "more": "More",
+      "moreClose": "Close more"
     },
     "footer": {
       "builtBy": "Built by <name>Max Zhang</name>. © {year} All rights reserved."
@@ -21,19 +24,84 @@
       "backHome": "Back to Home"
     }
   },
+  "PhotosPage": {
+    "title": "Photography",
+    "description": "A few photos I took — only the ones I chose.",
+    "author": "Max Zhang",
+    "empty": "No works yet. Stay tuned."
+  },
+  "PhotoDetail": {
+    "prev": "Previous",
+    "next": "Next",
+    "camera": "Camera",
+    "lens": "Lens",
+    "focal": "Focal length",
+    "aperture": "Aperture",
+    "shutter": "Shutter",
+    "iso": "ISO",
+    "close": "Close",
+    "exif": "Shot details",
+    "loading": "Loading…",
+    "error": "Couldn't load this work.",
+    "shortcuts": "Esc to close · ← → to switch",
+    "share": "Share link",
+    "viewFull": "View full",
+    "collapse": "Collapse"
+  },
+  "AdminPage": {
+    "title": "Admin Login",
+    "checking": "Checking login status…",
+    "password": "Admin passphrase",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "wrongPassword": "Wrong passphrase",
+    "rateLimited": "Too many attempts. Login is temporarily locked.",
+    "retryAfter": "Retry in {seconds}s",
+    "ipNotAllowed": "Your network address is not in the allowed list",
+    "unavailable": "Login service unavailable. Try again later.",
+    "error": "Sign in failed. Try again."
+  },
+  "AdminConsole": {
+    "title": "Admin Console",
+    "description": "Manage your photography works",
+    "checking": "Checking login status…",
+    "upload": "Upload",
+    "viewPhotos": "View Photography",
+    "logout": "Log out",
+    "empty": "No works yet. Upload your first set above.",
+    "delete": "Delete",
+    "photosCount": "{count} photos"
+  },
+  "UploadDialog": {
+    "title": "Upload Work",
+    "pickFiles": "Pick photos (multiple, up to 10)",
+    "selected": "selected",
+    "tooMany": "Up to 10 photos per upload",
+    "captionZh": "Chinese caption (required)",
+    "captionEn": "English caption (optional)",
+    "location": "Location (optional, falls back to GPS)",
+    "tags": "Tags (comma separated, optional)",
+    "password": "Admin passphrase",
+    "loginRequired": "Enter the admin passphrase first",
+    "invalidPassword": "Wrong passphrase",
+    "submit": "Publish",
+    "submitting": "Uploading…",
+    "error": "Upload failed. Please try again.",
+    "close": "Close"
+  },
   "Comment": {
-    "title": "Letters",
+    "title": "Comments",
     "placeholder": "Share your thoughts...",
-    "submit": "Send Letter",
-    "submitting": "Sending...",
-    "error": "Failed to send. Please try again.",
-    "success": "Letter sent successfully!",
-    "empty": "No letters yet. We'd love to hear from you.",
-    "remaining": "{count} letter(s) remaining today",
-    "noRemaining": "No letters remaining today",
+    "submit": "Post comment",
+    "submitting": "Posting...",
+    "error": "Failed to post. Please try again.",
+    "success": "Comment posted!",
+    "empty": "No comments yet. We'd love to hear from you.",
+    "remaining": "{count} comment(s) remaining today",
+    "noRemaining": "No comments remaining today",
     "reply": "Reply",
     "replyPlaceholder": "Write your reply...",
-    "replySuccess": "Reply sent successfully!",
+    "replySuccess": "Reply posted!",
     "cancel": "Cancel"
   },
   "Chat": {
@@ -165,7 +233,7 @@
   },
   "PostsPage": {
     "title": "Articles",
-    "description": "Where technology, design, and life intersect.",
+    "description": "Code, design, and everyday life.",
     "categories": "Categories",
     "tags": "Tags",
     "noPosts": "No articles yet, stay tuned.",

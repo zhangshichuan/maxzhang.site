@@ -13,16 +13,31 @@ import { Route as EnRouteRouteImport } from './routes/_en/route'
 import { Route as ZhRouteRouteImport } from './routes/zh/route'
 import { Route as EnIndexRouteImport } from './routes/_en/index'
 import { Route as EnAboutRouteImport } from './routes/_en/about'
+import { Route as EnAdminRouteImport } from './routes/_en/admin'
 import { Route as EnChatRouteImport } from './routes/_en/chat'
+import { Route as EnLoginRouteImport } from './routes/_en/login'
+import { Route as EnPhotosRouteRouteImport } from './routes/_en/photos/route'
 import { Route as EnPostsRouteRouteImport } from './routes/_en/posts/route'
 import { Route as EnSearchRouteImport } from './routes/_en/search'
 import { Route as ZhIndexRouteImport } from './routes/zh/index'
 import { Route as ZhAboutRouteImport } from './routes/zh/about'
+import { Route as ZhAdminRouteImport } from './routes/zh/admin'
 import { Route as ZhChatRouteImport } from './routes/zh/chat'
+import { Route as ZhLoginRouteImport } from './routes/zh/login'
+import { Route as ZhPhotosRouteRouteImport } from './routes/zh/photos/route'
 import { Route as ZhPostsRouteRouteImport } from './routes/zh/posts/route'
 import { Route as ZhSearchRouteImport } from './routes/zh/search'
+import { Route as EnPhotosIndexRouteImport } from './routes/_en/photos/index'
+import { Route as EnPhotosSlugRouteImport } from './routes/_en/photos/$slug'
 import { Route as EnPostsIndexRouteImport } from './routes/_en/posts/index'
 import { Route as EnPostsSlugRouteImport } from './routes/_en/posts/$slug'
+import { Route as ApiPhotosDeleteRouteImport } from './routes/api/photos/delete'
+import { Route as ApiPhotosLoginRouteImport } from './routes/api/photos/login'
+import { Route as ApiPhotosLogoutRouteImport } from './routes/api/photos/logout'
+import { Route as ApiPhotosStatusRouteImport } from './routes/api/photos/status'
+import { Route as ApiPhotosUploadRouteImport } from './routes/api/photos/upload'
+import { Route as ZhPhotosIndexRouteImport } from './routes/zh/photos/index'
+import { Route as ZhPhotosSlugRouteImport } from './routes/zh/photos/$slug'
 import { Route as ZhPostsIndexRouteImport } from './routes/zh/posts/index'
 import { Route as ZhPostsSlugRouteImport } from './routes/zh/posts/$slug'
 import { Route as ApiTtsLocaleSlugRouteImport } from './routes/api/tts/$locale/$slug'
@@ -46,9 +61,24 @@ const EnAboutRoute = EnAboutRouteImport.update({
   path: '/about',
   getParentRoute: () => EnRouteRoute,
 } as any)
+const EnAdminRoute = EnAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => EnRouteRoute,
+} as any)
 const EnChatRoute = EnChatRouteImport.update({
   id: '/chat',
   path: '/chat',
+  getParentRoute: () => EnRouteRoute,
+} as any)
+const EnLoginRoute = EnLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => EnRouteRoute,
+} as any)
+const EnPhotosRouteRoute = EnPhotosRouteRouteImport.update({
+  id: '/photos',
+  path: '/photos',
   getParentRoute: () => EnRouteRoute,
 } as any)
 const EnPostsRouteRoute = EnPostsRouteRouteImport.update({
@@ -71,9 +101,24 @@ const ZhAboutRoute = ZhAboutRouteImport.update({
   path: '/about',
   getParentRoute: () => ZhRouteRoute,
 } as any)
+const ZhAdminRoute = ZhAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => ZhRouteRoute,
+} as any)
 const ZhChatRoute = ZhChatRouteImport.update({
   id: '/chat',
   path: '/chat',
+  getParentRoute: () => ZhRouteRoute,
+} as any)
+const ZhLoginRoute = ZhLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => ZhRouteRoute,
+} as any)
+const ZhPhotosRouteRoute = ZhPhotosRouteRouteImport.update({
+  id: '/photos',
+  path: '/photos',
   getParentRoute: () => ZhRouteRoute,
 } as any)
 const ZhPostsRouteRoute = ZhPostsRouteRouteImport.update({
@@ -86,6 +131,16 @@ const ZhSearchRoute = ZhSearchRouteImport.update({
   path: '/search',
   getParentRoute: () => ZhRouteRoute,
 } as any)
+const EnPhotosIndexRoute = EnPhotosIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => EnPhotosRouteRoute,
+} as any)
+const EnPhotosSlugRoute = EnPhotosSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => EnPhotosRouteRoute,
+} as any)
 const EnPostsIndexRoute = EnPostsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -95,6 +150,41 @@ const EnPostsSlugRoute = EnPostsSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
   getParentRoute: () => EnPostsRouteRoute,
+} as any)
+const ApiPhotosDeleteRoute = ApiPhotosDeleteRouteImport.update({
+  id: '/api/photos/delete',
+  path: '/api/photos/delete',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPhotosLoginRoute = ApiPhotosLoginRouteImport.update({
+  id: '/api/photos/login',
+  path: '/api/photos/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPhotosLogoutRoute = ApiPhotosLogoutRouteImport.update({
+  id: '/api/photos/logout',
+  path: '/api/photos/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPhotosStatusRoute = ApiPhotosStatusRouteImport.update({
+  id: '/api/photos/status',
+  path: '/api/photos/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPhotosUploadRoute = ApiPhotosUploadRouteImport.update({
+  id: '/api/photos/upload',
+  path: '/api/photos/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ZhPhotosIndexRoute = ZhPhotosIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ZhPhotosRouteRoute,
+} as any)
+const ZhPhotosSlugRoute = ZhPhotosSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ZhPhotosRouteRoute,
 } as any)
 const ZhPostsIndexRoute = ZhPostsIndexRouteImport.update({
   id: '/',
@@ -115,33 +205,61 @@ const ApiTtsLocaleSlugRoute = ApiTtsLocaleSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof EnIndexRoute
   '/zh': typeof ZhRouteRouteWithChildren
+  '/photos': typeof EnPhotosRouteRouteWithChildren
   '/posts': typeof EnPostsRouteRouteWithChildren
+  '/zh/photos': typeof ZhPhotosRouteRouteWithChildren
   '/zh/posts': typeof ZhPostsRouteRouteWithChildren
   '/about': typeof EnAboutRoute
+  '/admin': typeof EnAdminRoute
   '/chat': typeof EnChatRoute
+  '/login': typeof EnLoginRoute
   '/search': typeof EnSearchRoute
   '/zh/about': typeof ZhAboutRoute
+  '/zh/admin': typeof ZhAdminRoute
   '/zh/chat': typeof ZhChatRoute
+  '/zh/login': typeof ZhLoginRoute
   '/zh/search': typeof ZhSearchRoute
   '/zh/': typeof ZhIndexRoute
+  '/photos/$slug': typeof EnPhotosSlugRoute
   '/posts/$slug': typeof EnPostsSlugRoute
+  '/api/photos/delete': typeof ApiPhotosDeleteRoute
+  '/api/photos/login': typeof ApiPhotosLoginRoute
+  '/api/photos/logout': typeof ApiPhotosLogoutRoute
+  '/api/photos/status': typeof ApiPhotosStatusRoute
+  '/api/photos/upload': typeof ApiPhotosUploadRoute
+  '/zh/photos/$slug': typeof ZhPhotosSlugRoute
   '/zh/posts/$slug': typeof ZhPostsSlugRoute
+  '/photos/': typeof EnPhotosIndexRoute
   '/posts/': typeof EnPostsIndexRoute
+  '/zh/photos/': typeof ZhPhotosIndexRoute
   '/zh/posts/': typeof ZhPostsIndexRoute
   '/api/tts/$locale/$slug': typeof ApiTtsLocaleSlugRoute
 }
 export interface FileRoutesByTo {
   '/about': typeof EnAboutRoute
+  '/admin': typeof EnAdminRoute
   '/chat': typeof EnChatRoute
+  '/login': typeof EnLoginRoute
   '/search': typeof EnSearchRoute
   '/zh/about': typeof ZhAboutRoute
+  '/zh/admin': typeof ZhAdminRoute
   '/zh/chat': typeof ZhChatRoute
+  '/zh/login': typeof ZhLoginRoute
   '/zh/search': typeof ZhSearchRoute
   '/': typeof EnIndexRoute
   '/zh': typeof ZhIndexRoute
+  '/photos/$slug': typeof EnPhotosSlugRoute
   '/posts/$slug': typeof EnPostsSlugRoute
+  '/api/photos/delete': typeof ApiPhotosDeleteRoute
+  '/api/photos/login': typeof ApiPhotosLoginRoute
+  '/api/photos/logout': typeof ApiPhotosLogoutRoute
+  '/api/photos/status': typeof ApiPhotosStatusRoute
+  '/api/photos/upload': typeof ApiPhotosUploadRoute
+  '/zh/photos/$slug': typeof ZhPhotosSlugRoute
   '/zh/posts/$slug': typeof ZhPostsSlugRoute
+  '/photos': typeof EnPhotosIndexRoute
   '/posts': typeof EnPostsIndexRoute
+  '/zh/photos': typeof ZhPhotosIndexRoute
   '/zh/posts': typeof ZhPostsIndexRoute
   '/api/tts/$locale/$slug': typeof ApiTtsLocaleSlugRoute
 }
@@ -149,19 +267,34 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_en': typeof EnRouteRouteWithChildren
   '/zh': typeof ZhRouteRouteWithChildren
+  '/_en/photos': typeof EnPhotosRouteRouteWithChildren
   '/_en/posts': typeof EnPostsRouteRouteWithChildren
+  '/zh/photos': typeof ZhPhotosRouteRouteWithChildren
   '/zh/posts': typeof ZhPostsRouteRouteWithChildren
   '/_en/about': typeof EnAboutRoute
+  '/_en/admin': typeof EnAdminRoute
   '/_en/chat': typeof EnChatRoute
+  '/_en/login': typeof EnLoginRoute
   '/_en/search': typeof EnSearchRoute
   '/zh/about': typeof ZhAboutRoute
+  '/zh/admin': typeof ZhAdminRoute
   '/zh/chat': typeof ZhChatRoute
+  '/zh/login': typeof ZhLoginRoute
   '/zh/search': typeof ZhSearchRoute
   '/_en/': typeof EnIndexRoute
   '/zh/': typeof ZhIndexRoute
+  '/_en/photos/$slug': typeof EnPhotosSlugRoute
   '/_en/posts/$slug': typeof EnPostsSlugRoute
+  '/api/photos/delete': typeof ApiPhotosDeleteRoute
+  '/api/photos/login': typeof ApiPhotosLoginRoute
+  '/api/photos/logout': typeof ApiPhotosLogoutRoute
+  '/api/photos/status': typeof ApiPhotosStatusRoute
+  '/api/photos/upload': typeof ApiPhotosUploadRoute
+  '/zh/photos/$slug': typeof ZhPhotosSlugRoute
   '/zh/posts/$slug': typeof ZhPostsSlugRoute
+  '/_en/photos/': typeof EnPhotosIndexRoute
   '/_en/posts/': typeof EnPostsIndexRoute
+  '/zh/photos/': typeof ZhPhotosIndexRoute
   '/zh/posts/': typeof ZhPostsIndexRoute
   '/api/tts/$locale/$slug': typeof ApiTtsLocaleSlugRoute
 }
@@ -170,52 +303,95 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/zh'
+    | '/photos'
     | '/posts'
+    | '/zh/photos'
     | '/zh/posts'
     | '/about'
+    | '/admin'
     | '/chat'
+    | '/login'
     | '/search'
     | '/zh/about'
+    | '/zh/admin'
     | '/zh/chat'
+    | '/zh/login'
     | '/zh/search'
     | '/zh/'
+    | '/photos/$slug'
     | '/posts/$slug'
+    | '/api/photos/delete'
+    | '/api/photos/login'
+    | '/api/photos/logout'
+    | '/api/photos/status'
+    | '/api/photos/upload'
+    | '/zh/photos/$slug'
     | '/zh/posts/$slug'
+    | '/photos/'
     | '/posts/'
+    | '/zh/photos/'
     | '/zh/posts/'
     | '/api/tts/$locale/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/about'
+    | '/admin'
     | '/chat'
+    | '/login'
     | '/search'
     | '/zh/about'
+    | '/zh/admin'
     | '/zh/chat'
+    | '/zh/login'
     | '/zh/search'
     | '/'
     | '/zh'
+    | '/photos/$slug'
     | '/posts/$slug'
+    | '/api/photos/delete'
+    | '/api/photos/login'
+    | '/api/photos/logout'
+    | '/api/photos/status'
+    | '/api/photos/upload'
+    | '/zh/photos/$slug'
     | '/zh/posts/$slug'
+    | '/photos'
     | '/posts'
+    | '/zh/photos'
     | '/zh/posts'
     | '/api/tts/$locale/$slug'
   id:
     | '__root__'
     | '/_en'
     | '/zh'
+    | '/_en/photos'
     | '/_en/posts'
+    | '/zh/photos'
     | '/zh/posts'
     | '/_en/about'
+    | '/_en/admin'
     | '/_en/chat'
+    | '/_en/login'
     | '/_en/search'
     | '/zh/about'
+    | '/zh/admin'
     | '/zh/chat'
+    | '/zh/login'
     | '/zh/search'
     | '/_en/'
     | '/zh/'
+    | '/_en/photos/$slug'
     | '/_en/posts/$slug'
+    | '/api/photos/delete'
+    | '/api/photos/login'
+    | '/api/photos/logout'
+    | '/api/photos/status'
+    | '/api/photos/upload'
+    | '/zh/photos/$slug'
     | '/zh/posts/$slug'
+    | '/_en/photos/'
     | '/_en/posts/'
+    | '/zh/photos/'
     | '/zh/posts/'
     | '/api/tts/$locale/$slug'
   fileRoutesById: FileRoutesById
@@ -223,6 +399,11 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   EnRouteRoute: typeof EnRouteRouteWithChildren
   ZhRouteRoute: typeof ZhRouteRouteWithChildren
+  ApiPhotosDeleteRoute: typeof ApiPhotosDeleteRoute
+  ApiPhotosLoginRoute: typeof ApiPhotosLoginRoute
+  ApiPhotosLogoutRoute: typeof ApiPhotosLogoutRoute
+  ApiPhotosStatusRoute: typeof ApiPhotosStatusRoute
+  ApiPhotosUploadRoute: typeof ApiPhotosUploadRoute
   ApiTtsLocaleSlugRoute: typeof ApiTtsLocaleSlugRoute
 }
 
@@ -256,11 +437,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EnAboutRouteImport
       parentRoute: typeof EnRouteRoute
     }
+    '/_en/admin': {
+      id: '/_en/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof EnAdminRouteImport
+      parentRoute: typeof EnRouteRoute
+    }
     '/_en/chat': {
       id: '/_en/chat'
       path: '/chat'
       fullPath: '/chat'
       preLoaderRoute: typeof EnChatRouteImport
+      parentRoute: typeof EnRouteRoute
+    }
+    '/_en/login': {
+      id: '/_en/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof EnLoginRouteImport
+      parentRoute: typeof EnRouteRoute
+    }
+    '/_en/photos': {
+      id: '/_en/photos'
+      path: '/photos'
+      fullPath: '/photos'
+      preLoaderRoute: typeof EnPhotosRouteRouteImport
       parentRoute: typeof EnRouteRoute
     }
     '/_en/posts': {
@@ -291,11 +493,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ZhAboutRouteImport
       parentRoute: typeof ZhRouteRoute
     }
+    '/zh/admin': {
+      id: '/zh/admin'
+      path: '/admin'
+      fullPath: '/zh/admin'
+      preLoaderRoute: typeof ZhAdminRouteImport
+      parentRoute: typeof ZhRouteRoute
+    }
     '/zh/chat': {
       id: '/zh/chat'
       path: '/chat'
       fullPath: '/zh/chat'
       preLoaderRoute: typeof ZhChatRouteImport
+      parentRoute: typeof ZhRouteRoute
+    }
+    '/zh/login': {
+      id: '/zh/login'
+      path: '/login'
+      fullPath: '/zh/login'
+      preLoaderRoute: typeof ZhLoginRouteImport
+      parentRoute: typeof ZhRouteRoute
+    }
+    '/zh/photos': {
+      id: '/zh/photos'
+      path: '/photos'
+      fullPath: '/zh/photos'
+      preLoaderRoute: typeof ZhPhotosRouteRouteImport
       parentRoute: typeof ZhRouteRoute
     }
     '/zh/posts': {
@@ -312,6 +535,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ZhSearchRouteImport
       parentRoute: typeof ZhRouteRoute
     }
+    '/_en/photos/': {
+      id: '/_en/photos/'
+      path: '/'
+      fullPath: '/photos/'
+      preLoaderRoute: typeof EnPhotosIndexRouteImport
+      parentRoute: typeof EnPhotosRouteRoute
+    }
+    '/_en/photos/$slug': {
+      id: '/_en/photos/$slug'
+      path: '/$slug'
+      fullPath: '/photos/$slug'
+      preLoaderRoute: typeof EnPhotosSlugRouteImport
+      parentRoute: typeof EnPhotosRouteRoute
+    }
     '/_en/posts/': {
       id: '/_en/posts/'
       path: '/'
@@ -325,6 +562,55 @@ declare module '@tanstack/react-router' {
       fullPath: '/posts/$slug'
       preLoaderRoute: typeof EnPostsSlugRouteImport
       parentRoute: typeof EnPostsRouteRoute
+    }
+    '/api/photos/delete': {
+      id: '/api/photos/delete'
+      path: '/api/photos/delete'
+      fullPath: '/api/photos/delete'
+      preLoaderRoute: typeof ApiPhotosDeleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/photos/login': {
+      id: '/api/photos/login'
+      path: '/api/photos/login'
+      fullPath: '/api/photos/login'
+      preLoaderRoute: typeof ApiPhotosLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/photos/logout': {
+      id: '/api/photos/logout'
+      path: '/api/photos/logout'
+      fullPath: '/api/photos/logout'
+      preLoaderRoute: typeof ApiPhotosLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/photos/status': {
+      id: '/api/photos/status'
+      path: '/api/photos/status'
+      fullPath: '/api/photos/status'
+      preLoaderRoute: typeof ApiPhotosStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/photos/upload': {
+      id: '/api/photos/upload'
+      path: '/api/photos/upload'
+      fullPath: '/api/photos/upload'
+      preLoaderRoute: typeof ApiPhotosUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/zh/photos/': {
+      id: '/zh/photos/'
+      path: '/'
+      fullPath: '/zh/photos/'
+      preLoaderRoute: typeof ZhPhotosIndexRouteImport
+      parentRoute: typeof ZhPhotosRouteRoute
+    }
+    '/zh/photos/$slug': {
+      id: '/zh/photos/$slug'
+      path: '/$slug'
+      fullPath: '/zh/photos/$slug'
+      preLoaderRoute: typeof ZhPhotosSlugRouteImport
+      parentRoute: typeof ZhPhotosRouteRoute
     }
     '/zh/posts/': {
       id: '/zh/posts/'
@@ -350,6 +636,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface EnPhotosRouteRouteChildren {
+  EnPhotosSlugRoute: typeof EnPhotosSlugRoute
+  EnPhotosIndexRoute: typeof EnPhotosIndexRoute
+}
+
+const EnPhotosRouteRouteChildren: EnPhotosRouteRouteChildren = {
+  EnPhotosSlugRoute: EnPhotosSlugRoute,
+  EnPhotosIndexRoute: EnPhotosIndexRoute,
+}
+
+const EnPhotosRouteRouteWithChildren = EnPhotosRouteRoute._addFileChildren(
+  EnPhotosRouteRouteChildren,
+)
+
 interface EnPostsRouteRouteChildren {
   EnPostsSlugRoute: typeof EnPostsSlugRoute
   EnPostsIndexRoute: typeof EnPostsIndexRoute
@@ -365,23 +665,43 @@ const EnPostsRouteRouteWithChildren = EnPostsRouteRoute._addFileChildren(
 )
 
 interface EnRouteRouteChildren {
+  EnPhotosRouteRoute: typeof EnPhotosRouteRouteWithChildren
   EnPostsRouteRoute: typeof EnPostsRouteRouteWithChildren
   EnAboutRoute: typeof EnAboutRoute
+  EnAdminRoute: typeof EnAdminRoute
   EnChatRoute: typeof EnChatRoute
+  EnLoginRoute: typeof EnLoginRoute
   EnSearchRoute: typeof EnSearchRoute
   EnIndexRoute: typeof EnIndexRoute
 }
 
 const EnRouteRouteChildren: EnRouteRouteChildren = {
+  EnPhotosRouteRoute: EnPhotosRouteRouteWithChildren,
   EnPostsRouteRoute: EnPostsRouteRouteWithChildren,
   EnAboutRoute: EnAboutRoute,
+  EnAdminRoute: EnAdminRoute,
   EnChatRoute: EnChatRoute,
+  EnLoginRoute: EnLoginRoute,
   EnSearchRoute: EnSearchRoute,
   EnIndexRoute: EnIndexRoute,
 }
 
 const EnRouteRouteWithChildren =
   EnRouteRoute._addFileChildren(EnRouteRouteChildren)
+
+interface ZhPhotosRouteRouteChildren {
+  ZhPhotosSlugRoute: typeof ZhPhotosSlugRoute
+  ZhPhotosIndexRoute: typeof ZhPhotosIndexRoute
+}
+
+const ZhPhotosRouteRouteChildren: ZhPhotosRouteRouteChildren = {
+  ZhPhotosSlugRoute: ZhPhotosSlugRoute,
+  ZhPhotosIndexRoute: ZhPhotosIndexRoute,
+}
+
+const ZhPhotosRouteRouteWithChildren = ZhPhotosRouteRoute._addFileChildren(
+  ZhPhotosRouteRouteChildren,
+)
 
 interface ZhPostsRouteRouteChildren {
   ZhPostsSlugRoute: typeof ZhPostsSlugRoute
@@ -398,17 +718,23 @@ const ZhPostsRouteRouteWithChildren = ZhPostsRouteRoute._addFileChildren(
 )
 
 interface ZhRouteRouteChildren {
+  ZhPhotosRouteRoute: typeof ZhPhotosRouteRouteWithChildren
   ZhPostsRouteRoute: typeof ZhPostsRouteRouteWithChildren
   ZhAboutRoute: typeof ZhAboutRoute
+  ZhAdminRoute: typeof ZhAdminRoute
   ZhChatRoute: typeof ZhChatRoute
+  ZhLoginRoute: typeof ZhLoginRoute
   ZhSearchRoute: typeof ZhSearchRoute
   ZhIndexRoute: typeof ZhIndexRoute
 }
 
 const ZhRouteRouteChildren: ZhRouteRouteChildren = {
+  ZhPhotosRouteRoute: ZhPhotosRouteRouteWithChildren,
   ZhPostsRouteRoute: ZhPostsRouteRouteWithChildren,
   ZhAboutRoute: ZhAboutRoute,
+  ZhAdminRoute: ZhAdminRoute,
   ZhChatRoute: ZhChatRoute,
+  ZhLoginRoute: ZhLoginRoute,
   ZhSearchRoute: ZhSearchRoute,
   ZhIndexRoute: ZhIndexRoute,
 }
@@ -419,6 +745,11 @@ const ZhRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   EnRouteRoute: EnRouteRouteWithChildren,
   ZhRouteRoute: ZhRouteRouteWithChildren,
+  ApiPhotosDeleteRoute: ApiPhotosDeleteRoute,
+  ApiPhotosLoginRoute: ApiPhotosLoginRoute,
+  ApiPhotosLogoutRoute: ApiPhotosLogoutRoute,
+  ApiPhotosStatusRoute: ApiPhotosStatusRoute,
+  ApiPhotosUploadRoute: ApiPhotosUploadRoute,
   ApiTtsLocaleSlugRoute: ApiTtsLocaleSlugRoute,
 }
 export const routeTree = rootRouteImport

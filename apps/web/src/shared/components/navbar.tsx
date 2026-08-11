@@ -1,11 +1,22 @@
 import { useRouter, useRouterState } from '@tanstack/react-router'
-import { BookOpen, Home, Languages, Search, SlidersHorizontal, Sparkles, User } from 'lucide-react'
+import {
+  BookOpen,
+  Camera,
+  Home,
+  Languages,
+  MoreHorizontal,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+  User,
+} from 'lucide-react'
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { Link, useLocale, useTranslations } from '@/src/i18n/client'
 import { saveLocalePreference } from '@/i18n/locale-preference'
 import { localizePath, stripLocale } from '@/i18n/routing'
 import { cn } from '@/src/shared/utils'
 import { AppearancePanel, PANEL_ID } from './appearance-panel'
+import { MoreSheet } from './more-sheet'
 
 export function Navbar() {
   const t = useTranslations('Common.nav')
@@ -13,6 +24,7 @@ export function Navbar() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const router = useRouter()
   const [appearanceOpen, setAppearanceOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
   const appearanceTriggerRef = useRef<HTMLButtonElement | null>(null)
   const headerRef = useRef<HTMLElement | null>(null)
   const desktopNavRef = useRef<HTMLElement | null>(null)
@@ -103,9 +115,12 @@ export function Navbar() {
   const links = [
     { path: '/', label: t('home'), icon: Home },
     { path: '/posts', label: t('posts'), icon: BookOpen },
+    { path: '/photos', label: t('photos'), icon: Camera },
     { path: '/chat', label: t('chat'), icon: Sparkles },
     { path: '/about', label: t('about'), icon: User },
   ]
+
+  const primaryLinks = links.filter((link) => link.path !== '/about')
 
   return (
     <>
@@ -160,7 +175,7 @@ export function Navbar() {
             aria-hidden="true"
           />
         )}
-        {links.map((link) => {
+        {primaryLinks.map((link) => {
           const Icon = link.icon
           const active = isActive(link.path)
           return (
@@ -172,34 +187,26 @@ export function Navbar() {
             </Link>
           )
         })}
-        <Link href="/search" className={cn('tabbar-item', isActive('/search') && 'active')}>
-          <span className="tabbar-icon">
-            <Search className="size-5" />
-          </span>
-          <span className="tabbar-label">{t('search')}</span>
-        </Link>
-        <button type="button" className="tabbar-item" onClick={toggleLanguage} aria-label={t('switchLanguage')}>
-          <span className="tabbar-icon">
-            <Languages className="size-5" />
-          </span>
-          <span className="tabbar-label">{t('language')}</span>
-        </button>
         <button
           type="button"
-          className={cn('tabbar-item tabbar-action', appearanceOpen && 'active')}
-          onClick={toggleAppearance}
-          aria-label={t('appearance')}
-          aria-haspopup="dialog"
-          aria-controls={PANEL_ID}
-          aria-expanded={appearanceOpen}
+          className={cn('tabbar-item', moreOpen && 'active')}
+          onClick={() => setMoreOpen((current) => !current)}
+          aria-label={t('more')}
+          aria-expanded={moreOpen}
         >
           <span className="tabbar-icon">
-            <SlidersHorizontal className="size-5" />
+            <MoreHorizontal className="size-5" />
           </span>
-          <span className="tabbar-label">{t('appearance')}</span>
+          <span className="tabbar-label">{t('more')}</span>
         </button>
       </nav>
 
+      <MoreSheet
+        open={moreOpen}
+        onClose={() => setMoreOpen(false)}
+        onLanguage={toggleLanguage}
+        onAppearance={() => setAppearanceOpen(true)}
+      />
       <AppearancePanel open={appearanceOpen} onClose={() => setAppearanceOpen(false)} />
     </>
   )
