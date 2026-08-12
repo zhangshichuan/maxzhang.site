@@ -69,10 +69,12 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ${{secrets.DEPLOY_PATH}}
-            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
-            echo "DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}" >> .env
-            echo "STORAGE_API_KEY=${{ secrets.STORAGE_API_KEY }}" >> .env
-            echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}" >> .env
+            cat > .env <<'EOF'
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}
+            STORAGE_API_KEY=${{ secrets.STORAGE_API_KEY }}
+            ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+            EOF
 
             # 清理旧的构建文件
             rm -rf apps docker-compose.yml .dockerignore package.json pnpm-lock.yaml pnpm-workspace.yaml
