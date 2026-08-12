@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { ImagePlus, Loader2, Lock, X } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from '@/src/i18n/client'
 
 interface UploadDialogProps {
@@ -9,9 +9,15 @@ interface UploadDialogProps {
   onUploaded: (slug: string) => void
 }
 
+interface PickedFile {
+  file: File
+  preview: string
+}
+
 export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
   const t = useTranslations('UploadDialog')
-  const [files, setFiles] = useState<File[]>([])
+  const [picked, setPicked] = useState<PickedFile[]>([])
+  const pickedRef = useRef<PickedFile[]>([])
   const [captionZh, setCaptionZh] = useState('')
   const [captionEn, setCaptionEn] = useState('')
   const [location, setLocation] = useState('')
@@ -22,8 +28,24 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  const releasePreviews = (items: PickedFile[]) => {
+    for (const item of items) {
+      URL.revokeObjectURL(item.preview)
+    }
+  }
+
+  const replacePicked = (next: PickedFile[]) => {
+    pickedRef.current = next
+    setPicked(next)
+  }
+
+  useEffect(() => {
+    return () => releasePreviews(pickedRef.current)
+  }, [])
+
   const reset = () => {
-    setFiles([])
+    releasePreviews(pickedRef.current)
+    replacePicked([])
     setCaptionZh('')
     setCaptionEn('')
     setLocation('')
@@ -40,7 +62,7 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
   }
 
   const submit = async () => {
-    if (submitting || files.length === 0) return
+    if (submitting || picked.length === 0) return
     setSubmitting(true)
     setError(null)
 
@@ -59,7 +81,7 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
       }
 
       const form = new FormData()
-      for (const file of files) {
+      for (const { file } of picked) {
         form.append('files', file)
       }
       form.append('captionZh', captionZh)
@@ -89,6 +111,13 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const removeFile = (index: number) => {
+    const current = pickedRef.current
+    if (!current[index]) return
+    URL.revokeObjectURL(current[index].preview)
+    replacePicked(current.filter((_, itemIndex) => itemIndex !== index))
   }
 
   return (
@@ -126,8 +155,8 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
               onClick={() => fileRef.current?.click()}
               disabled={submitting}
             >
-              <ImagePlus className="size-5" />
-              {files.length > 0 ? `${files.length} ${t('selected')}` : t('pickFiles')}
+              <ImagePlus className="size-7" strokeWidth={1.75} />
+              {picked.length > 0 ? `${picked.length} ${t('selected')}` : t('pickFiles')}
               <input
                 ref={fileRef}
                 type="file"
@@ -136,15 +165,36 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
                 className="hidden"
                 onChange={(event) => {
                   const picked = Array.from(event.target.files ?? [])
+                  event.target.value = ''
                   if (picked.length > 10) {
                     setError(t('tooMany'))
                     return
                   }
-                  setFiles(picked)
+                  releasePreviews(pickedRef.current)
+                  replacePicked(picked.map((file) => ({ file, preview: URL.createObjectURL(file) })))
                   setError(null)
                 }}
               />
             </button>
+
+            {picked.length > 0 && (
+              <div className="upload-previews">
+                {picked.map((item, index) => (
+                  <div key={item.preview} className="upload-preview">
+                    <img src={item.preview} alt="" />
+                    <button
+                      type="button"
+                      className="upload-preview-remove"
+                      onClick={() => removeFile(index)}
+                      disabled={submitting}
+                      aria-label={t('remove')}
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="upload-fields">
               <input
@@ -197,7 +247,7 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
               type="button"
               className="btn btn-primary mt-4 inline-flex w-full items-center justify-center gap-2"
               onClick={submit}
-              disabled={submitting || files.length === 0 || !captionZh.trim()}
+              disabled={submitting || picked.length === 0 || !captionZh.trim()}
             >
               {submitting ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />}
               {submitting ? t('submitting') : t('submit')}

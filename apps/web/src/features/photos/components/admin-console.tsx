@@ -1,4 +1,4 @@
-import { ArrowRight, Loader2, LogOut, Plus, Trash2 } from 'lucide-react'
+import { Loader2, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import type { PhotoWorkSummary } from '@/src/features/photos/model'
 import { listPhotoWorksFn } from '@/src/features/photos/server-functions'
@@ -38,14 +38,6 @@ export function AdminConsole() {
       .finally(() => setChecking(false))
   }, [locale, load])
 
-  const logout = async () => {
-    await fetch('/api/photos/logout', {
-      method: 'POST',
-      headers: { 'x-admin-request': '1' },
-    }).catch(() => {})
-    window.location.href = localizePath('/login', locale)
-  }
-
   const remove = async (slug: string) => {
     setDeleting(slug)
     await fetch('/api/photos/delete', {
@@ -68,25 +60,14 @@ export function AdminConsole() {
           <h1 className="page-title">{t('title')}</h1>
           <p className="page-subtitle">{t('description')}</p>
         </div>
-        <div className="admin-console-actions">
-          <button
-            type="button"
-            className="btn btn-primary inline-flex items-center gap-2"
-            onClick={() => setUploadOpen(true)}
-          >
-            <Plus className="size-4" />
-            {t('upload')}
-          </button>
-          <a className="btn btn-ghost inline-flex items-center gap-2" href={localizePath('/photos', locale)}>
-            <ArrowRight className="size-4" />
-            {t('viewPhotos')}
-          </a>
-          <button type="button" className="btn btn-ghost inline-flex items-center gap-2" onClick={logout}>
-            <LogOut className="size-4" />
-            {t('logout')}
-          </button>
-        </div>
       </div>
+
+      <button type="button" className="admin-upload-trigger" onClick={() => setUploadOpen(true)}>
+        <span className="admin-upload-trigger-icon">
+          <Plus className="size-4" strokeWidth={1.75} />
+        </span>
+        {t('upload')}
+      </button>
 
       {works.length === 0 ? (
         <div className="empty-state">{t('empty')}</div>

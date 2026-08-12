@@ -66,9 +66,7 @@
     "description": "Manage your photography works",
     "checking": "Checking login status…",
     "upload": "Upload",
-    "viewPhotos": "View Photography",
-    "logout": "Log out",
-    "empty": "No works yet. Upload your first set above.",
+    "empty": "No works yet. Upload your first set.",
     "delete": "Delete",
     "photosCount": "{count} photos"
   },
@@ -87,6 +85,7 @@
     "submit": "Publish",
     "submitting": "Uploading…",
     "error": "Upload failed. Please try again.",
+    "remove": "Remove",
     "close": "Close"
   },
   "Comment": {

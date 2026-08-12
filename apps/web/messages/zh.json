@@ -66,9 +66,7 @@
     "description": "摄影作品管理",
     "checking": "检查登录状态…",
     "upload": "上传作品",
-    "viewPhotos": "前往摄影页",
-    "logout": "退出登录",
-    "empty": "还没有作品，点上方按钮上传第一组吧",
+    "empty": "还没有作品，点上传按钮发布第一组吧",
     "delete": "删除",
     "photosCount": "{count} 张照片"
   },
@@ -87,6 +85,7 @@
     "submit": "发布",
     "submitting": "上传中…",
     "error": "上传失败，请重试",
+    "remove": "移除",
     "close": "关闭"
   },
   "Comment": {
