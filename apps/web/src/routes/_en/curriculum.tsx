@@ -9,7 +9,7 @@ export const Route = createFileRoute('/_en/curriculum')({
       {
         name: 'description',
         content:
-          'A 13-week AI product course restructured into 4 stages and 13 cards: prompting, evaluation, RAG, agents, research, markets, data and industry cases.',
+          'My AI product knowledge map: 4 stages, 13 modules — from model limits, prompting and evaluation to RAG, agents, research and industry rollout.',
       },
     ],
   }),

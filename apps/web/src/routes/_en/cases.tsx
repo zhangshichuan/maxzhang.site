@@ -9,7 +9,7 @@ export const Route = createFileRoute('/_en/cases')({
       {
         name: 'description',
         content:
-          'Six industry cases — AI support, meeting notes, homework solver, companion, medical consultation and travel planner — and the key judgments in each workflow.',
+          'Six AI product case studies — support, meeting notes, homework solver, companion, medical consultation and travel planner — with key judgments, workflows and evaluation.',
       },
     ],
   }),

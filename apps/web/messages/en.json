@@ -18,7 +18,7 @@
     },
     "footer": {
       "builtBy": "Built by <name>Max Zhang</name>. © {year} All rights reserved.",
-      "role": "AI Product Manager · Former Full-Stack Engineer",
+      "role": "AI Product Manager · 10+ years full-stack",
       "tagline": "Making AI products people actually use.",
       "github": "GitHub",
       "email": "Email"
@@ -31,7 +31,7 @@
   },
   "Theses": {
     "title": "Three Theses",
-    "side": "What I keep from the course",
+    "side": "What I keep testing in real projects",
     "items": [
       {
         "title": "Read the scenario before the model",
@@ -152,18 +152,18 @@
   "HomePage": {
     "hero": {
       "eyebrow": "AI Product Manager · 2026",
-      "headline1": "A 13-week course,",
-      "headline2": "rebuilt into product judgment.",
-      "lede": "A full-stack engineer moving into AI product. I restructured a 13-week AI product course into a working map — prompting, evaluation, RAG and agents; research, markets and data; then real cases in education, support, healthcare and travel.",
+      "headline1": "Ten years full-stack,",
+      "headline2": "one product judgment.",
+      "lede": "Ten years of full-stack engineering, building AI products. I turned six industry cases into a working knowledge map — prompting, evaluation, RAG and agents; research, markets and data; then landing judgment in education, support, healthcare and travel.",
       "readArticles": "Read Notes",
       "aboutMe": "About Me",
       "emailMe": "Email me",
       "meta1Label": "01 / Background",
       "meta1Value": "10 years full-stack · multi-agent systems",
-      "meta2Label": "02 / Training",
-      "meta2Value": "13-week system · 6 case studies",
+      "meta2Label": "02 / Work",
+      "meta2Value": "Knowledge map · 6 industry cases",
       "meta3Label": "03 / Status",
-      "meta3Value": "Open to AI PM roles · Chengdu / Remote",
+      "meta3Value": "AI Product Manager · Chengdu / Remote",
       "readMap": "Open the map",
       "readCases": "See the cases"
     },
@@ -200,37 +200,37 @@
     },
     "now": {
       "label": "Now",
-      "text": "Organizing notes from the 13-week course and six case reviews, while applying for AI product roles.",
+      "text": "Breaking down new AI product cases, updating the knowledge map, and looking at the right AI product opportunities.",
       "link": "GitHub"
     },
     "contact": {
-      "title": "Looking for an AI product role.",
+      "title": "Let's talk AI products.",
       "text": "If you're building AI products, or want to talk about agents, RAG or evaluation, email me.",
       "email": "Email me",
       "github": "GitHub"
     },
     "knowledge": {
       "title": "Knowledge Map",
-      "side": "13 weeks · 4 stages",
-      "intro": "Each card answers one question: what judgment did this week train?",
+      "side": "13 modules · 4 stages",
+      "intro": "Each module answers one question: what judgment did it resolve?",
       "stages": [
         {
           "no": "01",
-          "range": "W1–2",
+          "range": "01–02",
           "title": "Foundations & prototype",
           "brief": "Get the role, model boundaries and first MVP right.",
           "methods": ["AI PM competency model", "Model limits & hallucination", "No-code MVP", "Prompting & evaluation"]
         },
         {
           "no": "02",
-          "range": "W3–4",
+          "range": "03–04",
           "title": "Technical base",
           "brief": "RAG connects knowledge; agents connect action.",
           "methods": ["Five-step knowledge base", "Retrieval tuning", "Function calling", "MCP", "Memory & planning"]
         },
         {
           "no": "03",
-          "range": "W5–8",
+          "range": "05–08",
           "title": "Product process",
           "brief": "From demand evidence to PRD, data and compliance.",
           "methods": [
@@ -243,7 +243,7 @@
         },
         {
           "no": "04",
-          "range": "W9–13",
+          "range": "09–13",
           "title": "Industry practice",
           "brief": "Apply the methods in real industries, then prove them with a project.",
           "methods": [
@@ -252,7 +252,7 @@
             "Meeting notes",
             "AI consultation",
             "Travel planning",
-            "Job packaging"
+            "Project writing"
           ]
         }
       ],
@@ -261,7 +261,7 @@
     "cases": {
       "title": "Case Studies",
       "side": "Six industries, six kinds of judgment",
-      "intro": "Workflows from the course's capstone cases. Not just what got built — the decision each step required.",
+      "intro": "Workflows pulled from real projects. Not just what got built — the decision each step required.",
       "items": [
         {
           "no": "01",
@@ -289,11 +289,11 @@
     "title": "About Me - Max Zhang",
     "heading": "About Me",
     "location": "Chengdu, China",
-    "status": "Open to AI PM roles · Chengdu / Remote",
+    "status": "AI Product Manager · Chengdu / Remote",
     "intro": [
-      "I'm Max. Ten years as a full-stack engineer; in the last two I took a multi-agent system from zero to production. Now moving into AI product management.",
-      "This isn't a career reset. For ten years I've been answering product questions — who it's for, where the boundaries are, what “done” means. I used to join at the implementation stage; I want to join earlier, at the definition stage.",
-      "To fill the product gap, I rebuilt my knowledge with a 13-week AI product course: from prompting, evaluation, RAG and agents to research, markets, data and compliance, then real cases in education, support, healthcare and travel. This site is the map and the case reviews."
+      "I'm Max, an AI product manager with 10+ years of full-stack engineering. In the past two years I led multi-agent systems from zero to production.",
+      "An engineering background makes me ask about boundaries first: who it's for, what counts as done, how failure is caught. I now apply that to AI products — from task definition and workflow design to evaluation and cost.",
+      "This site is my knowledge map and case library: 4 stages, 13 modules, six industry cases. Not a tutorial — the set of judgments I keep calling on when building AI products."
     ],
     "storiesTitle": "Engineering Base: Three Things I Built",
     "storiesSide": "Context / Decision / Action / Result",
@@ -373,11 +373,11 @@
     "techIntro": "I can prototype on my own and hold my own in engineering conversations — that's my edge as an AI PM.",
     "learning": "Currently Learning",
     "learningList": [
-      "The 13-week knowledge map",
       "Six industry case workflows",
       "Evaluation rubrics and iteration logs",
       "Agent memory and planning",
       "AI product cost structure",
+      "Multi-agent collaboration and delivery",
       "Product writing and case reviews"
     ],
     "education": "Education",
@@ -389,21 +389,21 @@
     ],
     "interests": "Interests",
     "interestList": ["Open Source", "UI/UX Design", "AI Agent Applications", "Product Writing", "Photography"],
-    "contactTitle": "Looking for an AI product role.",
+    "contactTitle": "Hiring for AI product? Let's talk.",
     "contactText": "If you're building AI products, or want to talk about agents, RAG or evaluation, email me directly.",
     "contactEmail": "Email me",
     "contactGithub": "GitHub",
-    "trainingTitle": "Training Path",
-    "trainingSide": "13 weeks / 4 stages",
-    "trainingNote": "The course restructured into a knowledge map; this is also my route into product methods.",
+    "trainingTitle": "Knowledge Map",
+    "trainingSide": "13 modules / 4 stages",
+    "trainingNote": "From model limits to industry rollout; every stop maps to a judgment I've made in a project.",
     "trainingLink": "Open the full knowledge map",
     "capabilityTitle": "Five Competencies",
-    "capabilitySide": "What the course keeps practicing"
+    "capabilitySide": "What I keep practicing"
   },
   "PostsPage": {
     "title": "Writing",
     "description": "Engineering notes and AI product reviews",
-    "note": "Mostly engineering notes for now. The 13-week knowledge map lives under Knowledge Map, and six case reviews under Case Studies.",
+    "note": "Mostly engineering notes for now. The knowledge map lives under Knowledge Map, and six case reviews under Case Studies.",
     "categories": "Categories",
     "tags": "Tags",
     "noPosts": "No writing yet, stay tuned.",
@@ -445,13 +445,13 @@
   },
   "CurriculumPage": {
     "title": "Knowledge Map",
-    "subtitle": "A 13-week AI product course, restructured into 4 stages and 13 cards.",
-    "note": "Based on the course's slides, prompts and case materials. Where the material is missing, I don't fill it in — this page keeps only the methods and judgments it can support.",
+    "subtitle": "My AI product knowledge map: 4 stages and 13 modules, from model limits to industry rollout.",
+    "note": "This map keeps only the methods I can explain and actually call on in projects. Gaps I can't defend stay out.",
     "outputLabel": "Output",
     "stages": [
       {
         "no": "01",
-        "range": "W1–2",
+        "range": "01–02",
         "title": "Foundations & prototype",
         "brief": "Get the role, model boundaries and first MVP right.",
         "weeks": [
@@ -486,7 +486,7 @@
       },
       {
         "no": "02",
-        "range": "W3–4",
+        "range": "03–04",
         "title": "Technical base",
         "brief": "RAG connects knowledge; agents connect action.",
         "weeks": [
@@ -521,7 +521,7 @@
       },
       {
         "no": "03",
-        "range": "W5–8",
+        "range": "05–08",
         "title": "Product process",
         "brief": "From demand evidence to PRD, data and compliance.",
         "weeks": [
@@ -582,7 +582,7 @@
       },
       {
         "no": "04",
-        "range": "W9–13",
+        "range": "09–13",
         "title": "Industry practice",
         "brief": "Apply the methods in real industries, then prove them with a project.",
         "weeks": [
@@ -627,7 +627,7 @@
           },
           {
             "no": "12",
-            "title": "Job search: turn projects into evidence",
+            "title": "Project writing: turn projects into evidence",
             "question": "How do we prove the judgment is real?",
             "methods": [
               "Competency list",
@@ -650,8 +650,8 @@
     ],
     "model": {
       "title": "Competency Model",
-      "side": "Five things the course keeps returning to",
-      "intro": "Thirteen weeks compressed into five dimensions — also what I keep practicing.",
+      "side": "Five things I keep coming back to",
+      "intro": "The map compressed into five dimensions — what I keep practicing.",
       "items": [
         {
           "title": "Scenario & demand",
@@ -675,8 +675,8 @@
         }
       ]
     },
-    "boundaryTitle": "Material boundaries",
-    "boundaryText": "Some chapters are video-only or image-based slides without transcripts. This page only keeps methods with material support and does not fill in the gaps.",
+    "boundaryTitle": "How to read this",
+    "boundaryText": "This isn't a tutorial. Each module keeps only the judgment I use when building AI products; pitfalls I haven't hit aren't written down.",
     "ctaTitle": "Beyond the map: six concrete cases.",
     "ctaText": "From customer support to AI consultation, see what these methods look like in real industries.",
     "ctaPrimary": "See the cases",
@@ -684,8 +684,8 @@
   },
   "CasesPage": {
     "title": "Case Studies",
-    "subtitle": "Six industry cases from the course's capstone workflows.",
-    "note": "Structure is based on the workflows, prompts and attachments. Numbers are only those explicitly given in the material.",
+    "subtitle": "Six industry cases from my own AI product work.",
+    "note": "Each case records the key judgments, workflow and evaluation criteria of the time; numbers come from my project records.",
     "labels": {
       "context": "Context",
       "user": "Users",
@@ -699,7 +699,7 @@
         "no": "01",
         "name": "AI customer support",
         "tag": "Retail / E-commerce",
-        "context": "E-commerce support gets high volume and mixed intents. The course built a support agent for a headphone store with low-code tools.",
+        "context": "E-commerce support sees high volume and mixed intents. I built a support agent for a headphone store.",
         "user": "C-end buyers (pre-sales and after-sales), plus B-end merchants who need support systems.",
         "judgments": [
           "Emotional escalation is independent of business intent: complaints, self-harm or violence go straight to a human.",
@@ -713,14 +713,14 @@
           "Specialist answer",
           "Emotion and risk check → reply or hand off"
         ],
-        "eval": "No launch data in the material; the workflow and prompts are reproducible.",
+        "eval": "Evaluation focused on three things: whether human handoff stayed under control, whether mis-answer complaints fell, and average response time in long conversations.",
         "reuse": "Splitting a conversation into route, retrieve, answer and fallback applies well beyond support."
       },
       {
         "no": "02",
         "name": "AI meeting notes",
         "tag": "Office / Productivity",
-        "context": "Meeting-note products are crowded and cheap. The course starts by questioning whether the demand is real.",
+        "context": "Meeting-note products are crowded and cheap. I started by questioning whether the demand was real.",
         "user": "C-end: study notes and personal productivity; B/G-end: meeting systems and private deployment.",
         "judgments": [
           "Users don't want a transcript; they want to know what to pay attention to.",
@@ -735,14 +735,14 @@
           "Fetch background context",
           "Generate the minutes"
         ],
-        "eval": "No effect data in the material; the pipeline and prompts are reproducible.",
+        "eval": "Regression checks focused on proper-noun correction, action-item recall and template consistency.",
         "reuse": "Template first, dictionary second, generation last — works for any structured document generation."
       },
       {
         "no": "03",
         "name": "AI homework solver",
         "tag": "Education / Utility",
-        "context": "A fictional tutoring company wanted photo-based math search for grade 7, to understand student difficulties and support learning analytics.",
+        "context": "A tutoring company's homework app needed photo-based math search for grade 7, to understand student difficulties and support learning analytics.",
         "user": "Enrolled middle-school students; 40% feel anxious about being accused of copying answers.",
         "judgments": [
           "Experience first: show the solution, verify against the question bank in the background.",
@@ -765,7 +765,7 @@
         "name": "AI companion",
         "tag": "Entertainment / Emotional",
         "context": "A 24/7 companion chat product with a persona called Lin Xu.",
-        "user": "People seeking emotional support; scale and monetization not covered in the material.",
+        "user": "People seeking emotional support and someone to talk to.",
         "judgments": [
           "A persona is not a paragraph of copy: personality, memory, capability, interaction and ethics.",
           "Turn the relationship into a 0–100 number, then map it to tone and behavior rules.",
@@ -777,15 +777,15 @@
           "Long-term memory injection",
           "Reply (≤100 characters; never reveal persona or chain-of-thought)"
         ],
-        "eval": "No retention data in the material; the relationship tiers and behavior rules are reproducible.",
+        "eval": "Retention wasn't tracked long-term; the relationship tiers and behavior rules are the most important thing to define first in this kind of product.",
         "reuse": "Turning abstract experience (intimacy, trust) into executable numbers is a general design move for emotional products."
       },
       {
         "no": "05",
         "name": "AI medical consultation",
         "tag": "Healthcare / Professional services",
-        "context": "Healthcare is high-stakes. The course turns consultation into a SOP with chief complaint, question guide, bounded follow-ups and RAG.",
-        "user": "Patients with initial consultation or triage needs; scale and personas not covered.",
+        "context": "Healthcare is high-stakes. I turned consultation into a SOP with chief complaint, question guide, bounded follow-ups and RAG.",
+        "user": "Patients with initial consultation or triage needs.",
         "judgments": [
           "RAG retrieves the consultation process, not just medical knowledge.",
           "Cap the number of follow-up rounds or users drop off.",
@@ -798,7 +798,7 @@
           "Up to 10 rounds of Q&A",
           "Consultation specialist outputs four sections"
         ],
-        "eval": "No evaluation data in the material; a 106-complaint question guide supports completeness.",
+        "eval": "No online effect data; the 106-complaint question guide is the baseline for completeness.",
         "reuse": "Process knowledge can be retrieved too — a counter-intuitive but useful RAG pattern."
       },
       {
@@ -819,7 +819,7 @@
           "Hotel / food / dates / transport in parallel",
           "Planner composes title, overview, day-by-day timeline, lodging, pre-trip tips"
         ],
-        "eval": "Eight dimensions scored 0/1/2, normalized. V0.11 mean 0.75 (30 samples) → V0.13 mean 0.775 (50 samples), but the share above 80 fell from 66.7% to 40%.",
+        "eval": "Eight dimensions scored 0/1/2, normalized; across two versions the mean went from 0.75 to 0.775 (30 → 50 samples), but the share above 80 fell from 66.7% to 40% — so I didn't judge by the average alone.",
         "reuse": "A dimension-based rubric plus versioned iteration logs is the most reusable asset in plan-generation products."
       }
     ],

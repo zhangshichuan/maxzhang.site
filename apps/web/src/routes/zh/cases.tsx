@@ -9,7 +9,7 @@ export const Route = createFileRoute('/zh/cases')({
       {
         name: 'description',
         content:
-          '六个行业案例：AI 智能客服、会议纪要、拍照搜题、AI 陪伴、AI 问诊、旅游规划师，记录每个工作流里的关键判断。',
+          '六个 AI 产品行业案例：智能客服、会议纪要、拍照搜题、AI 陪伴、AI 问诊、旅游规划师，记录关键判断、工作流与评测口径。',
       },
     ],
   }),

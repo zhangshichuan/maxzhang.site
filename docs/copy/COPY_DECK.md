@@ -1,4 +1,4 @@
-> 已被课程主题 v2 取代：最新静态文案体系见 docs/copy/COURSE_COPY_SYSTEM.md。本文件保留为上一版通用 AI 产品经理文案参考。
+> 已被第一人称版取代：最新静态文案体系见 docs/copy/SITE_COPY_SYSTEM.md。本文件保留为上一版通用 AI 产品经理文案参考。
 
 # 文案体系（重构版）
 
@@ -82,18 +82,18 @@
 
 ## 4. 关键文案（落点）
 
-| 模块 | 中文 | English |
-| --- | --- | --- |
-| Hero headline | 把模型能力，翻译成人们愿意用的产品。 | Making AI products people actually use. |
-| Hero lede | 十年全栈工程师，过去两年把多智能体系统从 0 带到生产…… | Ten years as a full-stack engineer; in the last two I took a multi-agent system from zero to production… |
-| 状态 | 正在寻找 AI 产品岗位 · 成都 / 远程 | Open to AI PM roles · Chengdu / Remote |
-| 三个主张 | 先定义任务，再谈模型 / 评估不是跑分 / 工程背景的价值是取舍 | Define the task before the model / Evaluation is not a benchmark / Engineering depth is about trade-offs |
-| 一个例子 | 把广告素材生产，拆成一条 Agent 工作流 | Turning ad asset production into an agent workflow |
-| 工作方式 | 定义问题 → 做原型 → 设计评估 → 推进交付 | Define → Prototype → Evaluate → Deliver |
-| 联系 CTA | 在找 AI 产品岗位。 | Looking for an AI product role. |
-| 树洞定位 | 一个 AI 倾听实验 | An AI listening experiment |
-| 摄影副标题 | 业余拍照，认真挑片。 | Amateur photography, carefully curated. |
-| 404 | 这条路径暂时没有产品需求。回到首页重新出发？ | This path doesn't have a product requirement yet. Head back home? |
+| 模块          | 中文                                                       | English                                                                                                  |
+| ------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Hero headline | 把模型能力，翻译成人们愿意用的产品。                       | Making AI products people actually use.                                                                  |
+| Hero lede     | 十年全栈工程师，过去两年把多智能体系统从 0 带到生产……      | Ten years as a full-stack engineer; in the last two I took a multi-agent system from zero to production… |
+| 状态          | 正在寻找 AI 产品岗位 · 成都 / 远程                         | Open to AI PM roles · Chengdu / Remote                                                                   |
+| 三个主张      | 先定义任务，再谈模型 / 评估不是跑分 / 工程背景的价值是取舍 | Define the task before the model / Evaluation is not a benchmark / Engineering depth is about trade-offs |
+| 一个例子      | 把广告素材生产，拆成一条 Agent 工作流                      | Turning ad asset production into an agent workflow                                                       |
+| 工作方式      | 定义问题 → 做原型 → 设计评估 → 推进交付                    | Define → Prototype → Evaluate → Deliver                                                                  |
+| 联系 CTA      | 在找 AI 产品岗位。                                         | Looking for an AI product role.                                                                          |
+| 树洞定位      | 一个 AI 倾听实验                                           | An AI listening experiment                                                                               |
+| 摄影副标题    | 业余拍照，认真挑片。                                       | Amateur photography, carefully curated.                                                                  |
+| 404           | 这条路径暂时没有产品需求。回到首页重新出发？               | This path doesn't have a product requirement yet. Head back home?                                        |
 
 ## 5. 信息架构与实现
 
@@ -113,6 +113,6 @@
 
 ## 7. 变更记录
 
-| 日期 | 变更 |
-| --- | --- |
+| 日期       | 变更                                                                                                                                             |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 2026-10-18 | 文案体系重构：确立「能把模型能力翻译成产品」定位，新增产品主张 / 一个例子 / 工作方式 / 联系 CTA，重构关于页为产品故事结构，重写全站 SEO 与微文案 |

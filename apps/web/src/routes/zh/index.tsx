@@ -7,11 +7,11 @@ export const Route = createFileRoute('/zh/')({
   loader: ({ context }) => getFeaturedPosts(context.locale),
   head: () => ({
     meta: [
-      { title: 'Max Zhang · AI 产品经理｜13 周知识地图与实战案例' },
+      { title: 'Max Zhang · AI 产品经理｜知识地图与实战案例' },
       {
         name: 'description',
         content:
-          'Max Zhang，十年全栈工程师转 AI 产品经理。用 13 周课程重构的知识地图、6 个行业案例复盘，以及我对 AI 产品落地的判断。',
+          'Max Zhang，10 年以上全栈经验的 AI 产品经理。一份 AI 产品知识地图、六个行业案例复盘，以及我对 AI 产品落地的判断。',
       },
     ],
   }),

@@ -24,7 +24,7 @@ interface ModelItem {
 /**
  * 知识地图页
  *
- * 把 13 周课程压缩成 4 个阶段、13 张周卡片，底部补一条能力模型和材料边界说明。
+ * 把 AI 产品方法压成 4 个阶段、13 个模块，底部补一条能力模型和使用说明。
  * 全部内容来自 messages 里的 CurriculumPage 命名空间，中文/英文共用同一套结构。
  */
 export function CurriculumPage() {

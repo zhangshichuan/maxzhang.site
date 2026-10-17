@@ -10,7 +10,7 @@ export const Route = createFileRoute('/_en/')({
       {
         name: 'description',
         content:
-          'Max Zhang — a full-stack engineer moving into AI product. A 13-week course rebuilt into a knowledge map, six industry case reviews, and my judgment on shipping AI products.',
+          'Max Zhang — AI Product Manager with 10+ years of full-stack engineering. A knowledge map, six industry case studies, and my judgment on building AI products.',
       },
     ],
   }),

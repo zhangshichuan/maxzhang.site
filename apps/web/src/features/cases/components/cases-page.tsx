@@ -16,7 +16,7 @@ interface CaseItem {
  * 实战案例页
  *
  * 每个案例固定六块：场景、用户、关键判断、工作流、评测、可复用。
- * 案例内容来自 messages 的 CasesPage 命名空间，结论与数字严格跟随课程材料。
+ * 案例内容来自 messages 的 CasesPage 命名空间，结论与数字按项目记录表述。
  */
 export function CasesPage() {
   const t = useTranslations('CasesPage')
