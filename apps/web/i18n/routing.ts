@@ -1,7 +1,7 @@
 /**
  * 国际化路由配置（自建薄层）
  *
- * 保留原 next-intl 的 URL 约定：zh 无前缀、en 带 /en 前缀。
+ * URL 约定：en 为默认语言、不带前缀；zh 带 `/zh` 前缀。
  * 纯 TS 常量 + 路径工具，不依赖任何框架。
  */
 export const locales = ['zh', 'en'] as const
@@ -20,7 +20,7 @@ export function isLocale(value: string): value is Locale {
 
 /**
  * 从路径推断当前语言。
- * `/en/...` → en，其余路径 → zh（默认语言无前缀）。
+ * `/zh/...` → zh，其余路径 → 默认语言 en。
  */
 export function getLocaleFromPathname(pathname: string): Locale {
   const first = pathname.split('/')[1] ?? ''

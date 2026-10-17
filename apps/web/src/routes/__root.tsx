@@ -3,7 +3,6 @@ import { HeadContent, Scripts, createRootRoute, useRouterState } from '@tanstack
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MotionConfig } from 'framer-motion'
 import * as React from 'react'
-import { LOCALE_INLINE_SCRIPT } from '@/i18n/locale-preference'
 import { getLocaleFromPathname } from '@/i18n/routing'
 import '@/src/styles/design-system.css'
 import '@/src/styles/content.css'
@@ -15,6 +14,7 @@ import '@/src/styles/course.css'
  *
  * 只负责 HTML 骨架（shellComponent）+ 全局 Query 容器。
  * Navbar / Footer / 语言上下文由每个 locale 的布局路由提供。
+ * 语言由 URL 决定：en 为默认语言（无前缀），zh 走 `/zh`，不做浏览器语言自动跳转。
  * 站点为纯深色设计（AI Native），不再提供浅色/外观切换。
  */
 export const Route = createRootRoute({
@@ -45,8 +45,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang={locale} className="dark" suppressHydrationWarning>
       <head>
-        {/* 水合前按浏览器语言/本地偏好跳转默认语言，避免闪烁 */}
-        <script dangerouslySetInnerHTML={{ __html: LOCALE_INLINE_SCRIPT }} />
         <HeadContent />
       </head>
       <body>

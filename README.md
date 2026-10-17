@@ -10,7 +10,7 @@ Max 的个人技术网站：中英双语技术文章、评论与阅读统计、�
 - **样式**：Tailwind CSS 4
 - **数据**：Prisma + SQLite（Better-SQLite3 驱动适配器）
 - **内容**：MDX 构建期编译，中英各 28 篇；支持 remark-gfm 与 Mermaid 图表
-- **国际化**：自建薄 i18n 层，en 无 URL 前缀，zh 走 `/zh` 前缀；无前缀首页按浏览器语言/本地偏好自动跳转
+- **国际化**：自建薄 i18n 层，en 为默认语言、无 URL 前缀，zh 走 `/zh` 前缀；语言完全由 URL 决定，不做浏览器语言自动跳转
 - **TTS**：`apps/services/tts`（FastAPI + edge-tts，依赖用 uv 管理），按内容哈希缓存、流式返回 MP3
 - **聊天**：`apps/services/chat`（Go 标准库 + DeepSeek，SSE 流式转发、无状态），树洞人设提示词见 `prompt.md`
 - **摄影存储**：`apps/services/storage`（NestJS + sharp，Provider 抽象），v1 用服务器本地磁盘适配器，七牛适配器保留待接入

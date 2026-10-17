@@ -2,7 +2,6 @@ import { useRouter, useRouterState } from '@tanstack/react-router'
 import { BookOpen, Home, Languages, Layers, Map, MoreHorizontal, Search, User } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocale, useTranslations } from '@/src/i18n/client'
-import { saveLocalePreference } from '@/i18n/locale-preference'
 import { localizePath, stripLocale } from '@/i18n/routing'
 import { cn } from '@/src/shared/utils'
 import { MoreSheet } from './more-sheet'
@@ -15,9 +14,9 @@ export function Navbar() {
   const [moreOpen, setMoreOpen] = useState(false)
   const headerRef = useRef<HTMLElement | null>(null)
 
+  // 语言切换只改 URL：en 无前缀、zh 带 /zh，不写本地偏好、不做自动跳转
   const toggleLanguage = () => {
     const nextLocale = locale === 'zh' ? 'en' : 'zh'
-    saveLocalePreference(nextLocale)
     router.navigate({
       href: localizePath(stripLocale(pathname), nextLocale),
       replace: true,
