@@ -1,4 +1,4 @@
-import { Link, useTranslations } from '@/src/i18n/client'
+import { Link, useLocale, useTranslations } from '@/src/i18n/client'
 import { ChevronRight, Github, Linkedin, Mail, MapPin } from 'lucide-react'
 import { flattenSkills, skillMatrix } from '@/src/shared/skills'
 import Avatar from '../avatar.jpg'
@@ -17,15 +17,22 @@ interface Education {
   degree: string
 }
 
-const techCategories = Object.fromEntries(skillMatrix.map((s) => [s.title, flattenSkills(s.items)]))
+const techCategories = skillMatrix.map((category) => ({
+  title: category.title,
+  titleEn: category.titleEn,
+  items: flattenSkills(category.items),
+}))
 
 export function AboutPage() {
   const t = useTranslations('AboutPage')
+  const locale = useLocale()
   const paragraphs = t('description').split('\n\n').filter(Boolean)
 
   return (
     <div>
       <h1 className="page-title">{t('heading')}</h1>
+      <p className="about-status">{t('status')}</p>
+
       <div className="about-profile">
         <div className="about-avatar-wrap">
           <div className="about-avatar">
@@ -75,16 +82,25 @@ export function AboutPage() {
         </Link>
       </div>
 
+      <div className="about-case">
+        <span className="about-case-label">{t('caseTitle')}</span>
+        <p>{t('caseText')}</p>
+        <Link href="/posts" className="about-case-link">
+          {t('caseCta')} →
+        </Link>
+      </div>
+
       <section>
         <div className="section-head">
           <span className="section-title">{t('techStack')}</span>
           <div className="section-line"></div>
         </div>
-        {Object.entries(techCategories).map(([category, skills]) => (
-          <div key={category}>
-            <div className="tech-category-label">{category}</div>
+        <p className="about-section-intro">{t('techIntro')}</p>
+        {techCategories.map((category) => (
+          <div key={category.title}>
+            <div className="tech-category-label">{locale === 'zh' ? category.title : category.titleEn}</div>
             <div className="tech-tag-row">
-              {skills.map((name) => (
+              {category.items.map((name) => (
                 <span key={name} className="chip">
                   {name}
                 </span>
@@ -99,6 +115,7 @@ export function AboutPage() {
           <span className="section-title">{t('workExperience')}</span>
           <div className="section-line"></div>
         </div>
+        <p className="about-section-intro">{t('experienceIntro')}</p>
         {(t.raw('experience') as Experience[]).map((exp, index) => (
           <div key={index} className="exp-card">
             <div className="exp-card-header">

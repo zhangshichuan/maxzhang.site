@@ -4,7 +4,7 @@
     "readingTime": "{minutes} min read",
     "nav": {
       "home": "Home",
-      "posts": "Articles",
+      "posts": "Writing",
       "chat": "Tree Hole",
       "about": "About",
       "switchLanguage": "Switch to Chinese",
@@ -16,21 +16,22 @@
     },
     "footer": {
       "builtBy": "Built by <name>Max Zhang</name>. © {year} All rights reserved.",
-      "role": "AI Product Manager · Former Fullstack Engineer",
+      "role": "AI Product Manager · Former Full-Stack Engineer",
+      "tagline": "Making AI products people actually use.",
       "github": "GitHub",
       "email": "Email"
     },
     "notFound": {
       "title": "Page Not Found",
-      "description": "The page you're looking for may have moved or been removed.",
+      "description": "This path doesn't have a product requirement yet. Head back home?",
       "backHome": "Back to Home"
     }
   },
   "PhotosPage": {
     "title": "Photography",
-    "description": "A few photos I took — only the ones I chose.",
+    "description": "Amateur photography, carefully curated.",
     "author": "Max Zhang",
-    "empty": "No works yet. Stay tuned."
+    "empty": "Nothing I'm happy with yet. More to come."
   },
   "PhotoDetail": {
     "prev": "Previous",
@@ -107,23 +108,24 @@
   },
   "Chat": {
     "title": "Tree Hole",
+    "subtitle": "An AI listening room",
     "placeholder": "Tell me anything. I'm here to listen.",
     "emptyState": "I'm here. Say whatever you need to say.",
     "send": "Send",
     "sending": "Listening...",
-    "privacyNote": "All chat history is stored only in your browser. If you're still not sure, you can check the source code I wrote — I won't mislead you.",
-    "privacySource": "Tap GitHub on the About page to see the code",
+    "privacyNote": "Chat history stays only in your browser. The code is open source — check it yourself.",
+    "privacySource": "View the source on GitHub",
     "clear": "Clear chat history",
     "clearConfirm": "Confirm clear?",
     "clearCancel": "Cancel",
     "menu": "More actions",
     "errors": {
-      "invalidFingerprint": "For security, please visit the homepage or any article first to generate your fingerprint",
+      "invalidFingerprint": "Browse the homepage or an article first, then come back.",
       "rateLimit": "Sending too fast. Please wait a moment and try again.",
       "dailyLimit": "You've reached today's 100-round limit. Come back tomorrow.",
       "serviceDailyLimit": "Today's listening slots are full. Come back tomorrow.",
       "messageTooLong": "Message too long. Please keep it under {max} characters.",
-      "upstreamError": "Upstream service error. Please try again later.",
+      "upstreamError": "The tree hole is a bit slow right now. Try again in a moment.",
       "networkError": "Network error. Please check your connection."
     }
   },
@@ -133,19 +135,19 @@
       "headline1": "Making AI products",
       "headline2": "people actually use.",
       "lede": "Former full-stack engineer moving into AI product. I care about Agent, RAG and multimodal products: how to define them, how to evaluate them, and how to fit them into real user workflows.",
-      "readArticles": "Read Product Notes",
+      "readArticles": "Read Notes",
       "aboutMe": "About Me",
       "meta1Label": "01 / Engineering",
       "meta1Value": "TypeScript · Python · Go · Observability",
       "meta2Label": "02 / Focus",
       "meta2Value": "Agent · RAG · Evals · Multimodal",
       "meta3Label": "03 / Status",
-      "meta3Value": "Open to AI PM roles"
+      "meta3Value": "Open to AI PM roles · Chengdu / Remote"
     },
     "featuredPosts": {
       "title": "Selected Writing",
       "description": "Notes from engineering to product",
-      "viewAll": "All posts"
+      "viewAll": "All writing"
     },
     "capabilities": {
       "title": "Capability Matrix",
@@ -167,12 +169,18 @@
     "title": "About Me - Max Zhang",
     "heading": "About Me",
     "location": "Chengdu, China",
+    "status": "Open to AI PM roles · Chengdu / Remote",
     "description": "Now I'm turning ten years of engineering experience toward AI product: from \"how to build it\" to \"who is it for, what should it do, and what success looks like.\"\n\n2016. First job. I got lucky.\n\nThe company was already flat back then. Management, tech, and product leadership mostly had overseas backgrounds. The CTO didn't split roles by frontend and backend — one business direction, one person, full ownership from frontend to database to deployment. Later I'd learn this is called an Ownership culture. At the time I didn't realize how unusual it was. I thought all companies worked this way.\n\nFirst task: build a resource system. No mentor, no broken-down tickets. Started from '<input type=\"file\">' and a blank editor. How PHP handles file uploads, how S3 stores them, whether PostgreSQL should use bytea or URLs — every step was figured out by running into a wall and reading through it.\n\nLater, a hospital equipment data platform. PHP7 wasn't officially released yet, so I pulled the PHP source and compiled it myself with cmake. The hospital's internal network ran Windows, logs needed forwarding to Linux, and the SMB protocol was the blocker. PHP had no native support for it, so I dug into libsmbclient's C library docs and compiled a PHP extension module. From C to PHP to the protocol layer — one chain punched through. Felt good when it worked.\n\nThen Yixin Cloud 2.0. Delivered on time, right on the company's demo and fundraising timeline. No delays.\n\nLooking back, that period left me with a habit: goal set, walk it end to end. TypeScript, Go, Python. Docker, K8s, AWS. MCP, A2A, ReAct. The tools kept changing. The habit didn't.\n\nThat's why I care about Agents. Not chasing trends. I spent ten years waiting for something that amplifies one person's will. I used to run a chain with two hands. Now I write intent into a spec, a group of Agents executes. They're faster, but I set the direction, draw the boundaries, judge the results.\n\nNot replacement. Leverage.\n\nIn the AI First era, tools are getting faster, but no one grows your sense of direction or judgment for you. Define the problem. Deliver end to end. Own the result. These haven't changed. Here's to building together.",
+    "experienceIntro": "My title has always been engineering lead, but for the past two years I've actually been doing product definition and delivery — that's why I'm moving into AI product.",
     "workExperience": "Work Experience",
     "education": "Education",
-    "techStack": "Tech Stack",
-    "learning": "Currently Studying",
+    "techStack": "Engineering Fluency",
+    "techIntro": "I can prototype on my own and hold my own in engineering conversations — that's my edge as an AI PM.",
+    "learning": "Currently Learning",
     "interests": "Interests",
+    "caseTitle": "AI Product Practice",
+    "caseText": "Teardowns, evaluation checklists, and agent workflow notes — in progress.",
+    "caseCta": "Read the writing",
     "experience": [
       {
         "role": "Frontend Lead",
@@ -193,12 +201,12 @@
           "BullMQ"
         ],
         "points": [
-          "Designed and built a multi-agent collaboration system around ReAct planning-execution architecture, enabling task decomposition, tool orchestration, and context management with dynamic MCP tool integration.",
-          "Built A2A distributed agent networks, connecting planning and execution agents for task dispatch and result aggregation.",
-          "Developed Docker sandbox isolation environments for secure code execution — Shell commands, Python scripts, and Playwright browser automation run in isolated containers.",
+          "Led the productization of our multi-agent collaboration system: turned ad asset production into an orchestrated agent workflow across planning, generation, and review, with MCP for dynamic tool access.",
+          "Designed task dispatch and result aggregation for an A2A distributed agent network, so planning and execution agents can complete complex work together.",
+          "Built Docker sandbox isolation so agents can safely execute shell commands, Python, and browser automation.",
           "Led the company's digital advertising platform, connecting asset production, approvals, campaign delivery, and data feedback into an online workflow, supporting 100,000 videos and 30,000+ images per month with 80%+ efficiency gains.",
           "Pioneered AI-native engineering workflows — integrated Codex, Claude, and in-house MCP to automate requirement drafting, task breakdown, execution validation, and bug fixing, reducing per-video generation cost from RMB 2.5–3 to RMB 0.5–1.",
-          "Led engineering governance for multiple legacy internal systems, including build upgrades, component refactoring, monorepo restructuring, and team-wide standards."
+          "Drove engineering governance across several legacy internal systems (build upgrades, component refactors, monorepo, standards) to keep product iteration fast."
         ]
       },
       {
@@ -208,10 +216,10 @@
         "period": "Jan 2020 - Jan 2021",
         "tags": ["React Native", "Vue", "Nest.js", "MongoDB", "Docker", "gRPC"],
         "points": [
-          "Worked across domestic and international teams on multilingual, multi-line-of-business delivery, spanning requirement analysis, implementation, and gradual evolution toward modular and microservice-based systems.",
-          "Maintained and iterated on more than 20 legacy frontend and backend projects, driving incremental refactors across React Native, Vue, React, Nest.js, PHP, and MongoDB.",
-          "Led a four-person team to rewrite a high-traffic user-facing product area and improved foundational capabilities such as RBAC, JWT auth, environment management, exception handling, and rate limiting.",
-          "Participated in microservice and distributed-systems work covering health checks, circuit breaking, Consul, Docker, SMS, caching, email, and scheduled task modules."
+          "Worked across international, multi-line teams on requirement discovery, breakdown, and delivery, contributing to the evolution from modular to microservice architecture.",
+          "Maintained and iterated 20+ legacy projects, driving incremental refactors under high technical debt across React Native, Vue, React, Nest.js, PHP, and MongoDB.",
+          "Led a four-person team rewriting a high-traffic user-facing product area, adding RBAC, JWT auth, multi-environment config, global exception handling, and rate limiting.",
+          "Participated in microservice and distributed-systems work covering health checks, circuit breaking, Consul, Docker, SMS, caching, email, and scheduled tasks."
         ]
       },
       {
@@ -221,8 +229,8 @@
         "period": "May 2018 - Dec 2019",
         "tags": ["Python", "Django", "Scrapy", "Redis", "Elasticsearch", "Puppeteer"],
         "points": [
-          "Independently delivered the BD Policy Manager web app and WeChat H5 product from 0 to 1, translating client needs into product and engineering solutions.",
-          "Built a distributed crawling system with Python, Scrapy, Redis, and Django to ingest millions of insurance clauses, including login simulation, CAPTCHA handling, cookie pools, and incremental crawling.",
+          "Owned the BD Policy Manager web app and WeChat H5 product end to end: worked directly with clients to translate business needs into product and engineering solutions.",
+          "Built a distributed crawler stack with Python, Scrapy, Redis, and Django, ingesting millions of insurance clauses.",
           "Handled product demos and client presentations for hundreds of participants, and established a training pipeline that turned interns with no experience into independent contributors within six months."
         ]
       },
@@ -233,7 +241,7 @@
         "period": "Mar 2016 - Feb 2018",
         "tags": ["Vue", "PHP", "C", "AWS", "SaaS", "H5"],
         "points": [
-          "Worked on hospital device data cleansing and forwarding systems, owning the end-to-end delivery of Yixin Cloud Service resources from frontend to backend.",
+          "Worked on hospital device data cleansing and forwarding systems, owning end-to-end delivery of Yixin Cloud Service resources from frontend to backend.",
           "Enabled SMB support in PHP7 by compiling a C module, which made Windows log forwarding from hospital intranets to Linux systems possible.",
           "Contributed to the SaaS platform and WeChat H5 apps, and helped deliver Yixin Cloud Service 2.0 on schedule for key product and fundraising milestones."
         ]
@@ -246,30 +254,29 @@
       }
     ],
     "learningList": [
-      "Multi-Agent System (MAS) architecture design",
-      "ReAct planning & execution Agent development",
-      "MCP protocol — unified LLM tool-calling standard",
-      "A2A protocol — Agent-to-Agent distributed collaboration",
-      "Sandbox isolation — secure code execution in Docker",
-      "Playwright browser automation — CDP protocol",
-      "Context engineering — memory persistence & session state"
+      "AI product evaluation and metrics",
+      "User research and interviews",
+      "Agent product form and trust design",
+      "RAG productization and knowledge design",
+      "AI product economics and business models",
+      "Product writing and teardown practice"
     ],
-    "interestList": ["Open Source", "UI/UX Design", "Full Stack Development", "AI Agent Applications"]
+    "interestList": ["Open Source", "UI/UX Design", "AI Agent Applications", "Product Writing", "Photography"]
   },
   "PostsPage": {
-    "title": "Articles",
-    "description": "Notes on AI product, engineering, and the space between.",
+    "title": "Writing",
+    "description": "Engineering notes, and AI product thinking in progress.",
     "categories": "Categories",
     "tags": "Tags",
-    "noPosts": "No articles yet, stay tuned.",
+    "noPosts": "No writing yet, stay tuned.",
     "noCategories": "No categories",
     "noTags": "No tags",
     "aiAssisted": "AI-assisted",
     "aiAssistedHint": "Written with AI assistance and reviewed by the author",
-    "back": "Back to Articles"
+    "back": "Back to Writing"
   },
   "SearchPage": {
-    "title": "Search Articles",
+    "title": "Search",
     "loading": "Loading...",
     "placeholder": "Search by title, content, or tags...",
     "category": "Category",

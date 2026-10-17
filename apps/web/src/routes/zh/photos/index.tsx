@@ -5,7 +5,7 @@ import { listPhotoWorksFn } from '@/src/features/photos/server-functions'
 export const Route = createFileRoute('/zh/photos/')({
   loader: ({ context }) => listPhotoWorksFn({ data: { locale: context.locale } }),
   head: () => ({
-    meta: [{ title: '摄影 - Max Zhang' }, { name: 'description', content: '精选摄影作品。' }],
+    meta: [{ title: '摄影 - Max Zhang' }, { name: 'description', content: '业余摄影，认真挑片。' }],
   }),
   component: PhotosIndexComponent,
 })

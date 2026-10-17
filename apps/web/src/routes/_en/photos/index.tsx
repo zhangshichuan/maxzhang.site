@@ -7,7 +7,7 @@ export const Route = createFileRoute('/_en/photos/')({
   head: () => ({
     meta: [
       { title: 'Photography - Max Zhang' },
-      { name: 'description', content: 'A curated collection of photographs.' },
+      { name: 'description', content: 'Amateur photography, carefully curated.' },
     ],
   }),
   component: PhotosIndexComponent,

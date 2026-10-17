@@ -17,20 +17,21 @@
     "footer": {
       "builtBy": "由 <name>Max Zhang</name> 构建。© {year} 保留所有权利。",
       "role": "AI 产品经理 · 前全栈工程师",
+      "tagline": "把模型能力，翻译成人们愿意用的产品。",
       "github": "GitHub",
       "email": "邮件"
     },
     "notFound": {
       "title": "页面不存在",
-      "description": "你要找的内容可能已被移动或删除。",
+      "description": "这条路径暂时没有产品需求。回到首页重新出发？",
       "backHome": "返回首页"
     }
   },
   "PhotosPage": {
     "title": "摄影",
-    "description": "学拍照",
+    "description": "业余拍照，认真挑片。",
     "author": "Max Zhang",
-    "empty": "还没有作品，敬请期待。"
+    "empty": "还没挑到满意的，之后放上来。"
   },
   "PhotoDetail": {
     "prev": "上一张",
@@ -107,23 +108,24 @@
   },
   "Chat": {
     "title": "树洞",
+    "subtitle": "一个由 AI 陪着的树洞",
     "placeholder": "想说什么都可以，我在这里听。",
     "emptyState": "我在这里。无论你想说什么，都可以说给我听。",
     "send": "倾诉",
     "sending": "倾听中……",
-    "privacyNote": "所有聊天记录只保存在你的浏览器本地，放心倾诉。如果不放心的话，可以去看我写的源代码，张仕传不会骗你。",
-    "privacySource": "去关于页面点击 GitHub 查看代码",
+    "privacyNote": "聊天记录只保存在你的浏览器本地。代码开源，可自行核验。",
+    "privacySource": "在 GitHub 查看源码",
     "clear": "清除聊天记录",
     "clearConfirm": "确认清除？",
     "clearCancel": "取消",
     "menu": "更多操作",
     "errors": {
-      "invalidFingerprint": "为了安全起见，请先访问首页或任意文章以生成指纹",
+      "invalidFingerprint": "先随便逛逛首页或文章，再回来聊吧。",
       "rateLimit": "消息发送过于频繁，请稍后再试",
       "dailyLimit": "今日已聊满 100 轮，明日再来吧",
       "serviceDailyLimit": "今天的倾诉名额已满，明天再来吧",
       "messageTooLong": "消息过长，请控制在 {max} 字符以内",
-      "upstreamError": "上游服务错误，请稍后再试",
+      "upstreamError": "树洞暂时有点卡，稍后再试。",
       "networkError": "网络错误，请检查网络连接"
     }
   },
@@ -133,14 +135,14 @@
       "headline1": "把模型能力，翻译成",
       "headline2": "人们愿意用的产品。",
       "lede": "前全栈工程师，正在转向 AI 产品。关注 Agent、RAG 与多模态产品：怎么定义、怎么评估、怎么真正落到用户的工作流里。",
-      "readArticles": "阅读产品笔记",
+      "readArticles": "阅读文章",
       "aboutMe": "关于我",
       "meta1Label": "01 / 工程底子",
       "meta1Value": "TypeScript · Python · Go · 可观测性",
       "meta2Label": "02 / 关注方向",
       "meta2Value": "Agent · RAG · 模型评估 · 多模态",
       "meta3Label": "03 / 状态",
-      "meta3Value": "Open to AI PM roles"
+      "meta3Value": "正在寻找 AI 产品岗位 · 成都 / 远程"
     },
     "featuredPosts": {
       "title": "精选文章",
@@ -167,12 +169,18 @@
     "title": "关于我 - Max Zhang",
     "heading": "关于我",
     "location": "中国 成都",
+    "status": "Open to AI PM roles · 成都 / 远程",
     "description": "现在，我在把十年的工程经验转向 AI 产品：从「怎么实现」到「为谁做、做什么、做到什么程度算成功」。\n\n2016 年，第一份工作。挺幸运的。\n\n公司在当时就非常扁平。管理、技术和产品层的核心成员大多有留学背景，CTO 不按传统前后端切分角色——一个业务方向交给一个人，从前端到数据库到部署，全程负责。后来我知道这算一种 Ownership 文化，只是当时的我没有意识到这有多难得，以为所有公司都这样干活。\n\n第一件事是做一个资源系统。没有 mentor，没有拆好的任务，对着空白编辑器从 '<input type=\"file\">' 开始查。PHP 怎么收文件、S3 怎么存、PostgreSQL 存 bytea 还是存 URL——每一步都是碰上问题再查，没有一步提前想好的。\n\n后来参与医院设备数据平台。当时 PHP7 还没正式发布，我自己拉 PHP 源码用 cmake 编译了一套环境。医院内网的 Windows 日志需要转发到 Linux，中间卡在 SMB 协议。PHP 没有原生支持，我就翻了 libsmbclient 的 C 库文档，给 PHP 编译了一个扩展模块。从 C 到 PHP 再到底层协议，一条链路打穿。通了的时候挺高兴。\n\n再后来，医信云服 2.0。按时交了，卡着公司产品宣讲和融资的节点。没延期。\n\n回头看，那段时间给我留下一个习惯：目标定了，从头走到尾。后来的 TypeScript、Go、Python，Docker、K8s、AWS，MCP、A2A、ReAct——工具一直在换，习惯没变。\n\n这也是为什么我对 Agent 感兴趣。不是追热点。我用了十年等一个能把个人意志放大的东西。以前靠两只手跑一条链，现在把意图写进 spec，一群 Agent 去执行。它们比我快，但方向我定，边界我画，结果我来判断。\n\n不是替代，是杠杆。\n\nAI First 时代，工具在加速，但方向感和判断力没人替你长。能定义问题、能端到端交付、能对结果负责——这几条没变过。与大家共勉。",
+    "experienceIntro": "我的头衔一直是工程负责人，但过去两年实际承担的是产品定义与落地推进——这也是我转向 AI 产品的原因。",
     "workExperience": "工作经历",
     "education": "教育经历",
-    "techStack": "技术栈",
+    "techStack": "工程底子",
+    "techIntro": "能自己搭原型、能和工程团队把方案聊到底——这是我做 AI 产品的差异化。",
     "learning": "研习方向",
     "interests": "兴趣点",
+    "caseTitle": "AI 产品练习",
+    "caseText": "正在整理 AI 产品拆解、评估清单与 Agent 工作流笔记。",
+    "caseCta": "去看文章",
     "experience": [
       {
         "role": "前端负责人",
@@ -193,12 +201,12 @@
           "BullMQ"
         ],
         "points": [
-          "设计并开发多智能体协作系统，围绕 ReAct 规划执行架构实现 Agent 的任务拆解、工具调度与上下文管理，支持 MCP 协议动态接入外部工具服务。",
-          "构建 A2A 分布式 Agent 网络，打通规划 Agent 与执行 Agent 之间的任务分发与结果回传链路。",
-          "搭建 Docker 沙箱隔离环境，实现 Agent 在容器内安全执行 Shell 命令、Python 代码与 Playwright 浏览器自动化操作。",
+          "主导多智能体协作系统的产品化：把广告素材生产中的策划、生成、审核拆成可编排的 Agent 任务流，并支持 MCP 动态接入外部工具。",
+          "设计 A2A 分布式 Agent 网络的任务分发与结果回传机制，让规划 Agent 与执行 Agent 协作完成复杂任务。",
+          "搭建 Docker 沙箱隔离环境，让 Agent 能在容器内安全执行 Shell、Python 与浏览器自动化操作。",
           "主导广告业务数字化平台建设，打通素材生产、审批、投放、数据回溯等核心流程，支撑月均 10 万条视频与 3 万+ 图片生成，跨部门协作效率提升 80% 以上。",
           "推动 AI Native 研发流程革新，基于 Codex、Claude 与自研 MCP 打通需求文档生成、任务拆解、执行验证和 Bug 自动修复闭环，将单条视频生成成本从 2.5-3 元压缩至 0.5-1 元。",
-          "主导多个历史中后台系统的工程治理，包括构建体系升级、组件重构、Monorepo 治理与规范沉淀，持续提升交付效率与系统稳定性。"
+          "推动多个历史中后台系统的工程治理（构建升级、组件重构、Monorepo 与规范），为产品迭代速度兜底。"
         ]
       },
       {
@@ -208,9 +216,9 @@
         "period": "2020.01 - 2021.01",
         "tags": ["React Native", "Vue", "Nest.js", "MongoDB", "Docker", "gRPC"],
         "points": [
-          "参与跨国内外团队协作，负责多语言、多业务线前端需求的沟通、拆解与落地，并参与模块化到微服务治理的持续演进。",
-          "维护并迭代 20+ 个历史前后端项目，在高技术债背景下推进渐进式重构，技术栈覆盖 React Native、Vue、React、Nest.js、PHP 与 MongoDB。",
-          "带领 4 人小组重写高频用户端核心业务，并完善 RBAC、JWT、多环境配置、全局异常处理与请求限流等基础能力。",
+          "在跨国、多业务线团队中负责需求沟通、拆解与交付，参与从模块化到微服务治理的持续演进。",
+          "维护并迭代 20+ 个历史项目，在高技术债背景下推进渐进式重构，技术栈覆盖 React Native、Vue、React、Nest.js、PHP 与 MongoDB。",
+          "带领 4 人小组重写高频用户端核心业务，补齐 RBAC、JWT、多环境配置、全局异常处理与请求限流等基础能力。",
           "参与微服务架构与分布式治理实践，建设健康检查、熔断、Consul、Docker、短信、缓存、邮件与定时任务等通用模块。"
         ]
       },
@@ -221,8 +229,8 @@
         "period": "2018.05 - 2019.12",
         "tags": ["Python", "Django", "Scrapy", "Redis", "Elasticsearch", "Puppeteer"],
         "points": [
-          "独立负责 BD 保单管家 PC 端与公众号 H5 从 0 到 1 开发，直接对接客户，将业务需求转化为产品方案与交付结果。",
-          "基于 Python、Scrapy、Redis 与 Django 搭建分布式爬虫体系，完成百万级保险条款抓取与入库，覆盖模拟登录、验证码处理、Cookie 池与增量抓取。",
+          "独立负责 BD 保单管家 PC 端与公众号 H5 从 0 到 1：直接对接客户，把业务需求翻译成产品方案并交付。",
+          "基于 Python、Scrapy、Redis 与 Django 搭建分布式爬虫体系，完成百万级保险条款抓取与入库。",
           "多次承担产品宣讲与客户演示，累计覆盖约 400 人，并在资源紧张情况下建立新人培养机制，半年内将零经验实习生培养为可独立承担项目的核心开发力量。"
         ]
       },
@@ -233,7 +241,7 @@
         "period": "2016.03 - 2018.02",
         "tags": ["Vue", "PHP", "C", "AWS", "SaaS", "H5"],
         "points": [
-          "参与医院设备数据清洗与转发系统建设，负责医信云服资源服务从前端到后端的完整研发链路。",
+          "参与医院设备数据清洗与转发系统建设，负责医信云服资源服务从前端到后端的端到端交付。",
           "通过编译 C 模块使 PHP7 支持 SMB 协议，完成医院内网 Windows 日志向 Linux 系统转发的关键能力建设。",
           "参与 SaaS 平台与公众号 H5 研发，按时交付医信云服 2.0，支撑公司在产品宣讲与融资节点上的关键里程碑。"
         ]
@@ -246,19 +254,18 @@
       }
     ],
     "learningList": [
-      "多智能体协作系统（MAS）架构设计",
-      "ReAct 规划与执行 Agent 开发",
-      "MCP 协议 — 统一 LLM 工具调用标准",
-      "A2A 协议 — Agent 间通信与分布式协作",
-      "沙箱隔离环境 — Docker 容器内安全执行代码",
-      "Playwright 浏览器自动化 — CDP 协议操控",
-      "上下文工程 — 记忆持久化与会话状态管理"
+      "AI 产品的评估与指标体系",
+      "用户研究与访谈",
+      "Agent 产品的形态与信任设计",
+      "RAG 产品化与知识组织",
+      "AI 产品的成本与商业模式",
+      "产品写作与案例拆解"
     ],
-    "interestList": ["开源", "UI/UX 设计", "全栈开发", "AI Agent 应用"]
+    "interestList": ["开源", "UI/UX 设计", "AI Agent 应用", "产品写作", "摄影"]
   },
   "PostsPage": {
     "title": "文章",
-    "description": "AI 产品笔记与工程手记",
+    "description": "工程手记，以及正在形成的 AI 产品思考。",
     "categories": "分类浏览",
     "tags": "标签索引",
     "noPosts": "暂无文章，敬请期待。",
@@ -269,7 +276,7 @@
     "back": "返回文章"
   },
   "SearchPage": {
-    "title": "检索文章",
+    "title": "搜索",
     "loading": "加载中...",
     "placeholder": "搜索文章标题、内容、标签...",
     "category": "分类",

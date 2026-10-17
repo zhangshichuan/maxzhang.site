@@ -10,6 +10,6 @@ export const Route = createFileRoute('/_en')({
   beforeLoad: () => ({ locale: 'en' as const }),
   component: SiteLayout,
   head: () => ({
-    meta: [{ title: 'Max Zhang' }],
+    meta: [{ title: 'Max Zhang · AI Product Manager' }],
   }),
 })

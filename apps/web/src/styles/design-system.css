@@ -404,6 +404,12 @@ svg {
   color: var(--text-2);
 }
 
+.site-footer .foot-tagline {
+  font-style: italic;
+  color: var(--text-2);
+  opacity: 0.85;
+}
+
 .site-footer a {
   color: var(--text-2);
   text-decoration: none;

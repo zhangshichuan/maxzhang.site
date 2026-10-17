@@ -7,6 +7,7 @@ export function Footer() {
   return (
     <footer className="site-footer">
       <span>Max Zhang © {currentYear}</span>
+      <span className="foot-tagline">“{t('tagline')}”</span>
       <span className="foot-mid">{t('role')}</span>
       <span>
         <a href="https://github.com/zhangshichuan" target="_blank" rel="noreferrer">

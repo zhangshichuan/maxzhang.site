@@ -10,8 +10,8 @@ export const Route = createFileRoute('/_en/search')({
   loader: ({ context }) => getAllPostsWithViewsFn({ data: { locale: context.locale } }),
   head: () => ({
     meta: [
-      { title: 'Search Articles - Max Zhang' },
-      { name: 'description', content: 'Search articles by keyword, tag, or category.' },
+      { title: 'Search - Max Zhang' },
+      { name: 'description', content: 'Search posts, tags, and categories.' },
     ],
   }),
   component: SearchComponent,

@@ -341,7 +341,10 @@ export function ChatInterface() {
   return (
     <div className="chat-shell flex h-full flex-col">
       <div className="chat-topbar" ref={menuRef}>
-        <span className="chat-topbar-title">{t('title')}</span>
+        <div className="chat-topbar-title-wrap">
+          <span className="chat-topbar-title">{t('title')}</span>
+          <span className="chat-topbar-sub">{t('subtitle')}</span>
+        </div>
         {messages.length > 0 && (
           <>
             <button
