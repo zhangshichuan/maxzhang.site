@@ -1,0 +1,864 @@
+/* ==========================================================================
+   Pages — 首页 / 关于 / 摄影与后台 / 树洞 / 浮动面板
+   ========================================================================== */
+@import './legacy-pages.css';
+
+/* --------------------------------------------------------------------------
+   Home
+   -------------------------------------------------------------------------- */
+.nx-hero {
+  padding: 104px 0 0;
+}
+
+.nx-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.nx-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--teal) 80%, transparent);
+}
+
+.nx-hero-title {
+  margin-top: 26px;
+  font-size: clamp(46px, 6.6vw, 92px);
+  font-weight: 680;
+  line-height: 0.99;
+  letter-spacing: -0.045em;
+  color: var(--text-1);
+}
+
+.nx-grad {
+  background: var(--gradient-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.nx-lede {
+  margin-top: 28px;
+  max-width: 620px;
+  font-size: 16.5px;
+  line-height: 1.75;
+  color: var(--text-2);
+}
+
+.nx-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 36px;
+}
+
+.nx-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 46px;
+  padding: 0 22px;
+  font-size: 14px;
+}
+
+.nx-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  margin-top: 72px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-1);
+}
+
+.nx-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nx-k {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.nx-v {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-1);
+}
+
+.nx-live {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 10px var(--green);
+}
+
+.nx-block-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 58px 0 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-1);
+}
+
+.nx-block-left {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.nx-block-index {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.nx-block-side {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.nx-more {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nx-more:hover {
+  color: var(--teal);
+}
+
+.nx-cap-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-top: 26px;
+  border-top: 1px solid var(--border-1);
+}
+
+.nx-cap {
+  padding: 26px 26px 32px 0;
+  border-right: 1px solid var(--border-1);
+}
+
+.nx-cap:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.nx-cap-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-1);
+}
+
+.nx-cap-title b {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.nx-cap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  margin-top: 18px;
+  list-style: none;
+}
+
+.nx-cap-list li {
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+
+.nx-now {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin-top: 64px;
+  padding: 22px 26px;
+  border: 1px solid var(--border-1);
+  border-radius: 18px;
+  background: linear-gradient(120deg, var(--accent-soft), var(--teal-soft));
+}
+
+.nx-now p {
+  flex: 1;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--text-2);
+}
+
+.nx-now a {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--teal);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   About
+   -------------------------------------------------------------------------- */
+.about-profile {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  gap: 36px;
+  align-items: start;
+  margin: 28px 0 40px;
+}
+
+.about-avatar {
+  width: 112px;
+  height: 112px;
+  border: 1px solid var(--border-1);
+  border-radius: 50%;
+  background: var(--surface-1);
+  overflow: hidden;
+}
+
+.about-avatar-ring {
+  display: none;
+}
+
+.about-bio {
+  font-size: 14.5px;
+  line-height: 1.85;
+  color: var(--text-2);
+}
+
+.about-bio p {
+  margin-bottom: 1em;
+}
+
+.tech-category-label {
+  margin: 22px 0 10px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.tech-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.exp-card {
+  margin-top: 16px;
+  padding: 26px;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+}
+
+.exp-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.exp-period {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.exp-company {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-3);
+}
+
+.exp-role {
+  margin-top: 10px;
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+}
+
+.exp-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.exp-points {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 18px;
+  list-style: none;
+}
+
+.exp-points li {
+  display: flex;
+  gap: 14px;
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: var(--text-2);
+}
+
+.exp-point-num {
+  flex-shrink: 0;
+  padding-top: 3px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--accent);
+}
+
+.learning-item {
+  gap: 14px;
+}
+
+.learning-num {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-3);
+}
+
+.learning-arrow {
+  margin-left: auto;
+  color: var(--text-3);
+}
+
+.edu-period {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.edu-school {
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.edu-degree {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+/* --------------------------------------------------------------------------
+   Photos / admin / login / upload
+   -------------------------------------------------------------------------- */
+.photos-header {
+  margin-bottom: 28px;
+}
+
+.photo-grid {
+  gap: 6px;
+}
+
+.photo-tile {
+  border-radius: 6px;
+  background: var(--surface-2);
+}
+
+.photo-count-badge {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(6, 7, 10, 0.62);
+  backdrop-filter: blur(10px);
+}
+
+.photo-lightbox {
+  border: 1px solid var(--border-1);
+  border-radius: 18px;
+  background: var(--bg-tertiary);
+}
+
+.photo-lb-backdrop {
+  background: rgba(2, 3, 6, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.photo-lb-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface-0) 82%, transparent);
+  color: var(--text-1);
+  backdrop-filter: blur(14px);
+}
+
+.photo-lb-close:hover {
+  border-color: var(--border-2);
+  background: var(--surface-2);
+}
+
+.photo-lb-rail {
+  padding: 28px 26px 22px;
+}
+
+.photo-lb-cap {
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.photo-lb-pill {
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-pill);
+  background: var(--surface-1);
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+
+.photo-lb-meta {
+  margin-top: 14px;
+}
+
+.photo-lb-comments {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-1);
+}
+
+.photo-lb-hint {
+  margin-top: auto;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+}
+
+.photo-lb-counter {
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--surface-0) 68%, transparent);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+
+.photo-lb-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.photo-lb-dot.active {
+  background: var(--teal);
+}
+
+.photo-lb-expand {
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--surface-0) 72%, transparent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--text-1);
+  backdrop-filter: blur(10px);
+}
+
+/* 上传面板 */
+.upload-dialog {
+  display: flex;
+  flex-direction: column;
+}
+
+.upload-dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 28px 18px;
+  margin-top: 6px;
+  border: 1px dashed var(--border-1);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--text-2);
+  font-size: 13.5px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.upload-dropzone:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-1));
+  background: var(--surface-2);
+  color: var(--text-1);
+}
+
+.upload-dropzone svg {
+  color: var(--teal);
+}
+
+.upload-previews {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.upload-preview {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  border: 1px solid var(--border-1);
+}
+
+.upload-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.upload-preview-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  background: rgba(6, 7, 10, 0.7);
+  color: var(--text-1);
+  cursor: pointer;
+}
+
+.upload-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.upload-dialog .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  margin-top: 18px;
+}
+
+.upload-login {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  color: var(--text-2);
+}
+
+.upload-login .ios-input {
+  flex: 1;
+}
+
+.admin-login-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 48px 16px;
+}
+
+.admin-login-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 400px;
+  padding: 28px;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+}
+
+.admin-login-head {
+  margin-bottom: 4px;
+}
+
+.admin-login-card .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+}
+
+.admin-console {
+  padding-top: 8px;
+}
+
+.admin-console-header {
+  margin-top: 48px;
+}
+
+.admin-upload-trigger {
+  border: 1px dashed var(--border-1);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--text-2);
+}
+
+.admin-upload-trigger:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-1));
+  color: var(--text-1);
+}
+
+.admin-work-thumb {
+  border-radius: var(--radius-xs);
+}
+
+.upload-dialog {
+  padding: 24px;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface-0) 96%, transparent);
+  backdrop-filter: blur(24px);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.4);
+}
+
+.upload-dropzone {
+  border: 1px dashed var(--border-1);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+
+.upload-preview {
+  border-radius: var(--radius-xs);
+}
+
+/* --------------------------------------------------------------------------
+   Chat（树洞）
+   -------------------------------------------------------------------------- */
+.chat-route {
+  padding-top: 24px;
+}
+
+.chat-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  border-bottom: 1px solid var(--border-1);
+}
+
+.chat-topbar-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.chat-topbar-title::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--teal) 80%, transparent);
+}
+
+.chat-bubble.assistant {
+  border: 1px solid var(--border-1);
+  border-radius: 14px;
+  background: var(--surface-1);
+  color: var(--text-1);
+}
+
+.chat-bubble.user {
+  border-radius: 14px;
+  background-image: var(--gradient-button);
+  color: var(--gradient-button-fg);
+}
+
+.chat-input-shell {
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+}
+
+.chat-input {
+  color: var(--text-1);
+}
+
+.chat-input::placeholder {
+  color: var(--text-3);
+}
+
+.chat-send {
+  border-radius: var(--radius-sm);
+  background-image: var(--gradient-button);
+  color: var(--gradient-button-fg);
+}
+
+.chat-send:disabled {
+  opacity: 0.4;
+}
+
+.chat-empty-block {
+  flex: 1;
+  justify-content: center;
+  margin: 0;
+}
+
+.chat-empty-block .empty-state {
+  max-width: 440px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.chat-menu-panel {
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-0) 96%, transparent);
+  backdrop-filter: blur(24px);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.4);
+}
+
+.chat-menu-item {
+  border-radius: var(--radius-xs);
+}
+
+/* --------------------------------------------------------------------------
+   Floating panels（更多 / 上传 / 登录）
+   -------------------------------------------------------------------------- */
+.more-sheet {
+  z-index: 95;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface-0) 96%, transparent);
+  backdrop-filter: blur(24px);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.4);
+}
+
+.upload-dialog {
+  z-index: 95;
+}
+
+.more-sheet .card-group {
+  margin-top: 14px;
+}
+
+.panel-title {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+/* --------------------------------------------------------------------------
+   Responsive
+   -------------------------------------------------------------------------- */
+@media (max-width: 1100px) {
+  .nx-cap-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .nx-cap:nth-child(2) {
+    border-right: 0;
+  }
+
+  .nx-cap:nth-child(1),
+  .nx-cap:nth-child(2) {
+    border-bottom: 1px solid var(--border-1);
+  }
+}
+
+@media (max-width: 900px) {
+  .nx-hero {
+    padding-top: 64px;
+  }
+
+  .nx-hero-title {
+    font-size: clamp(38px, 9.5vw, 62px);
+  }
+
+  .nx-meta {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    margin-top: 48px;
+  }
+
+  .nx-now {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .about-profile {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .nx-cap-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .nx-cap {
+    padding: 22px 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-1);
+  }
+
+  .nx-cap:last-child {
+    border-bottom: 0;
+  }
+}

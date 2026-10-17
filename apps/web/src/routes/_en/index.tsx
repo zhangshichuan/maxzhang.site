@@ -5,7 +5,14 @@ import { getFeaturedPosts, HomePage } from '@/src/features/home'
 export const Route = createFileRoute('/_en/')({
   loader: ({ context }) => getFeaturedPosts(context.locale),
   head: () => ({
-    meta: [{ title: 'Max Zhang' }, { name: 'description', content: 'Personal website of Max Zhang' }],
+    meta: [
+      { title: 'Max Zhang · AI Product Manager' },
+      {
+        name: 'description',
+        content:
+          'Max Zhang — AI Product Manager and former full-stack engineer, writing about AI products, agents and evaluation.',
+      },
+    ],
   }),
   component: HomeComponent,
 })

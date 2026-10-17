@@ -74,7 +74,7 @@ export function AdminLoginPage() {
       <form className="admin-login-card glass-card" onSubmit={submit}>
         <div className="admin-login-head">
           <Lock className="size-5 text-primary" />
-          <h1 className="appearance-panel-title">{t('title')}</h1>
+          <h1 className="panel-title">{t('title')}</h1>
         </div>
 
         <input

@@ -340,38 +340,41 @@ export function ChatInterface() {
 
   return (
     <div className="chat-shell flex h-full flex-col">
-      {messages.length > 0 && (
-        <div className="chat-topbar" ref={menuRef}>
-          <button
-            type="button"
-            className="chat-menu-btn"
-            onClick={toggleMenu}
-            aria-label={t('menu')}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-          >
-            <MoreVertical className="size-4" />
-          </button>
-          {menuOpen && (
-            <div className="chat-menu-panel" role="menu">
-              {confirmClear ? (
-                <>
-                  <button type="button" className="chat-menu-item danger" role="menuitem" onClick={clearHistory}>
-                    {t('clearConfirm')}
+      <div className="chat-topbar" ref={menuRef}>
+        <span className="chat-topbar-title">{t('title')}</span>
+        {messages.length > 0 && (
+          <>
+            <button
+              type="button"
+              className="chat-menu-btn"
+              onClick={toggleMenu}
+              aria-label={t('menu')}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+            >
+              <MoreVertical className="size-4" />
+            </button>
+            {menuOpen && (
+              <div className="chat-menu-panel" role="menu">
+                {confirmClear ? (
+                  <>
+                    <button type="button" className="chat-menu-item danger" role="menuitem" onClick={clearHistory}>
+                      {t('clearConfirm')}
+                    </button>
+                    <button type="button" className="chat-menu-item" role="menuitem" onClick={cancelClear}>
+                      {t('clearCancel')}
+                    </button>
+                  </>
+                ) : (
+                  <button type="button" className="chat-menu-item danger" role="menuitem" onClick={askClear}>
+                    {t('clear')}
                   </button>
-                  <button type="button" className="chat-menu-item" role="menuitem" onClick={cancelClear}>
-                    {t('clearCancel')}
-                  </button>
-                </>
-              ) : (
-                <button type="button" className="chat-menu-item danger" role="menuitem" onClick={askClear}>
-                  {t('clear')}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       <div className="chat-messages">
         {messages.length === 0 && (

@@ -25,11 +25,11 @@ function formatMonthYear(iso: string, locale: string): string {
 export function PhotosIndex({ works }: PhotosIndexProps) {
   const t = useTranslations('PhotosPage')
   const locale = useLocale()
-  const [activeSlug, setActiveSlug] = useState<string | null>(() =>
-    typeof window === 'undefined' ? null : parsePhotoHash(window.location.hash),
-  )
+  const [activeSlug, setActiveSlug] = useState<string | null>(null)
 
+  // 深链（#photo/<slug>）只在客户端读取，避免 SSR 与客户端首帧不一致
   useEffect(() => {
+    setActiveSlug(parsePhotoHash(window.location.hash))
     const onHashChange = () => setActiveSlug(parsePhotoHash(window.location.hash))
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)

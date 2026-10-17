@@ -1,107 +1,97 @@
-# Design System — Max Zhang · 摄影模块
+# Design System — Max Zhang
 
 ## Product Context
 
-- **What this is:** 个人站（TanStack Start）中的摄影画廊模块：自选作品展示、弹窗沉浸观看、Letters 留言、管理端上传/删除。
-- **Who it's for:** 作者本人维护，访客浏览；中英双语（`/photos` 与 `/zh/photos`）。
-- **Space/industry:** 个人策展画廊。视觉参照 Instagram 的网格节奏与 Apple iOS Liquid Glass 的质感。
-- **Project type:** 内容型个人站的功能模块（列表 + 弹窗查看 + 上传管理）。
+- **What this is:** Max Zhang 的个人网站（TanStack Start 单体应用）：首页 / 文章 / 摄影 / 树洞 / 关于，中英双语。
+- **Who it's for:** 正在转向 AI 产品经理的 Max 本人，以及招聘方、同行读者、摄影作品的访客。
+- **Brand position:** 「把模型能力，翻译成人们愿意用的产品」——工程底子 + 产品判断。
+- **Project type:** 内容型个人站，视觉服务于内容与个人定位。
 
-## Aesthetic Direction
+## Aesthetic Direction — AI Native（2026-10 起）
 
-- **Direction:** Liquid Gallery —— 网格纪律 + 玻璃配角
-- **Decoration level:** minimal。照片承载全部视觉重量；玻璃只属于导航、按钮、浮层这些「工具」。
-- **Mood:** 照片是唯一主角，界面退到幕后。像翻一个安静、整齐、无噪音的相册：Instagram 的「那味儿」来自统一网格节奏和界面隐身，iOS 的高级感来自克制排版、玻璃工具层与流畅动效。
-- **核心原则：照片不穿玻璃。** 网格中的照片直接坐在底色上，无圆角卡片、无投影、无边框；hover 才出现信息层。
+- **Direction:** AI Native / 深色科技感。深色底 + 极光渐变 + 细网格 + 等宽功能标签 + 平面卡片。
+- **Decoration level:** 克制。装饰只出现在背景（极光、网格）与工具层（导航、浮层）上，内容区保持安静。
+- **Mood:** 像 Linear / Anthropic 官网那种「AI 从业者」的精致克制：不炫技，但每个细节都可控。
+- **核心原则：界面退后，内容与判断力在前。** 卡片是平面 panel，不再使用液态玻璃材质；玻璃只作为导航/浮层的背景模糊。
+- **Dark only:** 站点只有深色主题，不提供浅色或跟随系统切换（`html.dark` 固定）。
 
-## Interaction Model（本次核心决策）
+## Design Tokens
 
-- **列表即入口，弹窗即详情。** 点击 tile 打开沉浸弹窗，不离开列表页，浏览循环是「扫一眼 → 点开看 → 回来继续扫」。
-- **深链：** 弹窗打开时地址栏写 `#photo/<slug>`，可分享；浏览器后退键关闭弹窗；`hashchange` 与弹窗状态同步。
-- **桌面弹窗：** 左图右栏（`minmax(0,1fr) + 360px`）。图区使用主题背景（浅色白 / 深色近黑），图片 `object-fit: contain`，最高约 70vh；右栏放标题、日期/地点/标签、可折叠 EXIF、评论与输入框。
-- **移动端弹窗：** 小红书式整页滚动详情 —— 全屏 `100dvh` 无圆角，图片在上（全宽、限高 65dvh、`object-fit: cover`、可滑动切换，超长图默认裁切显示，点「查看原图」展开完整图、再点收起），内容区在下随页面滚动；关闭按钮悬浮在照片右上角。
-- **键盘与触控：** ESC 关闭，← → 切换；触屏左右滑动切换。
-- **兼容：** 原 `/photos/:slug` 路由保留为 302 重定向到 `/photos#photo/<slug>`，避免外链失效；SEO/分享链接不破坏。
+唯一来源：`apps/web/src/styles/design-system.css`。
 
-## Gallery Grid（列表）
+| 类别 | Token | 值 |
+| --- | --- | --- |
+| Surface | `--surface-0` / `--surface-1` / `--surface-2` | `#06070a` / `rgba(255,255,255,.035)` / `rgba(255,255,255,.06)` |
+| Text | `--text-1` / `--text-2` / `--text-3` | `#eef1f7` / `#98a1b3` / `rgba(152,161,179,.5)` |
+| Border | `--border-1` / `--border-2` | `rgba(255,255,255,.09)` / `rgba(255,255,255,.16)` |
+| Brand | `--accent` / `--teal` | `#8b9dff`（靛蓝）/ `#5eead4`（薄荷青） |
+| Gradient | `--gradient-text` | `linear-gradient(100deg,#a5b4fc,#67e8f9 45%,#6ee7b7)` |
+| Gradient | `--gradient-button` | `linear-gradient(120deg,#c7d2fe,#a7f3d0)`，文字 `#07080c` |
+| Radius | `--radius-xs/sm/md/lg/pill` | `8 / 12 / 16 / 20 / 999px` |
+| Motion | `--ease-out` / `--ease-spring` | `cubic-bezier(.22,1,.36,1)` / `cubic-bezier(.22,1.35,.36,1)` |
+| Code | `--code-bg` | `#0b0d13` |
 
-- 桌面 3 列；缝隙 2–3px（发丝级）；tile 固定 4:5 比例，`object-fit: cover`。
-- 无圆角、无阴影、无卡片背景；hover 时照片轻微放大（scale 1.035）+ 底部渐变露出标题与张数。
-- 张数徽标（≥2 张时）：右上角磨砂小胶囊，白字 11px。
-- **移动端：小红书式瀑布流。** 2 列 CSS columns（缝隙 8px），卡片圆角 14px、浅色底、细边框；图片保持自然比例（不做裁切）；卡片下方是两行截断的标题，再往下是作者头像（M）+ 作者名 + 评论数。
-- 列表头部沿用全站 glass header 与 `page-title`；上传入口只在 `/admin` 管理后台，摄影页不出现。
-
-## Upload（上传）
-
-- 面板形态：桌面右上浮层（380px）/ 移动端底部 sheet（全宽）。
-- Dropzone 支持点击与拖拽，选中后立即渲染缩略图网格（最多 10 张）。
-- 每张缩略图可单独移除；封面可指定（对应 `coverIndex`），封面标记为小胶囊「封面」。
-- 字段：中文标题（必填）、英文标题、地点（GPS 自动回填、可手改）、标签（逗号分隔）。
-- 发布成功后跳转列表并直接打开新作品弹窗（`#photo/<slug>`）。
-
-## Admin & Login（管理）
-
-- 管理后台：图片优先列表 —— 56px 缩略图 + 标题 + 日期/张数；hover 才露出删除按钮，删除需确认。
-- 登录页：居中玻璃卡片（沿用现有），保持 iOS 输入框规范与口令锁定态。
+兼容别名（`--bg` / `--label` / `--separator` / `--fill` / `--glass-*`）只为尚未迁移的旧组件样式保留，新代码不要使用。
 
 ## Typography
 
-- 沿用全站系统字体栈：`-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI Variable', ...`（与 `globals.css` 的 `--font-sans` 一致）。
-- **Display/Hero：** 40–68px / 800 / `-0.035em`（`clamp(40px, 7vw, 68px)`）
-- **弹窗标题（caption）：** 22px / 700 / `-0.025em`
-- **区块标题：** 24px / 700 / `-0.02em`
-- **正文：** 16px / 400 / 1.55 行高，次级文字用 `--label-secondary`
-- **Micro label（eyebrow、EXIF、表单项标签）：** 11px / 600 / `+0.12em` / uppercase
-- **数据（EXIF、计数）：** 系统字体 + `font-variant-numeric: tabular-nums`
-
-## Color
-
-- **Approach:** restrained。颜色只做激活态与语义提示，照片本身是色彩来源。
-- **Surface：** 浅色 `#FAFAFA` / 深色 `#0A0A0C`（列表底色，替换默认 `--bg`）
-- **Viewer：** 弹窗观片区跟随系统深浅色（浅色用 `--bg`，深色用近黑 `--bg`），不再固定深色
-- **Accent：** 浅色 `#0066CC` / 深色 `#0A84FF`，仅用于激活态、链接、主按钮
-- **Labels / Hairs：** 沿用现有 `--label`、`--label-secondary`、`--label-tertiary`、`--separator`；tile 缝隙用 0.5px hairline
-- **Semantic：** success `#34C759` / error `#FF3B30` / warning `#FF9500`
-- **深浅模式策略：** 整个摄影模块（网格、卡片、弹窗、评论区）全部跟随系统深浅色；图片上方的悬浮控件（导航、计数器、关闭）保持磨砂深色以适配任意照片
-
-## Spacing
-
-- **Base unit:** 8px
-- **Density:** 紧凑（网格）＋ 宽敞（详情/表单留白）
-- **Scale:** 2(2) 4(4) 8(8) 12(12) 16(16) 24(24) 32(32) 48(48)
-- 网格缝隙 2–3px；页面横向留白 24px（移动端 18px）；tile 信息层内边距 14px
+- **Sans:** Inter Variable；回退系统字体栈（`-apple-system`、`Segoe UI Variable`、`Microsoft YaHei`）。
+- **Mono:** JetBrains Mono Variable；用于 eyebrow、区块索引、meta、标签、表单 label、页脚。
+- **Display / Hero:** `clamp(46px, 6.6vw, 92px)` / 680 / `-0.045em`，中文标题第二行使用渐变文字。
+- **Page title:** `clamp(38px, 5.2vw, 60px)` / 680 / `-0.035em`。
+- **正文:** 15.5–16.5px / 1.75–1.85；正文颜色用 `--text-2`，标题用 `--text-1`。
+- **Micro label:** 10–11px mono / `+0.14em ~ +0.22em` / uppercase。
 
 ## Layout
 
-- **Approach:** grid-disciplined
-- **容器：** 沿用全站 1080px max-width + 24px padding
-- **列表：** 3 列（≥1024px）/ 2 列（<1024px），tile 4:5
-- **弹窗：** 桌面 `min(1000px, 100vw − 48px) × min(720px, 100vh − 56px)`；移动端全屏
-- **Border radius：** 弹窗 22px / 上传面板 24px / 输入框 12px / 胶囊 999px；**tile 无圆角**
+- **Container:** `1180px`，桌面左右 `32px`，移动端 `20px`。
+- **Desktop nav:** 顶部 sticky `68px`，全宽背景模糊 + `1px` 分隔线；链接是 mono uppercase，激活态底部青色短线。
+- **Mobile nav:** 隐藏 top nav，保留底部胶囊 Tabbar（首页/文章/摄影/树洞 + 更多 Sheet）。
+- **Footer:** 顶部细线，三栏 mono 信息（版权 / 身份 / GitHub · Email）。
+- **Section rhythm:** 区块之间 `56–64px`；首页 hero `padding-top: 104px`。
 
-## Motion
+## Components（primitives）
 
-- **Approach:** intentional
-- **Easing:** enter `cubic-bezier(0.22, 1.35, 0.36, 1)`；exit `ease`；move `ease-in-out`
-- **弹窗：** 打开 0.34s `scale 0.96 → 1` + opacity；关闭 0.26s
-- **图片切换：** 0.35s crossfade
-- **Tile hover：** 信息层 0.22s 淡入，照片 0.45s 轻微放大
-- **页面 reveal：** 0.7s ease-out，translateY(18px)
+`design-system.css` 中的基础件：`.btn`（primary/secondary/ghost）、`.chip` / `.chip-accent`、`.stat-pill`、`.ai-badge`、`.ios-input`、`.panel` 相关（`.glass-*` 已降级为平面 panel）、`.icon-btn`、`.page-title` / `.page-subtitle`、`.section-head`、`.back-link`、`.back-to-top`、`.modal-backdrop`、`.panel-header` / `.panel-title`。
+
+## Style Layer Architecture
+
+```text
+apps/web/src/styles/
+  design-system.css   # Tailwind 入口 + tokens + base + shell + primitives
+  content.css         # 文章列表 / 文章正文 / 搜索 / 评论 / 音频 / Mermaid（+ legacy-content.css 迁移层）
+  pages.css           # 首页 / 关于 / 摄影 / 后台 / 树洞 / 浮层（+ legacy-pages.css 迁移层）
+```
+
+- 新样式一律写入 `design-system.css` / `content.css` / `pages.css`，使用 token，不再引入新的一次性颜色。
+- `legacy-*.css` 是迁移期的旧页面样式（chat / 相册 lightbox / 上传等），只允许收缩，不再新增。
+- 旧 `globals.css`、`redesign.css` 与 `shared/theme`（外观模式、玻璃强度、壁纸）已移除。
+
+## Page Status
+
+| 页面 / 组件 | 状态 |
+| --- | --- |
+| 首页 | ✅ AI PM hero / meta strip / 精选文章 / 能力矩阵 / Now strip |
+| 文章列表 / 详情 / 搜索 | ✅ 新卡片、mono meta、深色正文与代码块 |
+| 关于 | ✅ AI PM 叙事 + 经历/学习/教育样式 |
+| 摄影 & 后台 & 登录 | ✅ 深色画廊、Instagram 式弹窗、上传面板、后台列表、登录卡片 |
+| 树洞 | ✅ 深色聊天布局、顶栏标题、气泡、菜单与输入面板 |
+| 音频播放器 / Mermaid | ✅ 平面控件、深色图表与缩放浮层 |
+| 移动端 | ✅ 底栏导航、更多 Sheet、单列卡片、移动端整页详情 |
+
+已验证：管理员登录 → 上传（多图/单图）→ 画廊 → 弹窗 → 删除的完整链路；评论区、搜索、Mermaid 缩放、移动端布局；全站 Playwright 巡检无 console/page error。
 
 ## Decisions Log
 
 | Date | Decision | Rationale |
-|------|----------|-----------|
-| 2026-08-11 | 详情页改为弹窗（`#photo/<slug>` 深链） | Instagram 式浏览零跳转；后退键、分享、SEO 链接都不丢 |
-| 2026-08-11 | Tile 固定 4:5 cover 裁切 | 网格节奏优先；详情看全图，管理端可指定封面 |
-| 2026-08-11 | 照片脱离玻璃卡片 | 照片直接坐底色，玻璃只留工具层，避免「卡片感」稀释作品 |
-| 2026-08-11 | 移动端改为小红书式瀑布流卡片 + 整页滚动详情 | 移动端手感优先：自然比例瀑布流、圆角卡片、浅色内容区；桌面端保持 Instagram 式纪律网格 |
-| 2026-08-11 | 「读者来信」统一改为「评论」 | 命名统一，降低理解成本；英文同步改为 Comments |
-| 2026-08-11 | 弹窗观片区跟随系统深浅色 | 用户要求整个摄影模块与站点深浅色模式一致，取代原先「始终近黑」的决定 |
-| 2026-08-11 | 移动端超长图默认限高 65dvh 裁切显示 | 避免整页出现恐怖级长图；「查看原图」按钮可临时展开完整图 |
-| 2026-08-11 | iOS 27 质感审计与修复 | 折叠菜单/浮层补齐 Liquid Glass（88% 玻璃 + 42px 模糊 + 高光 + 半透明内层）；弹窗关闭钮移到视口右上（照片外，Instagram 式）；照片上的悬浮控件统一玻璃配方；评论与摄影图标描边统一 1.75（SF 风格） |
+| --- | --- | --- |
+| 2026-10-17 | 以 AI Native 深色视觉取代 Liquid Glass | 用户明确不满意原视觉，转向 AI 产品经理定位 |
+| 2026-10-17 | 站点只保留深色主题 | 用户明确「不需要浅色」；移除外观面板与玻璃强度设置 |
+| 2026-10-17 | 设计系统重构为 styles/ 分层 | 原 3000 行 globals.css 职责混杂；token/primitives 与页面样式解耦 |
+| 2026-10-17 | 完成相册 / 上传 / 树洞 / 音频 / Mermaid 的视觉迁移 | 全站页面不再依赖 Liquid Glass 旧视觉；legacy 层只保留结构样式 |
+| 2026-10-17 | `legacy-*.css` 迁移层 | 相册 lightbox、chat、上传等复杂控件先保留旧样式，按页面逐步重写 |
 
 ## Reference
 
-- 交互预览：`/tmp/design-consultation-preview-1786451468/index.html`（已归档到 gstack designs 目录）
-- 现状实现：`apps/web/src/features/photos/`、`apps/web/src/globals.css`（十八·五 摄影模块）
+- 视觉方向概念稿：`.tools/browser/concept-shots/a-ai-native.png`
+- 旧设计系统：`docs/adr/0005-liquid-glass-design-system.md`（已被 ADR-0012 取代）

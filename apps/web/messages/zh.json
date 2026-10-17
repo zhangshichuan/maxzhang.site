@@ -10,13 +10,15 @@
       "switchLanguage": "切换至英文",
       "language": "语言",
       "search": "搜索",
-      "appearance": "外观",
       "photos": "摄影",
       "more": "更多",
       "moreClose": "关闭更多"
     },
     "footer": {
-      "builtBy": "由 <name>Max Zhang</name> 构建。© {year} 保留所有权利。"
+      "builtBy": "由 <name>Max Zhang</name> 构建。© {year} 保留所有权利。",
+      "role": "AI 产品经理 · 前全栈工程师",
+      "github": "GitHub",
+      "email": "邮件"
     },
     "notFound": {
       "title": "页面不存在",
@@ -127,21 +129,45 @@
   },
   "HomePage": {
     "hero": {
-      "subtitle": "BUILD HARDER. GLITCH LOUDER.",
-      "readArticles": "翻阅文章",
-      "aboutMe": "关于我"
+      "eyebrow": "AI Product Manager · 2026",
+      "headline1": "把模型能力，翻译成",
+      "headline2": "人们愿意用的产品。",
+      "lede": "前全栈工程师，正在转向 AI 产品。关注 Agent、RAG 与多模态产品：怎么定义、怎么评估、怎么真正落到用户的工作流里。",
+      "readArticles": "阅读产品笔记",
+      "aboutMe": "关于我",
+      "meta1Label": "01 / 工程底子",
+      "meta1Value": "TypeScript · Python · Go · 可观测性",
+      "meta2Label": "02 / 关注方向",
+      "meta2Value": "Agent · RAG · 模型评估 · 多模态",
+      "meta3Label": "03 / 状态",
+      "meta3Value": "Open to AI PM roles"
     },
     "featuredPosts": {
-      "title": "最新文章",
-      "description": "技术与创意的交汇之处",
-      "viewAll": "浏览全部"
+      "title": "精选文章",
+      "description": "从工程到产品的手记",
+      "viewAll": "全部文章"
+    },
+    "capabilities": {
+      "title": "能力矩阵",
+      "side": "产品 × AI × 工程",
+      "items": [
+        { "title": "产品定义", "items": ["场景洞察与需求拆解", "PRD / 用户故事", "指标与验收标准", "MVP 范围取舍"] },
+        { "title": "AI 能力", "items": ["Agent 任务流设计", "RAG 与知识组织", "Prompt 与评估集", "多模态交互"] },
+        { "title": "工程理解", "items": ["TypeScript / Python / Go", "全栈与 API 设计", "数据与可观测性", "自己搭原型验证"] },
+        { "title": "协作推进", "items": ["跨团队沟通", "用户研究与访谈", "技术翻译", "节奏与风险管理"] }
+      ]
+    },
+    "now": {
+      "label": "Now",
+      "text": "正在把工程经验转成产品判断：读 AI 产品案例、拆 Agent 工作流、写评估清单，也在找真正的 AI 产品团队一起做点东西。",
+      "link": "GitHub"
     }
   },
   "AboutPage": {
     "title": "关于我 - Max Zhang",
     "heading": "关于我",
     "location": "中国 成都",
-    "description": "2016 年，第一份工作。挺幸运的。\n\n公司在当时就非常扁平。管理、技术和产品层的核心成员大多有留学背景，CTO 不按传统前后端切分角色——一个业务方向交给一个人，从前端到数据库到部署，全程负责。后来我知道这算一种 Ownership 文化，只是当时的我没有意识到这有多难得，以为所有公司都这样干活。\n\n第一件事是做一个资源系统。没有 mentor，没有拆好的任务，对着空白编辑器从 '<input type=\"file\">' 开始查。PHP 怎么收文件、S3 怎么存、PostgreSQL 存 bytea 还是存 URL——每一步都是碰上问题再查，没有一步提前想好的。\n\n后来参与医院设备数据平台。当时 PHP7 还没正式发布，我自己拉 PHP 源码用 cmake 编译了一套环境。医院内网的 Windows 日志需要转发到 Linux，中间卡在 SMB 协议。PHP 没有原生支持，我就翻了 libsmbclient 的 C 库文档，给 PHP 编译了一个扩展模块。从 C 到 PHP 再到底层协议，一条链路打穿。通了的时候挺高兴。\n\n再后来，医信云服 2.0。按时交了，卡着公司产品宣讲和融资的节点。没延期。\n\n回头看，那段时间给我留下一个习惯：目标定了，从头走到尾。后来的 TypeScript、Go、Python，Docker、K8s、AWS，MCP、A2A、ReAct——工具一直在换，习惯没变。\n\n这也是为什么我对 Agent 感兴趣。不是追热点。我用了十年等一个能把个人意志放大的东西。以前靠两只手跑一条链，现在把意图写进 spec，一群 Agent 去执行。它们比我快，但方向我定，边界我画，结果我来判断。\n\n不是替代，是杠杆。\n\nAI First 时代，工具在加速，但方向感和判断力没人替你长。能定义问题、能端到端交付、能对结果负责——这几条没变过。与大家共勉。",
+    "description": "现在，我在把十年的工程经验转向 AI 产品：从「怎么实现」到「为谁做、做什么、做到什么程度算成功」。\n\n2016 年，第一份工作。挺幸运的。\n\n公司在当时就非常扁平。管理、技术和产品层的核心成员大多有留学背景，CTO 不按传统前后端切分角色——一个业务方向交给一个人，从前端到数据库到部署，全程负责。后来我知道这算一种 Ownership 文化，只是当时的我没有意识到这有多难得，以为所有公司都这样干活。\n\n第一件事是做一个资源系统。没有 mentor，没有拆好的任务，对着空白编辑器从 '<input type=\"file\">' 开始查。PHP 怎么收文件、S3 怎么存、PostgreSQL 存 bytea 还是存 URL——每一步都是碰上问题再查，没有一步提前想好的。\n\n后来参与医院设备数据平台。当时 PHP7 还没正式发布，我自己拉 PHP 源码用 cmake 编译了一套环境。医院内网的 Windows 日志需要转发到 Linux，中间卡在 SMB 协议。PHP 没有原生支持，我就翻了 libsmbclient 的 C 库文档，给 PHP 编译了一个扩展模块。从 C 到 PHP 再到底层协议，一条链路打穿。通了的时候挺高兴。\n\n再后来，医信云服 2.0。按时交了，卡着公司产品宣讲和融资的节点。没延期。\n\n回头看，那段时间给我留下一个习惯：目标定了，从头走到尾。后来的 TypeScript、Go、Python，Docker、K8s、AWS，MCP、A2A、ReAct——工具一直在换，习惯没变。\n\n这也是为什么我对 Agent 感兴趣。不是追热点。我用了十年等一个能把个人意志放大的东西。以前靠两只手跑一条链，现在把意图写进 spec，一群 Agent 去执行。它们比我快，但方向我定，边界我画，结果我来判断。\n\n不是替代，是杠杆。\n\nAI First 时代，工具在加速，但方向感和判断力没人替你长。能定义问题、能端到端交付、能对结果负责——这几条没变过。与大家共勉。",
     "workExperience": "工作经历",
     "education": "教育经历",
     "techStack": "技术栈",
@@ -232,7 +258,7 @@
   },
   "PostsPage": {
     "title": "文章",
-    "description": "随心记",
+    "description": "AI 产品笔记与工程手记",
     "categories": "分类浏览",
     "tags": "标签索引",
     "noPosts": "暂无文章，敬请期待。",
@@ -262,18 +288,6 @@
     "zoomIn": "放大",
     "zoomOut": "缩小",
     "reset": "重置"
-  },
-  "Appearance": {
-    "title": "外观",
-    "close": "关闭",
-    "light": "浅色",
-    "dark": "深色",
-    "system": "跟随系统",
-    "modeLabel": "外观模式",
-    "glassIntensity": "玻璃质感",
-    "glassLiquid": "液态玻璃",
-    "glassFrosted": "磨砂玻璃",
-    "glassBalanced": "均衡玻璃"
   },
   "AudioPlayer": {
     "loading": "加载中",

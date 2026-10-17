@@ -1,6 +1,5 @@
 import type { PostSummaryWithViews } from '@/src/features/posts/model'
 import { Link, useTranslations } from '@/src/i18n/client'
-import { ChevronRight } from 'lucide-react'
 import { PostItem } from './post-item'
 
 interface FeaturedPostsProps {
@@ -12,12 +11,13 @@ export function FeaturedPosts({ posts }: FeaturedPostsProps) {
 
   return (
     <section>
-      <div className="section-head">
-        <span className="section-title">{t('title')}</span>
-        <div className="section-line"></div>
-        <Link href="/posts" className="inline-flex items-center gap-0.5 text-sm font-medium text-primary no-underline">
-          {t('viewAll')}
-          <ChevronRight className="size-4" />
+      <div className="nx-block-head">
+        <div className="nx-block-left">
+          <span className="nx-block-index">01 — {t('title')}</span>
+          <span className="nx-block-side">{t('description')}</span>
+        </div>
+        <Link href="/posts" className="nx-more">
+          {t('viewAll')} →
         </Link>
       </div>
       <div className="featured-grid">

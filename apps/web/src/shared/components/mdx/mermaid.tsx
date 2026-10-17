@@ -12,7 +12,6 @@ import { Maximize2, RotateCcw, X, ZoomIn, ZoomOut } from 'lucide-react'
 import mermaid from 'mermaid'
 import { useEffect, useState } from 'react'
 import { useTranslations } from '@/src/i18n/client'
-import { useAppearance } from '@/src/shared/theme'
 
 /** Mermaid组件属性接口 */
 interface MermaidProps {
@@ -21,43 +20,28 @@ interface MermaidProps {
 
 export default function Mermaid({ chart }: MermaidProps) {
   const t = useTranslations('Mermaid')
-  const { resolvedMode } = useAppearance()
   const [svg, setSvg] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
   const [zoom, setZoom] = useState(1)
 
   useEffect(() => {
-    const dark = resolvedMode === 'dark'
-    const themeVariables = dark
-      ? {
-          fontFamily: 'var(--font-sans)',
-          fontSize: '14px',
-          primaryColor: '#1c1c1e',
-          primaryTextColor: '#ffffff',
-          primaryBorderColor: '#3a3a3c',
-          lineColor: '#98989f',
-          secondaryColor: '#2c2c2e',
-          tertiaryColor: '#1c1c1e',
-          clusterBkg: '#2c2c2e',
-          clusterBorder: '#3a3a3c',
-        }
-      : {
-          fontFamily: 'var(--font-sans)',
-          fontSize: '14px',
-          primaryColor: '#f2f2f7',
-          primaryTextColor: '#000000',
-          primaryBorderColor: '#c7c7cc',
-          lineColor: '#8e8e93',
-          secondaryColor: '#ffffff',
-          tertiaryColor: '#f2f2f7',
-          clusterBkg: '#ffffff',
-          clusterBorder: '#d1d1d6',
-        }
+    const themeVariables = {
+      fontFamily: 'var(--font-sans)',
+      fontSize: '14px',
+      primaryColor: '#111522',
+      primaryTextColor: '#eef1f7',
+      primaryBorderColor: '#2a3040',
+      lineColor: '#98a1b3',
+      secondaryColor: '#171c2b',
+      tertiaryColor: '#0b0d13',
+      clusterBkg: '#10141f',
+      clusterBorder: '#2a3040',
+    }
 
     mermaid.initialize({
       startOnLoad: false,
-      theme: dark ? 'dark' : 'base',
+      theme: 'dark',
       securityLevel: 'loose',
       fontFamily: 'var(--font-sans)',
       themeVariables,
@@ -83,7 +67,7 @@ export default function Mermaid({ chart }: MermaidProps) {
     }
 
     renderChart()
-  }, [chart, resolvedMode])
+  }, [chart])
 
   const toggleLightbox = () => {
     if (!isLightboxOpen) {

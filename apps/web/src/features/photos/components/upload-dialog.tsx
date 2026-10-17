@@ -128,7 +128,7 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, transition: { duration: 0.15 } }}
-            className="appearance-backdrop"
+            className="modal-backdrop"
             onClick={close}
             aria-hidden="true"
           />
@@ -142,8 +142,8 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
             exit={{ opacity: 0, y: 8, scale: 0.98, transition: { duration: 0.15 } }}
             transition={{ type: 'spring', stiffness: 420, damping: 34 }}
           >
-            <div className="appearance-panel-header">
-              <span className="appearance-panel-title">{t('title')}</span>
+            <div className="panel-header">
+              <span className="panel-title">{t('title')}</span>
               <button type="button" className="icon-btn icon-btn-sm" onClick={close} aria-label={t('close')}>
                 <X className="size-4" />
               </button>

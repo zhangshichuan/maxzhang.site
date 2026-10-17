@@ -1,6 +1,6 @@
 # 以 iOS 27 液态玻璃设计系统取代 Glitch Core
 
-Status: accepted
+Status: superseded by ADR-0012
 
 原站点使用 “Glitch Core” 视觉语言（纯深色、赛博朋克、粒子场、扫描线与毛刺动效），仅支持深色外观。重设计决定整体替换为 Apple iOS 27 的 Liquid Glass 设计系统：深/浅色自适应、系统蓝强调色、系统字体栈、弹簧动效、可调玻璃强度（Clear ↔ Tinted）与缓慢流动的抽象渐变壁纸；信息架构、内容与功能保持不变，只重做视觉与交互层。
 

@@ -4,27 +4,51 @@ export function HomeHero() {
   const t = useTranslations('HomePage.hero')
 
   return (
-    <div className="hero">
-      <div className="hero-tagline">Fullstack Developer</div>
-      <h1 className="hero-title">Max Zhang</h1>
-      <p className="hero-slogan">{t('subtitle')}</p>
-      <div className="btn-group">
+    <section className="nx-hero">
+      <div className="nx-eyebrow">
+        <span className="nx-dot" />
+        {t('eyebrow')}
+      </div>
+
+      <h1 className="nx-hero-title">
+        {t('headline1')}
+        <br />
+        <span className="nx-grad">{t('headline2')}</span>
+      </h1>
+
+      <p className="nx-lede">{t('lede')}</p>
+
+      <div className="nx-actions">
         <Link href="/posts">
-          <button className="btn btn-primary" style={{ padding: '12px 26px', fontSize: 14 }}>
-            {t('readArticles')}
+          <button className="btn btn-primary nx-btn">
+            {t('readArticles')} <span aria-hidden>↗</span>
           </button>
         </Link>
         <Link href="/about">
-          <button className="btn btn-secondary" style={{ padding: '12px 26px', fontSize: 14 }}>
-            {t('aboutMe')}
-          </button>
+          <button className="btn btn-secondary nx-btn">{t('aboutMe')}</button>
         </Link>
         <Link href="https://github.com/zhangshichuan" target="_blank">
-          <button className="btn btn-ghost" style={{ padding: '12px 20px', fontSize: 14 }}>
-            GitHub
-          </button>
+          <button className="btn btn-ghost nx-btn">GitHub</button>
         </Link>
       </div>
-    </div>
+
+      <div className="nx-meta">
+        <div className="nx-meta-item">
+          <span className="nx-k">{t('meta1Label')}</span>
+          <span className="nx-v">{t('meta1Value')}</span>
+        </div>
+        <div className="nx-meta-item">
+          <span className="nx-k">{t('meta2Label')}</span>
+          <span className="nx-v">{t('meta2Value')}</span>
+        </div>
+        <div className="nx-meta-item">
+          <span className="nx-k">{t('meta3Label')}</span>
+          <span className="nx-v">
+            <span className="nx-live" />
+            {t('meta3Value')}
+          </span>
+        </div>
+      </div>
+    </section>
   )
 }

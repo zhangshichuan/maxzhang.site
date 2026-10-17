@@ -10,13 +10,15 @@
       "switchLanguage": "Switch to Chinese",
       "language": "Language",
       "search": "Search",
-      "appearance": "Appearance",
       "photos": "Photography",
       "more": "More",
       "moreClose": "Close more"
     },
     "footer": {
-      "builtBy": "Built by <name>Max Zhang</name>. © {year} All rights reserved."
+      "builtBy": "Built by <name>Max Zhang</name>. © {year} All rights reserved.",
+      "role": "AI Product Manager · Former Fullstack Engineer",
+      "github": "GitHub",
+      "email": "Email"
     },
     "notFound": {
       "title": "Page Not Found",
@@ -127,21 +129,45 @@
   },
   "HomePage": {
     "hero": {
-      "subtitle": "BUILD HARDER. GLITCH LOUDER.",
-      "readArticles": "Browse Articles",
-      "aboutMe": "About Me"
+      "eyebrow": "AI Product Manager · 2026",
+      "headline1": "Making AI products",
+      "headline2": "people actually use.",
+      "lede": "Former full-stack engineer moving into AI product. I care about Agent, RAG and multimodal products: how to define them, how to evaluate them, and how to fit them into real user workflows.",
+      "readArticles": "Read Product Notes",
+      "aboutMe": "About Me",
+      "meta1Label": "01 / Engineering",
+      "meta1Value": "TypeScript · Python · Go · Observability",
+      "meta2Label": "02 / Focus",
+      "meta2Value": "Agent · RAG · Evals · Multimodal",
+      "meta3Label": "03 / Status",
+      "meta3Value": "Open to AI PM roles"
     },
     "featuredPosts": {
-      "title": "Latest Entries",
-      "description": "Where technology meets creativity",
-      "viewAll": "View All"
+      "title": "Selected Writing",
+      "description": "Notes from engineering to product",
+      "viewAll": "All posts"
+    },
+    "capabilities": {
+      "title": "Capability Matrix",
+      "side": "Product × AI × Engineering",
+      "items": [
+        { "title": "Product", "items": ["Scenario insight", "Requirement breakdown", "PRD & acceptance", "MVP scoping"] },
+        { "title": "AI", "items": ["Agent task design", "RAG & knowledge", "Prompt & evals", "Multimodal UX"] },
+        { "title": "Engineering", "items": ["TypeScript / Python / Go", "Full-stack & APIs", "Data & observability", "Rapid prototyping"] },
+        { "title": "Collaboration", "items": ["Cross-team communication", "User research", "Tech translation", "Risk & pace"] }
+      ]
+    },
+    "now": {
+      "label": "Now",
+      "text": "Turning engineering experience into product judgment: reading AI product teardowns, mapping agent workflows, writing evaluation checklists — and looking for a real AI product team to build with.",
+      "link": "GitHub"
     }
   },
   "AboutPage": {
     "title": "About Me - Max Zhang",
     "heading": "About Me",
     "location": "Chengdu, China",
-    "description": "2016. First job. I got lucky.\n\nThe company was already flat back then. Management, tech, and product leadership mostly had overseas backgrounds. The CTO didn't split roles by frontend and backend — one business direction, one person, full ownership from frontend to database to deployment. Later I'd learn this is called an Ownership culture. At the time I didn't realize how unusual it was. I thought all companies worked this way.\n\nFirst task: build a resource system. No mentor, no broken-down tickets. Started from '<input type=\"file\">' and a blank editor. How PHP handles file uploads, how S3 stores them, whether PostgreSQL should use bytea or URLs — every step was figured out by running into a wall and reading through it.\n\nLater, a hospital equipment data platform. PHP7 wasn't officially released yet, so I pulled the PHP source and compiled it myself with cmake. The hospital's internal network ran Windows, logs needed forwarding to Linux, and the SMB protocol was the blocker. PHP had no native support for it, so I dug into libsmbclient's C library docs and compiled a PHP extension module. From C to PHP to the protocol layer — one chain punched through. Felt good when it worked.\n\nThen Yixin Cloud 2.0. Delivered on time, right on the company's demo and fundraising timeline. No delays.\n\nLooking back, that period left me with a habit: goal set, walk it end to end. TypeScript, Go, Python. Docker, K8s, AWS. MCP, A2A, ReAct. The tools kept changing. The habit didn't.\n\nThat's why I care about Agents. Not chasing trends. I spent ten years waiting for something that amplifies one person's will. I used to run a chain with two hands. Now I write intent into a spec, a group of Agents executes. They're faster, but I set the direction, draw the boundaries, judge the results.\n\nNot replacement. Leverage.\n\nIn the AI First era, tools are getting faster, but no one grows your sense of direction or judgment for you. Define the problem. Deliver end to end. Own the result. These haven't changed. Here's to building together.",
+    "description": "Now I'm turning ten years of engineering experience toward AI product: from \"how to build it\" to \"who is it for, what should it do, and what success looks like.\"\n\n2016. First job. I got lucky.\n\nThe company was already flat back then. Management, tech, and product leadership mostly had overseas backgrounds. The CTO didn't split roles by frontend and backend — one business direction, one person, full ownership from frontend to database to deployment. Later I'd learn this is called an Ownership culture. At the time I didn't realize how unusual it was. I thought all companies worked this way.\n\nFirst task: build a resource system. No mentor, no broken-down tickets. Started from '<input type=\"file\">' and a blank editor. How PHP handles file uploads, how S3 stores them, whether PostgreSQL should use bytea or URLs — every step was figured out by running into a wall and reading through it.\n\nLater, a hospital equipment data platform. PHP7 wasn't officially released yet, so I pulled the PHP source and compiled it myself with cmake. The hospital's internal network ran Windows, logs needed forwarding to Linux, and the SMB protocol was the blocker. PHP had no native support for it, so I dug into libsmbclient's C library docs and compiled a PHP extension module. From C to PHP to the protocol layer — one chain punched through. Felt good when it worked.\n\nThen Yixin Cloud 2.0. Delivered on time, right on the company's demo and fundraising timeline. No delays.\n\nLooking back, that period left me with a habit: goal set, walk it end to end. TypeScript, Go, Python. Docker, K8s, AWS. MCP, A2A, ReAct. The tools kept changing. The habit didn't.\n\nThat's why I care about Agents. Not chasing trends. I spent ten years waiting for something that amplifies one person's will. I used to run a chain with two hands. Now I write intent into a spec, a group of Agents executes. They're faster, but I set the direction, draw the boundaries, judge the results.\n\nNot replacement. Leverage.\n\nIn the AI First era, tools are getting faster, but no one grows your sense of direction or judgment for you. Define the problem. Deliver end to end. Own the result. These haven't changed. Here's to building together.",
     "workExperience": "Work Experience",
     "education": "Education",
     "techStack": "Tech Stack",
@@ -232,7 +258,7 @@
   },
   "PostsPage": {
     "title": "Articles",
-    "description": "Code, design, and everyday life.",
+    "description": "Notes on AI product, engineering, and the space between.",
     "categories": "Categories",
     "tags": "Tags",
     "noPosts": "No articles yet, stay tuned.",
@@ -262,18 +288,6 @@
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "reset": "Reset"
-  },
-  "Appearance": {
-    "title": "Appearance",
-    "close": "Close",
-    "light": "Light",
-    "dark": "Dark",
-    "system": "System",
-    "modeLabel": "Appearance mode",
-    "glassIntensity": "Glass Texture",
-    "glassLiquid": "Liquid Glass",
-    "glassFrosted": "Frosted Glass",
-    "glassBalanced": "Balanced Glass"
   },
   "AudioPlayer": {
     "loading": "Loading",
