@@ -12,7 +12,9 @@
       "search": "Search",
       "photos": "Photography",
       "more": "More",
-      "moreClose": "Close more"
+      "moreClose": "Close more",
+      "curriculum": "Knowledge Map",
+      "cases": "Case Studies"
     },
     "footer": {
       "builtBy": "Built by <name>Max Zhang</name>. © {year} All rights reserved.",
@@ -23,25 +25,25 @@
     },
     "notFound": {
       "title": "Page Not Found",
-      "description": "This path doesn't have a product requirement yet. Head back home?",
+      "description": "This path doesn't have a product requirement yet. Back home, or open the knowledge map?",
       "backHome": "Back to Home"
     }
   },
   "Theses": {
-    "title": "What I Believe",
-    "side": "Three opinions",
+    "title": "Three Theses",
+    "side": "What I keep from the course",
     "items": [
       {
-        "title": "Define the task before the model",
-        "body": "Product boundaries come from task decomposition, not prompt tricks. Decide who it's for and what it won't do before choosing a model capability."
+        "title": "Read the scenario before the model",
+        "body": "LLMs are good at complex, ambiguous, data-rich problems. For real-time, zero-tolerance or high-volume simple tasks, use rules, smaller models or people. Place the task first; then choose the model."
       },
       {
-        "title": "Evaluation is not a benchmark",
-        "body": "Real evaluation happens inside the user's workflow: what success means, how failures are caught, and whether the cost holds. Benchmarks only prove the model can answer questions."
+        "title": "Write the standard before the effect",
+        "body": "AI quality isn't intuitive. Define success, failure handling and sampling first, then report with metrics. A high benchmark score doesn't mean the product works."
       },
       {
         "title": "Engineering depth is about trade-offs",
-        "body": "It turns model capability into cost, risk and delivery pace, so product decisions can ship instead of stopping at a demo."
+        "body": "Ten years of engineering taught me where a plan starts to get complicated. I translate model capability into cost, risk and delivery pace, so algorithm and engineering teams can decide together."
       }
     ]
   },
@@ -150,39 +152,41 @@
   "HomePage": {
     "hero": {
       "eyebrow": "AI Product Manager · 2026",
-      "headline1": "Making AI products",
-      "headline2": "people actually use.",
-      "lede": "Ten years as a full-stack engineer; in the last two I took a multi-agent system from zero to production. Now moving into AI product — focused on Agent, RAG and multimodal products: how to define, evaluate, and fit them into real workflows.",
+      "headline1": "A 13-week course,",
+      "headline2": "rebuilt into product judgment.",
+      "lede": "A full-stack engineer moving into AI product. I restructured a 13-week AI product course into a working map — prompting, evaluation, RAG and agents; research, markets and data; then real cases in education, support, healthcare and travel.",
       "readArticles": "Read Notes",
       "aboutMe": "About Me",
-      "emailMe": "Email Me",
+      "emailMe": "Email me",
       "meta1Label": "01 / Background",
       "meta1Value": "10 years full-stack · multi-agent systems",
-      "meta2Label": "02 / Focus",
-      "meta2Value": "Agent · RAG · Evals · Multimodal",
+      "meta2Label": "02 / Training",
+      "meta2Value": "13-week system · 6 case studies",
       "meta3Label": "03 / Status",
-      "meta3Value": "Open to AI PM roles · Chengdu / Remote"
-    },
-    "case": {
-      "title": "One Example",
-      "side": "From scenario to result",
-      "name": "Turning ad asset production into an agent workflow",
-      "contextLabel": "Context",
-      "context": "A hundred thousand videos and 30,000+ images per month, produced through a manual, serial workflow.",
-      "decisionLabel": "Decision",
-      "decision": "Instead of asking the model to 'generate everything', we split planning, generation and review into orchestrated tasks with clear boundaries for the agents.",
-      "resultLabel": "Result",
-      "result": "80%+ cross-team efficiency gain; combined with an AI-native engineering flow, cost per video dropped from RMB 2.5–3 to RMB 0.5–1.",
-      "note": "I owned the system design and rollout, and helped define the workflow rules and acceptance criteria."
+      "meta3Value": "Open to AI PM roles · Chengdu / Remote",
+      "readMap": "Open the map",
+      "readCases": "See the cases"
     },
     "method": {
       "title": "How I Work",
-      "side": "How I shrink uncertainty",
+      "side": "Four steps from problem to launch",
       "items": [
-        { "title": "Define", "body": "Users, scenario, constraints. Write down what it won't do first." },
-        { "title": "Prototype", "body": "Build the demo myself and test capability boundaries on real tasks." },
-        { "title": "Evaluate", "body": "Success metrics, failure samples, and fallbacks." },
-        { "title": "Deliver", "body": "Work with engineering, research and design to cut uncertainty down." }
+        {
+          "title": "Define the problem",
+          "body": "Interviews, surveys, competitor research and market sizing — make sure the problem is real and worth doing."
+        },
+        {
+          "title": "Draw the workflow",
+          "body": "Break the task into nodes: order, where the model acts, where a human stays in the loop."
+        },
+        {
+          "title": "Set the evaluation",
+          "body": "Dimensions, samples, positive and negative examples, iteration logs. Standards before optimization."
+        },
+        {
+          "title": "Ship it",
+          "body": "PRD, data, compliance and communication — deliver with engineering and algorithm teams."
+        }
       ]
     },
     "background": {
@@ -191,19 +195,94 @@
     },
     "featuredPosts": {
       "title": "Selected Writing",
-      "description": "Engineering notes and AI product thinking",
+      "description": "Engineering notes and AI product reviews",
       "viewAll": "All writing"
     },
     "now": {
       "label": "Now",
-      "text": "Three things right now: breaking down AI product cases, writing agent workflow notes, and looking for an AI product team to build with.",
+      "text": "Organizing notes from the 13-week course and six case reviews, while applying for AI product roles.",
       "link": "GitHub"
     },
     "contact": {
       "title": "Looking for an AI product role.",
-      "text": "If you're building AI products, or want to talk about agents, RAG or evaluation, email me directly.",
+      "text": "If you're building AI products, or want to talk about agents, RAG or evaluation, email me.",
       "email": "Email me",
       "github": "GitHub"
+    },
+    "knowledge": {
+      "title": "Knowledge Map",
+      "side": "13 weeks · 4 stages",
+      "intro": "Each card answers one question: what judgment did this week train?",
+      "stages": [
+        {
+          "no": "01",
+          "range": "W1–2",
+          "title": "Foundations & prototype",
+          "brief": "Get the role, model boundaries and first MVP right.",
+          "methods": ["AI PM competency model", "Model limits & hallucination", "No-code MVP", "Prompting & evaluation"]
+        },
+        {
+          "no": "02",
+          "range": "W3–4",
+          "title": "Technical base",
+          "brief": "RAG connects knowledge; agents connect action.",
+          "methods": ["Five-step knowledge base", "Retrieval tuning", "Function calling", "MCP", "Memory & planning"]
+        },
+        {
+          "no": "03",
+          "range": "W5–8",
+          "title": "Product process",
+          "brief": "From demand evidence to PRD, data and compliance.",
+          "methods": [
+            "Interviews & surveys",
+            "Market choice",
+            "PRD & backlog",
+            "Tracking / A/B / rollout",
+            "Communication & compliance"
+          ]
+        },
+        {
+          "no": "04",
+          "range": "W9–13",
+          "title": "Industry practice",
+          "brief": "Apply the methods in real industries, then prove them with a project.",
+          "methods": [
+            "Education Q&A",
+            "Support automation",
+            "Meeting notes",
+            "AI consultation",
+            "Travel planning",
+            "Job packaging"
+          ]
+        }
+      ],
+      "cta": "Open the full map"
+    },
+    "cases": {
+      "title": "Case Studies",
+      "side": "Six industries, six kinds of judgment",
+      "intro": "Workflows from the course's capstone cases. Not just what got built — the decision each step required.",
+      "items": [
+        {
+          "no": "01",
+          "name": "AI customer support",
+          "tag": "Retail / Support",
+          "note": "Route first, answer second; emotional escalation is separate from business intent."
+        },
+        {
+          "no": "02",
+          "name": "AI travel planner",
+          "tag": "Travel / Planning",
+          "note": "Users don't want information; they want a plan they can execute."
+        },
+        {
+          "no": "03",
+          "name": "AI homework solver",
+          "tag": "Education / Utility",
+          "note": "Return the answer first, verify it against the question bank in the background."
+        }
+      ],
+      "cta": "See all cases"
     }
   },
   "AboutPage": {
@@ -213,12 +292,17 @@
     "status": "Open to AI PM roles · Chengdu / Remote",
     "intro": [
       "I'm Max. Ten years as a full-stack engineer; in the last two I took a multi-agent system from zero to production. Now moving into AI product management.",
-      "This isn't a career reset. For ten years I've been answering product questions — who it's for, where the boundaries are, what 'done' means. I used to join at the implementation stage; I want to join earlier, at the definition stage.",
-      "I'm looking for an AI product role, ideally Agent, developer tools or content/community products, based in Chengdu or remote."
+      "This isn't a career reset. For ten years I've been answering product questions — who it's for, where the boundaries are, what “done” means. I used to join at the implementation stage; I want to join earlier, at the definition stage.",
+      "To fill the product gap, I rebuilt my knowledge with a 13-week AI product course: from prompting, evaluation, RAG and agents to research, markets, data and compliance, then real cases in education, support, healthcare and travel. This site is the map and the case reviews."
     ],
-    "storiesTitle": "Three Product Stories",
+    "storiesTitle": "Engineering Base: Three Things I Built",
     "storiesSide": "Context / Decision / Action / Result",
-    "storyLabels": { "background": "Context", "decision": "Decision", "action": "Action", "result": "Result" },
+    "storyLabels": {
+      "background": "Context",
+      "decision": "Decision",
+      "action": "Action",
+      "result": "Result"
+    },
     "stories": [
       {
         "title": "An agent workflow for ad asset production",
@@ -245,9 +329,18 @@
     "lookingTitle": "What I'm Looking For",
     "lookingSide": "Direction / Stage / Location",
     "lookingFor": [
-      { "label": "Direction", "value": "Agent, productivity tools, or content/community AI products" },
-      { "label": "Stage", "value": "Early to growth stage; happy to do 0→1 and 1→10" },
-      { "label": "Location", "value": "Chengdu / Remote" }
+      {
+        "label": "Direction",
+        "value": "Agent, productivity tools, or content/community AI products"
+      },
+      {
+        "label": "Stage",
+        "value": "Early to growth stage; happy to do 0→1 and 1→10"
+      },
+      {
+        "label": "Location",
+        "value": "Chengdu / Remote"
+      }
     ],
     "timelineTitle": "Experience",
     "timeline": [
@@ -280,12 +373,12 @@
     "techIntro": "I can prototype on my own and hold my own in engineering conversations — that's my edge as an AI PM.",
     "learning": "Currently Learning",
     "learningList": [
-      "AI product evaluation and metrics",
-      "User research and interviews",
-      "Agent product form and trust design",
-      "RAG productization and knowledge design",
-      "AI product economics and business models",
-      "Product writing and teardown practice"
+      "The 13-week knowledge map",
+      "Six industry case workflows",
+      "Evaluation rubrics and iteration logs",
+      "Agent memory and planning",
+      "AI product cost structure",
+      "Product writing and case reviews"
     ],
     "education": "Education",
     "educationList": [
@@ -299,12 +392,18 @@
     "contactTitle": "Looking for an AI product role.",
     "contactText": "If you're building AI products, or want to talk about agents, RAG or evaluation, email me directly.",
     "contactEmail": "Email me",
-    "contactGithub": "GitHub"
+    "contactGithub": "GitHub",
+    "trainingTitle": "Training Path",
+    "trainingSide": "13 weeks / 4 stages",
+    "trainingNote": "The course restructured into a knowledge map; this is also my route into product methods.",
+    "trainingLink": "Open the full knowledge map",
+    "capabilityTitle": "Five Competencies",
+    "capabilitySide": "What the course keeps practicing"
   },
   "PostsPage": {
     "title": "Writing",
-    "description": "Engineering notes and AI product thinking",
-    "note": "Mostly engineering notes for now; AI product writing is in progress and will land here.",
+    "description": "Engineering notes and AI product reviews",
+    "note": "Mostly engineering notes for now. The 13-week knowledge map lives under Knowledge Map, and six case reviews under Case Studies.",
     "categories": "Categories",
     "tags": "Tags",
     "noPosts": "No writing yet, stay tuned.",
@@ -343,5 +442,390 @@
     "back10": "Back 10 seconds",
     "forward10": "Forward 10 seconds",
     "rate": "Playback speed"
+  },
+  "CurriculumPage": {
+    "title": "Knowledge Map",
+    "subtitle": "A 13-week AI product course, restructured into 4 stages and 13 cards.",
+    "note": "Based on the course's slides, prompts and case materials. Where the material is missing, I don't fill it in — this page keeps only the methods and judgments it can support.",
+    "outputLabel": "Output",
+    "stages": [
+      {
+        "no": "01",
+        "range": "W1–2",
+        "title": "Foundations & prototype",
+        "brief": "Get the role, model boundaries and first MVP right.",
+        "weeks": [
+          {
+            "no": "01",
+            "title": "Role, MVP and LLM basics",
+            "question": "What does an AI product manager actually do?",
+            "methods": [
+              "AI PM competency model",
+              "AI-native products",
+              "No-code MVP",
+              "Pre-training / post-training / fine-tuning",
+              "Hallucination and limits"
+            ],
+            "output": "A first working agent"
+          },
+          {
+            "no": "02",
+            "title": "Prompting and product evaluation",
+            "question": "How do we make the model reliable and the result measurable?",
+            "methods": [
+              "ICIO / CRISPE / CO-STAR",
+              "CoT / self-consistency / ToT / few-shot",
+              "System prompts and temperature",
+              "Overfitting and data drift",
+              "Accuracy / recall / F1",
+              "Evaluation process and report"
+            ],
+            "output": "A reusable evaluation report"
+          }
+        ]
+      },
+      {
+        "no": "02",
+        "range": "W3–4",
+        "title": "Technical base",
+        "brief": "RAG connects knowledge; agents connect action.",
+        "weeks": [
+          {
+            "no": "03",
+            "title": "RAG and knowledge bases",
+            "question": "What if the model doesn't know the business?",
+            "methods": [
+              "Five-step build",
+              "Chunking strategies",
+              "Embeddings and vector search",
+              "Metadata",
+              "Hybrid retrieval / reranking",
+              "Query rewriting / semantic routing"
+            ],
+            "output": "An agent with a private knowledge base"
+          },
+          {
+            "no": "04",
+            "title": "Agent design",
+            "question": "How do we let the model complete tasks on its own?",
+            "methods": [
+              "Perception / memory / planning / action",
+              "Function calling and plugins",
+              "MCP: from N×M to N+M",
+              "Eight memory decisions",
+              "Reflection / ReAct / multi-agent"
+            ],
+            "output": "An agent with tools, memory and planning"
+          }
+        ]
+      },
+      {
+        "no": "03",
+        "range": "W5–8",
+        "title": "Product process",
+        "brief": "From demand evidence to PRD, data and compliance.",
+        "weeks": [
+          {
+            "no": "05",
+            "title": "User research and market discovery",
+            "question": "Is this demand real?",
+            "methods": [
+              "Six dimensions, five directions",
+              "Probing and 5 Whys",
+              "Six-step survey",
+              "Competitor research",
+              "Qualitative + quantitative"
+            ],
+            "output": "Interview guide, report and survey"
+          },
+          {
+            "no": "06",
+            "title": "Market choice and data basics",
+            "question": "Is it worth doing? How do we verify it?",
+            "methods": [
+              "Market segmentation",
+              "Sizing",
+              "Five forces and concentration",
+              "Tracking with 5W",
+              "A/B testing",
+              "Staged rollout"
+            ],
+            "output": "Market analysis, tracking and validation plan"
+          },
+          {
+            "no": "07",
+            "title": "PRD, backlog and AI cost",
+            "question": "How do we write the requirement and understand the technical boundary?",
+            "methods": [
+              "Three-part PRD",
+              "Metric-based AI requirements",
+              "Backlog and prioritization",
+              "Fine-tuning decisions",
+              "GPU and inference cost"
+            ],
+            "output": "A PRD a team can build from"
+          },
+          {
+            "no": "08",
+            "title": "Data, compliance and communication",
+            "question": "How does the plan actually land?",
+            "methods": [
+              "Four-step data pipeline",
+              "Labeling and cleaning",
+              "Requirement review",
+              "Managing up",
+              "Compliance boundaries"
+            ],
+            "output": "Data plan, review deck and communication plan"
+          }
+        ]
+      },
+      {
+        "no": "04",
+        "range": "W9–13",
+        "title": "Industry practice",
+        "brief": "Apply the methods in real industries, then prove them with a project.",
+        "weeks": [
+          {
+            "no": "09",
+            "title": "Education: Q&A and companionship",
+            "question": "How do we move from demand to a workflow?",
+            "methods": [
+              "PRD and question bank",
+              "Solver / follow-up workflows",
+              "Five elements of persona",
+              "Relationship as a number",
+              "Tracking and acceptance"
+            ],
+            "output": "A usable education MVP"
+          },
+          {
+            "no": "10",
+            "title": "Retail, office and coding",
+            "question": "Which part of the industry should AI take over?",
+            "methods": [
+              "Intent routing",
+              "Query rewriting",
+              "Templates + dictionaries",
+              "Workflow orchestration",
+              "Human-AI boundaries"
+            ],
+            "output": "Support and meeting-notes workflows"
+          },
+          {
+            "no": "11",
+            "title": "Healthcare and travel",
+            "question": "How is professional service rebuilt by AI?",
+            "methods": [
+              "Chief complaint and question guide",
+              "RAG over process knowledge",
+              "Bounded follow-up rounds",
+              "Multi-module synthesis",
+              "Eight-dimension rubric"
+            ],
+            "output": "Consultation and travel-planning agents"
+          },
+          {
+            "no": "12",
+            "title": "Job search: turn projects into evidence",
+            "question": "How do we prove the judgment is real?",
+            "methods": [
+              "Competency list",
+              "STAR structure",
+              "Five standards for a good project",
+              "Quantified results",
+              "Project material template"
+            ],
+            "output": "A verifiable project package"
+          },
+          {
+            "no": "13",
+            "title": "Frontier: where is the next shift?",
+            "question": "Which changes are worth preparing for?",
+            "methods": ["Image generation usability", "OS agents", "Entry points and ecosystems", "Trend judgment"],
+            "output": "A frontier observation note"
+          }
+        ]
+      }
+    ],
+    "model": {
+      "title": "Competency Model",
+      "side": "Five things the course keeps returning to",
+      "intro": "Thirteen weeks compressed into five dimensions — also what I keep practicing.",
+      "items": [
+        {
+          "title": "Scenario & demand",
+          "body": "Break an industry into parts AI can take over, and decide where to start."
+        },
+        {
+          "title": "Solution & workflow",
+          "body": "Assemble prompts, RAG, agents and tools into a workflow that runs."
+        },
+        {
+          "title": "Evaluation & data",
+          "body": "Turn “good or bad” into dimensions, samples, scores and iteration logs."
+        },
+        {
+          "title": "Technology & cost",
+          "body": "Choose models by task difficulty; calculate inference and delivery cost."
+        },
+        {
+          "title": "Delivery & communication",
+          "body": "Write PRDs, pass reviews, align teams, and tell the project as verifiable evidence."
+        }
+      ]
+    },
+    "boundaryTitle": "Material boundaries",
+    "boundaryText": "Some chapters are video-only or image-based slides without transcripts. This page only keeps methods with material support and does not fill in the gaps.",
+    "ctaTitle": "Beyond the map: six concrete cases.",
+    "ctaText": "From customer support to AI consultation, see what these methods look like in real industries.",
+    "ctaPrimary": "See the cases",
+    "ctaSecondary": "About me"
+  },
+  "CasesPage": {
+    "title": "Case Studies",
+    "subtitle": "Six industry cases from the course's capstone workflows.",
+    "note": "Structure is based on the workflows, prompts and attachments. Numbers are only those explicitly given in the material.",
+    "labels": {
+      "context": "Context",
+      "user": "Users",
+      "judgments": "Key judgments",
+      "flow": "Workflow",
+      "eval": "Evaluation",
+      "reuse": "Reusable"
+    },
+    "cases": [
+      {
+        "no": "01",
+        "name": "AI customer support",
+        "tag": "Retail / E-commerce",
+        "context": "E-commerce support gets high volume and mixed intents. The course built a support agent for a headphone store with low-code tools.",
+        "user": "C-end buyers (pre-sales and after-sales), plus B-end merchants who need support systems.",
+        "judgments": [
+          "Emotional escalation is independent of business intent: complaints, self-harm or violence go straight to a human.",
+          "Resolve pronouns and references before retrieval; an incomplete question retrieves the wrong knowledge.",
+          "Never carry the full conversation: tokens and attention both collapse."
+        ],
+        "flow": [
+          "Intent routing (pre-sales / after-sales / off-topic / unknown)",
+          "Query rewrite: clean, decompose, resolve references",
+          "Loop over the knowledge base (topK = 5)",
+          "Specialist answer",
+          "Emotion and risk check → reply or hand off"
+        ],
+        "eval": "No launch data in the material; the workflow and prompts are reproducible.",
+        "reuse": "Splitting a conversation into route, retrieve, answer and fallback applies well beyond support."
+      },
+      {
+        "no": "02",
+        "name": "AI meeting notes",
+        "tag": "Office / Productivity",
+        "context": "Meeting-note products are crowded and cheap. The course starts by questioning whether the demand is real.",
+        "user": "C-end: study notes and personal productivity; B/G-end: meeting systems and private deployment.",
+        "judgments": [
+          "Users don't want a transcript; they want to know what to pay attention to.",
+          "Correct ASR homophones with a company dictionary before summarizing.",
+          "Decide the template before generating; structure then stays stable."
+        ],
+        "flow": [
+          "Audio / text input",
+          "ASR transcription",
+          "Classify meeting type and pick a template",
+          "Retrieve company dictionary and templates",
+          "Fetch background context",
+          "Generate the minutes"
+        ],
+        "eval": "No effect data in the material; the pipeline and prompts are reproducible.",
+        "reuse": "Template first, dictionary second, generation last — works for any structured document generation."
+      },
+      {
+        "no": "03",
+        "name": "AI homework solver",
+        "tag": "Education / Utility",
+        "context": "A fictional tutoring company wanted photo-based math search for grade 7, to understand student difficulties and support learning analytics.",
+        "user": "Enrolled middle-school students; 40% feel anxious about being accused of copying answers.",
+        "judgments": [
+          "Experience first: show the solution, verify against the question bank in the background.",
+          "Cold-start the question bank with an authoring tool, not by collecting questions manually.",
+          "Tag abnormal inputs: not-math and not-a-question are separate classes."
+        ],
+        "flow": [
+          "Photo upload",
+          "Solver outputs steps and answer",
+          "Extract the question text",
+          "Search the question bank",
+          "Compare answers; withdraw and use the bank answer if inconsistent",
+          "Follow-up and review reminder"
+        ],
+        "eval": "MVP target: 630 enrolled students use it 3+ times within three months; 20 uploads per minute.",
+        "reuse": "Answer first, verify later — useful when accuracy matters but waiting costs more."
+      },
+      {
+        "no": "04",
+        "name": "AI companion",
+        "tag": "Entertainment / Emotional",
+        "context": "A 24/7 companion chat product with a persona called Lin Xu.",
+        "user": "People seeking emotional support; scale and monetization not covered in the material.",
+        "judgments": [
+          "A persona is not a paragraph of copy: personality, memory, capability, interaction and ethics.",
+          "Turn the relationship into a 0–100 number, then map it to tone and behavior rules.",
+          "Crisis intervention is a requirement, not a bonus feature."
+        ],
+        "flow": [
+          "Persona and task constraints",
+          "Intimacy score (stranger / friend / romantic)",
+          "Long-term memory injection",
+          "Reply (≤100 characters; never reveal persona or chain-of-thought)"
+        ],
+        "eval": "No retention data in the material; the relationship tiers and behavior rules are reproducible.",
+        "reuse": "Turning abstract experience (intimacy, trust) into executable numbers is a general design move for emotional products."
+      },
+      {
+        "no": "05",
+        "name": "AI medical consultation",
+        "tag": "Healthcare / Professional services",
+        "context": "Healthcare is high-stakes. The course turns consultation into a SOP with chief complaint, question guide, bounded follow-ups and RAG.",
+        "user": "Patients with initial consultation or triage needs; scale and personas not covered.",
+        "judgments": [
+          "RAG retrieves the consultation process, not just medical knowledge.",
+          "Cap the number of follow-up rounds or users drop off.",
+          "A fixed four-part output — complaint, history, diagnosis, plan — is what makes QA possible."
+        ],
+        "flow": [
+          "Chief complaint input",
+          "Retrieve consultation templates (private knowledge base, topK = 1)",
+          "Rewrite into follow-up questions",
+          "Up to 10 rounds of Q&A",
+          "Consultation specialist outputs four sections"
+        ],
+        "eval": "No evaluation data in the material; a 106-complaint question guide supports completeness.",
+        "reuse": "Process knowledge can be retrieved too — a counter-intuitive but useful RAG pattern."
+      },
+      {
+        "no": "06",
+        "name": "AI travel planner",
+        "tag": "Travel / Planning",
+        "context": "Group tours aren't personal, custom trips are expensive, and self-planning takes time. Users want a complete plan, not information.",
+        "user": "Individual and family travelers with different preferences for pace, budget and style.",
+        "judgments": [
+          "Ask three multiple-choice questions first, turning fuzzy demand into executable constraints.",
+          "Cross-city transport must cite real trains or flights from tools; both directions are required.",
+          "Never judge by average score alone: one version improved the average while the share above 80 dropped."
+        ],
+        "flow": [
+          "Three follow-up questions",
+          "Demand summary",
+          "Attraction shortlist",
+          "Hotel / food / dates / transport in parallel",
+          "Planner composes title, overview, day-by-day timeline, lodging, pre-trip tips"
+        ],
+        "eval": "Eight dimensions scored 0/1/2, normalized. V0.11 mean 0.75 (30 samples) → V0.13 mean 0.775 (50 samples), but the share above 80 fell from 66.7% to 40%.",
+        "reuse": "A dimension-based rubric plus versioned iteration logs is the most reusable asset in plan-generation products."
+      }
+    ],
+    "ctaTitle": "All six point to the same thing.",
+    "ctaText": "Put model capability into a concrete scenario — then define the boundary, the evaluation and the fallback.",
+    "ctaPrimary": "Knowledge map",
+    "ctaSecondary": "About me"
   }
 }

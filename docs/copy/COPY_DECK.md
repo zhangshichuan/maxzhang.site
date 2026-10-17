@@ -1,3 +1,5 @@
+> 已被课程主题 v2 取代：最新静态文案体系见 docs/copy/COURSE_COPY_SYSTEM.md。本文件保留为上一版通用 AI 产品经理文案参考。
+
 # 文案体系（重构版）
 
 > 本文是站点文案的唯一策略文档；具体字符串以 `apps/web/messages/{zh,en}.json` 为准。

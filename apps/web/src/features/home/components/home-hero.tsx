@@ -19,13 +19,13 @@ export function HomeHero() {
       <p className="nx-lede">{t('lede')}</p>
 
       <div className="nx-actions">
-        <Link href="/posts">
+        <Link href="/curriculum">
           <button className="btn btn-primary nx-btn">
-            {t('readArticles')} <span aria-hidden>↗</span>
+            {t('readMap')} <span aria-hidden>↗</span>
           </button>
         </Link>
-        <Link href="/about">
-          <button className="btn btn-secondary nx-btn">{t('aboutMe')}</button>
+        <Link href="/cases">
+          <button className="btn btn-secondary nx-btn">{t('readCases')}</button>
         </Link>
         <Link href="mailto:zsc.guru@qq.com">
           <button className="btn btn-ghost nx-btn">{t('emailMe')}</button>

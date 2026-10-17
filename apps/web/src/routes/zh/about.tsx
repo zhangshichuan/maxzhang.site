@@ -8,7 +8,7 @@ export const Route = createFileRoute('/zh/about')({
       { title: '关于我 - Max Zhang' },
       {
         name: 'description',
-        content: 'Max Zhang，AI 产品经理。前全栈工程师，关注 Agent、RAG 与 AI 产品落地。',
+        content: 'Max Zhang，十年全栈工程师转 AI 产品经理。以一套 13 周课程重建产品方法论，做知识地图与行业案例复盘。',
       },
     ],
   }),
