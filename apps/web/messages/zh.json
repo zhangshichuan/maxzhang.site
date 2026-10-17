@@ -27,6 +27,24 @@
       "backHome": "返回首页"
     }
   },
+  "Theses": {
+    "title": "产品主张",
+    "side": "三条判断",
+    "items": [
+      {
+        "title": "先定义任务，再谈模型",
+        "body": "AI 产品的边界感来自任务拆解，不是 prompt 技巧。先写清楚为谁做、不做什么，再决定用哪种模型能力。"
+      },
+      {
+        "title": "评估不是跑分",
+        "body": "真正的评估发生在用户工作流里：什么算成功、失败怎么兜底、成本是否可接受。跑分只能证明模型会做题。"
+      },
+      {
+        "title": "工程背景的价值是取舍",
+        "body": "能把「模型能力」翻译成「成本、风险、交付节奏」，让产品决策可落地，而不是停在 demo。"
+      }
+    ]
+  },
   "PhotosPage": {
     "title": "摄影",
     "description": "业余拍照，认真挑片。",
@@ -94,7 +112,7 @@
   "Comment": {
     "title": "评论",
     "placeholder": "写下你的评论...",
-    "submit": "发表",
+    "submit": "发表评论",
     "submitting": "发表中...",
     "error": "发表失败，请重试",
     "success": "评论发表成功！",
@@ -108,9 +126,9 @@
   },
   "Chat": {
     "title": "树洞",
-    "subtitle": "一个由 AI 陪着的树洞",
+    "subtitle": "一个 AI 倾听实验",
     "placeholder": "想说什么都可以，我在这里听。",
-    "emptyState": "我在这里。无论你想说什么，都可以说给我听。",
+    "emptyState": "这是我用 DeepSeek 做的一个小实验：不评判，只倾听。想说什么都可以。",
     "send": "倾诉",
     "sending": "倾听中……",
     "privacyNote": "聊天记录只保存在你的浏览器本地。代码开源，可自行核验。",
@@ -134,35 +152,58 @@
       "eyebrow": "AI Product Manager · 2026",
       "headline1": "把模型能力，翻译成",
       "headline2": "人们愿意用的产品。",
-      "lede": "前全栈工程师，正在转向 AI 产品。关注 Agent、RAG 与多模态产品：怎么定义、怎么评估、怎么真正落到用户的工作流里。",
+      "lede": "十年全栈工程师，过去两年把多智能体系统从 0 带到生产。现在转向 AI 产品，关注 Agent、RAG 与多模态产品：怎么定义、怎么评估、怎么落到用户的工作流里。",
       "readArticles": "阅读文章",
       "aboutMe": "关于我",
-      "meta1Label": "01 / 工程底子",
-      "meta1Value": "TypeScript · Python · Go · 可观测性",
-      "meta2Label": "02 / 关注方向",
-      "meta2Value": "Agent · RAG · 模型评估 · 多模态",
+      "emailMe": "写邮件",
+      "meta1Label": "01 / 背景",
+      "meta1Value": "十年全栈工程 · 多智能体系统",
+      "meta2Label": "02 / 关注",
+      "meta2Value": "Agent · RAG · 评估 · 多模态",
       "meta3Label": "03 / 状态",
       "meta3Value": "正在寻找 AI 产品岗位 · 成都 / 远程"
     },
+    "case": {
+      "title": "一个例子",
+      "side": "从场景到结果",
+      "name": "把广告素材生产，拆成一条 Agent 工作流",
+      "contextLabel": "场景",
+      "context": "每月 10 万条视频、3 万+ 图片的素材生产，原有流程靠人工串行。",
+      "decisionLabel": "判断",
+      "decision": "不是让模型「一键生成」，而是把策划、生成、审核拆成可编排的任务，让 Agent 在边界内执行。",
+      "resultLabel": "结果",
+      "result": "跨部门协作效率提升 80%+；叠加 AI Native 研发流程后，单条视频成本从 2.5–3 元降到 0.5–1 元。",
+      "note": "我负责系统设计与落地推进，也参与了流程规则和验收标准的定义。"
+    },
+    "method": {
+      "title": "工作方式",
+      "side": "我怎么把不确定性拆小",
+      "items": [
+        { "title": "定义问题", "body": "用户、场景、约束。先写清楚不做什么。" },
+        { "title": "做原型", "body": "自己搭 demo，用真实任务验证能力边界。" },
+        { "title": "设计评估", "body": "成功指标、失败样本、兜底方案。" },
+        { "title": "推进交付", "body": "和工程、算法、设计一起，把不确定性拆小。" }
+      ]
+    },
+    "background": {
+      "label": "工程底子",
+      "value": "TypeScript · Python · Go · 多智能体（MCP / A2A）· 可观测性"
+    },
     "featuredPosts": {
       "title": "精选文章",
-      "description": "从工程到产品的手记",
+      "description": "工程手记与 AI 产品思考",
       "viewAll": "全部文章"
-    },
-    "capabilities": {
-      "title": "能力矩阵",
-      "side": "产品 × AI × 工程",
-      "items": [
-        { "title": "产品定义", "items": ["场景洞察与需求拆解", "PRD / 用户故事", "指标与验收标准", "MVP 范围取舍"] },
-        { "title": "AI 能力", "items": ["Agent 任务流设计", "RAG 与知识组织", "Prompt 与评估集", "多模态交互"] },
-        { "title": "工程理解", "items": ["TypeScript / Python / Go", "全栈与 API 设计", "数据与可观测性", "自己搭原型验证"] },
-        { "title": "协作推进", "items": ["跨团队沟通", "用户研究与访谈", "技术翻译", "节奏与风险管理"] }
-      ]
     },
     "now": {
       "label": "Now",
-      "text": "正在把工程经验转成产品判断：读 AI 产品案例、拆 Agent 工作流、写评估清单，也在找真正的 AI 产品团队一起做点东西。",
+      "text": "正在做三件事：拆 AI 产品案例、写 Agent 工作流笔记、找 AI 产品团队聊合作。",
       "link": "GitHub"
+    },
+    "contact": {
+      "title": "在找 AI 产品岗位。",
+      "text": "如果你们在做 AI 产品，或者想聊聊 Agent / RAG / 评估，欢迎直接邮件。",
+      "email": "发邮件",
+      "github": "GitHub"
     }
   },
   "AboutPage": {
@@ -170,89 +211,74 @@
     "heading": "关于我",
     "location": "中国 成都",
     "status": "Open to AI PM roles · 成都 / 远程",
-    "description": "现在，我在把十年的工程经验转向 AI 产品：从「怎么实现」到「为谁做、做什么、做到什么程度算成功」。\n\n2016 年，第一份工作。挺幸运的。\n\n公司在当时就非常扁平。管理、技术和产品层的核心成员大多有留学背景，CTO 不按传统前后端切分角色——一个业务方向交给一个人，从前端到数据库到部署，全程负责。后来我知道这算一种 Ownership 文化，只是当时的我没有意识到这有多难得，以为所有公司都这样干活。\n\n第一件事是做一个资源系统。没有 mentor，没有拆好的任务，对着空白编辑器从 '<input type=\"file\">' 开始查。PHP 怎么收文件、S3 怎么存、PostgreSQL 存 bytea 还是存 URL——每一步都是碰上问题再查，没有一步提前想好的。\n\n后来参与医院设备数据平台。当时 PHP7 还没正式发布，我自己拉 PHP 源码用 cmake 编译了一套环境。医院内网的 Windows 日志需要转发到 Linux，中间卡在 SMB 协议。PHP 没有原生支持，我就翻了 libsmbclient 的 C 库文档，给 PHP 编译了一个扩展模块。从 C 到 PHP 再到底层协议，一条链路打穿。通了的时候挺高兴。\n\n再后来，医信云服 2.0。按时交了，卡着公司产品宣讲和融资的节点。没延期。\n\n回头看，那段时间给我留下一个习惯：目标定了，从头走到尾。后来的 TypeScript、Go、Python，Docker、K8s、AWS，MCP、A2A、ReAct——工具一直在换，习惯没变。\n\n这也是为什么我对 Agent 感兴趣。不是追热点。我用了十年等一个能把个人意志放大的东西。以前靠两只手跑一条链，现在把意图写进 spec，一群 Agent 去执行。它们比我快，但方向我定，边界我画，结果我来判断。\n\n不是替代，是杠杆。\n\nAI First 时代，工具在加速，但方向感和判断力没人替你长。能定义问题、能端到端交付、能对结果负责——这几条没变过。与大家共勉。",
-    "experienceIntro": "我的头衔一直是工程负责人，但过去两年实际承担的是产品定义与落地推进——这也是我转向 AI 产品的原因。",
-    "workExperience": "工作经历",
-    "education": "教育经历",
+    "intro": [
+      "我是 Max，十年全栈工程师，过去两年把多智能体系统从 0 带到生产。现在转向 AI 产品经理。",
+      "不是从零转行。做工程的十年里，我一直在回答产品问题：为谁做、边界在哪、什么算做完。只是以前在实现阶段参与，现在希望更早进入定义阶段。",
+      "目前在找 AI 产品经理岗位，偏好 Agent、工具与内容类产品，地点成都或远程。"
+    ],
+    "storiesTitle": "三个产品故事",
+    "storiesSide": "场景 / 判断 / 动作 / 结果",
+    "storyLabels": { "background": "场景", "decision": "判断", "action": "动作", "result": "结果" },
+    "stories": [
+      {
+        "title": "广告素材生产的 Agent 工作流",
+        "background": "每月 10 万条视频、3 万+ 图片的素材生产，原有流程靠人工串行。",
+        "decision": "不是让模型「一键生成」，而是把策划、生成、审核拆成可编排的任务，让 Agent 在边界内执行。",
+        "action": "设计多智能体协作与沙箱执行环境，接入 MCP 工具，定义任务流转与异常兜底。",
+        "result": "跨部门协作效率提升 80%+；单条视频成本随后降到 0.5–1 元。"
+      },
+      {
+        "title": "AI Native 研发流程改造",
+        "background": "视频生成成本高，需求文档到 Bug 修复的链路长、重复环节多。",
+        "decision": "先标准化输入输出，再让 Codex、Claude 与自研 MCP 分担重复环节。",
+        "action": "打通需求生成、任务拆解、执行验证与 Bug 修复闭环。",
+        "result": "单条视频成本从 2.5–3 元降到 0.5–1 元。"
+      },
+      {
+        "title": "广告业务数字化平台",
+        "background": "素材生产、审批、投放、数据回溯分散在多个系统，跨部门协作靠人肉对齐。",
+        "decision": "先打通状态机与数据口径，再谈自动化。",
+        "action": "主导平台建设，推动生产、审批、投放、数据四条链路统一。",
+        "result": "支撑月均 10 万条视频与 3 万+ 图片生成，协作效率提升 80% 以上。"
+      }
+    ],
+    "lookingTitle": "我在找什么",
+    "lookingSide": "方向 / 阶段 / 地点",
+    "lookingFor": [
+      { "label": "方向", "value": "Agent / 效率工具 / 内容与社区类 AI 产品" },
+      { "label": "阶段", "value": "早期到成长期，愿意做 0→1 与 1→10" },
+      { "label": "地点", "value": "成都 / 远程" }
+    ],
+    "timelineTitle": "工作经历",
+    "timeline": [
+      {
+        "period": "2021.02 - 2025.12",
+        "role": "前端负责人",
+        "company": "成都睿晟天和传媒科技",
+        "note": "多智能体系统、广告数字化平台、AI Native 研发流程"
+      },
+      {
+        "period": "2020.01 - 2021.01",
+        "role": "全栈工程师",
+        "company": "成都魔方元科技",
+        "note": "多业务线交付与渐进式重构"
+      },
+      {
+        "period": "2018.05 - 2019.12",
+        "role": "全栈工程师",
+        "company": "成都众人安科技",
+        "note": "BD 保单管家与分布式爬虫"
+      },
+      {
+        "period": "2016.03 - 2018.02",
+        "role": "全栈工程师",
+        "company": "成都数联医信科技",
+        "note": "医院设备数据与 SaaS 交付"
+      }
+    ],
     "techStack": "工程底子",
     "techIntro": "能自己搭原型、能和工程团队把方案聊到底——这是我做 AI 产品的差异化。",
     "learning": "研习方向",
-    "interests": "兴趣点",
-    "caseTitle": "AI 产品练习",
-    "caseText": "正在整理 AI 产品拆解、评估清单与 Agent 工作流笔记。",
-    "caseCta": "去看文章",
-    "experience": [
-      {
-        "role": "前端负责人",
-        "company": "成都睿晟天和传媒科技有限公司",
-        "department": "产品研发部",
-        "period": "2021.02 - 2025.12",
-        "tags": [
-          "多智能体系统",
-          "MCP Protocol",
-          "A2A Protocol",
-          "ReAct Agent",
-          "Docker Sandbox",
-          "Playwright",
-          "FastAPI",
-          "Next.js",
-          "Prisma",
-          "PostgreSQL",
-          "BullMQ"
-        ],
-        "points": [
-          "主导多智能体协作系统的产品化：把广告素材生产中的策划、生成、审核拆成可编排的 Agent 任务流，并支持 MCP 动态接入外部工具。",
-          "设计 A2A 分布式 Agent 网络的任务分发与结果回传机制，让规划 Agent 与执行 Agent 协作完成复杂任务。",
-          "搭建 Docker 沙箱隔离环境，让 Agent 能在容器内安全执行 Shell、Python 与浏览器自动化操作。",
-          "主导广告业务数字化平台建设，打通素材生产、审批、投放、数据回溯等核心流程，支撑月均 10 万条视频与 3 万+ 图片生成，跨部门协作效率提升 80% 以上。",
-          "推动 AI Native 研发流程革新，基于 Codex、Claude 与自研 MCP 打通需求文档生成、任务拆解、执行验证和 Bug 自动修复闭环，将单条视频生成成本从 2.5-3 元压缩至 0.5-1 元。",
-          "推动多个历史中后台系统的工程治理（构建升级、组件重构、Monorepo 与规范），为产品迭代速度兜底。"
-        ]
-      },
-      {
-        "role": "全栈工程师",
-        "company": "成都魔方元科技有限公司",
-        "department": "研发团队",
-        "period": "2020.01 - 2021.01",
-        "tags": ["React Native", "Vue", "Nest.js", "MongoDB", "Docker", "gRPC"],
-        "points": [
-          "在跨国、多业务线团队中负责需求沟通、拆解与交付，参与从模块化到微服务治理的持续演进。",
-          "维护并迭代 20+ 个历史项目，在高技术债背景下推进渐进式重构，技术栈覆盖 React Native、Vue、React、Nest.js、PHP 与 MongoDB。",
-          "带领 4 人小组重写高频用户端核心业务，补齐 RBAC、JWT、多环境配置、全局异常处理与请求限流等基础能力。",
-          "参与微服务架构与分布式治理实践，建设健康检查、熔断、Consul、Docker、短信、缓存、邮件与定时任务等通用模块。"
-        ]
-      },
-      {
-        "role": "全栈工程师",
-        "company": "成都众人安科技有限责任公司",
-        "department": "产品研发团队",
-        "period": "2018.05 - 2019.12",
-        "tags": ["Python", "Django", "Scrapy", "Redis", "Elasticsearch", "Puppeteer"],
-        "points": [
-          "独立负责 BD 保单管家 PC 端与公众号 H5 从 0 到 1：直接对接客户，把业务需求翻译成产品方案并交付。",
-          "基于 Python、Scrapy、Redis 与 Django 搭建分布式爬虫体系，完成百万级保险条款抓取与入库。",
-          "多次承担产品宣讲与客户演示，累计覆盖约 400 人，并在资源紧张情况下建立新人培养机制，半年内将零经验实习生培养为可独立承担项目的核心开发力量。"
-        ]
-      },
-      {
-        "role": "全栈工程师",
-        "company": "成都数联医信科技有限公司",
-        "department": "医信云服团队",
-        "period": "2016.03 - 2018.02",
-        "tags": ["Vue", "PHP", "C", "AWS", "SaaS", "H5"],
-        "points": [
-          "参与医院设备数据清洗与转发系统建设，负责医信云服资源服务从前端到后端的端到端交付。",
-          "通过编译 C 模块使 PHP7 支持 SMB 协议，完成医院内网 Windows 日志向 Linux 系统转发的关键能力建设。",
-          "参与 SaaS 平台与公众号 H5 研发，按时交付医信云服 2.0，支撑公司在产品宣讲与融资节点上的关键里程碑。"
-        ]
-      }
-    ],
-    "educationList": [
-      {
-        "school": "北亚利桑那大学",
-        "degree": "计算机信息技术硕士"
-      }
-    ],
     "learningList": [
       "AI 产品的评估与指标体系",
       "用户研究与访谈",
@@ -261,11 +287,24 @@
       "AI 产品的成本与商业模式",
       "产品写作与案例拆解"
     ],
-    "interestList": ["开源", "UI/UX 设计", "AI Agent 应用", "产品写作", "摄影"]
+    "education": "教育经历",
+    "educationList": [
+      {
+        "school": "北亚利桑那大学",
+        "degree": "计算机信息技术硕士"
+      }
+    ],
+    "interests": "兴趣点",
+    "interestList": ["开源", "UI/UX 设计", "AI Agent 应用", "产品写作", "摄影"],
+    "contactTitle": "在找 AI 产品岗位。",
+    "contactText": "如果你们在做 AI 产品，或者想聊聊 Agent / RAG / 评估，欢迎直接邮件。",
+    "contactEmail": "发邮件",
+    "contactGithub": "GitHub"
   },
   "PostsPage": {
     "title": "文章",
-    "description": "工程手记，以及正在形成的 AI 产品思考。",
+    "description": "工程手记与 AI 产品思考",
+    "note": "目前以工程手记为主；AI 产品笔记还在整理，会陆续放上来。",
     "categories": "分类浏览",
     "tags": "标签索引",
     "noPosts": "暂无文章，敬请期待。",

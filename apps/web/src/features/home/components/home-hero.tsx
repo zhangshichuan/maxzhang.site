@@ -27,8 +27,8 @@ export function HomeHero() {
         <Link href="/about">
           <button className="btn btn-secondary nx-btn">{t('aboutMe')}</button>
         </Link>
-        <Link href="https://github.com/zhangshichuan" target="_blank">
-          <button className="btn btn-ghost nx-btn">GitHub</button>
+        <Link href="mailto:zsc.guru@qq.com">
+          <button className="btn btn-ghost nx-btn">{t('emailMe')}</button>
         </Link>
       </div>
 

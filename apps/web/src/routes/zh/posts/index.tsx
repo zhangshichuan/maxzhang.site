@@ -4,7 +4,7 @@ import { loadPostsIndexFn, PostsClient } from '@/src/features/posts'
 export const Route = createFileRoute('/zh/posts/')({
   loader: ({ context }) => loadPostsIndexFn({ data: { locale: context.locale } }),
   head: () => ({
-    meta: [{ title: '文章 - Max Zhang' }, { name: 'description', content: '工程手记，以及正在形成的 AI 产品思考。' }],
+    meta: [{ title: '文章 - Max Zhang' }, { name: 'description', content: '工程手记与 AI 产品思考' }],
   }),
   component: PostsIndexComponent,
 })

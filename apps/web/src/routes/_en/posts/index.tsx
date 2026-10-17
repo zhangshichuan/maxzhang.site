@@ -6,7 +6,7 @@ export const Route = createFileRoute('/_en/posts/')({
   head: () => ({
     meta: [
       { title: 'Writing - Max Zhang' },
-      { name: 'description', content: 'Engineering notes, and AI product thinking in progress.' },
+      { name: 'description', content: 'Engineering notes and AI product thinking' },
     ],
   }),
   component: PostsIndexComponent,

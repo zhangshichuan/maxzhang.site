@@ -16,6 +16,7 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
     <div>
       <h1 className="page-title">{t('title')}</h1>
       <p className="page-subtitle">{t('description')}</p>
+      <p className="page-note">{t('note')}</p>
 
       <div className="posts-layout">
         <div className="search-results">

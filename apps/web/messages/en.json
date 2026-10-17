@@ -27,6 +27,24 @@
       "backHome": "Back to Home"
     }
   },
+  "Theses": {
+    "title": "What I Believe",
+    "side": "Three opinions",
+    "items": [
+      {
+        "title": "Define the task before the model",
+        "body": "Product boundaries come from task decomposition, not prompt tricks. Decide who it's for and what it won't do before choosing a model capability."
+      },
+      {
+        "title": "Evaluation is not a benchmark",
+        "body": "Real evaluation happens inside the user's workflow: what success means, how failures are caught, and whether the cost holds. Benchmarks only prove the model can answer questions."
+      },
+      {
+        "title": "Engineering depth is about trade-offs",
+        "body": "It turns model capability into cost, risk and delivery pace, so product decisions can ship instead of stopping at a demo."
+      }
+    ]
+  },
   "PhotosPage": {
     "title": "Photography",
     "description": "Amateur photography, carefully curated.",
@@ -108,9 +126,9 @@
   },
   "Chat": {
     "title": "Tree Hole",
-    "subtitle": "An AI listening room",
+    "subtitle": "An AI listening experiment",
     "placeholder": "Tell me anything. I'm here to listen.",
-    "emptyState": "I'm here. Say whatever you need to say.",
+    "emptyState": "A small experiment I built with DeepSeek: no judgment, just listening. Say anything.",
     "send": "Send",
     "sending": "Listening...",
     "privacyNote": "Chat history stays only in your browser. The code is open source — check it yourself.",
@@ -134,35 +152,58 @@
       "eyebrow": "AI Product Manager · 2026",
       "headline1": "Making AI products",
       "headline2": "people actually use.",
-      "lede": "Former full-stack engineer moving into AI product. I care about Agent, RAG and multimodal products: how to define them, how to evaluate them, and how to fit them into real user workflows.",
+      "lede": "Ten years as a full-stack engineer; in the last two I took a multi-agent system from zero to production. Now moving into AI product — focused on Agent, RAG and multimodal products: how to define, evaluate, and fit them into real workflows.",
       "readArticles": "Read Notes",
       "aboutMe": "About Me",
-      "meta1Label": "01 / Engineering",
-      "meta1Value": "TypeScript · Python · Go · Observability",
+      "emailMe": "Email Me",
+      "meta1Label": "01 / Background",
+      "meta1Value": "10 years full-stack · multi-agent systems",
       "meta2Label": "02 / Focus",
       "meta2Value": "Agent · RAG · Evals · Multimodal",
       "meta3Label": "03 / Status",
       "meta3Value": "Open to AI PM roles · Chengdu / Remote"
     },
+    "case": {
+      "title": "One Example",
+      "side": "From scenario to result",
+      "name": "Turning ad asset production into an agent workflow",
+      "contextLabel": "Context",
+      "context": "A hundred thousand videos and 30,000+ images per month, produced through a manual, serial workflow.",
+      "decisionLabel": "Decision",
+      "decision": "Instead of asking the model to 'generate everything', we split planning, generation and review into orchestrated tasks with clear boundaries for the agents.",
+      "resultLabel": "Result",
+      "result": "80%+ cross-team efficiency gain; combined with an AI-native engineering flow, cost per video dropped from RMB 2.5–3 to RMB 0.5–1.",
+      "note": "I owned the system design and rollout, and helped define the workflow rules and acceptance criteria."
+    },
+    "method": {
+      "title": "How I Work",
+      "side": "How I shrink uncertainty",
+      "items": [
+        { "title": "Define", "body": "Users, scenario, constraints. Write down what it won't do first." },
+        { "title": "Prototype", "body": "Build the demo myself and test capability boundaries on real tasks." },
+        { "title": "Evaluate", "body": "Success metrics, failure samples, and fallbacks." },
+        { "title": "Deliver", "body": "Work with engineering, research and design to cut uncertainty down." }
+      ]
+    },
+    "background": {
+      "label": "Engineering",
+      "value": "TypeScript · Python · Go · Multi-agent (MCP / A2A) · Observability"
+    },
     "featuredPosts": {
       "title": "Selected Writing",
-      "description": "Notes from engineering to product",
+      "description": "Engineering notes and AI product thinking",
       "viewAll": "All writing"
-    },
-    "capabilities": {
-      "title": "Capability Matrix",
-      "side": "Product × AI × Engineering",
-      "items": [
-        { "title": "Product", "items": ["Scenario insight", "Requirement breakdown", "PRD & acceptance", "MVP scoping"] },
-        { "title": "AI", "items": ["Agent task design", "RAG & knowledge", "Prompt & evals", "Multimodal UX"] },
-        { "title": "Engineering", "items": ["TypeScript / Python / Go", "Full-stack & APIs", "Data & observability", "Rapid prototyping"] },
-        { "title": "Collaboration", "items": ["Cross-team communication", "User research", "Tech translation", "Risk & pace"] }
-      ]
     },
     "now": {
       "label": "Now",
-      "text": "Turning engineering experience into product judgment: reading AI product teardowns, mapping agent workflows, writing evaluation checklists — and looking for a real AI product team to build with.",
+      "text": "Three things right now: breaking down AI product cases, writing agent workflow notes, and looking for an AI product team to build with.",
       "link": "GitHub"
+    },
+    "contact": {
+      "title": "Looking for an AI product role.",
+      "text": "If you're building AI products, or want to talk about agents, RAG or evaluation, email me directly.",
+      "email": "Email me",
+      "github": "GitHub"
     }
   },
   "AboutPage": {
@@ -170,89 +211,74 @@
     "heading": "About Me",
     "location": "Chengdu, China",
     "status": "Open to AI PM roles · Chengdu / Remote",
-    "description": "Now I'm turning ten years of engineering experience toward AI product: from \"how to build it\" to \"who is it for, what should it do, and what success looks like.\"\n\n2016. First job. I got lucky.\n\nThe company was already flat back then. Management, tech, and product leadership mostly had overseas backgrounds. The CTO didn't split roles by frontend and backend — one business direction, one person, full ownership from frontend to database to deployment. Later I'd learn this is called an Ownership culture. At the time I didn't realize how unusual it was. I thought all companies worked this way.\n\nFirst task: build a resource system. No mentor, no broken-down tickets. Started from '<input type=\"file\">' and a blank editor. How PHP handles file uploads, how S3 stores them, whether PostgreSQL should use bytea or URLs — every step was figured out by running into a wall and reading through it.\n\nLater, a hospital equipment data platform. PHP7 wasn't officially released yet, so I pulled the PHP source and compiled it myself with cmake. The hospital's internal network ran Windows, logs needed forwarding to Linux, and the SMB protocol was the blocker. PHP had no native support for it, so I dug into libsmbclient's C library docs and compiled a PHP extension module. From C to PHP to the protocol layer — one chain punched through. Felt good when it worked.\n\nThen Yixin Cloud 2.0. Delivered on time, right on the company's demo and fundraising timeline. No delays.\n\nLooking back, that period left me with a habit: goal set, walk it end to end. TypeScript, Go, Python. Docker, K8s, AWS. MCP, A2A, ReAct. The tools kept changing. The habit didn't.\n\nThat's why I care about Agents. Not chasing trends. I spent ten years waiting for something that amplifies one person's will. I used to run a chain with two hands. Now I write intent into a spec, a group of Agents executes. They're faster, but I set the direction, draw the boundaries, judge the results.\n\nNot replacement. Leverage.\n\nIn the AI First era, tools are getting faster, but no one grows your sense of direction or judgment for you. Define the problem. Deliver end to end. Own the result. These haven't changed. Here's to building together.",
-    "experienceIntro": "My title has always been engineering lead, but for the past two years I've actually been doing product definition and delivery — that's why I'm moving into AI product.",
-    "workExperience": "Work Experience",
-    "education": "Education",
+    "intro": [
+      "I'm Max. Ten years as a full-stack engineer; in the last two I took a multi-agent system from zero to production. Now moving into AI product management.",
+      "This isn't a career reset. For ten years I've been answering product questions — who it's for, where the boundaries are, what 'done' means. I used to join at the implementation stage; I want to join earlier, at the definition stage.",
+      "I'm looking for an AI product role, ideally Agent, developer tools or content/community products, based in Chengdu or remote."
+    ],
+    "storiesTitle": "Three Product Stories",
+    "storiesSide": "Context / Decision / Action / Result",
+    "storyLabels": { "background": "Context", "decision": "Decision", "action": "Action", "result": "Result" },
+    "stories": [
+      {
+        "title": "An agent workflow for ad asset production",
+        "background": "A hundred thousand videos and 30,000+ images per month, produced through a manual, serial workflow.",
+        "decision": "Instead of asking the model to 'generate everything', we split planning, generation and review into orchestrated tasks with clear boundaries.",
+        "action": "Designed the multi-agent collaboration and sandboxed execution environment, integrated MCP tools, and defined task handoffs and failure fallbacks.",
+        "result": "80%+ cross-team efficiency gain; cost per video later dropped to RMB 0.5–1."
+      },
+      {
+        "title": "An AI-native engineering workflow",
+        "background": "High video generation cost and a long, repetitive path from requirement doc to bug fix.",
+        "decision": "Standardize inputs and outputs first, then let Codex, Claude and in-house MCP share the repetitive work.",
+        "action": "Connected requirement generation, task breakdown, execution validation and bug fixing into one loop.",
+        "result": "Reduced cost per video from RMB 2.5–3 to RMB 0.5–1."
+      },
+      {
+        "title": "A digital platform for ad operations",
+        "background": "Asset production, approval, delivery and data feedback lived in separate systems and depended on manual coordination.",
+        "decision": "Unify the state machine and data definitions first; automation comes after.",
+        "action": "Led platform build-out and aligned production, approval, delivery and data workflows.",
+        "result": "Supported 100,000 videos and 30,000+ images per month with 80%+ efficiency gains."
+      }
+    ],
+    "lookingTitle": "What I'm Looking For",
+    "lookingSide": "Direction / Stage / Location",
+    "lookingFor": [
+      { "label": "Direction", "value": "Agent, productivity tools, or content/community AI products" },
+      { "label": "Stage", "value": "Early to growth stage; happy to do 0→1 and 1→10" },
+      { "label": "Location", "value": "Chengdu / Remote" }
+    ],
+    "timelineTitle": "Experience",
+    "timeline": [
+      {
+        "period": "Feb 2021 - Dec 2025",
+        "role": "Frontend Lead",
+        "company": "Chengdu Ruisheng Tianhe Media",
+        "note": "Multi-agent systems, ad platform, AI-native engineering"
+      },
+      {
+        "period": "Jan 2020 - Jan 2021",
+        "role": "Full-Stack Engineer",
+        "company": "Chengdu Mofangyuan Technology",
+        "note": "Multi-line delivery and incremental refactoring"
+      },
+      {
+        "period": "May 2018 - Dec 2019",
+        "role": "Full-Stack Engineer",
+        "company": "Chengdu Zhongrenan Technology",
+        "note": "BD Policy Manager and distributed crawling"
+      },
+      {
+        "period": "Mar 2016 - Feb 2018",
+        "role": "Full-Stack Engineer",
+        "company": "Chengdu Shulian Yixin Technology",
+        "note": "Hospital device data and SaaS delivery"
+      }
+    ],
     "techStack": "Engineering Fluency",
     "techIntro": "I can prototype on my own and hold my own in engineering conversations — that's my edge as an AI PM.",
     "learning": "Currently Learning",
-    "interests": "Interests",
-    "caseTitle": "AI Product Practice",
-    "caseText": "Teardowns, evaluation checklists, and agent workflow notes — in progress.",
-    "caseCta": "Read the writing",
-    "experience": [
-      {
-        "role": "Frontend Lead",
-        "company": "Chengdu Ruisheng Tianhe Media Technology Co., Ltd.",
-        "department": "Product R&D Department",
-        "period": "Feb 2021 - Dec 2025",
-        "tags": [
-          "Multi-Agent Systems",
-          "MCP Protocol",
-          "A2A Protocol",
-          "ReAct Agent",
-          "Docker Sandbox",
-          "Playwright",
-          "FastAPI",
-          "Next.js",
-          "Prisma",
-          "PostgreSQL",
-          "BullMQ"
-        ],
-        "points": [
-          "Led the productization of our multi-agent collaboration system: turned ad asset production into an orchestrated agent workflow across planning, generation, and review, with MCP for dynamic tool access.",
-          "Designed task dispatch and result aggregation for an A2A distributed agent network, so planning and execution agents can complete complex work together.",
-          "Built Docker sandbox isolation so agents can safely execute shell commands, Python, and browser automation.",
-          "Led the company's digital advertising platform, connecting asset production, approvals, campaign delivery, and data feedback into an online workflow, supporting 100,000 videos and 30,000+ images per month with 80%+ efficiency gains.",
-          "Pioneered AI-native engineering workflows — integrated Codex, Claude, and in-house MCP to automate requirement drafting, task breakdown, execution validation, and bug fixing, reducing per-video generation cost from RMB 2.5–3 to RMB 0.5–1.",
-          "Drove engineering governance across several legacy internal systems (build upgrades, component refactors, monorepo, standards) to keep product iteration fast."
-        ]
-      },
-      {
-        "role": "Full-Stack Engineer",
-        "company": "Chengdu Mofangyuan Technology Co., Ltd.",
-        "department": "Engineering Team",
-        "period": "Jan 2020 - Jan 2021",
-        "tags": ["React Native", "Vue", "Nest.js", "MongoDB", "Docker", "gRPC"],
-        "points": [
-          "Worked across international, multi-line teams on requirement discovery, breakdown, and delivery, contributing to the evolution from modular to microservice architecture.",
-          "Maintained and iterated 20+ legacy projects, driving incremental refactors under high technical debt across React Native, Vue, React, Nest.js, PHP, and MongoDB.",
-          "Led a four-person team rewriting a high-traffic user-facing product area, adding RBAC, JWT auth, multi-environment config, global exception handling, and rate limiting.",
-          "Participated in microservice and distributed-systems work covering health checks, circuit breaking, Consul, Docker, SMS, caching, email, and scheduled tasks."
-        ]
-      },
-      {
-        "role": "Full-Stack Engineer",
-        "company": "Chengdu Zhongrenan Technology Co., Ltd.",
-        "department": "Product Engineering",
-        "period": "May 2018 - Dec 2019",
-        "tags": ["Python", "Django", "Scrapy", "Redis", "Elasticsearch", "Puppeteer"],
-        "points": [
-          "Owned the BD Policy Manager web app and WeChat H5 product end to end: worked directly with clients to translate business needs into product and engineering solutions.",
-          "Built a distributed crawler stack with Python, Scrapy, Redis, and Django, ingesting millions of insurance clauses.",
-          "Handled product demos and client presentations for hundreds of participants, and established a training pipeline that turned interns with no experience into independent contributors within six months."
-        ]
-      },
-      {
-        "role": "Full-Stack Engineer",
-        "company": "Chengdu Shulian Yixin Technology Co., Ltd.",
-        "department": "Yixin Cloud Service Team",
-        "period": "Mar 2016 - Feb 2018",
-        "tags": ["Vue", "PHP", "C", "AWS", "SaaS", "H5"],
-        "points": [
-          "Worked on hospital device data cleansing and forwarding systems, owning end-to-end delivery of Yixin Cloud Service resources from frontend to backend.",
-          "Enabled SMB support in PHP7 by compiling a C module, which made Windows log forwarding from hospital intranets to Linux systems possible.",
-          "Contributed to the SaaS platform and WeChat H5 apps, and helped deliver Yixin Cloud Service 2.0 on schedule for key product and fundraising milestones."
-        ]
-      }
-    ],
-    "educationList": [
-      {
-        "school": "Northern Arizona University",
-        "degree": "Master of Computer Information Technology"
-      }
-    ],
     "learningList": [
       "AI product evaluation and metrics",
       "User research and interviews",
@@ -261,11 +287,24 @@
       "AI product economics and business models",
       "Product writing and teardown practice"
     ],
-    "interestList": ["Open Source", "UI/UX Design", "AI Agent Applications", "Product Writing", "Photography"]
+    "education": "Education",
+    "educationList": [
+      {
+        "school": "Northern Arizona University",
+        "degree": "Master of Computer Information Technology"
+      }
+    ],
+    "interests": "Interests",
+    "interestList": ["Open Source", "UI/UX Design", "AI Agent Applications", "Product Writing", "Photography"],
+    "contactTitle": "Looking for an AI product role.",
+    "contactText": "If you're building AI products, or want to talk about agents, RAG or evaluation, email me directly.",
+    "contactEmail": "Email me",
+    "contactGithub": "GitHub"
   },
   "PostsPage": {
     "title": "Writing",
-    "description": "Engineering notes, and AI product thinking in progress.",
+    "description": "Engineering notes and AI product thinking",
+    "note": "Mostly engineering notes for now; AI product writing is in progress and will land here.",
     "categories": "Categories",
     "tags": "Tags",
     "noPosts": "No writing yet, stay tuned.",
