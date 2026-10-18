@@ -5,10 +5,10 @@ export const Route = createFileRoute('/_en/about')({
   component: AboutPage,
   head: () => ({
     meta: [
-      { title: 'About Me - Max Zhang' },
+      { title: 'About — Max Zhang' },
       {
         name: 'description',
-        content: 'AI Product Manager and former full-stack engineer, writing about AI products, agents, and evaluation.',
+        content: 'Max Zhang — AI Product Manager with ten years of full-stack engineering.',
       },
     ],
   }),

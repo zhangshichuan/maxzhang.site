@@ -3,47 +3,29 @@
     "title": "Max Zhang",
     "readingTime": "{minutes} min read",
     "nav": {
-      "home": "Home",
+      "home": "Overview",
       "posts": "Writing",
-      "chat": "Tree Hole",
       "about": "About",
-      "switchLanguage": "Switch to Chinese",
-      "language": "Language",
-      "search": "Search",
       "photos": "Photography",
+      "chat": "Tree Hole",
+      "search": "Search",
       "more": "More",
-      "moreClose": "Close more"
+      "moreClose": "Close",
+      "switchLanguage": "Switch to Chinese",
+      "language": "Language"
     },
     "footer": {
-      "builtBy": "Built by <name>Max Zhang</name>. © {year} All rights reserved.",
-      "role": "AI Product Manager · 10+ years full-stack",
+      "status": "OPEN TO AI PRODUCT ROLES",
+      "location": "CHENGDU · REMOTE",
       "tagline": "Making AI products people actually use.",
       "github": "GitHub",
       "email": "Email"
     },
     "notFound": {
-      "title": "Page Not Found",
-      "description": "This path doesn't have a product requirement yet. Head back home?",
-      "backHome": "Back to Home"
+      "title": "command not found",
+      "description": "This path has no matching file. Head back to overview, or see the writing.",
+      "backHome": "Back to overview"
     }
-  },
-  "Theses": {
-    "title": "What I Believe",
-    "side": "Three theses, from real projects",
-    "items": [
-      {
-        "title": "Define the task before the model",
-        "body": "The model isn't the product; the task is. Write down the user, the scenario and the boundary first — then decide between a large model, a small model, or plain rules."
-      },
-      {
-        "title": "Evaluation is not a benchmark",
-        "body": "A benchmark only proves the model can answer questions. A product has to answer: what counts as success, how failures are caught, and whether the cost holds."
-      },
-      {
-        "title": "Engineering depth is about trade-offs",
-        "body": "I can prototype on my own, and hold my own with research and engineering — turning model capability into cost, risk and delivery pace."
-      }
-    ]
   },
   "PhotosPage": {
     "title": "Photography",
@@ -149,35 +131,69 @@
   },
   "HomePage": {
     "hero": {
-      "eyebrow": "AI Product Manager · 2026",
+      "eyebrow": "AI PRODUCT MANAGER / 10+ YEARS FULL-STACK",
       "headline1": "Making AI products",
       "headline2": "people actually use.",
-      "lede": "Ten years of full-stack engineering; two years taking a multi-agent system from zero to production. Now building AI products: defining tasks, designing workflows, evaluating results — and writing code to test the boundaries.",
-      "readArticles": "Read Notes",
-      "aboutMe": "About Me",
-      "emailMe": "Email Me",
-      "meta1Label": "01 / Background",
-      "meta1Value": "10 years full-stack · multi-agent systems",
-      "meta2Label": "02 / Focus",
-      "meta2Value": "Agent · RAG · Evaluation · Multimodal",
-      "meta3Label": "03 / Status",
-      "meta3Value": "Open to AI product roles · Chengdu / Remote"
+      "lede": "Ten years of full-stack engineering. Two years taking a multi-agent system from zero to production. Now building AI products: defining tasks, designing workflows, evaluating — and writing code to test the judgment.",
+      "email": "Email me",
+      "notes": "Read the writing"
+    },
+    "kpis": [
+      {
+        "label": "EXPERIENCE",
+        "value": "10+",
+        "unit": "YRS",
+        "note": "full-stack engineering"
+      },
+      {
+        "label": "AGENT SYSTEMS",
+        "value": "0→1",
+        "unit": "SHIPPED",
+        "note": "zero to production"
+      },
+      {
+        "label": "EFFICIENCY",
+        "value": "+80%",
+        "unit": "",
+        "note": "cross-team"
+      }
+    ],
+    "principles": {
+      "title": "Three Principles",
+      "side": "PRINCIPLES",
+      "items": [
+        {
+          "title": "Define the task before the model",
+          "body": "The model isn't the product. The task is."
+        },
+        {
+          "title": "Evaluation is not a benchmark",
+          "body": "What counts as success, how failures are caught, whether the cost holds."
+        },
+        {
+          "title": "Engineering depth is about trade-offs",
+          "body": "Turning capability into cost, risk and delivery pace."
+        }
+      ]
     },
     "case": {
-      "title": "One Example",
-      "side": "From scenario to result",
+      "title": "One example",
+      "side": "CASE_01",
       "name": "Turning ad asset production into an agent workflow",
-      "contextLabel": "Context",
-      "context": "A hundred thousand videos and 30,000+ images per month, produced through a manual, serial workflow.",
-      "decisionLabel": "Decision",
-      "decision": "Instead of asking the model to 'generate everything', we split planning, generation and review into orchestrated tasks with clear boundaries for the agents.",
-      "resultLabel": "Result",
-      "result": "80%+ cross-team efficiency gain; combined with an AI-native engineering flow, cost per video dropped from RMB 2.5–3 to RMB 0.5–1.",
-      "note": "I owned the system design and rollout, and helped define the workflow rules and acceptance criteria."
+      "labels": {
+        "context": "SCENARIO",
+        "decision": "DECISION",
+        "result": "RESULT",
+        "role": "ROLE"
+      },
+      "context": "100,000 videos and 30,000+ images per month, produced through a manual, serial workflow.",
+      "decision": "Instead of asking the model to generate everything, split planning, generation and review into orchestrated tasks.",
+      "result": "80%+ cross-team efficiency; cost per video from RMB 2.5–3 to RMB 0.5–1.",
+      "role": "System design and rollout."
     },
     "method": {
       "title": "How I Work",
-      "side": "How I shrink uncertainty",
+      "side": "METHOD",
       "items": [
         {
           "title": "Define",
@@ -185,97 +201,69 @@
         },
         {
           "title": "Prototype",
-          "body": "Build the demo myself and test capability boundaries on real tasks."
+          "body": "Build the demo myself, test capability limits on real tasks."
         },
         {
           "title": "Evaluate",
-          "body": "Success metrics, failure samples, and fallbacks."
+          "body": "Success metrics, failure samples, fallbacks."
         },
         {
           "title": "Deliver",
-          "body": "Work with engineering, research and design to get the plan shipped."
+          "body": "Ship with engineering, research and design."
         }
       ]
     },
-    "background": {
-      "label": "Engineering",
-      "value": "TypeScript · Python · Go · Multi-agent (MCP / A2A) · Observability"
-    },
     "featuredPosts": {
-      "title": "Selected Writing",
+      "title": "Writing",
       "description": "Engineering notes and AI product writing",
       "viewAll": "All writing"
     },
-    "now": {
-      "label": "Now",
-      "text": "Writing a series on AI product methods, cases and evaluation; also open to AI product roles.",
-      "link": "GitHub"
+    "prompt": {
+      "label": "TERMINAL",
+      "hint": "Type help to see commands",
+      "placeholder": "Type a command…",
+      "help": "work · notes · about · contact · clear"
     },
     "contact": {
       "title": "Looking for an AI product role.",
-      "text": "If you're building AI products, or want to talk about agents, RAG or evaluation, email me directly.",
+      "text": "If you're building AI products, or want to talk agents, RAG or evaluation, email me.",
       "email": "Email me",
       "github": "GitHub"
     }
   },
   "AboutPage": {
-    "title": "About Me - Max Zhang",
-    "heading": "About Me",
+    "title": "About - Max Zhang",
+    "heading": "About",
     "location": "Chengdu, China",
     "status": "AI Product Manager · Chengdu / Remote",
     "intro": [
-      "I'm Max — an AI Product Manager with ten years of full-stack engineering. In the past two years I took a multi-agent system from zero to production.",
-      "Ten years of building software means I've been answering product questions all along: who it's for, where the boundary is, what counts as done. I used to join at the implementation stage; now I join earlier, at definition.",
-      "I focus on agents, RAG and AI product evaluation, and still write code to test the judgment. The writing here will record the methods, cases and mistakes."
+      "I'm Max. Ten years of full-stack engineering. Now building AI products.",
+      "In the past two years I took a multi-agent system from zero to production. I focus on agents, RAG and evaluation."
     ],
-    "storiesTitle": "Three Product Stories",
-    "storiesSide": "Context / Decision / Action / Result",
-    "storyLabels": {
-      "background": "Context",
-      "decision": "Decision",
-      "action": "Action",
-      "result": "Result"
-    },
-    "stories": [
+    "factsTitle": "INFO",
+    "facts": [
       {
-        "title": "An agent workflow for ad asset production",
-        "background": "A hundred thousand videos and 30,000+ images per month, produced through a manual, serial workflow.",
-        "decision": "Instead of asking the model to 'generate everything', we split planning, generation and review into orchestrated tasks with clear boundaries.",
-        "action": "Designed the multi-agent collaboration and sandboxed execution environment, integrated MCP tools, and defined task handoffs and failure fallbacks.",
-        "result": "80%+ cross-team efficiency gain; cost per video later dropped to RMB 0.5–1."
+        "label": "ROLE",
+        "value": "AI Product Manager"
       },
       {
-        "title": "An AI-native engineering workflow",
-        "background": "High video generation cost and a long, repetitive path from requirement doc to bug fix.",
-        "decision": "Standardize inputs and outputs first, then let Codex, Claude and in-house MCP share the repetitive work.",
-        "action": "Connected requirement generation, task breakdown, execution validation and bug fixing into one loop.",
-        "result": "Reduced cost per video from RMB 2.5–3 to RMB 0.5–1."
-      },
-      {
-        "title": "A digital platform for ad operations",
-        "background": "Asset production, approval, delivery and data feedback lived in separate systems and depended on manual coordination.",
-        "decision": "Unify the state machine and data definitions first; automation comes after.",
-        "action": "Led platform build-out and aligned production, approval, delivery and data workflows.",
-        "result": "Supported 100,000 videos and 30,000+ images per month with 80%+ efficiency gains."
-      }
-    ],
-    "lookingTitle": "What I'm Looking For",
-    "lookingSide": "Direction / Stage / Location",
-    "lookingFor": [
-      {
-        "label": "Direction",
-        "value": "Agent, productivity tools, or content/community AI products"
-      },
-      {
-        "label": "Stage",
-        "value": "Early to growth stage; happy to do 0→1 and 1→10"
-      },
-      {
-        "label": "Location",
+        "label": "BASE",
         "value": "Chengdu / Remote"
+      },
+      {
+        "label": "FOCUS",
+        "value": "Agent · RAG · Evaluation"
+      },
+      {
+        "label": "STATUS",
+        "value": "Open to AI product roles"
+      },
+      {
+        "label": "EMAIL",
+        "value": "zsc.guru@qq.com"
       }
     ],
-    "timelineTitle": "Experience",
+    "experienceTitle": "Experience",
     "timeline": [
       {
         "period": "Feb 2021 - Dec 2025",
@@ -302,58 +290,38 @@
         "note": "Hospital device data and SaaS delivery"
       }
     ],
-    "techStack": "Engineering Fluency",
-    "techIntro": "I can prototype on my own and hold my own in engineering conversations — that's my edge as an AI PM.",
-    "learning": "Currently Learning",
-    "learningList": [
-      "AI product evaluation and metrics",
-      "User research and interviews",
-      "Agent product form and trust design",
-      "RAG productization and knowledge design",
-      "AI product economics and business models",
-      "Product writing and teardown practice"
-    ],
-    "education": "Education",
-    "educationList": [
-      {
-        "school": "Northern Arizona University",
-        "degree": "Master of Computer Information Technology"
-      }
-    ],
-    "interests": "Interests",
-    "interestList": ["Open Source", "UI/UX Design", "AI Agent Applications", "Product Writing", "Photography"],
-    "contactTitle": "Looking for an AI product role.",
-    "contactText": "If you're building AI products, or want to talk about agents, RAG or evaluation, email me directly.",
+    "contactTitle": "Let's talk AI products.",
+    "contactText": "If you're building AI products, email me.",
     "contactEmail": "Email me",
     "contactGithub": "GitHub"
   },
   "PostsPage": {
     "title": "Writing",
-    "description": "Engineering notes and AI product writing",
-    "note": "Mostly engineering notes for now; a series on AI product methods, case breakdowns and evaluation will follow.",
+    "description": "Engineering notes, and AI product writing.",
+    "note": "Methods, case breakdowns and evaluation notes will be published as a series.",
+    "seriesTitle": "Writing plan",
+    "series": [
+      {
+        "title": "AI product methods",
+        "body": "Task definition, prompting, evaluation, and the trade-offs behind RAG and agents."
+      },
+      {
+        "title": "Case breakdowns",
+        "body": "Support, meeting notes, education, healthcare, travel."
+      },
+      {
+        "title": "Engineering practice",
+        "body": "Multi-agent systems, observability, AI-native delivery."
+      }
+    ],
     "categories": "Categories",
     "tags": "Tags",
-    "noPosts": "No writing yet, stay tuned.",
+    "noPosts": "No writing yet.",
     "noCategories": "No categories",
     "noTags": "No tags",
     "aiAssisted": "AI-assisted",
     "aiAssistedHint": "Written with AI assistance and reviewed by the author",
-    "back": "Back to Writing",
-    "seriesTitle": "Writing Plan",
-    "series": [
-      {
-        "title": "AI product methods",
-        "body": "Task definition, prompting, evaluation, and the design trade-offs behind RAG and agents."
-      },
-      {
-        "title": "Case breakdowns",
-        "body": "Support, meeting notes, education, healthcare, travel — the workflow and the key decisions."
-      },
-      {
-        "title": "Engineering practice",
-        "body": "Multi-agent systems, observability, and AI-native delivery."
-      }
-    ]
+    "back": "Back to Writing"
   },
   "SearchPage": {
     "title": "Search",

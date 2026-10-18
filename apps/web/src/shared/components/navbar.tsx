@@ -1,5 +1,5 @@
 import { useRouter, useRouterState } from '@tanstack/react-router'
-import { BookOpen, Camera, Home, Languages, MoreHorizontal, Search, Sparkles, User } from 'lucide-react'
+import { FileText, Home, Languages, MoreHorizontal, Search, User } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocale, useTranslations } from '@/src/i18n/client'
 import { localizePath, stripLocale } from '@/i18n/routing'
@@ -24,8 +24,10 @@ export function Navbar() {
   }
 
   const isActive = (path: string) => pathname === localizePath(path, locale)
+  const internalPath = stripLocale(pathname)
+  const pathLabel = internalPath === '/' ? '~/overview' : `~${internalPath}`
 
-  // 滚动后给导航栏增加一点背景与阴影
+  // 滚动后给系统栏加重一点边框
   useEffect(() => {
     let frame = 0
     const onScroll = () => {
@@ -45,29 +47,42 @@ export function Navbar() {
 
   const links = [
     { path: '/', label: t('home'), icon: Home },
-    { path: '/posts', label: t('posts'), icon: BookOpen },
-    { path: '/photos', label: t('photos'), icon: Camera },
-    { path: '/chat', label: t('chat'), icon: Sparkles },
+    { path: '/posts', label: t('posts'), icon: FileText },
     { path: '/about', label: t('about'), icon: User },
   ]
-
-  const primaryLinks = links.filter((link) => link.path !== '/about')
 
   return (
     <>
       <header ref={headerRef} className="site-header">
-        <Link href="/" className="site-logo">
-          Max Zhang
-        </Link>
+        <div className="os-bar-left">
+          <Link href="/" className="site-logo">
+            MZ/OS
+          </Link>
+          <span className="os-path" aria-hidden>
+            {pathLabel}
+          </span>
+        </div>
         <nav className="desktop-nav" aria-label="Primary">
           {links.map((link) => (
             <Link key={link.path} href={link.path} className={cn('desktop-nav-link', isActive(link.path) && 'active')}>
               {link.label}
             </Link>
           ))}
+        </nav>
+        <div className="os-bar-right">
           <Link href="/search" className={cn('nav-icon-btn', isActive('/search') && 'active')} aria-label={t('search')}>
             <Search className="size-4" />
           </Link>
+          <button
+            type="button"
+            className={cn('nav-icon-btn', moreOpen && 'active')}
+            onClick={() => setMoreOpen((current) => !current)}
+            title={t('more')}
+            aria-label={t('more')}
+            aria-expanded={moreOpen}
+          >
+            <MoreHorizontal className="size-4" />
+          </button>
           <button
             type="button"
             className="nav-icon-btn"
@@ -77,17 +92,17 @@ export function Navbar() {
           >
             <Languages className="size-4" />
           </button>
-        </nav>
+        </div>
       </header>
 
       <nav className="mobile-tabbar" aria-label="Primary">
-        {primaryLinks.map((link) => {
+        {links.map((link) => {
           const Icon = link.icon
           const active = isActive(link.path)
           return (
             <Link key={link.path} href={link.path} className={cn('tabbar-item', active && 'active')}>
               <span className="tabbar-icon">
-                <Icon className="size-5" />
+                <Icon className="size-4" />
               </span>
               <span className="tabbar-label">{link.label}</span>
             </Link>
@@ -101,7 +116,7 @@ export function Navbar() {
           aria-expanded={moreOpen}
         >
           <span className="tabbar-icon">
-            <MoreHorizontal className="size-5" />
+            <MoreHorizontal className="size-4" />
           </span>
           <span className="tabbar-label">{t('more')}</span>
         </button>

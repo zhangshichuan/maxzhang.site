@@ -1,6 +1,6 @@
 # ADR-0012: 以 AI Native 深色设计系统取代 Liquid Glass
 
-Status: accepted
+Status: superseded by ADR-0013
 
 Date: 2026-10-17
 

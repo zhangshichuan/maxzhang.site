@@ -20,6 +20,7 @@ export function PostPage({ post, commentCount, locale }: PostPageProps) {
   return (
     <>
       <article style={{ padding: '32px 0' }}>
+        <div className="os-kicker">~/notes/{post.slug}</div>
         <BackToPosts label={tPosts('back')} />
 
         <div className="article-panel">

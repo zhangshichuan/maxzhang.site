@@ -7,6 +7,7 @@ import { getLocaleFromPathname } from '@/i18n/routing'
 import '@/src/styles/design-system.css'
 import '@/src/styles/content.css'
 import '@/src/styles/pages.css'
+import '@/src/styles/os.css'
 
 /**
  * 根路由
@@ -14,14 +15,14 @@ import '@/src/styles/pages.css'
  * 只负责 HTML 骨架（shellComponent）+ 全局 Query 容器。
  * Navbar / Footer / 语言上下文由每个 locale 的布局路由提供。
  * 语言由 URL 决定：en 为默认语言（无前缀），zh 走 `/zh`，不做浏览器语言自动跳转。
- * 站点为纯深色设计（AI Native），不再提供浅色/外观切换。
+ * 站点视觉为 MZ/OS 工作台（graphite + phosphor），不再提供浅色/外观切换。
  */
 export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
-      { name: 'theme-color', content: '#06070a' },
+      { name: 'theme-color', content: '#050708' },
     ],
     links: [{ rel: 'icon', href: '/favicon.ico' }],
   }),

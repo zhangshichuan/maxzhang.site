@@ -3,47 +3,29 @@
     "title": "Max Zhang",
     "readingTime": "{minutes} 分钟阅读",
     "nav": {
-      "home": "首页",
-      "posts": "文章",
-      "chat": "树洞",
+      "home": "概览",
+      "posts": "写作",
       "about": "关于",
-      "switchLanguage": "切换至英文",
-      "language": "语言",
-      "search": "搜索",
       "photos": "摄影",
+      "chat": "树洞",
+      "search": "搜索",
       "more": "更多",
-      "moreClose": "关闭更多"
+      "moreClose": "关闭",
+      "switchLanguage": "切换至英文",
+      "language": "语言"
     },
     "footer": {
-      "builtBy": "由 <name>Max Zhang</name> 构建。© {year} 保留所有权利。",
-      "role": "AI 产品经理 · 十年全栈",
+      "status": "OPEN TO AI PRODUCT ROLES",
+      "location": "CHENGDU · REMOTE",
       "tagline": "把模型能力，翻译成人们愿意用的产品。",
       "github": "GitHub",
-      "email": "邮件"
+      "email": "Email"
     },
     "notFound": {
-      "title": "页面不存在",
-      "description": "这条路径暂时没有产品需求。回到首页重新出发？",
-      "backHome": "返回首页"
+      "title": "command not found",
+      "description": "这条路径没有对应的文件。回概览，或者去写作里看看。",
+      "backHome": "返回概览"
     }
-  },
-  "Theses": {
-    "title": "产品主张",
-    "side": "三条判断，来自项目里",
-    "items": [
-      {
-        "title": "先定义任务，再挑模型",
-        "body": "模型不是货架上的商品，任务才是。先把用户、场景、边界写清楚，再决定用大模型、小模型还是规则。"
-      },
-      {
-        "title": "评测不是跑分",
-        "body": "跑分只证明模型会做题。产品要回答的是：什么算成功、失败怎么兜底、成本能不能接受。"
-      },
-      {
-        "title": "工程底子的价值是取舍",
-        "body": "能自己搭原型，也能和算法、研发把方案聊到底——把模型能力翻译成成本、风险和交付节奏。"
-      }
-    ]
   },
   "PhotosPage": {
     "title": "摄影",
@@ -149,35 +131,69 @@
   },
   "HomePage": {
     "hero": {
-      "eyebrow": "AI Product Manager · 2026",
-      "headline1": "把模型能力，翻译成",
-      "headline2": "人们愿意用的产品。",
-      "lede": "十年全栈工程，两年把多智能体系统从 0 带到生产。现在做 AI 产品：定义任务、设计工作流、定评测，也自己写代码验证边界。",
-      "readArticles": "阅读文章",
-      "aboutMe": "关于我",
-      "emailMe": "写邮件",
-      "meta1Label": "01 / 背景",
-      "meta1Value": "十年全栈工程 · 多智能体系统",
-      "meta2Label": "02 / 关注",
-      "meta2Value": "Agent · RAG · 评测 · 多模态",
-      "meta3Label": "03 / 状态",
-      "meta3Value": "在找 AI 产品岗位 · 成都 / 远程"
+      "eyebrow": "AI PRODUCT MANAGER / 10+ YEARS FULL-STACK",
+      "headline1": "把模型能力，",
+      "headline2": "翻译成人们愿意用的产品。",
+      "lede": "十年全栈工程，两年把多智能体系统从 0 带到生产。现在做 AI 产品：定义任务、设计工作流、定评测，也自己写代码验证判断。",
+      "email": "写邮件",
+      "notes": "阅读写作"
+    },
+    "kpis": [
+      {
+        "label": "EXPERIENCE",
+        "value": "10+",
+        "unit": "YRS",
+        "note": "全栈工程"
+      },
+      {
+        "label": "AGENT SYSTEMS",
+        "value": "0→1",
+        "unit": "SHIPPED",
+        "note": "从 0 到生产"
+      },
+      {
+        "label": "EFFICIENCY",
+        "value": "+80%",
+        "unit": "",
+        "note": "跨部门协作"
+      }
+    ],
+    "principles": {
+      "title": "三条判断",
+      "side": "PRINCIPLES",
+      "items": [
+        {
+          "title": "先定义任务，再挑模型",
+          "body": "模型不是货架上的商品，任务才是。"
+        },
+        {
+          "title": "评测不是跑分",
+          "body": "什么算成功、失败怎么兜底、成本能不能接受。"
+        },
+        {
+          "title": "工程底子的价值是取舍",
+          "body": "把模型能力翻译成成本、风险和交付节奏。"
+        }
+      ]
     },
     "case": {
       "title": "一个例子",
-      "side": "从场景到结果",
+      "side": "CASE_01",
       "name": "把广告素材生产，拆成一条 Agent 工作流",
-      "contextLabel": "场景",
-      "context": "每月 10 万条视频、3 万+ 图片的素材生产，原有流程靠人工串行。",
-      "decisionLabel": "判断",
-      "decision": "不是让模型「一键生成」，而是把策划、生成、审核拆成可编排的任务，让 Agent 在边界内执行。",
-      "resultLabel": "结果",
-      "result": "跨部门协作效率提升 80%+；叠加 AI Native 研发流程后，单条视频成本从 2.5–3 元降到 0.5–1 元。",
-      "note": "我负责系统设计与落地推进，也参与了流程规则和验收标准的定义。"
+      "labels": {
+        "context": "SCENARIO",
+        "decision": "DECISION",
+        "result": "RESULT",
+        "role": "ROLE"
+      },
+      "context": "每月 10 万条视频、3 万+ 图片的素材生产，原来靠人工串行。",
+      "decision": "不是让模型「一键生成」，而是把策划、生成、审核拆成可编排的任务。",
+      "result": "跨部门协作效率 +80%；单条视频成本从 2.5–3 元降到 0.5–1 元。",
+      "role": "系统设计与落地推进。"
     },
     "method": {
       "title": "工作方式",
-      "side": "把不确定性拆小",
+      "side": "METHOD",
       "items": [
         {
           "title": "定义问题",
@@ -193,23 +209,20 @@
         },
         {
           "title": "推进交付",
-          "body": "和工程、算法、设计一起，把方案交出去。"
+          "body": "和工程、算法、设计一起交出去。"
         }
       ]
     },
-    "background": {
-      "label": "工程底子",
-      "value": "TypeScript · Python · Go · 多智能体（MCP / A2A）· 可观测性"
-    },
     "featuredPosts": {
-      "title": "精选文章",
+      "title": "写作",
       "description": "工程手记，和 AI 产品笔记",
-      "viewAll": "全部文章"
+      "viewAll": "全部写作"
     },
-    "now": {
-      "label": "Now",
-      "text": "正在写 AI 产品系列：方法、案例与评测；同时看 AI 产品岗位。",
-      "link": "GitHub"
+    "prompt": {
+      "label": "TERMINAL",
+      "hint": "输入 help 查看命令",
+      "placeholder": "输入命令…",
+      "help": "work · notes · about · contact · clear"
     },
     "contact": {
       "title": "在找 AI 产品岗位。",
@@ -219,63 +232,38 @@
     }
   },
   "AboutPage": {
-    "title": "关于我 - Max Zhang",
-    "heading": "关于我",
+    "title": "关于 - Max Zhang",
+    "heading": "关于",
     "location": "中国 成都",
     "status": "AI 产品经理 · 成都 / 远程",
     "intro": [
-      "我是 Max，十年全栈工程，AI 产品经理。过去两年把多智能体系统从 0 带到生产。",
-      "做了十年工程，我一直在回答产品问题：为谁做、边界在哪、什么算做完。只是以前在实现阶段参与，现在更早进入定义阶段。",
-      "现在关注 Agent、RAG 与 AI 产品评测，也写代码验证判断。文章会陆续记录方法、案例和踩过的坑。"
+      "我是 Max。十年全栈工程，现在做 AI 产品。",
+      "过去两年，把多智能体系统从 0 带到生产。关注 Agent、RAG 与评测。"
     ],
-    "storiesTitle": "三个产品故事",
-    "storiesSide": "场景 / 判断 / 动作 / 结果",
-    "storyLabels": {
-      "background": "场景",
-      "decision": "判断",
-      "action": "动作",
-      "result": "结果"
-    },
-    "stories": [
+    "factsTitle": "INFO",
+    "facts": [
       {
-        "title": "广告素材生产的 Agent 工作流",
-        "background": "每月 10 万条视频、3 万+ 图片的素材生产，原有流程靠人工串行。",
-        "decision": "不是让模型「一键生成」，而是把策划、生成、审核拆成可编排的任务，让 Agent 在边界内执行。",
-        "action": "设计多智能体协作与沙箱执行环境，接入 MCP 工具，定义任务流转与异常兜底。",
-        "result": "跨部门协作效率提升 80%+；单条视频成本随后降到 0.5–1 元。"
+        "label": "ROLE",
+        "value": "AI 产品经理"
       },
       {
-        "title": "AI Native 研发流程改造",
-        "background": "视频生成成本高，需求文档到 Bug 修复的链路长、重复环节多。",
-        "decision": "先标准化输入输出，再让 Codex、Claude 与自研 MCP 分担重复环节。",
-        "action": "打通需求生成、任务拆解、执行验证与 Bug 修复闭环。",
-        "result": "单条视频成本从 2.5–3 元降到 0.5–1 元。"
-      },
-      {
-        "title": "广告业务数字化平台",
-        "background": "素材生产、审批、投放、数据回溯分散在多个系统，跨部门协作靠人肉对齐。",
-        "decision": "先打通状态机与数据口径，再谈自动化。",
-        "action": "主导平台建设，推动生产、审批、投放、数据四条链路统一。",
-        "result": "支撑月均 10 万条视频与 3 万+ 图片生成，协作效率提升 80% 以上。"
-      }
-    ],
-    "lookingTitle": "我在找什么",
-    "lookingSide": "方向 / 阶段 / 地点",
-    "lookingFor": [
-      {
-        "label": "方向",
-        "value": "Agent / 效率工具 / 内容与社区类 AI 产品"
-      },
-      {
-        "label": "阶段",
-        "value": "早期到成长期，愿意做 0→1 与 1→10"
-      },
-      {
-        "label": "地点",
+        "label": "BASE",
         "value": "成都 / 远程"
+      },
+      {
+        "label": "FOCUS",
+        "value": "Agent · RAG · 评测"
+      },
+      {
+        "label": "STATUS",
+        "value": "开放 AI 产品岗位"
+      },
+      {
+        "label": "EMAIL",
+        "value": "zsc.guru@qq.com"
       }
     ],
-    "timelineTitle": "工作经历",
+    "experienceTitle": "工作经历",
     "timeline": [
       {
         "period": "2021.02 - 2025.12",
@@ -302,58 +290,38 @@
         "note": "医院设备数据与 SaaS 交付"
       }
     ],
-    "techStack": "工程底子",
-    "techIntro": "能自己搭原型、能和工程团队把方案聊到底——这是我做 AI 产品的差异化。",
-    "learning": "研习方向",
-    "learningList": [
-      "AI 产品的评估与指标体系",
-      "用户研究与访谈",
-      "Agent 产品的形态与信任设计",
-      "RAG 产品化与知识组织",
-      "AI 产品的成本与商业模式",
-      "产品写作与案例拆解"
-    ],
-    "education": "教育经历",
-    "educationList": [
-      {
-        "school": "北亚利桑那大学",
-        "degree": "计算机信息技术硕士"
-      }
-    ],
-    "interests": "兴趣点",
-    "interestList": ["开源", "UI/UX 设计", "AI Agent 应用", "产品写作", "摄影"],
-    "contactTitle": "在找 AI 产品岗位。",
-    "contactText": "如果你们在做 AI 产品，或者想聊聊 Agent、RAG 与评测，欢迎直接邮件。",
+    "contactTitle": "聊聊 AI 产品。",
+    "contactText": "如果你们在做 AI 产品，欢迎直接邮件。",
     "contactEmail": "发邮件",
     "contactGithub": "GitHub"
   },
   "PostsPage": {
-    "title": "文章",
-    "description": "工程手记，和 AI 产品笔记",
-    "note": "目前以工程手记为主；AI 产品方法、案例拆解与评测记录会以系列文章陆续更新。",
-    "categories": "分类浏览",
-    "tags": "标签索引",
-    "noPosts": "暂无文章，敬请期待。",
-    "noCategories": "暂无分类",
-    "noTags": "暂无标签",
-    "aiAssisted": "AI 辅助写作",
-    "aiAssistedHint": "本文由作者与 AI 协作完成，内容经过人工审校",
-    "back": "返回文章",
+    "title": "写作",
+    "description": "工程手记，和 AI 产品笔记。",
+    "note": "AI 产品方法、案例拆解与评测记录，会以系列文章陆续更新。",
     "seriesTitle": "写作计划",
     "series": [
       {
         "title": "AI 产品方法",
-        "body": "任务定义、提示词、评测，以及 RAG 与 Agent 的设计取舍。"
+        "body": "任务定义、提示词、评测，以及 RAG 与 Agent 的取舍。"
       },
       {
         "title": "案例拆解",
-        "body": "客服、会议纪要、教育、医疗、旅游，拆工作流与关键判断。"
+        "body": "客服、会议纪要、教育、医疗、旅游的工作流。"
       },
       {
         "title": "工程实践",
-        "body": "多智能体、可观测性，和 AI Native 的研发流程。"
+        "body": "多智能体、可观测性与 AI Native 研发流程。"
       }
-    ]
+    ],
+    "categories": "分类",
+    "tags": "标签",
+    "noPosts": "还没有文章。",
+    "noCategories": "暂无分类",
+    "noTags": "暂无标签",
+    "aiAssisted": "AI 辅助写作",
+    "aiAssistedHint": "本文由作者与 AI 协作完成，内容经过人工审校",
+    "back": "返回写作"
   },
   "SearchPage": {
     "title": "搜索",

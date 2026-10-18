@@ -7,10 +7,10 @@ export const Route = createFileRoute('/zh/')({
   loader: ({ context }) => getFeaturedPosts(context.locale),
   head: () => ({
     meta: [
-      { title: 'Max Zhang · AI 产品经理' },
+      { title: 'Max Zhang — AI 产品经理' },
       {
         name: 'description',
-        content: 'Max Zhang，AI 产品经理。十年全栈工程，把模型能力翻译成可落地、可验证的产品。',
+        content: '十年全栈工程，两年把多智能体系统从 0 带到生产。做 AI 产品，也写代码验证判断。',
       },
     ],
   }),
