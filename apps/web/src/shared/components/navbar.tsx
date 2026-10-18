@@ -1,5 +1,5 @@
 import { useRouter, useRouterState } from '@tanstack/react-router'
-import { BookOpen, Home, Languages, Layers, Map, MoreHorizontal, Search, User } from 'lucide-react'
+import { BookOpen, Camera, Home, Languages, MoreHorizontal, Search, Sparkles, User } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocale, useTranslations } from '@/src/i18n/client'
 import { localizePath, stripLocale } from '@/i18n/routing'
@@ -14,7 +14,7 @@ export function Navbar() {
   const [moreOpen, setMoreOpen] = useState(false)
   const headerRef = useRef<HTMLElement | null>(null)
 
-  // 语言切换只改 URL：en 无前缀、zh 带 /zh，不写本地偏好、不做自动跳转
+  // 语言切换只改 URL：en 无前缀、zh 带 /zh，不做自动跳转
   const toggleLanguage = () => {
     const nextLocale = locale === 'zh' ? 'en' : 'zh'
     router.navigate({
@@ -45,9 +45,9 @@ export function Navbar() {
 
   const links = [
     { path: '/', label: t('home'), icon: Home },
-    { path: '/curriculum', label: t('curriculum'), icon: Map },
-    { path: '/cases', label: t('cases'), icon: Layers },
     { path: '/posts', label: t('posts'), icon: BookOpen },
+    { path: '/photos', label: t('photos'), icon: Camera },
+    { path: '/chat', label: t('chat'), icon: Sparkles },
     { path: '/about', label: t('about'), icon: User },
   ]
 
@@ -68,16 +68,6 @@ export function Navbar() {
           <Link href="/search" className={cn('nav-icon-btn', isActive('/search') && 'active')} aria-label={t('search')}>
             <Search className="size-4" />
           </Link>
-          <button
-            type="button"
-            className={cn('nav-icon-btn', moreOpen && 'active')}
-            onClick={() => setMoreOpen((current) => !current)}
-            title={t('more')}
-            aria-label={t('more')}
-            aria-expanded={moreOpen}
-          >
-            <MoreHorizontal className="size-4" />
-          </button>
           <button
             type="button"
             className="nav-icon-btn"

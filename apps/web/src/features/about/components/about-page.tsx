@@ -3,6 +3,11 @@ import { Github, Linkedin, Mail, MapPin } from 'lucide-react'
 import { flattenSkills, skillMatrix } from '@/src/shared/skills'
 import Avatar from '../avatar.jpg'
 
+interface Thesis {
+  title: string
+  body: string
+}
+
 interface Story {
   title: string
   background: string
@@ -28,18 +33,6 @@ interface Education {
   degree: string
 }
 
-interface Stage {
-  no: string
-  range: string
-  title: string
-  brief: string
-}
-
-interface ModelItem {
-  title: string
-  body: string
-}
-
 const techCategories = skillMatrix.map((category) => ({
   title: category.title,
   titleEn: category.titleEn,
@@ -48,7 +41,7 @@ const techCategories = skillMatrix.map((category) => ({
 
 export function AboutPage() {
   const t = useTranslations('AboutPage')
-  const tCurriculum = useTranslations('CurriculumPage')
+  const tTheses = useTranslations('Theses')
   const locale = useLocale()
 
   const intro = t.raw<string[]>('intro') ?? []
@@ -58,8 +51,7 @@ export function AboutPage() {
   const educationList = t.raw<Education[]>('educationList') ?? []
   const learningList = t.raw<string[]>('learningList') ?? []
   const interestList = t.raw<string[]>('interestList') ?? []
-  const stages = tCurriculum.raw<Stage[]>('stages') ?? []
-  const modelItems = tCurriculum.raw<ModelItem[]>('model.items') ?? []
+  const theses = tTheses.raw<Thesis[]>('items') ?? []
 
   return (
     <div>
@@ -120,23 +112,16 @@ export function AboutPage() {
       <section>
         <div className="nx-block-head">
           <div className="nx-block-left">
-            <span className="nx-block-index">01 — {t('trainingTitle')}</span>
-            <span className="nx-block-side">{t('trainingSide')}</span>
+            <span className="nx-block-index">01 — {tTheses('title')}</span>
+            <span className="nx-block-side">{tTheses('side')}</span>
           </div>
-          <Link href="/curriculum" className="nx-more">
-            {t('trainingLink')} →
-          </Link>
         </div>
-        <p className="kx-intro">{t('trainingNote')}</p>
-        <div className="kx-stage-grid">
-          {stages.map((stage) => (
-            <article key={stage.no} className="kx-stage">
-              <header className="kx-stage-head">
-                <span className="kx-stage-no">{stage.no}</span>
-                <span className="kx-stage-range">{stage.range}</span>
-              </header>
-              <h3 className="kx-stage-title">{stage.title}</h3>
-              <p className="kx-stage-brief">{stage.brief}</p>
+        <div className="nx-thesis-grid">
+          {theses.map((thesis, index) => (
+            <article key={thesis.title} className="nx-thesis">
+              <span className="nx-thesis-num">{String(index + 1).padStart(2, '0')}</span>
+              <h3 className="nx-thesis-title">{thesis.title}</h3>
+              <p className="nx-thesis-body">{thesis.body}</p>
             </article>
           ))}
         </div>
@@ -145,25 +130,7 @@ export function AboutPage() {
       <section>
         <div className="nx-block-head">
           <div className="nx-block-left">
-            <span className="nx-block-index">02 — {t('capabilityTitle')}</span>
-            <span className="nx-block-side">{t('capabilitySide')}</span>
-          </div>
-        </div>
-        <div className="cx-model-grid">
-          {modelItems.map((item, index) => (
-            <article key={item.title} className="cx-model">
-              <span className="cx-model-no">{String(index + 1).padStart(2, '0')}</span>
-              <h3 className="cx-model-title">{item.title}</h3>
-              <p className="cx-model-body">{item.body}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <div className="nx-block-head">
-          <div className="nx-block-left">
-            <span className="nx-block-index">03 — {t('storiesTitle')}</span>
+            <span className="nx-block-index">02 — {t('storiesTitle')}</span>
             <span className="nx-block-side">{t('storiesSide')}</span>
           </div>
         </div>
@@ -198,7 +165,7 @@ export function AboutPage() {
       <section>
         <div className="nx-block-head">
           <div className="nx-block-left">
-            <span className="nx-block-index">04 — {t('lookingTitle')}</span>
+            <span className="nx-block-index">03 — {t('lookingTitle')}</span>
             <span className="nx-block-side">{t('lookingSide')}</span>
           </div>
         </div>
@@ -215,7 +182,7 @@ export function AboutPage() {
       <section>
         <div className="nx-block-head">
           <div className="nx-block-left">
-            <span className="nx-block-index">05 — {t('timelineTitle')}</span>
+            <span className="nx-block-index">04 — {t('timelineTitle')}</span>
           </div>
         </div>
         <div className="about-timeline">

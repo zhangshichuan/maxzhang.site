@@ -14,9 +14,7 @@ import { Route as ZhRouteRouteImport } from './routes/zh/route'
 import { Route as EnIndexRouteImport } from './routes/_en/index'
 import { Route as EnAboutRouteImport } from './routes/_en/about'
 import { Route as EnAdminRouteImport } from './routes/_en/admin'
-import { Route as EnCasesRouteImport } from './routes/_en/cases'
 import { Route as EnChatRouteImport } from './routes/_en/chat'
-import { Route as EnCurriculumRouteImport } from './routes/_en/curriculum'
 import { Route as EnLoginRouteImport } from './routes/_en/login'
 import { Route as EnPhotosRouteRouteImport } from './routes/_en/photos/route'
 import { Route as EnPostsRouteRouteImport } from './routes/_en/posts/route'
@@ -24,9 +22,7 @@ import { Route as EnSearchRouteImport } from './routes/_en/search'
 import { Route as ZhIndexRouteImport } from './routes/zh/index'
 import { Route as ZhAboutRouteImport } from './routes/zh/about'
 import { Route as ZhAdminRouteImport } from './routes/zh/admin'
-import { Route as ZhCasesRouteImport } from './routes/zh/cases'
 import { Route as ZhChatRouteImport } from './routes/zh/chat'
-import { Route as ZhCurriculumRouteImport } from './routes/zh/curriculum'
 import { Route as ZhLoginRouteImport } from './routes/zh/login'
 import { Route as ZhPhotosRouteRouteImport } from './routes/zh/photos/route'
 import { Route as ZhPostsRouteRouteImport } from './routes/zh/posts/route'
@@ -70,19 +66,9 @@ const EnAdminRoute = EnAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => EnRouteRoute,
 } as any)
-const EnCasesRoute = EnCasesRouteImport.update({
-  id: '/cases',
-  path: '/cases',
-  getParentRoute: () => EnRouteRoute,
-} as any)
 const EnChatRoute = EnChatRouteImport.update({
   id: '/chat',
   path: '/chat',
-  getParentRoute: () => EnRouteRoute,
-} as any)
-const EnCurriculumRoute = EnCurriculumRouteImport.update({
-  id: '/curriculum',
-  path: '/curriculum',
   getParentRoute: () => EnRouteRoute,
 } as any)
 const EnLoginRoute = EnLoginRouteImport.update({
@@ -120,19 +106,9 @@ const ZhAdminRoute = ZhAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => ZhRouteRoute,
 } as any)
-const ZhCasesRoute = ZhCasesRouteImport.update({
-  id: '/cases',
-  path: '/cases',
-  getParentRoute: () => ZhRouteRoute,
-} as any)
 const ZhChatRoute = ZhChatRouteImport.update({
   id: '/chat',
   path: '/chat',
-  getParentRoute: () => ZhRouteRoute,
-} as any)
-const ZhCurriculumRoute = ZhCurriculumRouteImport.update({
-  id: '/curriculum',
-  path: '/curriculum',
   getParentRoute: () => ZhRouteRoute,
 } as any)
 const ZhLoginRoute = ZhLoginRouteImport.update({
@@ -235,16 +211,12 @@ export interface FileRoutesByFullPath {
   '/zh/posts': typeof ZhPostsRouteRouteWithChildren
   '/about': typeof EnAboutRoute
   '/admin': typeof EnAdminRoute
-  '/cases': typeof EnCasesRoute
   '/chat': typeof EnChatRoute
-  '/curriculum': typeof EnCurriculumRoute
   '/login': typeof EnLoginRoute
   '/search': typeof EnSearchRoute
   '/zh/about': typeof ZhAboutRoute
   '/zh/admin': typeof ZhAdminRoute
-  '/zh/cases': typeof ZhCasesRoute
   '/zh/chat': typeof ZhChatRoute
-  '/zh/curriculum': typeof ZhCurriculumRoute
   '/zh/login': typeof ZhLoginRoute
   '/zh/search': typeof ZhSearchRoute
   '/zh/': typeof ZhIndexRoute
@@ -266,16 +238,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/about': typeof EnAboutRoute
   '/admin': typeof EnAdminRoute
-  '/cases': typeof EnCasesRoute
   '/chat': typeof EnChatRoute
-  '/curriculum': typeof EnCurriculumRoute
   '/login': typeof EnLoginRoute
   '/search': typeof EnSearchRoute
   '/zh/about': typeof ZhAboutRoute
   '/zh/admin': typeof ZhAdminRoute
-  '/zh/cases': typeof ZhCasesRoute
   '/zh/chat': typeof ZhChatRoute
-  '/zh/curriculum': typeof ZhCurriculumRoute
   '/zh/login': typeof ZhLoginRoute
   '/zh/search': typeof ZhSearchRoute
   '/': typeof EnIndexRoute
@@ -305,16 +273,12 @@ export interface FileRoutesById {
   '/zh/posts': typeof ZhPostsRouteRouteWithChildren
   '/_en/about': typeof EnAboutRoute
   '/_en/admin': typeof EnAdminRoute
-  '/_en/cases': typeof EnCasesRoute
   '/_en/chat': typeof EnChatRoute
-  '/_en/curriculum': typeof EnCurriculumRoute
   '/_en/login': typeof EnLoginRoute
   '/_en/search': typeof EnSearchRoute
   '/zh/about': typeof ZhAboutRoute
   '/zh/admin': typeof ZhAdminRoute
-  '/zh/cases': typeof ZhCasesRoute
   '/zh/chat': typeof ZhChatRoute
-  '/zh/curriculum': typeof ZhCurriculumRoute
   '/zh/login': typeof ZhLoginRoute
   '/zh/search': typeof ZhSearchRoute
   '/_en/': typeof EnIndexRoute
@@ -345,16 +309,12 @@ export interface FileRouteTypes {
     | '/zh/posts'
     | '/about'
     | '/admin'
-    | '/cases'
     | '/chat'
-    | '/curriculum'
     | '/login'
     | '/search'
     | '/zh/about'
     | '/zh/admin'
-    | '/zh/cases'
     | '/zh/chat'
-    | '/zh/curriculum'
     | '/zh/login'
     | '/zh/search'
     | '/zh/'
@@ -376,16 +336,12 @@ export interface FileRouteTypes {
   to:
     | '/about'
     | '/admin'
-    | '/cases'
     | '/chat'
-    | '/curriculum'
     | '/login'
     | '/search'
     | '/zh/about'
     | '/zh/admin'
-    | '/zh/cases'
     | '/zh/chat'
-    | '/zh/curriculum'
     | '/zh/login'
     | '/zh/search'
     | '/'
@@ -414,16 +370,12 @@ export interface FileRouteTypes {
     | '/zh/posts'
     | '/_en/about'
     | '/_en/admin'
-    | '/_en/cases'
     | '/_en/chat'
-    | '/_en/curriculum'
     | '/_en/login'
     | '/_en/search'
     | '/zh/about'
     | '/zh/admin'
-    | '/zh/cases'
     | '/zh/chat'
-    | '/zh/curriculum'
     | '/zh/login'
     | '/zh/search'
     | '/_en/'
@@ -492,25 +444,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EnAdminRouteImport
       parentRoute: typeof EnRouteRoute
     }
-    '/_en/cases': {
-      id: '/_en/cases'
-      path: '/cases'
-      fullPath: '/cases'
-      preLoaderRoute: typeof EnCasesRouteImport
-      parentRoute: typeof EnRouteRoute
-    }
     '/_en/chat': {
       id: '/_en/chat'
       path: '/chat'
       fullPath: '/chat'
       preLoaderRoute: typeof EnChatRouteImport
-      parentRoute: typeof EnRouteRoute
-    }
-    '/_en/curriculum': {
-      id: '/_en/curriculum'
-      path: '/curriculum'
-      fullPath: '/curriculum'
-      preLoaderRoute: typeof EnCurriculumRouteImport
       parentRoute: typeof EnRouteRoute
     }
     '/_en/login': {
@@ -562,25 +500,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ZhAdminRouteImport
       parentRoute: typeof ZhRouteRoute
     }
-    '/zh/cases': {
-      id: '/zh/cases'
-      path: '/cases'
-      fullPath: '/zh/cases'
-      preLoaderRoute: typeof ZhCasesRouteImport
-      parentRoute: typeof ZhRouteRoute
-    }
     '/zh/chat': {
       id: '/zh/chat'
       path: '/chat'
       fullPath: '/zh/chat'
       preLoaderRoute: typeof ZhChatRouteImport
-      parentRoute: typeof ZhRouteRoute
-    }
-    '/zh/curriculum': {
-      id: '/zh/curriculum'
-      path: '/curriculum'
-      fullPath: '/zh/curriculum'
-      preLoaderRoute: typeof ZhCurriculumRouteImport
       parentRoute: typeof ZhRouteRoute
     }
     '/zh/login': {
@@ -745,9 +669,7 @@ interface EnRouteRouteChildren {
   EnPostsRouteRoute: typeof EnPostsRouteRouteWithChildren
   EnAboutRoute: typeof EnAboutRoute
   EnAdminRoute: typeof EnAdminRoute
-  EnCasesRoute: typeof EnCasesRoute
   EnChatRoute: typeof EnChatRoute
-  EnCurriculumRoute: typeof EnCurriculumRoute
   EnLoginRoute: typeof EnLoginRoute
   EnSearchRoute: typeof EnSearchRoute
   EnIndexRoute: typeof EnIndexRoute
@@ -758,9 +680,7 @@ const EnRouteRouteChildren: EnRouteRouteChildren = {
   EnPostsRouteRoute: EnPostsRouteRouteWithChildren,
   EnAboutRoute: EnAboutRoute,
   EnAdminRoute: EnAdminRoute,
-  EnCasesRoute: EnCasesRoute,
   EnChatRoute: EnChatRoute,
-  EnCurriculumRoute: EnCurriculumRoute,
   EnLoginRoute: EnLoginRoute,
   EnSearchRoute: EnSearchRoute,
   EnIndexRoute: EnIndexRoute,
@@ -802,9 +722,7 @@ interface ZhRouteRouteChildren {
   ZhPostsRouteRoute: typeof ZhPostsRouteRouteWithChildren
   ZhAboutRoute: typeof ZhAboutRoute
   ZhAdminRoute: typeof ZhAdminRoute
-  ZhCasesRoute: typeof ZhCasesRoute
   ZhChatRoute: typeof ZhChatRoute
-  ZhCurriculumRoute: typeof ZhCurriculumRoute
   ZhLoginRoute: typeof ZhLoginRoute
   ZhSearchRoute: typeof ZhSearchRoute
   ZhIndexRoute: typeof ZhIndexRoute
@@ -815,9 +733,7 @@ const ZhRouteRouteChildren: ZhRouteRouteChildren = {
   ZhPostsRouteRoute: ZhPostsRouteRouteWithChildren,
   ZhAboutRoute: ZhAboutRoute,
   ZhAdminRoute: ZhAdminRoute,
-  ZhCasesRoute: ZhCasesRoute,
   ZhChatRoute: ZhChatRoute,
-  ZhCurriculumRoute: ZhCurriculumRoute,
   ZhLoginRoute: ZhLoginRoute,
   ZhSearchRoute: ZhSearchRoute,
   ZhIndexRoute: ZhIndexRoute,

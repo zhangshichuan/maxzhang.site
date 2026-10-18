@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Camera, Languages, Search, Sparkles, User, X } from 'lucide-react'
+import { Languages, Search, User, X } from 'lucide-react'
 import { useTranslations } from '@/src/i18n/client'
 import { Link } from '@/src/i18n/client'
 
@@ -10,9 +10,9 @@ interface MoreSheetProps {
 }
 
 /**
- * “更多”底部 Sheet
+ * 移动端“更多”底部 Sheet
  *
- * 收纳低频入口：关于、摄影、树洞、搜索、语言。
+ * 收纳低频入口：关于、搜索、语言。
  */
 export function MoreSheet({ open, onClose, onLanguage }: MoreSheetProps) {
   const t = useTranslations('Common.nav')
@@ -48,19 +48,11 @@ export function MoreSheet({ open, onClose, onLanguage }: MoreSheetProps) {
 
             <div className="card-group">
               <Link href="/about" className="card-row" onClick={onClose}>
-                <User className="text-primary size-4" />
+                <User className="size-4 text-primary" />
                 {t('about')}
               </Link>
-              <Link href="/photos" className="card-row" onClick={onClose}>
-                <Camera className="text-primary size-4" />
-                {t('photos')}
-              </Link>
-              <Link href="/chat" className="card-row" onClick={onClose}>
-                <Sparkles className="text-primary size-4" />
-                {t('chat')}
-              </Link>
               <Link href="/search" className="card-row" onClick={onClose}>
-                <Search className="text-primary size-4" />
+                <Search className="size-4 text-primary" />
                 {t('search')}
               </Link>
               <button
@@ -68,7 +60,7 @@ export function MoreSheet({ open, onClose, onLanguage }: MoreSheetProps) {
                 className="card-row w-full cursor-pointer border-none bg-transparent text-left"
                 onClick={onLanguage}
               >
-                <Languages className="text-primary size-4" />
+                <Languages className="size-4 text-primary" />
                 {t('language')}
               </button>
             </div>

@@ -7,7 +7,6 @@ import { getLocaleFromPathname } from '@/i18n/routing'
 import '@/src/styles/design-system.css'
 import '@/src/styles/content.css'
 import '@/src/styles/pages.css'
-import '@/src/styles/course.css'
 
 /**
  * 根路由

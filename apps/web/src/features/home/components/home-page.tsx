@@ -13,30 +13,14 @@ interface MethodItem {
   body: string
 }
 
-interface Stage {
-  no: string
-  range: string
-  title: string
-  brief: string
-  methods: string[]
-}
-
-interface CasePreview {
-  no: string
-  name: string
-  tag: string
-  note: string
-}
-
 export function HomePage({ posts }: { posts: PostSummaryWithViews[] }) {
   return (
     <>
       <HomeHero />
       <ThesesSection />
-      <KnowledgeSection />
-      <CasesSection />
+      <CaseSection />
       <MethodSection />
-      <FeaturedPosts posts={posts} index="05" />
+      <FeaturedPosts posts={posts} index="04" />
       <NowStrip />
       <ContactBand />
     </>
@@ -68,9 +52,13 @@ function ThesesSection() {
   )
 }
 
-function KnowledgeSection() {
-  const t = useTranslations('HomePage.knowledge')
-  const stages = t.raw<Stage[]>('stages') ?? []
+function CaseSection() {
+  const t = useTranslations('HomePage.case')
+  const rows: Array<[string, string]> = [
+    [t('contextLabel'), t('context')],
+    [t('decisionLabel'), t('decision')],
+    [t('resultLabel'), t('result')],
+  ]
 
   return (
     <section>
@@ -79,57 +67,18 @@ function KnowledgeSection() {
           <span className="nx-block-index">02 — {t('title')}</span>
           <span className="nx-block-side">{t('side')}</span>
         </div>
-        <Link href="/curriculum" className="nx-more">
-          {t('cta')} →
-        </Link>
       </div>
-      <p className="kx-intro">{t('intro')}</p>
-      <div className="kx-stage-grid">
-        {stages.map((stage) => (
-          <article key={stage.no} className="kx-stage">
-            <header className="kx-stage-head">
-              <span className="kx-stage-no">{stage.no}</span>
-              <span className="kx-stage-range">{stage.range}</span>
-            </header>
-            <h3 className="kx-stage-title">{stage.title}</h3>
-            <p className="kx-stage-brief">{stage.brief}</p>
-            <ul className="kx-stage-methods">
-              {stage.methods.map((method) => (
-                <li key={method}>{method}</li>
-              ))}
-            </ul>
-          </article>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-function CasesSection() {
-  const t = useTranslations('HomePage.cases')
-  const items = t.raw<CasePreview[]>('items') ?? []
-
-  return (
-    <section>
-      <div className="nx-block-head">
-        <div className="nx-block-left">
-          <span className="nx-block-index">03 — {t('title')}</span>
-          <span className="nx-block-side">{t('side')}</span>
-        </div>
-        <Link href="/cases" className="nx-more">
-          {t('cta')} →
-        </Link>
-      </div>
-      <p className="kx-intro">{t('intro')}</p>
-      <div className="kx-case-grid">
-        {items.map((item) => (
-          <Link key={item.no} href="/cases" className="kx-case">
-            <span className="kx-case-no">{item.no}</span>
-            <span className="kx-case-tag">{item.tag}</span>
-            <h3 className="kx-case-name">{item.name}</h3>
-            <p className="kx-case-note">{item.note}</p>
-          </Link>
-        ))}
+      <div className="nx-case">
+        <h3 className="nx-case-name">{t('name')}</h3>
+        <dl className="nx-case-rows">
+          {rows.map(([label, value]) => (
+            <div key={label} className="nx-case-row">
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="nx-case-note">{t('note')}</p>
       </div>
     </section>
   )
@@ -144,7 +93,7 @@ function MethodSection() {
     <section>
       <div className="nx-block-head">
         <div className="nx-block-left">
-          <span className="nx-block-index">04 — {t('title')}</span>
+          <span className="nx-block-index">03 — {t('title')}</span>
           <span className="nx-block-side">{t('side')}</span>
         </div>
       </div>

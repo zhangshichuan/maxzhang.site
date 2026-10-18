@@ -9,14 +9,35 @@ interface PostsClientProps {
   allCategories: string[]
 }
 
+interface WritingSeries {
+  title: string
+  body: string
+}
+
 export function PostsClient({ posts, allTags, allCategories }: PostsClientProps) {
   const t = useTranslations('PostsPage')
+  const series = t.raw<WritingSeries[]>('series') ?? []
 
   return (
     <div>
       <h1 className="page-title">{t('title')}</h1>
       <p className="page-subtitle">{t('description')}</p>
       <p className="page-note">{t('note')}</p>
+
+      {series.length > 0 && (
+        <section className="posts-series">
+          <span className="posts-series-label">{t('seriesTitle')}</span>
+          <div className="posts-series-grid">
+            {series.map((item, index) => (
+              <div key={item.title} className="posts-series-item">
+                <span className="posts-series-no">{String(index + 1).padStart(2, '0')}</span>
+                <h2 className="posts-series-title">{item.title}</h2>
+                <p className="posts-series-body">{item.body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="posts-layout">
         <div className="search-results">
