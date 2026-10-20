@@ -1,12 +1,14 @@
+import '@/src/styles/paper-admin.css'
+
 import { ArrowRight, Loader2, Lock } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLocale, useTranslations } from '@/src/i18n/client'
 import { localizePath } from '@/i18n/routing'
 
 /**
- * 管理登录页
+ * 管理登录页 — 深色档案卡
  *
- * 已登录：显示“前往摄影页”与“退出登录”；
+ * 已登录：显示“前往摄影页”与“退出登录”（保留跳转逻辑）；
  * 未登录：口令表单，失败次数过多时展示锁定倒计时。
  */
 export function AdminLoginPage() {
@@ -66,41 +68,96 @@ export function AdminLoginPage() {
   }
 
   if (checking) {
-    return <div className="empty-state">{t('checking')}</div>
+    return (
+      <div className="ad-page ad-page--auth">
+        <div className="ad-check">
+          <span className="ad-dot" aria-hidden="true" />
+          {t('checking')}
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="admin-login-wrap">
-      <form className="admin-login-card glass-card" onSubmit={submit}>
-        <div className="admin-login-head">
-          <Lock className="text-primary size-5" />
-          <h1 className="panel-title">{t('title')}</h1>
+    <div className="ad-page ad-page--auth">
+      <div className="ad-login">
+        <div className="ad-login-aside">
+          <div className="ad-login-aside-top">
+            <span className="ad-login-stamp">
+              <Lock className="size-3.5" strokeWidth={1.75} aria-hidden="true" />
+              MZ / Private archive
+            </span>
+            <span className="ad-login-stamp" aria-hidden="true">
+              ( 01 )
+            </span>
+          </div>
+
+          <span className="ad-login-figure" aria-hidden="true">
+            01
+          </span>
+
+          <div className="ad-login-aside-foot" aria-hidden="true">
+            <div className="ad-login-aside-row">
+              <span>Access</span>
+              <span className="is-red">Restricted</span>
+            </div>
+            <div className="ad-login-aside-row">
+              <span>Index</span>
+              <span>Admin / 01</span>
+            </div>
+          </div>
         </div>
 
-        <input
-          className="ios-input"
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          placeholder={t('password')}
-          autoFocus
-          disabled={submitting}
-        />
-        {error && (
-          <div className="alert alert-error mt-3 text-xs">
-            {error}
-            {retryAfter !== null && ` ${t('retryAfter', { seconds: Math.ceil(retryAfter) })}`}
+        <form className="ad-login-form" onSubmit={submit}>
+          <p className="ad-kicker">
+            <span className="ad-dot" aria-hidden="true" />
+            Admin access
+          </p>
+
+          <h1 className="ad-login-title">{t('title')}</h1>
+
+          <div className="ad-login-rule" aria-hidden="true" />
+
+          <label className="ad-field" htmlFor="ad-password">
+            <span className="ad-field-label">
+              <span>Passphrase</span>
+              <span className="ad-field-hint">Required</span>
+            </span>
+            <input
+              id="ad-password"
+              className="ad-input"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder={t('password')}
+              autoComplete="current-password"
+              autoFocus
+              disabled={submitting}
+            />
+          </label>
+
+          {error && (
+            <div className="ad-alert" role="alert">
+              {error}
+              {retryAfter !== null && ` ${t('retryAfter', { seconds: Math.ceil(retryAfter) })}`}
+            </div>
+          )}
+
+          <button type="submit" className="ad-submit" disabled={!password || submitting}>
+            {submitting ? (
+              <Loader2 className="size-4 ad-spin" aria-hidden="true" />
+            ) : (
+              <ArrowRight className="size-4" aria-hidden="true" />
+            )}
+            {submitting ? t('submitting') : t('submit')}
+          </button>
+
+          <div className="ad-login-foot" aria-hidden="true">
+            <span>Max Zhang</span>
+            <span>Private archive / 2026</span>
           </div>
-        )}
-        <button
-          type="submit"
-          className="btn btn-primary mt-4 inline-flex w-full items-center justify-center gap-2"
-          disabled={!password || submitting}
-        >
-          {submitting ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}
-          {submitting ? t('submitting') : t('submit')}
-        </button>
-      </form>
+        </form>
+      </div>
     </div>
   )
 }

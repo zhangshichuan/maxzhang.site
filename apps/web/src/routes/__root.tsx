@@ -23,7 +23,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
-      { name: 'theme-color', content: '#f2eee6' },
+      { name: 'theme-color', content: '#0b0a08' },
     ],
     links: [{ rel: 'icon', href: '/favicon.ico' }],
   }),

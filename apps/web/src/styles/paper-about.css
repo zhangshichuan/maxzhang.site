@@ -5,15 +5,15 @@
    ========================================================================== */
 
 .ab-page {
-  --ab-paper: #f2eee6;
-  --ab-sheet: #f7f3eb;
-  --ab-ink: #141414;
-  --ab-ink-70: rgba(20, 20, 20, 0.7);
-  --ab-ink-55: rgba(20, 20, 20, 0.55);
-  --ab-ink-40: rgba(20, 20, 20, 0.4);
-  --ab-line: rgba(20, 20, 20, 0.14);
-  --ab-line-strong: rgba(20, 20, 20, 0.3);
-  --ab-red: #d33a1e;
+  --ab-paper: #0b0a08;
+  --ab-sheet: #14110d;
+  --ab-ink: #ece7dc;
+  --ab-ink-70: rgba(236, 231, 220, 0.7);
+  --ab-ink-55: rgba(236, 231, 220, 0.55);
+  --ab-ink-40: rgba(236, 231, 220, 0.4);
+  --ab-line: rgba(236, 231, 220, 0.14);
+  --ab-line-strong: rgba(236, 231, 220, 0.3);
+  --ab-red: #ff4b2f;
   --ab-sans: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif);
   --ab-mono: var(--font-mono, 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace);
   --ab-ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -446,7 +446,7 @@
 }
 
 .ab-timeline-row:hover {
-  background: rgba(20, 20, 20, 0.03);
+  background: rgba(236, 231, 220, 0.03);
 }
 
 .ab-timeline-idx {

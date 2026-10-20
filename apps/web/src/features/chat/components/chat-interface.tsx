@@ -1,7 +1,8 @@
+import '@/src/styles/paper-chat.css'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { chatStream } from '@/src/features/chat/server-functions'
 import type { ChatErrorCode } from '@/src/features/chat/services/chat-stream.server'
-import { Link, useTranslations } from '@/src/i18n/client'
+import { Link, useLocale, useTranslations } from '@/src/i18n/client'
 import { getThumbmark } from '@thumbmarkjs/thumbmarkjs'
 import { MoreVertical, Send } from 'lucide-react'
 
@@ -13,6 +14,7 @@ interface Message {
 
 const STORAGE_PREFIX = 'maxzhang.chat.'
 const DAILY_ROUND_LIMIT = 100
+const MAX_INPUT_LENGTH = 2000
 
 const ERROR_MESSAGES: Record<ChatErrorCode, string> = {
   INVALID_FINGERPRINT: 'invalidFingerprint',
@@ -81,6 +83,7 @@ const persistSession = (session: Message[]) => {
 
 export function ChatInterface() {
   const t = useTranslations('Chat')
+  const locale = useLocale()
   // 会话只在客户端挂载后从 localStorage 加载，避免 SSR 空状态与客户端
   // 历史会话不一致导致的 hydration mismatch。
   const [messages, setMessages] = useState<Message[]>([])
@@ -90,6 +93,7 @@ export function ChatInterface() {
   const [isLimited, setIsLimited] = useState(false)
   const [confirmClear, setConfirmClear] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [sessionDate, setSessionDate] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -98,6 +102,8 @@ export function ChatInterface() {
   const fullContentRef = useRef('')
   const displayIndexRef = useRef(0)
   const messageIdRef = useRef<string | null>(null)
+  // 最近一次请求的上下文：出错后「重试」会用同一份历史重发，不重复用户消息。
+  const lastAttemptRef = useRef<{ content: string; history: Message[] } | null>(null)
 
   const rounds = messages.filter((message) => message.role === 'user').length
   const limited = isLimited || rounds >= DAILY_ROUND_LIMIT
@@ -107,6 +113,7 @@ export function ChatInterface() {
   }
 
   useEffect(() => {
+    setSessionDate(localDateKey())
     const saved = loadTodaySession()
     if (saved.length > 0) {
       setMessages(saved)
@@ -127,6 +134,14 @@ export function ChatInterface() {
     }
   }, [isStreaming, limited])
 
+  // 输入框随内容长高，最高 132px 后内部滚动。
+  useEffect(() => {
+    const el = inputRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 132)}px`
+  }, [input])
+
   /**
    * 聊天页使用整页禁滚 + 内部滚动布局：
    * 用 visualViewport 的高度实时驱动容器高度，保证移动端键盘弹起时
@@ -138,6 +153,8 @@ export function ChatInterface() {
       const height = viewport ? viewport.height : window.innerHeight
       const root = document.documentElement
       root.style.setProperty('--chat-vh', `${height}px`)
+      // iOS 键盘弹起时 visual viewport 会整体上移，页面随之对齐，避免输入区被裁切。
+      root.style.setProperty('--chat-vv-top', `${viewport ? viewport.offsetTop : 0}px`)
       if (viewport && viewport.height < window.innerHeight - 1) {
         root.classList.add('chat-keyboard-open')
       } else {
@@ -157,6 +174,7 @@ export function ChatInterface() {
       window.removeEventListener('resize', updateViewport)
       window.removeEventListener('orientationchange', updateViewport)
       document.documentElement.style.removeProperty('--chat-vh')
+      document.documentElement.style.removeProperty('--chat-vv-top')
       document.documentElement.classList.remove('chat-keyboard-open')
     }
   }, [])
@@ -237,71 +255,89 @@ export function ChatInterface() {
     [clearTypewriter, t],
   )
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  /**
+   * 发送一轮对话：SSE 流式逻辑与原来保持一致，抽成独立函数，
+   * 供表单提交与「重试」复用（重试复用出错那次的历史，不产生重复消息）。
+   */
+  const send = useCallback(
+    async (content: string, history: Message[]) => {
+      setErrorText(null)
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        role: 'user',
+        content,
+      }
+      const nextMessages = [...history, userMessage]
+      lastAttemptRef.current = { content, history }
+      setMessages(nextMessages)
+      persistSession(nextMessages)
+      setInput('')
+      setIsStreaming(true)
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: '',
+      }
+      setMessages((prev) => [...prev, assistantMessage])
+
+      fullContentRef.current = ''
+      displayIndexRef.current = 0
+      messageIdRef.current = assistantMessage.id
+
+      try {
+        const thumbmark = await getThumbmark()
+        const result = await chatStream({
+          data: {
+            messages: nextMessages.map((message) => ({
+              role: message.role,
+              content: message.content,
+            })),
+            fingerprint: thumbmark.thumbmark,
+          },
+        })
+
+        if ('error' in result) {
+          showError(result.error)
+          persistSession(nextMessages)
+          setIsStreaming(false)
+          return
+        }
+
+        for await (const chunk of result) {
+          fullContentRef.current += chunk
+          startTypewriter(assistantMessage.id)
+        }
+        persistSession([...nextMessages, { ...assistantMessage, content: fullContentRef.current }])
+      } catch (error) {
+        // 上游/网络失败是预期状态，用 warn 记录，避免在控制台留下 error。
+        console.warn('Chat request failed:', error)
+        clearTypewriter()
+        setMessages((prev) => prev.filter((message) => message.id !== assistantMessage.id))
+        setErrorText(t('errors.networkError'))
+        persistSession(nextMessages)
+      } finally {
+        setIsStreaming(false)
+      }
+    },
+    [clearTypewriter, showError, startTypewriter, t],
+  )
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const content = input.trim()
     if (!content || isStreaming || limited) return
+    void send(content, messages)
+  }
 
-    setErrorText(null)
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content,
-    }
-    const nextMessages = [...messages, userMessage]
-    setMessages(nextMessages)
-    persistSession(nextMessages)
-    setInput('')
-    setIsStreaming(true)
-
-    const assistantMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      role: 'assistant',
-      content: '',
-    }
-    setMessages((prev) => [...prev, assistantMessage])
-
-    fullContentRef.current = ''
-    displayIndexRef.current = 0
-    messageIdRef.current = assistantMessage.id
-
-    try {
-      const thumbmark = await getThumbmark()
-      const result = await chatStream({
-        data: {
-          messages: nextMessages.map((message) => ({
-            role: message.role,
-            content: message.content,
-          })),
-          fingerprint: thumbmark.thumbmark,
-        },
-      })
-
-      if ('error' in result) {
-        showError(result.error)
-        persistSession(nextMessages)
-        setIsStreaming(false)
-        return
-      }
-
-      for await (const chunk of result) {
-        fullContentRef.current += chunk
-        startTypewriter(assistantMessage.id)
-      }
-      persistSession([...nextMessages, { ...assistantMessage, content: fullContentRef.current }])
-    } catch (error) {
-      console.error('Error:', error)
-      clearTypewriter()
-      setMessages((prev) => prev.filter((message) => message.id !== assistantMessage.id))
-      setErrorText(t('errors.networkError'))
-      persistSession(nextMessages)
-    } finally {
-      setIsStreaming(false)
-    }
+  const retry = () => {
+    const attempt = lastAttemptRef.current
+    if (!attempt || isStreaming || limited) return
+    void send(attempt.content, attempt.history)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault()
       handleSubmit(e)
     }
@@ -316,6 +352,8 @@ export function ChatInterface() {
     setErrorText(null)
     setConfirmClear(false)
     setMenuOpen(false)
+    lastAttemptRef.current = null
+    messageIdRef.current = null
     if (confirmClearTimerRef.current) clearTimeout(confirmClearTimerRef.current)
   }
 
@@ -338,91 +376,188 @@ export function ChatInterface() {
     }
   }
 
+  const displayDate = sessionDate ? sessionDate.replace(/-/g, '.') : '----.--.--'
+  const roundsLabel = String(rounds).padStart(2, '0')
+  const streamingId = isStreaming ? messageIdRef.current : null
+  const sendHint = locale === 'zh' ? 'ENTER 发送 · SHIFT+ENTER 换行' : 'ENTER TO SEND · SHIFT+ENTER FOR NEWLINE'
+
+  const status = limited
+    ? { key: 'limit', label: 'LIMIT' }
+    : isStreaming
+      ? { key: 'live', label: 'LISTENING' }
+      : errorText
+        ? { key: 'notice', label: 'NOTICE' }
+        : { key: 'ready', label: 'READY' }
+
   return (
-    <div className="chat-shell flex h-full flex-col">
-      <div className="chat-topbar" ref={menuRef}>
-        <div className="chat-topbar-title-wrap">
-          <span className="chat-topbar-title">{t('title')}</span>
-          <span className="chat-topbar-sub">{t('subtitle')}</span>
-        </div>
-        {messages.length > 0 && (
-          <>
-            <button
-              type="button"
-              className="chat-menu-btn"
-              onClick={toggleMenu}
-              aria-label={t('menu')}
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-            >
-              <MoreVertical className="size-4" />
-            </button>
-            {menuOpen && (
-              <div className="chat-menu-panel" role="menu">
-                {confirmClear ? (
-                  <>
-                    <button type="button" className="chat-menu-item danger" role="menuitem" onClick={clearHistory}>
-                      {t('clearConfirm')}
-                    </button>
-                    <button type="button" className="chat-menu-item" role="menuitem" onClick={cancelClear}>
-                      {t('clearCancel')}
-                    </button>
-                  </>
-                ) : (
-                  <button type="button" className="chat-menu-item danger" role="menuitem" onClick={askClear}>
-                    {t('clear')}
-                  </button>
+    <div className="ch-page">
+      <div className="ch-shell">
+        <header className="ch-head">
+          <div className="ch-head-ident">
+            <div className="ch-session">
+              <span className="ch-session-dot" aria-hidden="true" />
+              <span className="ch-mono">Tree Hole</span>
+              <span className="ch-mono ch-session-sep ch-meta-session" aria-hidden="true">
+                /
+              </span>
+              <span className="ch-mono ch-session-date ch-meta-session">Session {displayDate}</span>
+              <span className="ch-mono ch-session-sep ch-meta-rounds" aria-hidden="true">
+                /
+              </span>
+              <span className="ch-mono ch-meta-rounds">
+                Round {roundsLabel} / {DAILY_ROUND_LIMIT}
+              </span>
+            </div>
+            <div className="ch-title-row">
+              <h1 className="ch-title">{t('title')}</h1>
+              <span className="ch-sub">{t('subtitle')}</span>
+            </div>
+          </div>
+          <div className="ch-head-meta">
+            <span className={`ch-status ch-status--${status.key}`}>
+              <span className="ch-status-dot" aria-hidden="true" />
+              {status.label}
+            </span>
+            {messages.length > 0 && (
+              <div className="ch-menu" ref={menuRef}>
+                <button
+                  type="button"
+                  className="ch-menu-btn"
+                  onClick={toggleMenu}
+                  aria-label={t('menu')}
+                  aria-haspopup="menu"
+                  aria-expanded={menuOpen}
+                >
+                  <MoreVertical size={15} strokeWidth={1.7} />
+                </button>
+                {menuOpen && (
+                  <div className="ch-menu-panel" role="menu">
+                    {confirmClear ? (
+                      <>
+                        <button
+                          type="button"
+                          className="ch-menu-item danger"
+                          role="menuitem"
+                          onClick={clearHistory}
+                        >
+                          {t('clearConfirm')}
+                        </button>
+                        <button type="button" className="ch-menu-item" role="menuitem" onClick={cancelClear}>
+                          {t('clearCancel')}
+                        </button>
+                      </>
+                    ) : (
+                      <button type="button" className="ch-menu-item danger" role="menuitem" onClick={askClear}>
+                        {t('clear')}
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             )}
-          </>
-        )}
-      </div>
-
-      <div className="chat-messages">
-        {messages.length === 0 && (
-          <div className="chat-empty-block">
-            <div className="empty-state">{t('emptyState')}</div>
           </div>
-        )}
-        {messages.map((message) => (
-          <div key={message.id} className={`chat-bubble ${message.role}`}>
-            {message.content}
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
+        </header>
 
-      {(errorText || limited) && <div className="chat-error">{errorText ?? t('errors.dailyLimit')}</div>}
+        <div className="ch-body" aria-busy={isStreaming}>
+          {messages.length === 0 && (
+            <div className="ch-empty">
+              <div className="ch-empty-top">
+                <span className="ch-empty-mark" aria-hidden="true" />
+                <span className="ch-mono">Listening Session</span>
+                <span className="ch-empty-line" aria-hidden="true" />
+                <span className="ch-mono">{displayDate}</span>
+              </div>
+              <p className="ch-empty-text">{t('emptyState')}</p>
+              <div className="ch-empty-meta">
+                <span className="ch-mono">No messages yet</span>
+                <span className="ch-mono">Local only</span>
+              </div>
+            </div>
+          )}
 
-      <div className="chat-composer">
-        {messages.length === 0 && (
-          <>
-            <p className="chat-privacy-note">
+          {messages.length > 0 && (
+            <ol className="ch-thread">
+              {messages.map((message) => {
+                const isLive = streamingId !== null && message.id === streamingId
+                return (
+                  <li key={message.id} className={`ch-msg ch-msg--${message.role}`}>
+                    <span className="ch-msg-label">
+                      {message.role === 'user' ? 'You' : isLive ? 'Listening' : 'Tree Hole'}
+                    </span>
+                    <div className="ch-bubble">
+                      {message.content}
+                      {isLive &&
+                        (message.content === '' ? (
+                          <span className="ch-typing" aria-label={t('sending')}>
+                            <i />
+                            <i />
+                            <i />
+                          </span>
+                        ) : (
+                          <span className="ch-caret" aria-hidden="true" />
+                        ))}
+                    </div>
+                  </li>
+                )
+              })}
+            </ol>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <div className="ch-dock">
+          {(errorText || limited) && (
+            <div className="ch-notice" role="alert">
+              <div className="ch-notice-main">
+                <span className="ch-notice-label">{limited ? 'Limit' : 'Notice'}</span>
+                <p className="ch-notice-text">{errorText ?? t('errors.dailyLimit')}</p>
+              </div>
+              {!limited && lastAttemptRef.current && (
+                <button type="button" className="ch-retry" onClick={retry} disabled={isStreaming}>
+                  Retry ↻
+                </button>
+              )}
+            </div>
+          )}
+
+          {messages.length === 0 && (
+            <p className="ch-privacy">
               {t('privacyNote')} <Link href="/about">{t('privacySource')}</Link>
             </p>
-          </>
-        )}
-        <form onSubmit={handleSubmit} className="chat-input-shell">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={t('placeholder')}
-            disabled={isStreaming || limited}
-            className="chat-input"
-            rows={1}
-          />
-          <button
-            type="submit"
-            disabled={isStreaming || limited || !input.trim()}
-            className="chat-send"
-            aria-label={t('send')}
-          >
-            <Send className="size-4" />
-          </button>
-        </form>
+          )}
+
+          <form onSubmit={handleSubmit} className="ch-composer">
+            <div className="ch-field">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={t('placeholder')}
+                aria-label={t('placeholder')}
+                maxLength={MAX_INPUT_LENGTH}
+                disabled={isStreaming || limited}
+                enterKeyHint="send"
+                className="ch-input"
+                rows={1}
+              />
+              <button
+                type="submit"
+                disabled={isStreaming || limited || !input.trim()}
+                className="ch-send"
+                aria-label={isStreaming ? t('sending') : t('send')}
+              >
+                {isStreaming ? <span className="ch-send-busy" aria-hidden="true" /> : <Send size={15} strokeWidth={1.9} />}
+              </button>
+            </div>
+            <div className="ch-hint">
+              <span className="ch-mono ch-hint-tip">{sendHint}</span>
+              <span className="ch-mono ch-hint-count">
+                {input.length} / {MAX_INPUT_LENGTH}
+              </span>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   )

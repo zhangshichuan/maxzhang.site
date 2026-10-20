@@ -1,6 +1,9 @@
+import '@/src/styles/paper-photos.css'
+
 import { AnimatePresence, motion } from 'framer-motion'
 import { ImagePlus, Loader2, Lock, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslations } from '@/src/i18n/client'
 
 interface UploadDialogProps {
@@ -27,6 +30,10 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const [portalReady, setPortalReady] = useState(false)
+
+  // Portal into <body> so the dialog escapes .site-shell's stacking context.
+  useEffect(() => setPortalReady(true), [])
 
   const releasePreviews = (items: PickedFile[]) => {
     for (const item of items) {
@@ -120,141 +127,179 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
     replacePicked(current.filter((_, itemIndex) => itemIndex !== index))
   }
 
-  return (
+  const content = (
     <AnimatePresence>
       {open && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { duration: 0.15 } }}
-            className="modal-backdrop"
-            onClick={close}
-            aria-hidden="true"
-          />
+        <motion.div
+          key="upload-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, transition: { duration: 0.15 } }}
+          transition={{ duration: 0.2 }}
+          className="ph-upload-backdrop ph-surface"
+          onClick={close}
+          aria-hidden="true"
+        />
+      )}
+      {open && (
+        <motion.div
+          key="upload-shell"
+          className="ph-upload-shell ph-surface"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, transition: { duration: 0.16 } }}
+          transition={{ duration: 0.2 }}
+        >
           <motion.div
             role="dialog"
             aria-modal="true"
             aria-label={t('title')}
-            className="upload-dialog glass-panel"
-            initial={{ opacity: 0, y: 12, scale: 0.98 }}
+            className="ph-upload ph-surface"
+            initial={{ opacity: 0, y: 20, scale: 0.992 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.98, transition: { duration: 0.15 } }}
-            transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+            exit={{ opacity: 0, y: 14, scale: 0.994, transition: { duration: 0.16 } }}
+            transition={{ type: 'spring', stiffness: 380, damping: 34 }}
           >
-            <div className="panel-header">
-              <span className="panel-title">{t('title')}</span>
-              <button type="button" className="icon-btn icon-btn-sm" onClick={close} aria-label={t('close')}>
+            <div className="ph-upload-head">
+              <div className="ph-upload-head-main">
+                <p className="ph-label">Upload — Photo Work</p>
+                <h2 className="ph-upload-title">{t('title')}</h2>
+              </div>
+              <button type="button" className="ph-upload-close" onClick={close} aria-label={t('close')}>
                 <X className="size-4" />
               </button>
             </div>
 
-            <button
-              type="button"
-              className="upload-dropzone"
-              onClick={() => fileRef.current?.click()}
-              disabled={submitting}
-            >
-              <ImagePlus className="size-7" strokeWidth={1.75} />
-              {picked.length > 0 ? `${picked.length} ${t('selected')}` : t('pickFiles')}
+            <div className="ph-upload-body">
+              <button
+                type="button"
+                className="ph-dropzone"
+                onClick={() => fileRef.current?.click()}
+                disabled={submitting}
+              >
+                <span className="ph-dropzone-icon">
+                  <ImagePlus className="size-4" strokeWidth={1.75} />
+                </span>
+                <span className="ph-dropzone-text">
+                  {picked.length > 0 ? `${picked.length} ${t('selected')}` : t('pickFiles')}
+                </span>
+                <span className="ph-dropzone-hint">Max 10 files</span>
+              </button>
               <input
                 ref={fileRef}
                 type="file"
                 accept="image/*"
                 multiple
-                className="hidden"
+                hidden
                 onChange={(event) => {
-                  const picked = Array.from(event.target.files ?? [])
+                  const files = Array.from(event.target.files ?? [])
                   event.target.value = ''
-                  if (picked.length > 10) {
+                  if (files.length > 10) {
                     setError(t('tooMany'))
                     return
                   }
                   releasePreviews(pickedRef.current)
-                  replacePicked(picked.map((file) => ({ file, preview: URL.createObjectURL(file) })))
+                  const next = files.map((file) => ({ file, preview: URL.createObjectURL(file) }))
+                  replacePicked(next)
                   setError(null)
                 }}
               />
-            </button>
 
-            {picked.length > 0 && (
-              <div className="upload-previews">
-                {picked.map((item, index) => (
-                  <div key={item.preview} className="upload-preview">
-                    <img src={item.preview} alt="" />
-                    <button
-                      type="button"
-                      className="upload-preview-remove"
-                      onClick={() => removeFile(index)}
-                      disabled={submitting}
-                      aria-label={t('remove')}
-                    >
-                      <X className="size-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+              {picked.length > 0 && (
+                <div className="ph-previews">
+                  {picked.map((item, index) => (
+                    <div key={item.preview} className="ph-preview">
+                      <img src={item.preview} alt="" />
+                      <button
+                        type="button"
+                        className="ph-preview-remove"
+                        onClick={() => removeFile(index)}
+                        disabled={submitting}
+                        aria-label={t('remove')}
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-            <div className="upload-fields">
-              <input
-                className="ios-input"
-                placeholder={t('captionZh')}
-                value={captionZh}
-                onChange={(event) => setCaptionZh(event.target.value)}
-                disabled={submitting}
-              />
-              <input
-                className="ios-input"
-                placeholder={t('captionEn')}
-                value={captionEn}
-                onChange={(event) => setCaptionEn(event.target.value)}
-                disabled={submitting}
-              />
-              <input
-                className="ios-input"
-                placeholder={t('location')}
-                value={location}
-                onChange={(event) => setLocation(event.target.value)}
-                disabled={submitting}
-              />
-              <input
-                className="ios-input"
-                placeholder={t('tags')}
-                value={tags}
-                onChange={(event) => setTags(event.target.value)}
-                disabled={submitting}
-              />
-            </div>
-
-            {needsLogin && (
-              <div className="upload-login">
-                <Lock className="size-4" />
+              <div className="ph-fields">
                 <input
-                  className="ios-input"
-                  type="password"
-                  placeholder={t('password')}
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
+                  className="ph-input"
+                  placeholder={t('captionZh')}
+                  aria-label={t('captionZh')}
+                  value={captionZh}
+                  onChange={(event) => setCaptionZh(event.target.value)}
+                  disabled={submitting}
+                />
+                <input
+                  className="ph-input"
+                  placeholder={t('captionEn')}
+                  aria-label={t('captionEn')}
+                  value={captionEn}
+                  onChange={(event) => setCaptionEn(event.target.value)}
+                  disabled={submitting}
+                />
+                <input
+                  className="ph-input"
+                  placeholder={t('location')}
+                  aria-label={t('location')}
+                  value={location}
+                  onChange={(event) => setLocation(event.target.value)}
+                  disabled={submitting}
+                />
+                <input
+                  className="ph-input"
+                  placeholder={t('tags')}
+                  aria-label={t('tags')}
+                  value={tags}
+                  onChange={(event) => setTags(event.target.value)}
                   disabled={submitting}
                 />
               </div>
-            )}
 
-            {error && <div className="alert alert-error mt-2 text-xs">{error}</div>}
+              {needsLogin && (
+                <div className="ph-login">
+                  <span className="ph-login-label">
+                    <Lock className="size-3" />
+                    Admin
+                  </span>
+                  <input
+                    className="ph-input"
+                    type="password"
+                    placeholder={t('password')}
+                    aria-label={t('password')}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    disabled={submitting}
+                  />
+                </div>
+              )}
 
-            <button
-              type="button"
-              className="btn btn-primary mt-4 inline-flex w-full items-center justify-center gap-2"
-              onClick={submit}
-              disabled={submitting || picked.length === 0 || !captionZh.trim()}
-            >
-              {submitting ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />}
-              {submitting ? t('submitting') : t('submit')}
-            </button>
+              {error && <div className="ph-alert">{error}</div>}
+            </div>
+
+            <div className="ph-upload-foot">
+              <p className="ph-upload-note">
+                {picked.length} / 10 · {t('selected')}
+              </p>
+              <button
+                type="button"
+                className="ph-btn-primary"
+                onClick={submit}
+                disabled={submitting || picked.length === 0 || !captionZh.trim()}
+              >
+                {submitting ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />}
+                {submitting ? t('submitting') : t('submit')}
+              </button>
+            </div>
           </motion.div>
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   )
+
+  if (!portalReady) return null
+  return createPortal(content, document.body)
 }

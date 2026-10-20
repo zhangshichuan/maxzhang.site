@@ -1,9 +1,9 @@
-import { PostItem } from '@/src/features/posts/components'
 import type { PostSummaryWithViews } from '@/src/features/posts/model'
-import { useTranslations } from '@/src/i18n/client'
+import { Link, useTranslations } from '@/src/i18n/client'
 import Fuse from 'fuse.js'
-import { Search, X } from 'lucide-react'
+import { BookOpen, Eye, MessageCircle, Search, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import '@/src/styles/paper-search.css'
 
 interface SearchClientProps {
   posts: PostSummaryWithViews[]
@@ -16,6 +16,7 @@ interface SearchClientProps {
 
 export function SearchClient({ posts, initialSearch }: SearchClientProps) {
   const t = useTranslations('SearchPage')
+  const tPosts = useTranslations('PostsPage')
 
   const [query, setQuery] = useState(initialSearch.q)
   const [selectedTag, setSelectedTag] = useState(initialSearch.tag)
@@ -68,123 +69,170 @@ export function SearchClient({ posts, initialSearch }: SearchClientProps) {
   const hasFilters = Boolean(query || selectedTag || selectedCategory)
 
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="page-title">{t('title')}</h1>
-      </div>
+    <div className="se-page">
+      <header className="se-head">
+        <p className="se-eyebrow">
+          <span className="se-tick" aria-hidden="true" />
+          MAX ZHANG<span className="se-slash">/</span>SEARCH
+        </p>
+        <div className="se-head-grid">
+          <h1 className="se-title">{t('title')}</h1>
+          <form className="se-search" role="search" onSubmit={(event) => event.preventDefault()}>
+            <Search className="se-search-icon" aria-hidden="true" />
+            <input
+              type="text"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t('placeholder')}
+              aria-label={t('title')}
+              autoComplete="off"
+              spellCheck={false}
+              className="se-input"
+            />
+            {query && (
+              <button type="button" onClick={() => setQuery('')} className="se-clear-btn" aria-label={t('clearAll')}>
+                <X aria-hidden="true" />
+              </button>
+            )}
+          </form>
+        </div>
+      </header>
 
-      <div className="search-field-wrap">
-        <Search
-          style={{
-            position: 'absolute',
-            left: 14,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            width: 16,
-            height: 16,
-            color: 'var(--label-tertiary)',
-          }}
-        />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={t('placeholder')}
-          className="search-field"
-          style={{ paddingLeft: 44 }}
-        />
-        {query && (
-          <button onClick={() => setQuery('')} className="search-clear" aria-label={t('clearAll')}>
-            <X style={{ width: 14, height: 14 }} />
-          </button>
-        )}
-      </div>
-
-      <div className="search-layout">
-        <div>
-          <div className="sidebar-title" style={{ marginBottom: 10 }}>
-            {t('category')}
+      <section className="se-filters" aria-label={t('currentFilter')}>
+        <div className="se-filter">
+          <div className="se-filter-head">
+            <span className="se-tick" aria-hidden="true" />
+            <p className="se-filter-label">{t('category')}</p>
+            <span className="se-filter-count">{String(allCategories.length).padStart(2, '0')}</span>
           </div>
-          <div className="chip-row">
+          <div className="se-chips">
             {allCategories.map((category) => (
               <button
                 key={category}
+                type="button"
                 onClick={() => setSelectedCategory((prev) => (prev === category ? '' : category))}
-                className={`filter-chip ${selectedCategory === category ? 'active' : ''}`}
+                aria-pressed={selectedCategory === category}
+                className={`se-chip${selectedCategory === category ? ' is-active' : ''}`}
               >
                 {category}
               </button>
             ))}
+            {allCategories.length === 0 && <span className="se-chips-empty">—</span>}
           </div>
         </div>
-        <div>
-          <div className="sidebar-title" style={{ marginBottom: 10 }}>
-            {t('tag')}
+
+        <div className="se-filter">
+          <div className="se-filter-head">
+            <span className="se-tick" aria-hidden="true" />
+            <p className="se-filter-label">{t('tag')}</p>
+            <span className="se-filter-count">{String(allTags.length).padStart(2, '0')}</span>
           </div>
-          <div className="chip-row">
+          <div className="se-chips">
             {allTags.map((tag) => (
               <button
                 key={tag}
+                type="button"
                 onClick={() => setSelectedTag((prev) => (prev === tag ? '' : tag))}
-                className={`filter-chip ${selectedTag === tag ? 'active' : ''}`}
+                aria-pressed={selectedTag === tag}
+                className={`se-chip${selectedTag === tag ? ' is-active' : ''}`}
               >
                 {tag}
               </button>
             ))}
+            {allTags.length === 0 && <span className="se-chips-empty">—</span>}
           </div>
         </div>
-      </div>
+      </section>
 
       {hasFilters && (
-        <div className="flex flex-wrap items-center gap-2 border-t pt-4" style={{ borderColor: 'var(--separator)' }}>
-          <span style={{ fontSize: 12, color: 'var(--label-secondary)' }}>{t('currentFilter')}:</span>
-          {selectedCategory && (
-            <span className="chip chip-accent">
-              {t('category')}: {selectedCategory}
-            </span>
-          )}
-          {selectedTag && (
-            <span className="chip chip-accent">
-              {t('tag')}: {selectedTag}
-            </span>
-          )}
-          <button
-            onClick={clearFilters}
-            className="text-primary cursor-pointer border-none bg-transparent text-sm underline"
-          >
-            {t('clearAll')}
-          </button>
-        </div>
-      )}
-
-      {hasFilters && (
-        <div style={{ fontSize: 13, color: 'var(--label-secondary)' }}>
-          {t('found', { count: filteredPosts.length })}
-        </div>
-      )}
-
-      <div className="search-results">
-        {filteredPosts.map((post, idx) => (
-          <PostItem key={post.slug} post={post} idx={idx} />
-        ))}
-
-        {hasFilters && filteredPosts.length === 0 && (
-          <div className="empty-state">
-            <Search style={{ width: 32, height: 32, margin: '0 auto 16px', color: 'var(--label-tertiary)' }} />
-            <p>{t('noResults')}</p>
-            <button
-              onClick={clearFilters}
-              className="text-primary mt-4 cursor-pointer border-none bg-transparent text-sm underline"
-            >
-              {t('clearFilters')}
+        <div className="se-status">
+          <p className="se-found" aria-live="polite">
+            {t('found', { count: filteredPosts.length })}
+          </p>
+          <div className="se-active">
+            <span className="se-active-label">{t('currentFilter')}</span>
+            {selectedCategory && (
+              <button type="button" onClick={() => setSelectedCategory('')} className="se-active-chip">
+                {t('category')}: {selectedCategory}
+                <X aria-hidden="true" />
+              </button>
+            )}
+            {selectedTag && (
+              <button type="button" onClick={() => setSelectedTag('')} className="se-active-chip">
+                {t('tag')}: {selectedTag}
+                <X aria-hidden="true" />
+              </button>
+            )}
+            <button type="button" onClick={clearFilters} className="se-clear-all">
+              {t('clearAll')}
             </button>
           </div>
-        )}
+        </div>
+      )}
 
-        {!hasFilters && (
-          <div className="empty-state">
-            <Search style={{ width: 32, height: 32, margin: '0 auto 16px', color: 'var(--label-tertiary)' }} />
-            <p>{t('startSearch')}</p>
+      <div className="se-results">
+        {hasFilters ? (
+          filteredPosts.length > 0 ? (
+            filteredPosts.map((post, idx) => {
+              const readingTime = Math.ceil(post.readTime.minutes)
+              return (
+                <Link key={post.slug} href={`/posts/${post.slug}`} className="se-result">
+                  <span className="se-result-index" aria-hidden="true">
+                    {String(idx + 1).padStart(2, '0')}
+                  </span>
+                  <div className="se-result-main">
+                    <h2 className="se-result-title">{post.title}</h2>
+                    <div className="se-result-meta">
+                      <span>{post.date}</span>
+                      <span>
+                        <BookOpen aria-hidden="true" />
+                        {readingTime} min
+                      </span>
+                      {typeof post.views === 'number' && (
+                        <span>
+                          <Eye aria-hidden="true" />
+                          {post.views}
+                        </span>
+                      )}
+                      {typeof post.comments === 'number' && (
+                        <span>
+                          <MessageCircle aria-hidden="true" />
+                          {post.comments}
+                        </span>
+                      )}
+                      {post.aiAssisted && <span className="se-result-ai">{tPosts('aiAssisted')}</span>}
+                    </div>
+                    <p className="se-result-summary">{post.summary}</p>
+                    <div className="se-result-tags">
+                      {post.tags.map((tag) => (
+                        <span key={tag} className="se-result-tag">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <span className="se-result-arrow" aria-hidden="true">
+                    鈫?                  </span>
+                </Link>
+              )
+            })
+          ) : (
+            <div className="se-empty">
+              <span className="se-empty-mark" aria-hidden="true">
+                <Search />
+              </span>
+              <p className="se-empty-text">{t('noResults')}</p>
+              <button type="button" onClick={clearFilters} className="se-empty-clear">
+                {t('clearFilters')}
+              </button>
+            </div>
+          )
+        ) : (
+          <div className="se-empty">
+            <span className="se-empty-mark" aria-hidden="true">
+              <Search />
+            </span>
+            <p className="se-empty-text">{t('startSearch')}</p>
           </div>
         )}
       </div>

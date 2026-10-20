@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
 
-const PAPER = '#f2eee6'
-const INK = '#141414'
-const RED = '#d33a1e'
+const PAPER = '#0b0a08'
+const INK = '#ece7dc'
+const RED = '#ff4b2f'
 const TAU = Math.PI * 2
 const MOBILE_BREAKPOINT = 900
 const DESKTOP_PARTICLES = 2200
@@ -449,7 +449,7 @@ export default function FlowField() {
 
     function drawFrame(now: number) {
       ctx.globalCompositeOperation = 'source-over'
-      ctx.fillStyle = 'rgba(242,238,230,0.105)'
+      ctx.fillStyle = 'rgba(11, 10, 8,0.105)'
       ctx.globalAlpha = 1
       ctx.fillRect(0, 0, W, H)
 
@@ -639,9 +639,9 @@ export default function FlowField() {
       if (morph.state === 'form' || morph.state === 'hold') {
         const washRadius = Math.max(260, Math.min(rect.width, rect.height) * 0.95)
         const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, washRadius)
-        gradient.addColorStop(0, 'rgba(242,238,230,0.88)')
-        gradient.addColorStop(0.62, 'rgba(242,238,230,0.62)')
-        gradient.addColorStop(1, 'rgba(242,238,230,0)')
+        gradient.addColorStop(0, 'rgba(11, 10, 8,0.88)')
+        gradient.addColorStop(0.62, 'rgba(11, 10, 8,0.62)')
+        gradient.addColorStop(1, 'rgba(11, 10, 8,0)')
         ctx.globalAlpha = 1
         ctx.fillStyle = gradient
         ctx.fillRect(cx - washRadius, cy - washRadius, washRadius * 2, washRadius * 2)

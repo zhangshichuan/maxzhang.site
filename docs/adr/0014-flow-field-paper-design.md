@@ -28,3 +28,11 @@ MZ/OS 版把站点做成了「可操作界面」：系统栏、路径、面板�
 - 站点仍有旧页面（摄影/搜索/树洞/后台）沿用旧组件，只做了 paper token 换肤；后续可逐个重写。
 - 字体仍以 Inter + 系统中文字体为主，没有引入新的网络字体。
 - 粒子引擎依赖 DOM 契约（`#heroCopy`、`.glyph-stage`、`[data-chapter]` 等），首页 markup 改动时需同步。
+
+## Follow-up（2026-10-20）
+
+客户要求固定深色模式，并完善摄影 / 搜索 / 树洞 / 后台（含移动端）。据此追加：
+
+- **固定深色：** `flow.css`、`paper-posts.css`、`paper-about.css` 与流场引擎全部切换为暖黑色板：底 `#0b0a08`、面板 `#12100d`、sheet `#14110d`、文字 `#ece7dc`、次要 `rgba(236,231,220,.62)`、线 `.14/.28`、强调 `#ff4b2f`；`color-scheme: dark`，不提供浅色模式或切换。
+- **摄影 / 搜索 / 树洞 / 后台：** 各自新增深色 scoped CSS（`paper-photos.css` / `paper-search.css` / `paper-chat.css` / `paper-admin.css`），保留原有数据与交互逻辑；移动端（390）逐页验收。
+- 首页、写作、文章、关于只在同一套深色 token 内重着色，不改变结构。

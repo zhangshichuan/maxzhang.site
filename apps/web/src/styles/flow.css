@@ -11,16 +11,16 @@
    ============================================================ */
 
 :root {
-  --paper: #f2eee6;
-  --paper-deep: #e8e2d5;
-  --ink: #141414;
-  --ink-70: rgba(20, 20, 20, 0.7);
-  --ink-55: rgba(20, 20, 20, 0.55);
-  --ink-40: rgba(20, 20, 20, 0.4);
-  --line: rgba(20, 20, 20, 0.14);
-  --line-strong: rgba(20, 20, 20, 0.28);
-  --red: #d33a1e;
-  --panel: rgba(242, 238, 230, 0.94);
+  --paper: #0b0a08;
+  --paper-deep: #17130f;
+  --ink: #ece7dc;
+  --ink-70: rgba(236, 231, 220, 0.7);
+  --ink-55: rgba(236, 231, 220, 0.55);
+  --ink-40: rgba(236, 231, 220, 0.4);
+  --line: rgba(236, 231, 220, 0.14);
+  --line-strong: rgba(236, 231, 220, 0.28);
+  --red: #ff4b2f;
+  --panel: rgba(11, 10, 8, 0.94);
   --ui: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -197,7 +197,7 @@ main {
 }
 .open-sheet {
   position: relative;
-  background: rgba(242, 238, 230, 0.62);
+  background: rgba(11, 10, 8, 0.62);
   border-top: 1px solid var(--line-strong);
   border-bottom: 1px solid var(--line-strong);
 }
@@ -209,7 +209,7 @@ main {
   left: 0;
   right: 0;
   z-index: 50;
-  background: rgba(242, 238, 230, 0.82);
+  background: rgba(11, 10, 8, 0.82);
   -webkit-backdrop-filter: saturate(120%) blur(12px);
   backdrop-filter: saturate(120%) blur(12px);
   border-bottom: 1px solid var(--line);
@@ -405,7 +405,7 @@ main {
   color: var(--paper);
 }
 .btn-solid:hover {
-  background: #000;
+  background: #fff;
   transform: translateY(-1px);
 }
 .btn-link {
@@ -433,7 +433,7 @@ main {
 }
 .hero-foot {
   border-top: 1px solid var(--line);
-  background: rgba(242, 238, 230, 0.66);
+  background: rgba(11, 10, 8, 0.66);
 }
 .hero-foot-inner {
   width: min(1280px, calc(100% - 96px));
@@ -973,7 +973,7 @@ main {
   align-items: center;
   gap: 24px;
   width: auto;
-  background: rgba(242, 238, 230, 0.9);
+  background: rgba(11, 10, 8, 0.9);
   border: 1px solid var(--line);
   padding: 8px 14px;
   margin-bottom: clamp(18px, 2.6vw, 30px);
@@ -1021,7 +1021,7 @@ main {
 /* ---------- footer ---------- */
 .site-footer {
   border-top: 1px solid var(--line-strong);
-  background: rgba(242, 238, 230, 0.94);
+  background: rgba(11, 10, 8, 0.94);
   padding: 22px 0 30px;
   position: relative;
   z-index: 1;
@@ -1310,7 +1310,7 @@ html:not(.js) .hero-actions {
     border-left: 0;
     border-top: 1px solid var(--line);
     padding: 18px 18px 22px;
-    background: rgba(242, 238, 230, 0.62);
+    background: rgba(11, 10, 8, 0.62);
   }
   .method-col:first-child {
     border-top: 0;
@@ -1430,21 +1430,21 @@ html:not(.js) .hero-actions {
    ========================================================================== */
 
 :root {
-  color-scheme: light;
-  --surface-0: #f2eee6;
-  --surface-1: #fbf8f2;
-  --surface-2: #e8e2d5;
-  --text-1: #141414;
-  --text-2: rgba(20, 20, 20, 0.7);
-  --text-3: rgba(20, 20, 20, 0.4);
-  --border-1: rgba(20, 20, 20, 0.14);
-  --border-2: rgba(20, 20, 20, 0.28);
-  --accent: #d33a1e;
-  --accent-soft: rgba(211, 58, 30, 0.08);
-  --teal: #d33a1e;
-  --red: #d33a1e;
-  --green: #d33a1e;
-  --amber: #d33a1e;
+  color-scheme: dark;
+  --surface-0: #0b0a08;
+  --surface-1: #14110d;
+  --surface-2: #17130f;
+  --text-1: #ece7dc;
+  --text-2: rgba(236, 231, 220, 0.7);
+  --text-3: rgba(236, 231, 220, 0.4);
+  --border-1: rgba(236, 231, 220, 0.14);
+  --border-2: rgba(236, 231, 220, 0.28);
+  --accent: #ff4b2f;
+  --accent-soft: rgba(255, 75, 47, 0.08);
+  --teal: #ff4b2f;
+  --red: #ff4b2f;
+  --green: #ff4b2f;
+  --amber: #ff4b2f;
   --bg: var(--surface-0);
   --bg-secondary: var(--surface-1);
   --bg-tertiary: var(--surface-2);
@@ -1453,7 +1453,7 @@ html:not(.js) .hero-actions {
   --label-tertiary: var(--text-3);
   --separator: var(--border-1);
   --fill: var(--surface-2);
-  --glass-color: #fbf8f2;
+  --glass-color: #14110d;
   --glass-border: var(--border-1);
   --glass-highlight: transparent;
   --glass-shadow: none;
@@ -1466,7 +1466,7 @@ html:not(.js) .hero-actions {
 }
 
 html {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 body {
@@ -1522,7 +1522,7 @@ body::after {
   margin-left: calc(50% - 50vw);
   padding: 0;
   top: 0;
-  background: rgba(242, 238, 230, 0.82);
+  background: rgba(11, 10, 8, 0.82);
 }
 
 .header-inner {
@@ -1621,7 +1621,7 @@ body::after {
   margin-left: calc(50% - 50vw);
   padding: 26px 0 34px;
   border-top: 1px solid var(--line-strong);
-  background: rgba(242, 238, 230, 0.94);
+  background: rgba(11, 10, 8, 0.94);
 }
 
 .footer-grid {
