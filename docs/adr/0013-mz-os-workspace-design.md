@@ -1,6 +1,6 @@
 # ADR-0013: MZ/OS 工作台视觉与静态内容体系
 
-Status: accepted
+Status: superseded by ADR-0014
 
 Date: 2026-10-18
 

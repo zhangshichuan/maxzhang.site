@@ -8,7 +8,7 @@ function MermaidFallback() {
       className="my-12 flex items-center justify-center rounded-lg border p-10"
       style={{ borderColor: 'var(--separator)', background: 'var(--bg-secondary)' }}
     >
-      <span className="text-sm font-medium text-muted-foreground">Loading diagram...</span>
+      <span className="text-muted-foreground text-sm font-medium">Loading diagram...</span>
     </div>
   )
 }

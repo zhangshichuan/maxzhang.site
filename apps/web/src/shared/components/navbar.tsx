@@ -1,40 +1,44 @@
 import { useRouter, useRouterState } from '@tanstack/react-router'
-import { FileText, Home, Languages, MoreHorizontal, Search, User } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link, useLocale, useTranslations } from '@/src/i18n/client'
 import { localizePath, stripLocale } from '@/i18n/routing'
-import { cn } from '@/src/shared/utils'
-import { MoreSheet } from './more-sheet'
 
+/**
+ * Flow Field 导航：纸面固定条 + 下滑隐藏。
+ * 首页的「联系」是页内锚点（data-jump，交给粒子场引擎做冲击波转场）；
+ * 其他页面跳到首页锚点。语言切换只改 URL。
+ */
 export function Navbar() {
   const t = useTranslations('Common.nav')
   const locale = useLocale()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const router = useRouter()
-  const [moreOpen, setMoreOpen] = useState(false)
   const headerRef = useRef<HTMLElement | null>(null)
 
-  // 语言切换只改 URL：en 无前缀、zh 带 /zh，不做自动跳转
+  const internalPath = stripLocale(pathname)
+  const isHome = internalPath === '/'
+
   const toggleLanguage = () => {
-    const nextLocale = locale === 'zh' ? 'en' : 'zh'
     router.navigate({
-      href: localizePath(stripLocale(pathname), nextLocale),
+      href: localizePath(internalPath, locale === 'zh' ? 'en' : 'zh'),
       replace: true,
     })
   }
 
-  const isActive = (path: string) => pathname === localizePath(path, locale)
-  const internalPath = stripLocale(pathname)
-  const pathLabel = internalPath === '/' ? '~/overview' : `~${internalPath}`
-
-  // 滚动后给系统栏加重一点边框
+  // 下滑隐藏顶栏、上滑出现；首页粒子场引擎也会维护同一个 class，两者结果一致。
   useEffect(() => {
+    let lastY = window.scrollY || 0
     let frame = 0
     const onScroll = () => {
       if (frame) return
       frame = requestAnimationFrame(() => {
         frame = 0
-        headerRef.current?.classList.toggle('scrolled', window.scrollY > 8)
+        const y = window.scrollY || 0
+        const el = headerRef.current
+        if (!el) return
+        if (y > 160 && y > lastY + 2) el.classList.add('is-hidden')
+        else if (y < lastY - 2 || y < 90) el.classList.remove('is-hidden')
+        lastY = y
       })
     }
     onScroll()
@@ -45,84 +49,31 @@ export function Navbar() {
     }
   }, [])
 
-  const links = [
-    { path: '/', label: t('home'), icon: Home },
-    { path: '/posts', label: t('posts'), icon: FileText },
-    { path: '/about', label: t('about'), icon: User },
-  ]
-
   return (
-    <>
-      <header ref={headerRef} className="site-header">
-        <div className="os-bar-left">
-          <Link href="/" className="site-logo">
-            MZ/OS
-          </Link>
-          <span className="os-path" aria-hidden>
-            {pathLabel}
-          </span>
-        </div>
-        <nav className="desktop-nav" aria-label="Primary">
-          {links.map((link) => (
-            <Link key={link.path} href={link.path} className={cn('desktop-nav-link', isActive(link.path) && 'active')}>
-              {link.label}
+    <header ref={headerRef} className="site-header">
+      <div className="header-inner">
+        <Link className="brand" href="/">
+          Max Zhang
+          <span className="brand-dot" aria-hidden="true" />
+        </Link>
+        <nav className="nav" aria-label="Primary">
+          <Link href="/">{t('home')}</Link>
+          <Link href="/posts">{t('posts')}</Link>
+          <Link href="/about">{t('about')}</Link>
+          {isHome ? (
+            <a className="contact-link" href="#contact" data-jump>
+              {t('contact')} <i aria-hidden="true">↗</i>
+            </a>
+          ) : (
+            <Link className="contact-link" href="/#contact">
+              {t('contact')} <i aria-hidden="true">↗</i>
             </Link>
-          ))}
+          )}
+          <button type="button" className="nav-lang" onClick={toggleLanguage} aria-label={t('switchLanguage')}>
+            {locale === 'zh' ? 'EN' : '中'}
+          </button>
         </nav>
-        <div className="os-bar-right">
-          <Link href="/search" className={cn('nav-icon-btn', isActive('/search') && 'active')} aria-label={t('search')}>
-            <Search className="size-4" />
-          </Link>
-          <button
-            type="button"
-            className={cn('nav-icon-btn', moreOpen && 'active')}
-            onClick={() => setMoreOpen((current) => !current)}
-            title={t('more')}
-            aria-label={t('more')}
-            aria-expanded={moreOpen}
-          >
-            <MoreHorizontal className="size-4" />
-          </button>
-          <button
-            type="button"
-            className="nav-icon-btn"
-            onClick={toggleLanguage}
-            title={t('switchLanguage')}
-            aria-label={t('switchLanguage')}
-          >
-            <Languages className="size-4" />
-          </button>
-        </div>
-      </header>
-
-      <nav className="mobile-tabbar" aria-label="Primary">
-        {links.map((link) => {
-          const Icon = link.icon
-          const active = isActive(link.path)
-          return (
-            <Link key={link.path} href={link.path} className={cn('tabbar-item', active && 'active')}>
-              <span className="tabbar-icon">
-                <Icon className="size-4" />
-              </span>
-              <span className="tabbar-label">{link.label}</span>
-            </Link>
-          )
-        })}
-        <button
-          type="button"
-          className={cn('tabbar-item', moreOpen && 'active')}
-          onClick={() => setMoreOpen((current) => !current)}
-          aria-label={t('more')}
-          aria-expanded={moreOpen}
-        >
-          <span className="tabbar-icon">
-            <MoreHorizontal className="size-4" />
-          </span>
-          <span className="tabbar-label">{t('more')}</span>
-        </button>
-      </nav>
-
-      <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} onLanguage={toggleLanguage} />
-    </>
+      </div>
+    </header>
   )
 }

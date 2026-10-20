@@ -12,7 +12,8 @@
       "more": "更多",
       "moreClose": "关闭",
       "switchLanguage": "切换至英文",
-      "language": "语言"
+      "language": "语言",
+      "contact": "联系"
     },
     "footer": {
       "status": "OPEN TO AI PRODUCT ROLES",
@@ -229,6 +230,30 @@
       "text": "如果你们在做 AI 产品，或者想聊聊 Agent、RAG 与评测，欢迎直接邮件。",
       "email": "发邮件",
       "github": "GitHub"
+    },
+    "flow": {
+      "brand": "Max Zhang",
+      "heroEn": "Making AI products people actually use.",
+      "heroMeta": "CHENGDU · REMOTE / 2026 — 光标即风源",
+      "scrollCue": "Scroll to flow",
+      "numbersLabel": "数字 / THE NUMBERS",
+      "numbersTitle": "三件事，已经发生过。",
+      "caseLabel": "一个例子 / CASE 01",
+      "caseScenario": "场景 / SCENARIO",
+      "caseDecision": "决策 / DECISION",
+      "caseResult": "结果 / RESULT",
+      "caseRole": "角色 / ROLE",
+      "principlesLabel": "三条判断 / PRINCIPLES",
+      "methodLabel": "工作方式 / METHOD",
+      "writingLabel": "写作 / WRITING",
+      "aboutLabel": "关于 / ABOUT",
+      "contactLabel": "联系 / CONTACT",
+      "published": "已有文章 / PUBLISHED",
+      "glyphCap": "Particle glyph — +80%",
+      "aboutTitle": "我是 Max。十年全栈工程，现在做 AI 产品。",
+      "aboutBody": "过去两年，把多智能体系统从 0 带到生产。关注 Agent、RAG 与评测。",
+      "readMore": "关于我",
+      "contactCta": "发邮件"
     }
   },
   "AboutPage": {

@@ -118,7 +118,7 @@ function CommentItem({
         {remaining !== null && remaining > 0 && (
           <button
             onClick={() => onReply(comment.id)}
-            className="comment-actions flex cursor-pointer items-center gap-1 border-none bg-transparent text-xs text-primary"
+            className="comment-actions text-primary flex cursor-pointer items-center gap-1 border-none bg-transparent text-xs"
           >
             <Reply className="size-3" />
             {t('reply')}
@@ -137,14 +137,14 @@ function CommentItem({
               autoFocus
               className="ios-textarea min-h-20 disabled:cursor-not-allowed disabled:opacity-50"
             />
-            <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+            <div className="text-muted-foreground mt-2 flex items-center justify-between text-xs">
               <span>{replyContent.length}/1000</span>
               <div className="flex gap-2">
                 {/* 取消按钮：关闭回复框，清空内容 */}
                 <button
                   type="button"
                   onClick={onCancelReply}
-                  className="flex cursor-pointer items-center gap-1 border-none bg-transparent px-2 py-1 text-xs text-muted-foreground"
+                  className="text-muted-foreground flex cursor-pointer items-center gap-1 border-none bg-transparent px-2 py-1 text-xs"
                 >
                   <X className="size-3" />
                   {t('cancel')}

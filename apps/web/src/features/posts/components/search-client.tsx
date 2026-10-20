@@ -150,7 +150,7 @@ export function SearchClient({ posts, initialSearch }: SearchClientProps) {
           )}
           <button
             onClick={clearFilters}
-            className="cursor-pointer border-none bg-transparent text-sm text-primary underline"
+            className="text-primary cursor-pointer border-none bg-transparent text-sm underline"
           >
             {t('clearAll')}
           </button>
@@ -174,7 +174,7 @@ export function SearchClient({ posts, initialSearch }: SearchClientProps) {
             <p>{t('noResults')}</p>
             <button
               onClick={clearFilters}
-              className="mt-4 cursor-pointer border-none bg-transparent text-sm text-primary underline"
+              className="text-primary mt-4 cursor-pointer border-none bg-transparent text-sm underline"
             >
               {t('clearFilters')}
             </button>

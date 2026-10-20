@@ -2,8 +2,9 @@ import { Comment, ViewCounter } from '@/src/features/engagement'
 import type { Post } from '@/src/features/posts/model'
 import { AudioPlayer, BackToPosts, BackToTop } from '@/src/shared/components'
 import { useTranslations } from '@/src/i18n/client'
-import { Calendar, Clock, Folder, MessageCircle, Sparkles, User } from 'lucide-react'
+import { MessageCircle, Sparkles } from 'lucide-react'
 import { Suspense } from 'react'
+import '@/src/styles/paper-posts.css'
 import { PostMdx } from './post-mdx'
 
 interface PostPageProps {
@@ -18,76 +19,63 @@ export function PostPage({ post, commentCount, locale }: PostPageProps) {
   const readingTime = Math.ceil(post.readTime.minutes)
 
   return (
-    <>
-      <article style={{ padding: '32px 0' }}>
-        <div className="os-kicker">~/notes/{post.slug}</div>
-        <BackToPosts label={tPosts('back')} />
+    <div className="pp-page pp-article">
+      <article>
+        <div className="pp-article-top">
+          <BackToPosts label={tPosts('back')} />
+          <span className="pp-kicker">{post.category}</span>
+        </div>
 
-        <div className="article-panel">
-          <div className="article-header">
-            <h1 className="article-title">{post.title}</h1>
+        <header className="pp-article-head">
+          <h1 className="pp-article-title">{post.title}</h1>
 
-            <div className="article-meta">
-              {post.aiAssisted && (
-                <span className="ai-badge" title={tPosts('aiAssistedHint')}>
-                  <Sparkles className="size-3.5" />
-                  {tPosts('aiAssisted')}
-                </span>
-              )}
-              <span className="stat-pill">
-                <Calendar className="size-3.5 text-primary" />
-                {post.date}
+          <div className="pp-meta">
+            {post.aiAssisted && (
+              <span className="pp-ai" title={tPosts('aiAssistedHint')}>
+                <Sparkles aria-hidden="true" />
+                {tPosts('aiAssisted')}
               </span>
-              <span className="stat-pill">
-                <Clock className="size-3.5 text-primary" />
-                {t('readingTime', { minutes: readingTime })}
-              </span>
-              <ViewCounter slug={post.slug} locale={locale} />
-              <span className="stat-pill">
-                <User className="size-3.5 text-primary" />
-                {post.author}
-              </span>
-              <span className="meta-tag">
-                <Folder className="size-3.5" />
-                {post.category}
-              </span>
-              <a href="#comments" className="stat-pill no-underline">
-                <MessageCircle className="size-3.5 text-primary" />
-                <span>{commentCount}</span>
-              </a>
-            </div>
+            )}
+            <span className="pp-meta-item">{post.date}</span>
+            <span className="pp-meta-item">{t('readingTime', { minutes: readingTime })}</span>
+            <span className="pp-meta-item">{post.author}</span>
+            <ViewCounter slug={post.slug} locale={locale} />
+            <a href="#comments" className="pp-meta-link">
+              <MessageCircle aria-hidden="true" />
+              {commentCount}
+            </a>
+          </div>
 
-            <div className="article-toolbar">
-              <AudioPlayer slug={post.slug} lang={locale} />
-            </div>
-
-            <div className="chip-row" style={{ marginTop: 16 }}>
+          <div className="pp-tools">
+            <AudioPlayer slug={post.slug} lang={locale} />
+            <div className="pp-tags">
               {post.tags.map((tag) => (
-                <span key={tag} className="chip">
+                <span key={tag} className="pp-tag">
                   {tag}
                 </span>
               ))}
             </div>
           </div>
+        </header>
 
-          <div className="article-prose">
-            <Suspense
-              fallback={
-                <div className="empty-state" style={{ padding: '80px 20px' }}>
-                  Loading article...
-                </div>
-              }
-            >
-              <PostMdx locale={locale} slug={post.slug} />
-            </Suspense>
-          </div>
-        </div>
-
-        <div id="comments" style={{ marginTop: 40 }}>
-          <Comment slug={post.slug} locale={locale} />
+        <div className="pp-prose">
+          <Suspense
+            fallback={
+              <div className="pp-loading" style={{ marginTop: 0 }}>
+                Loading article...
+              </div>
+            }
+          >
+            <PostMdx locale={locale} slug={post.slug} />
+          </Suspense>
         </div>
       </article>
+
+      <section id="comments" className="pp-comments" aria-label="Comments">
+        <Comment slug={post.slug} locale={locale} />
+      </section>
+
       <BackToTop />
-    </>
+    </div>
   )
 }

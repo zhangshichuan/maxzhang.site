@@ -1,7 +1,7 @@
 import { PostItem } from '@/src/features/posts/components'
 import type { PostSummaryWithViews } from '@/src/features/posts/model'
 import { Link, useTranslations } from '@/src/i18n/client'
-import { Folder } from 'lucide-react'
+import '@/src/styles/paper-posts.css'
 
 interface PostsClientProps {
   posts: PostSummaryWithViews[]
@@ -19,63 +19,89 @@ export function PostsClient({ posts, allTags, allCategories }: PostsClientProps)
   const series = t.raw<WritingSeries[]>('series') ?? []
 
   return (
-    <div>
-      <h1 className="page-title">{t('title')}</h1>
-      <p className="page-subtitle">{t('description')}</p>
-      <p className="page-note">{t('note')}</p>
+    <div className="pp-page pp-posts">
+      <header className="pp-head">
+        <p className="pp-eyebrow">
+          <span className="pp-tick" aria-hidden="true" />
+          MAX ZHANG<span className="pp-slash">/</span>WRITING
+        </p>
+        <div className="pp-head-grid">
+          <h1 className="pp-title">{t('title')}</h1>
+          <div className="pp-head-aside">
+            <p className="pp-head-desc">{t('description')}</p>
+            <p className="pp-head-note">{t('note')}</p>
+          </div>
+        </div>
+      </header>
 
       {series.length > 0 && (
-        <section className="posts-series">
-          <span className="posts-series-label">{t('seriesTitle')}</span>
-          <div className="posts-series-grid">
+        <section className="pp-series" aria-labelledby="pp-series-title">
+          <div className="pp-section-head">
+            <p className="pp-label" id="pp-series-title">
+              <span className="pp-tick" aria-hidden="true" />
+              {t('seriesTitle')}
+            </p>
+            <span className="pp-section-no">{String(series.length).padStart(2, '0')}</span>
+          </div>
+          <div className="pp-series-grid">
             {series.map((item, index) => (
-              <div key={item.title} className="posts-series-item">
-                <span className="posts-series-no">{String(index + 1).padStart(2, '0')}</span>
-                <h2 className="posts-series-title">{item.title}</h2>
-                <p className="posts-series-body">{item.body}</p>
-              </div>
+              <article key={item.title} className="pp-series-item">
+                <span className="pp-series-no">{String(index + 1).padStart(2, '0')}</span>
+                <h2 className="pp-series-title">{item.title}</h2>
+                <p className="pp-series-body">{item.body}</p>
+              </article>
             ))}
           </div>
         </section>
       )}
 
-      <div className="posts-layout">
-        <div className="search-results">
+      <div className="pp-layout">
+        <section className="pp-results" aria-label={t('title')}>
           {posts.map((post, idx) => (
-            <PostItem key={post.slug} post={post} idx={idx} />
+            <PostItem key={post.slug} post={post} idx={idx} variant="paper" />
           ))}
-          {posts.length === 0 && <div className="empty-state">{t('noPosts')}</div>}
-        </div>
+          {posts.length === 0 && <div className="pp-empty">{t('noPosts')}</div>}
+        </section>
 
-        <aside className="flex flex-col gap-4">
-          <div className="sidebar-panel">
-            <h3 className="sidebar-title">{t('categories')}</h3>
-            <div className="sidebar-list">
+        <aside className="pp-side">
+          <div className="pp-side-block">
+            <div className="pp-section-head">
+              <p className="pp-label">{t('categories')}</p>
+              <span className="pp-section-no">{String(allCategories.length).padStart(2, '0')}</span>
+            </div>
+            <ul className="pp-cat-list">
               {allCategories.map((category) => {
                 const href = `/search?category=${encodeURIComponent(category)}`
                 return (
-                  <Link key={category} href={href} className="sidebar-link">
-                    <Folder className="size-3.5 text-primary" />
-                    {category}
-                  </Link>
+                  <li key={category}>
+                    <Link href={href} className="pp-cat-link">
+                      <span>{category}</span>
+                      <span className="pp-cat-mark" aria-hidden="true">
+                        ↗
+                      </span>
+                    </Link>
+                  </li>
                 )
               })}
-              {allCategories.length === 0 && <span className="text-xs text-muted-foreground">{t('noCategories')}</span>}
-            </div>
+              {allCategories.length === 0 && <li className="pp-side-empty">{t('noCategories')}</li>}
+            </ul>
           </div>
 
-          <div className="sidebar-panel">
-            <h3 className="sidebar-title">{t('tags')}</h3>
-            <div className="chip-row">
+          <div className="pp-side-block">
+            <div className="pp-section-head">
+              <p className="pp-label">{t('tags')}</p>
+              <span className="pp-section-no">{String(allTags.length).padStart(2, '0')}</span>
+            </div>
+            <div className="pp-tag-row">
               {allTags.map((tag) => {
                 const href = `/search?tag=${encodeURIComponent(tag)}`
                 return (
-                  <Link key={tag} href={href} className="chip">
+                  <Link key={tag} href={href} className="pp-chip">
                     {tag}
                   </Link>
                 )
               })}
-              {allTags.length === 0 && <span className="text-xs text-muted-foreground">{t('noTags')}</span>}
+              {allTags.length === 0 && <span className="pp-side-empty">{t('noTags')}</span>}
             </div>
           </div>
         </aside>

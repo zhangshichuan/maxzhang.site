@@ -78,7 +78,7 @@ export function AdminConsole() {
               <img src={work.thumbUrl} alt="" className="admin-work-thumb" />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">{work.caption}</div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-muted-foreground text-xs">
                   {new Date(work.takenAt).toLocaleDateString(locale === 'zh' ? 'zh-CN' : 'en-US')} ·{' '}
                   {t('photosCount', { count: work.photoCount })}
                 </div>

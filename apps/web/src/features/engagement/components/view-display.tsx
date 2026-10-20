@@ -14,7 +14,7 @@ interface ViewDisplayProps {
 export function ViewDisplay({ views }: ViewDisplayProps) {
   return (
     <span className="stat-pill">
-      <Eye className="size-3.5 text-primary" />
+      <Eye className="text-primary size-3.5" />
       <span>{views}</span>
     </span>
   )

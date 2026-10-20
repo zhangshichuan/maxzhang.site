@@ -48,15 +48,15 @@ export function MoreSheet({ open, onClose, onLanguage }: MoreSheetProps) {
 
             <div className="card-group">
               <Link href="/photos" className="card-row" onClick={onClose}>
-                <Camera className="size-4 text-primary" />
+                <Camera className="text-primary size-4" />
                 {t('photos')}
               </Link>
               <Link href="/chat" className="card-row" onClick={onClose}>
-                <Sparkles className="size-4 text-primary" />
+                <Sparkles className="text-primary size-4" />
                 {t('chat')}
               </Link>
               <Link href="/search" className="card-row" onClick={onClose}>
-                <Search className="size-4 text-primary" />
+                <Search className="text-primary size-4" />
                 {t('search')}
               </Link>
               <button
@@ -64,7 +64,7 @@ export function MoreSheet({ open, onClose, onLanguage }: MoreSheetProps) {
                 className="card-row w-full cursor-pointer border-none bg-transparent text-left"
                 onClick={onLanguage}
               >
-                <Languages className="size-4 text-primary" />
+                <Languages className="text-primary size-4" />
                 {t('language')}
               </button>
             </div>

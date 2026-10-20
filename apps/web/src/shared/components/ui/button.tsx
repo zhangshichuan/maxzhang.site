@@ -19,7 +19,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(
           'inline-flex cursor-pointer items-center justify-center gap-2 rounded-full font-medium',
           'transition-[transform,background-color,opacity] duration-200 active:scale-95',
-          'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
+          'focus-visible:ring-ring focus-visible:ring-offset-background focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
           'disabled:pointer-events-none disabled:opacity-50',
           variant === 'primary' && 'btn btn-primary',
           variant === 'secondary' && 'btn btn-secondary',

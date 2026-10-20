@@ -31,7 +31,7 @@ export function ViewCounter({ slug, locale }: ViewCounterProps) {
 
   return (
     <span className="stat-pill">
-      <Eye className="size-3.5 text-primary" />
+      <Eye className="text-primary size-3.5" />
       {views === null ? (
         <span
           className="inline-block h-3 w-7 animate-pulse rounded-full"

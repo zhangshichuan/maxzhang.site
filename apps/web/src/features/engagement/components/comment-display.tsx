@@ -14,7 +14,7 @@ interface CommentDisplayProps {
 export function CommentDisplay({ comments }: CommentDisplayProps) {
   return (
     <span className="stat-pill">
-      <MessageCircle className="size-3.5 text-primary" />
+      <MessageCircle className="text-primary size-3.5" />
       <span>{comments}</span>
     </span>
   )

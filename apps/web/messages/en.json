@@ -12,7 +12,8 @@
       "more": "More",
       "moreClose": "Close",
       "switchLanguage": "Switch to Chinese",
-      "language": "Language"
+      "language": "Language",
+      "contact": "Contact"
     },
     "footer": {
       "status": "OPEN TO AI PRODUCT ROLES",
@@ -229,6 +230,30 @@
       "text": "If you're building AI products, or want to talk agents, RAG or evaluation, email me.",
       "email": "Email me",
       "github": "GitHub"
+    },
+    "flow": {
+      "brand": "Max Zhang",
+      "heroEn": "AI product manager · full-stack for ten years",
+      "heroMeta": "CHENGDU · REMOTE / 2026 — cursor is the wind source",
+      "scrollCue": "Scroll to flow",
+      "numbersLabel": "THE NUMBERS",
+      "numbersTitle": "Three things that already happened.",
+      "caseLabel": "ONE EXAMPLE / CASE 01",
+      "caseScenario": "SCENARIO",
+      "caseDecision": "DECISION",
+      "caseResult": "RESULT",
+      "caseRole": "ROLE",
+      "principlesLabel": "THREE PRINCIPLES",
+      "methodLabel": "HOW I WORK",
+      "writingLabel": "WRITING",
+      "aboutLabel": "ABOUT",
+      "contactLabel": "CONTACT",
+      "published": "SELECTED WRITING",
+      "glyphCap": "Particle glyph — +80%",
+      "aboutTitle": "I'm Max. Ten years of full-stack engineering, now building AI products.",
+      "aboutBody": "For the past two years I've taken a multi-agent system from zero to production. I focus on agents, RAG and evaluation.",
+      "readMore": "More about me",
+      "contactCta": "Email me"
     }
   },
   "AboutPage": {

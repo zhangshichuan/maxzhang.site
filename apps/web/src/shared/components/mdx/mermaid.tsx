@@ -117,7 +117,7 @@ export default function Mermaid({ chart }: MermaidProps) {
         <div className="mermaid-svg" dangerouslySetInnerHTML={{ __html: svg }} />
 
         <div className="mermaid-toolbar">
-          <Maximize2 className="size-3.5 text-primary" />
+          <Maximize2 className="text-primary size-3.5" />
           <span>{t('clickToZoom')}</span>
         </div>
       </div>
