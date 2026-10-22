@@ -10,7 +10,7 @@ export const Route = createFileRoute('/zh/')({
       { title: 'Max Zhang — AI 产品经理' },
       {
         name: 'description',
-        content: 'AI 产品经理。十年产品构建经验，最近两年把 AI 系统从零带到生产。',
+        content: '十年全栈工程，两年把多智能体系统从 0 带到生产。做 AI 产品，也写代码验证判断。',
       },
     ],
   }),

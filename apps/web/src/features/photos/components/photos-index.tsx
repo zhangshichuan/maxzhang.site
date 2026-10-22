@@ -110,7 +110,7 @@ export function PhotosIndex({ works }: PhotosIndexProps) {
           <div className="ph-empty-copy">
             <p className="ph-label">Archive — Empty</p>
             <p className="ph-empty-text">{t('empty')}</p>
-            <p className="ph-empty-hint">{t('author')} · Shenzhen / Shanghai</p>
+            <p className="ph-empty-hint">{t('author')} · Chengdu / Remote</p>
           </div>
           <div className="ph-empty-frame" aria-hidden="true" />
         </section>

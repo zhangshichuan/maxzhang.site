@@ -16,7 +16,7 @@ export function SiteLayout() {
   return (
     <>
       <Navbar />
-      <main className="site-main" id="site-main">
+      <main className="site-main">
         <Outlet />
       </main>
       {!isChat && <Footer />}

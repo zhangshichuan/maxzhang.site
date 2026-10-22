@@ -10,7 +10,7 @@ export const Route = createFileRoute('/_en/')({
       {
         name: 'description',
         content:
-          'AI product manager. Ten years building products, the last two shipping AI systems. Turning model capability into products people trust.',
+          'Ten years of full-stack engineering; two years shipping multi-agent systems. Building AI products, and writing code to test the judgment.',
       },
     ],
   }),
