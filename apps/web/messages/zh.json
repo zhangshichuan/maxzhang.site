@@ -17,15 +17,15 @@
     },
     "footer": {
       "status": "OPEN TO AI PRODUCT ROLES",
-      "location": "CHENGDU · REMOTE",
+      "location": "深圳 · 上海",
       "tagline": "把模型能力，翻译成人们愿意用的产品。",
       "github": "GitHub",
       "email": "Email"
     },
     "notFound": {
-      "title": "command not found",
-      "description": "这条路径没有对应的文件。回概览，或者去写作里看看。",
-      "backHome": "返回概览"
+      "title": "页面不存在",
+      "description": "这个页面不存在。回到首页，或者去看看文章。",
+      "backHome": "回到首页"
     }
   },
   "PhotosPage": {
@@ -259,11 +259,11 @@
   "AboutPage": {
     "title": "关于 - Max Zhang",
     "heading": "关于",
-    "location": "中国 成都",
-    "status": "AI 产品经理 · 成都 / 远程",
+    "location": "中国 深圳 / 上海",
+    "status": "AI 产品经理 · 深圳 / 上海",
     "intro": [
-      "我是 Max。十年全栈工程，现在做 AI 产品。",
-      "过去两年，把多智能体系统从 0 带到生产。关注 Agent、RAG 与评测。"
+      "我是 Max——一名 AI 产品经理，十年产品构建经验。把模型能力，做成用户真正信任的产品。",
+      "过去两年，把多智能体系统从 0 带到生产。关注 Agent、RAG、评测，以及围绕它们的产品判断。"
     ],
     "factsTitle": "INFO",
     "facts": [
@@ -273,7 +273,7 @@
       },
       {
         "label": "BASE",
-        "value": "成都 / 远程"
+        "value": "深圳 / 上海"
       },
       {
         "label": "FOCUS",
@@ -281,7 +281,7 @@
       },
       {
         "label": "STATUS",
-        "value": "开放 AI 产品岗位"
+        "value": "开放少量 AI 产品合作"
       },
       {
         "label": "EMAIL",
@@ -292,9 +292,9 @@
     "timeline": [
       {
         "period": "2021.02 - 2025.12",
-        "role": "前端负责人",
+        "role": "AI 产品经理",
         "company": "成都睿晟天和传媒科技",
-        "note": "多智能体系统、广告数字化平台、AI Native 研发流程"
+        "note": "多智能体系统、广告数字化平台、AI Native 产品交付"
       },
       {
         "period": "2020.01 - 2021.01",

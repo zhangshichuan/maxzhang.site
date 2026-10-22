@@ -4,9 +4,8 @@ import { Link, useLocale, useTranslations } from '@/src/i18n/client'
 import { localizePath, stripLocale } from '@/i18n/routing'
 
 /**
- * Flow Field 导航：纸面固定条 + 下滑隐藏。
- * 首页的「联系」是页内锚点（data-jump，交给粒子场引擎做冲击波转场）；
- * 其他页面跳到首页锚点。语言切换只改 URL。
+ * Final shell — fixed kinetic index bar.
+ * Contact stays an in-page anchor on the home page.
  */
 export function Navbar() {
   const t = useTranslations('Common.nav')
@@ -19,13 +18,9 @@ export function Navbar() {
   const isHome = internalPath === '/'
 
   const toggleLanguage = () => {
-    router.navigate({
-      href: localizePath(internalPath, locale === 'zh' ? 'en' : 'zh'),
-      replace: true,
-    })
+    router.navigate({ href: localizePath(internalPath, locale === 'zh' ? 'en' : 'zh'), replace: true })
   }
 
-  // 下滑隐藏顶栏、上滑出现；首页粒子场引擎也会维护同一个 class，两者结果一致。
   useEffect(() => {
     let lastY = window.scrollY || 0
     let frame = 0
@@ -36,8 +31,8 @@ export function Navbar() {
         const y = window.scrollY || 0
         const el = headerRef.current
         if (!el) return
-        if (y > 160 && y > lastY + 2) el.classList.add('is-hidden')
-        else if (y < lastY - 2 || y < 90) el.classList.remove('is-hidden')
+        if (y > 200 && y > lastY + 3) el.classList.add('is-hidden')
+        else if (y < lastY - 3 || y < 120) el.classList.remove('is-hidden')
         lastY = y
       })
     }
@@ -50,29 +45,34 @@ export function Navbar() {
   }, [])
 
   return (
-    <header ref={headerRef} className="site-header">
-      <div className="header-inner">
-        <Link className="brand" href="/">
-          Max Zhang
-          <span className="brand-dot" aria-hidden="true" />
+    <header ref={headerRef} className="zx-nav">
+      <div className="zx-nav-inner">
+        <Link className="zx-brand" href="/">
+          <span className="zx-brand-mark" aria-hidden="true">
+            MZ
+          </span>
+          <span className="zx-brand-name">Max Zhang</span>
         </Link>
-        <nav className="nav" aria-label="Primary">
+        <nav className="zx-nav-links" aria-label="Primary">
           <Link href="/">{t('home')}</Link>
           <Link href="/posts">{t('posts')}</Link>
+          <Link href="/photos">{t('photos')}</Link>
           <Link href="/about">{t('about')}</Link>
           {isHome ? (
-            <a className="contact-link" href="#contact" data-jump>
-              {t('contact')} <i aria-hidden="true">↗</i>
-            </a>
+            <a href="#contact">{t('contact')}</a>
           ) : (
-            <Link className="contact-link" href="/#contact">
-              {t('contact')} <i aria-hidden="true">↗</i>
-            </Link>
+            <Link href="/#contact">{t('contact')}</Link>
           )}
-          <button type="button" className="nav-lang" onClick={toggleLanguage} aria-label={t('switchLanguage')}>
+        </nav>
+        <div className="zx-nav-meta">
+          <span className="zx-nav-state">
+            <span className="zx-dot" aria-hidden="true" />
+            AI PM / 2026
+          </span>
+          <button type="button" className="zx-lang" onClick={toggleLanguage} aria-label={t('switchLanguage')}>
             {locale === 'zh' ? 'EN' : '中'}
           </button>
-        </nav>
+        </div>
       </div>
     </header>
   )
