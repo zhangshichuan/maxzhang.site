@@ -5,6 +5,7 @@
 export { AudioPlayer } from './audio-player'
 export { BackToPosts } from './back-to-posts'
 export { BackToTop } from './back-to-top'
+export { ClientChrome } from './client-chrome'
 export { Footer } from './footer'
 export { GlassCard } from './glass-card'
 export { Mermaid } from './mdx'

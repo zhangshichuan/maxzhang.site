@@ -17,15 +17,15 @@
     },
     "footer": {
       "status": "OPEN TO AI PRODUCT ROLES",
-      "location": "CHENGDU · REMOTE",
+      "location": "SHENZHEN · SHANGHAI",
       "tagline": "Making AI products people actually use.",
       "github": "GitHub",
       "email": "Email"
     },
     "notFound": {
-      "title": "command not found",
-      "description": "This path has no matching file. Head back to overview, or see the writing.",
-      "backHome": "Back to overview"
+      "title": "Page not found",
+      "description": "This page doesn't exist. Head back to the homepage, or read the writing.",
+      "backHome": "Back to homepage"
     }
   },
   "PhotosPage": {
@@ -259,11 +259,11 @@
   "AboutPage": {
     "title": "About - Max Zhang",
     "heading": "About",
-    "location": "Chengdu, China",
-    "status": "AI Product Manager · Chengdu / Remote",
+    "location": "Shenzhen / Shanghai, China",
+    "status": "AI Product Manager · Shenzhen / Shanghai",
     "intro": [
-      "I'm Max. Ten years of full-stack engineering. Now building AI products.",
-      "In the past two years I took a multi-agent system from zero to production. I focus on agents, RAG and evaluation."
+      "I'm Max — an AI product manager with ten years of building products. I turn model capability into products people trust.",
+      "The last two years: took a multi-agent system from zero to production. I focus on agents, RAG, evaluation — and the product judgment around them."
     ],
     "factsTitle": "INFO",
     "facts": [
@@ -273,7 +273,7 @@
       },
       {
         "label": "BASE",
-        "value": "Chengdu / Remote"
+        "value": "Shenzhen / Shanghai"
       },
       {
         "label": "FOCUS",
@@ -281,7 +281,7 @@
       },
       {
         "label": "STATUS",
-        "value": "Open to AI product roles"
+        "value": "Open for select AI product work"
       },
       {
         "label": "EMAIL",
@@ -292,9 +292,9 @@
     "timeline": [
       {
         "period": "Feb 2021 - Dec 2025",
-        "role": "Frontend Lead",
+        "role": "AI Product Manager",
         "company": "Chengdu Ruisheng Tianhe Media",
-        "note": "Multi-agent systems, ad platform, AI-native engineering"
+        "note": "Multi-agent systems, ad platform, AI-native product delivery"
       },
       {
         "period": "Jan 2020 - Jan 2021",
