@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { chatStream } from '@/src/features/chat/server-functions'
 import type { ChatErrorCode } from '@/src/features/chat/services/chat-stream.server'
 import { Link, useLocale, useTranslations } from '@/src/i18n/client'
+import { cn } from '@/src/shared/utils/cn'
 import { getThumbmark } from '@thumbmarkjs/thumbmarkjs'
 import { MoreVertical, Send } from 'lucide-react'
 
@@ -382,12 +383,12 @@ export function ChatInterface() {
   const sendHint = locale === 'zh' ? 'ENTER 发送 · SHIFT+ENTER 换行' : 'ENTER TO SEND · SHIFT+ENTER FOR NEWLINE'
 
   const status = limited
-    ? { key: 'limit', label: 'LIMIT' }
+    ? { key: 'limit', label: 'LIMIT', className: 'ch-status--limit' }
     : isStreaming
-      ? { key: 'live', label: 'LISTENING' }
+      ? { key: 'live', label: 'LISTENING', className: 'ch-status--live' }
       : errorText
-        ? { key: 'notice', label: 'NOTICE' }
-        : { key: 'ready', label: 'READY' }
+        ? { key: 'notice', label: 'NOTICE', className: 'ch-status--notice' }
+        : { key: 'ready', label: 'READY', className: 'ch-status--ready' }
 
   return (
     <div className="ch-page">
@@ -414,7 +415,7 @@ export function ChatInterface() {
             </div>
           </div>
           <div className="ch-head-meta">
-            <span className={`ch-status ch-status--${status.key}`}>
+            <span className={cn('ch-status', status.className)}>
               <span className="ch-status-dot" aria-hidden="true" />
               {status.label}
             </span>
@@ -434,12 +435,7 @@ export function ChatInterface() {
                   <div className="ch-menu-panel" role="menu">
                     {confirmClear ? (
                       <>
-                        <button
-                          type="button"
-                          className="ch-menu-item danger"
-                          role="menuitem"
-                          onClick={clearHistory}
-                        >
+                        <button type="button" className="ch-menu-item danger" role="menuitem" onClick={clearHistory}>
                           {t('clearConfirm')}
                         </button>
                         <button type="button" className="ch-menu-item" role="menuitem" onClick={cancelClear}>
@@ -480,7 +476,10 @@ export function ChatInterface() {
               {messages.map((message) => {
                 const isLive = streamingId !== null && message.id === streamingId
                 return (
-                  <li key={message.id} className={`ch-msg ch-msg--${message.role}`}>
+                  <li
+                    key={message.id}
+                    className={cn('ch-msg', message.role === 'user' ? 'ch-msg--user' : 'ch-msg--assistant')}
+                  >
                     <span className="ch-msg-label">
                       {message.role === 'user' ? 'You' : isLive ? 'Listening' : 'Tree Hole'}
                     </span>
@@ -547,7 +546,11 @@ export function ChatInterface() {
                 className="ch-send"
                 aria-label={isStreaming ? t('sending') : t('send')}
               >
-                {isStreaming ? <span className="ch-send-busy" aria-hidden="true" /> : <Send size={15} strokeWidth={1.9} />}
+                {isStreaming ? (
+                  <span className="ch-send-busy" aria-hidden="true" />
+                ) : (
+                  <Send size={15} strokeWidth={1.9} />
+                )}
               </button>
             </div>
             <div className="ch-hint">

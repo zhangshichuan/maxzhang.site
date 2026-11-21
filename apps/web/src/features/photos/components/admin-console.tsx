@@ -153,7 +153,7 @@ export function AdminConsole() {
                   aria-label={t('delete')}
                 >
                   {deleting === work.slug ? (
-                    <Loader2 className="size-4 ad-spin" aria-hidden="true" />
+                    <Loader2 className="ad-spin size-4" aria-hidden="true" />
                   ) : (
                     <Trash2 className="size-4" strokeWidth={1.75} aria-hidden="true" />
                   )}

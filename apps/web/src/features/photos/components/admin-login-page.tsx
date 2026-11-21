@@ -145,7 +145,7 @@ export function AdminLoginPage() {
 
           <button type="submit" className="ad-submit" disabled={!password || submitting}>
             {submitting ? (
-              <Loader2 className="size-4 ad-spin" aria-hidden="true" />
+              <Loader2 className="ad-spin size-4" aria-hidden="true" />
             ) : (
               <ArrowRight className="size-4" aria-hidden="true" />
             )}

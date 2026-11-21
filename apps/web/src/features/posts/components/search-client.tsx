@@ -1,5 +1,6 @@
 import type { PostSummaryWithViews } from '@/src/features/posts/model'
 import { Link, useTranslations } from '@/src/i18n/client'
+import { cn } from '@/src/shared/utils/cn'
 import Fuse from 'fuse.js'
 import { BookOpen, Eye, MessageCircle, Search, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -112,7 +113,7 @@ export function SearchClient({ posts, initialSearch }: SearchClientProps) {
                 type="button"
                 onClick={() => setSelectedCategory((prev) => (prev === category ? '' : category))}
                 aria-pressed={selectedCategory === category}
-                className={`se-chip${selectedCategory === category ? ' is-active' : ''}`}
+                className={cn('se-chip', selectedCategory === category && 'is-active')}
               >
                 {category}
               </button>
@@ -134,7 +135,7 @@ export function SearchClient({ posts, initialSearch }: SearchClientProps) {
                 type="button"
                 onClick={() => setSelectedTag((prev) => (prev === tag ? '' : tag))}
                 aria-pressed={selectedTag === tag}
-                className={`se-chip${selectedTag === tag ? ' is-active' : ''}`}
+                className={cn('se-chip', selectedTag === tag && 'is-active')}
               >
                 {tag}
               </button>
@@ -212,7 +213,8 @@ export function SearchClient({ posts, initialSearch }: SearchClientProps) {
                     </div>
                   </div>
                   <span className="se-result-arrow" aria-hidden="true">
-                    鈫?                  </span>
+                    鈫?{' '}
+                  </span>
                 </Link>
               )
             })

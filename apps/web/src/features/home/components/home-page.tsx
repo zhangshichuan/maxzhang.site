@@ -1,5 +1,6 @@
 import type { PostSummaryWithViews } from '@/src/features/posts/model'
 import { Link, useLocale } from '@/src/i18n/client'
+import { cn } from '@/src/shared/utils/cn'
 import { useEffect, type CSSProperties } from 'react'
 import Avatar from '@/src/features/about/avatar.jpg'
 
@@ -32,9 +33,19 @@ const copy = {
     indexTitle: 'What I bring to the table.',
     indexRows: [
       { value: '10+', unit: 'yrs', label: 'Years shipping products', note: 'From 0→1 launches to platform scale.' },
-      { value: '0→1', unit: '', label: 'Products launched', note: 'Ambiguous model capability → a product people use.' },
+      {
+        value: '0→1',
+        unit: '',
+        label: 'Products launched',
+        note: 'Ambiguous model capability → a product people use.',
+      },
       { value: '+80', unit: '%', label: 'Retention lift', note: 'Built the loop, not just the launch.' },
-      { value: 'AI', unit: '/ ML', label: 'Native domain', note: 'Evaluation, guardrails, model-in-the-loop workflows.' },
+      {
+        value: 'AI',
+        unit: '/ ML',
+        label: 'Native domain',
+        note: 'Evaluation, guardrails, model-in-the-loop workflows.',
+      },
     ],
     caseKicker: '02 / Case 01',
     caseTitle: ['AI video', 'production'],
@@ -52,7 +63,10 @@ const copy = {
     principles: [
       { title: 'Taste is a product skill.', body: 'Model output is infinite. Selection is the job.' },
       { title: 'Ship trust, not demos.', body: 'A demo shows capability; a product earns the second use.' },
-      { title: 'The model is never the product.', body: 'The product is the workflow, the guardrails, the feedback loop.' },
+      {
+        title: 'The model is never the product.',
+        body: 'The product is the workflow, the guardrails, the feedback loop.',
+      },
     ],
     methodKicker: '04 / Method',
     methodTitle: 'How I work.',
@@ -301,7 +315,7 @@ export function HomePage({ posts }: HomePageProps) {
           <div className="fx-case-metrics" data-reveal>
             {t.caseMetrics.map((metric) => (
               <div className="fx-case-metric" key={metric.label}>
-                <span className={`fx-case-value${'small' in metric && metric.small ? ' fx-case-value--small' : ''}`}>
+                <span className={cn('fx-case-value', 'small' in metric && metric.small && 'fx-case-value--small')}>
                   {metric.value}
                 </span>
                 <span className="fx-case-label">{metric.label}</span>

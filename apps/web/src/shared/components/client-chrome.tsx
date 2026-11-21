@@ -2,6 +2,7 @@
 
 import { useRouterState } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
+import { cn } from '@/src/shared/utils/cn'
 
 /**
  * Global chrome: skip link, side rail, custom cursor, scroll progress,
@@ -123,7 +124,7 @@ export function ClientChrome() {
       <div className="zx-cursor" ref={dotRef} aria-hidden="true" />
       <div className="zx-cursor-ring" ref={ringRef} aria-hidden="true" />
       <div className="zx-cursor-label" ref={labelRef} aria-hidden="true" />
-      <div key={veil} className={`zx-veil${veilOn ? ' is-active' : ''}`} aria-hidden="true" />
+      <div key={veil} className={cn('zx-veil', veilOn && 'is-active')} aria-hidden="true" />
     </>
   )
 }
