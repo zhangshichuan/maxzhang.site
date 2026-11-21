@@ -3,13 +3,12 @@
 import { useRouterState } from '@tanstack/react-router'
 import { stripLocale } from '@/i18n/routing'
 import { useLocale } from '@/src/i18n/client'
-import { ThemeToggle } from './theme-toggle'
 
 const copy = {
   en: {
-    status: 'Available for select projects',
+    status: 'Open to AI product collaborations',
     labels: {
-      home: 'Portfolio / 2026 / System nominal',
+      home: 'Chengdu / 2026 / Product-minded AI builder',
       posts: 'Writing / 2026 / Index',
       article: 'Writing / 2026 / File',
       about: 'File / 2026 / About',
@@ -21,9 +20,9 @@ const copy = {
     },
   },
   zh: {
-    status: '可接受少量合作',
+    status: '开放 AI 产品合作',
     labels: {
-      home: '作品集 / 2026 / 系统正常',
+      home: '成都 / 2026 / Product-minded AI builder',
       posts: '写作 / 2026 / 索引',
       article: '写作 / 2026 / 文章',
       about: '档案 / 2026 / 关于',
@@ -65,7 +64,6 @@ export function NightMeta() {
       </span>
       <div className="ni-meta-actions">
         <span className="ni-system">{t.status}</span>
-        <ThemeToggle />
       </div>
     </div>
   )

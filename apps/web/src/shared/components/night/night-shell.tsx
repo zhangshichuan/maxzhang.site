@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { useLocale } from '@/src/i18n/client'
 import { cn } from '@/src/shared/utils/cn'
 import { NightFooter } from './night-footer'
@@ -20,6 +20,28 @@ type ShellVariant = 'page' | 'chat' | 'auth'
  */
 export function NightShell({ children, variant = 'page' }: { children: ReactNode; variant?: ShellVariant }) {
   const locale = useLocale()
+
+  useEffect(() => {
+    const rail = document.querySelector<HTMLElement>('.ni-rail')
+    if (!rail) return
+    const root = document.documentElement
+    const update = () => {
+      if (window.matchMedia('(max-width: 1120px)').matches) {
+        root.style.setProperty('--ni-rail-height', `${rail.offsetHeight}px`)
+      } else {
+        root.style.removeProperty('--ni-rail-height')
+      }
+    }
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(rail)
+    window.addEventListener('resize', update)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', update)
+      root.style.removeProperty('--ni-rail-height')
+    }
+  }, [])
 
   return (
     <>

@@ -20,11 +20,14 @@
   writing, photography, about, search, tree hole, admin, and login.
 - **Who it is for:** hiring teams, AI product peers, readers of product writing,
   and photography/design peers.
-- **Brand position:** AI product manager. Turning model capability into products
-  people actually trust.
+- **Brand position:** Product-minded AI builder in Chengdu. Turning model
+  capability into products people actually trust.
 - **Job of the homepage:** within 30 seconds, show who you are, what you shipped,
   how you work, and make the next step obvious: read a piece or send an email.
-- **Languages:** English by default, Chinese under `/zh`. Both share one type
+- **Languages:** English by default, Chinese under `/zh`. On a first visit to
+  an unprefixed path, the device's primary language decides: `zh-*` redirects
+  to `/zh`, everything else stays English. A stored `mz-locale` choice wins,
+  and explicit `/zh` URLs always stay Chinese. Both locales share one type
   system; Chinese never shrinks its type just to fit a Latin layout.
 
 ---
@@ -63,15 +66,16 @@ the interface only points attention at the right place.
 
 ### Modes
 
-- `html[data-theme="dark"]` is the signature mode and the first-visit default.
-- `html[data-theme="light"]` is a first-class daily mode.
+- `html[data-theme="dark"]` is the signature mode; light is a first-class daily mode.
+- On a first visit the device's `prefers-color-scheme` decides the mode. A
+  stored `mz-theme` choice wins, and a manual toggle writes that override.
 - Each mode sets its own `color-scheme`.
-- The Day/Night control sits at the right end of the meta row. The visible label
-  is the destination mode (`Day` in dark mode, `Night` in light mode) and
-  `aria-pressed` reflects whether light is active.
+- The Day/Night control sits next to the locale switch, with two icon buttons:
+  sun = light, moon = dark. The active mode uses a mint fill and `aria-pressed`.
 - The choice is stored in `localStorage` under `mz-theme`.
 - An inline boot script sets `data-theme` before first paint, so there is no
-  flash. `?theme=light|dark` is supported for screenshots.
+  flash. `?theme=light|dark` is supported for screenshots and overrides storage.
+- When no override exists, live `prefers-color-scheme` changes update the page.
 
 ### Color roles
 
@@ -189,37 +193,40 @@ html[data-theme='light'] {
   Day/Night control on the right.
 - **Footer:** hairline top, mono links, always at the end of the content column.
 - **Breakpoints:** `1120px` rail collapses to a top bar; `900px` hero and case
-  stack; `700px` single column, compact meta, rail nav hidden.
+  stack; `700px` single column, compact meta, rail becomes a top bar with a
+  menu button that expands the full navigation.
 
 ### Rail contents (top to bottom)
 
 1. `MZ®` wordmark.
-2. Role and year: `AI Product Manager` / `Portfolio / 2026`.
-3. Primary navigation, each row numbered `01–05` and separated by hairlines.
-4. Availability block: live dot, location, working scope, last update.
-5. Locale switch and issue number pinned to the bottom.
-
-On inner pages the primary nav becomes:
-`01 Selected work → /#work`, `02 Writing → /posts`,
-`03 Photography → /photos`, `04 About → /about`, `05 Contact → /#contact`.
-The active destination uses `--ni-mint` and `aria-current="page"`.
+2. Role and year: `Product-minded AI builder` / `Portfolio / 2026`.
+3. Primary navigation, each row numbered `01–07` and separated by hairlines:
+   `01 Overview → /`, `02 Writing → /posts`, `03 Photography → /photos`,
+   `04 About → /about`, `05 Search → /search`, `06 Tree hole → /chat`,
+   `07 Contact → /#contact`. The active destination uses `--ni-mint` and
+   `aria-current="page"`.
+4. Availability block: live dot, location (`Chengdu, China`), working scope,
+   last update.
+5. Locale switch, Day/Night icon pair, and issue number pinned to the bottom.
+6. At `700px` and below: brand, Day/Night pair, locale, and a 44px menu button;
+   the same seven links expand below the top bar as a vertical hairline list.
 
 ### Meta row copy
 
-| Page        | Left label                          |
-| ----------- | ----------------------------------- |
-| Home        | `Portfolio / 2026 / System nominal` |
-| Writing     | `Writing / 2026 / Index`            |
-| Article     | `Writing / 2026 / File`             |
-| About       | `File / 2026 / About`               |
-| Photography | `Archive / 2026 / Photography`      |
-| Search      | `Index / 2026 / Search`             |
-| Tree hole   | `Channel / 2026 / Tree hole`        |
-| Admin       | `Private / 2026 / Admin`            |
-| Login       | `Private / 2026 / Access`           |
+| Page        | Left label                                   |
+| ----------- | -------------------------------------------- |
+| Home        | `Chengdu / 2026 / Product-minded AI builder` |
+| Writing     | `Writing / 2026 / Index`                     |
+| Article     | `Writing / 2026 / File`                      |
+| About       | `File / 2026 / About`                        |
+| Photography | `Archive / 2026 / Photography`               |
+| Search      | `Index / 2026 / Search`                      |
+| Tree hole   | `Channel / 2026 / Tree hole`                 |
+| Admin       | `Private / 2026 / Admin`                     |
+| Login       | `Private / 2026 / Access`                    |
 
-The right side is always `Available for select projects` plus the Day/Night
-control. On small screens the status text hides; the control stays.
+The right side shows `Open to AI product collaborations`. On small screens the
+status hides; the Day/Night control lives in the rail/top bar instead.
 
 ---
 
@@ -314,16 +321,16 @@ separate visual systems.
 
 ### Article (`/posts/$slug`)
 
-1. Back link in mono with a left chevron.
-2. Kicker: category / reading time.
-3. H1 in page-title scale, max 18ch.
-4. Meta row: date, author, views, comments, AI-assisted tag.
-5. Tools row: audio player on the left, tags on the right.
-6. Prose column max 720px: 17px body, 1.7 line height, hairline code blocks,
+1. Kicker: category / reading time.
+2. H1 in page-title scale, max 18ch.
+3. Meta row: date, author, views, comments, AI-assisted tag.
+4. Tools row: audio player on the left, tags on the right.
+5. Prose column max 720px: 17px body, 1.7 line height, hairline code blocks,
    mint links, tables with hairline borders, figures with mono captions.
-7. Comments section below a section header; comment cards use hairline
+6. Comments section below a section header; comment cards use hairline
    separators, mono fingerprints, and mint reply actions.
-8. Back-to-top as a square hairline button, bottom right.
+7. Back-to-top as a square hairline button aligned to the content column's
+   right edge, never pinned to the viewport edge on wide screens.
 
 ### About (`/about`)
 
@@ -417,6 +424,7 @@ separate visual systems.
 | Tokens, shell, homepage | `apps/web/src/styles/instrument.css`                           |
 | Inner-page primitives   | `apps/web/src/styles/instrument-pages.css`                     |
 | Theme boot + toggle     | `apps/web/src/shared/components/night/theme.ts`                |
+| Language boot + choice  | `apps/web/src/shared/components/night/locale.ts`               |
 | Rail                    | `apps/web/src/shared/components/night/night-rail.tsx`          |
 | Meta row                | `apps/web/src/shared/components/night/night-meta.tsx`          |
 | Shell + footer          | `apps/web/src/shared/components/night/night-shell.tsx`         |

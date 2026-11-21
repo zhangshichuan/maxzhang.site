@@ -6,11 +6,11 @@ export const Route = createFileRoute('/_en/')({
   loader: ({ context }) => getFeaturedPosts(context.locale),
   head: () => ({
     meta: [
-      { title: 'Max Zhang — AI Product Manager' },
+      { title: 'Max Zhang — Product-minded AI builder' },
       {
         name: 'description',
         content:
-          'AI product manager. Ten years building products, the last two shipping AI systems. Turning model capability into products people trust.',
+          'Product-minded AI builder in Chengdu. Ten years building products, the last two shipping AI systems. Turning model capability into products people trust.',
       },
     ],
   }),

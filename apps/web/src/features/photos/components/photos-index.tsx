@@ -98,7 +98,7 @@ export function PhotosIndex({ works }: PhotosIndexProps) {
             <i aria-hidden="true">03</i>
           </div>
           <span className="ni-metric-value ni-metric-value--date">{t('author')}</span>
-          <span className="ni-metric-note">Shenzhen / Shanghai</span>
+          <span className="ni-metric-note">Chengdu, China</span>
         </div>
         <div className="ni-metric">
           <div className="ni-metric-label ni-mono">
@@ -115,7 +115,7 @@ export function PhotosIndex({ works }: PhotosIndexProps) {
           <div className="ni-empty">
             <span className="ni-empty-code">000 / Archive empty</span>
             <p className="ni-empty-title">{t('empty')}</p>
-            <p className="ni-empty-text">{t('author')} · Shenzhen / Shanghai</p>
+            <p className="ni-empty-text">{t('author')} · Chengdu, China</p>
           </div>
         </section>
       ) : (

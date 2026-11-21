@@ -3,7 +3,6 @@
  */
 
 export { AudioPlayer } from './audio-player'
-export { BackToPosts } from './back-to-posts'
 export { BackToTop } from './back-to-top'
 export { Mermaid } from './mdx'
 export { NotFoundPage } from './not-found'

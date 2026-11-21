@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MotionConfig } from 'framer-motion'
 import * as React from 'react'
 import { getLocaleFromPathname } from '@/i18n/routing'
-import { NightShell, THEME_BOOT_SCRIPT } from '@/src/shared/components/night'
+import { LOCALE_BOOT_SCRIPT, NightShell, THEME_BOOT_SCRIPT } from '@/src/shared/components/night'
 import { NotFoundPage } from '@/src/shared/components/not-found'
 import '@/src/styles/design-system.css'
 import '@/src/styles/instrument.css'
@@ -20,7 +20,7 @@ import '@/src/styles/instrument-pages.css'
 export const Route = createRootRoute({
   head: () => ({
     meta: [
-      { title: 'Max Zhang — AI Product Manager' },
+      { title: 'Max Zhang — Product-minded AI builder' },
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
       { name: 'theme-color', content: '#0a0e11' },
@@ -64,8 +64,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     <html lang={locale} className="js ni-active" suppressHydrationWarning>
       <head>
         <HeadContent />
-        {/* Sets data-theme before first paint. Dark is the default signature mode. */}
+        {/* Preferences are resolved before first paint: stored choice, then device. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: LOCALE_BOOT_SCRIPT }} />
       </head>
       <body className="ni-body">
         <QueryClientProvider client={queryClient}>

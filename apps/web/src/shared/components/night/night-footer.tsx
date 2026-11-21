@@ -5,7 +5,7 @@ import { Link } from '@/src/i18n/client'
 
 const copy = {
   en: {
-    brand: 'MZ® / MAX ZHANG / AI PRODUCT MANAGER',
+    brand: 'MZ® / MAX ZHANG / PRODUCT-MINDED AI BUILDER',
     writing: 'Writing',
     photos: 'Photography',
     about: 'About',
@@ -13,11 +13,11 @@ const copy = {
     chat: 'Tree hole',
     github: 'GitHub',
     email: 'Email',
-    location: 'Shenzhen / Shanghai',
+    location: 'Chengdu, China',
     copyright: `© ${new Date().getFullYear()} · Max Zhang`,
   },
   zh: {
-    brand: 'MZ® / MAX ZHANG / AI 产品经理',
+    brand: 'MZ® / MAX ZHANG / PRODUCT-MINDED AI BUILDER',
     writing: '写作',
     photos: '摄影',
     about: '关于',
@@ -25,7 +25,7 @@ const copy = {
     chat: '树洞',
     github: 'GitHub',
     email: '邮件',
-    location: '深圳 / 上海',
+    location: '成都，中国',
     copyright: `© ${new Date().getFullYear()} · Max Zhang`,
   },
 } as const

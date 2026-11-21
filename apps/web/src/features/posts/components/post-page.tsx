@@ -1,6 +1,6 @@
 import { Comment, ViewCounter } from '@/src/features/engagement'
 import type { Post } from '@/src/features/posts/model'
-import { AudioPlayer, BackToPosts, BackToTop } from '@/src/shared/components'
+import { AudioPlayer, BackToTop } from '@/src/shared/components'
 import { useTranslations } from '@/src/i18n/client'
 import { MessageCircle } from 'lucide-react'
 import { Suspense } from 'react'
@@ -20,8 +20,6 @@ export function PostPage({ post, commentCount, locale }: PostPageProps) {
   return (
     <div className="ni-page ni-article">
       <article>
-        <BackToPosts label={tPosts('back')} />
-
         <header className="ni-article-head">
           <div className="ni-article-kicker">
             <b>{post.category}</b>

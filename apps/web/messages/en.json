@@ -16,9 +16,9 @@
       "contact": "Contact"
     },
     "footer": {
-      "status": "OPEN TO AI PRODUCT ROLES",
-      "location": "SHENZHEN · SHANGHAI",
-      "tagline": "Making AI products people actually use.",
+      "status": "OPEN TO AI PRODUCT COLLABORATIONS",
+      "location": "CHENGDU · CHINA",
+      "tagline": "Building AI products people actually use.",
       "github": "GitHub",
       "email": "Email"
     },
@@ -132,10 +132,10 @@
   },
   "HomePage": {
     "hero": {
-      "eyebrow": "AI PRODUCT MANAGER / 10+ YEARS FULL-STACK",
-      "headline1": "Making AI products",
+      "eyebrow": "PRODUCT-MINDED AI BUILDER / CHENGDU",
+      "headline1": "Building AI products",
       "headline2": "people actually use.",
-      "lede": "Ten years of full-stack engineering. Two years taking a multi-agent system from zero to production. Now building AI products: defining tasks, designing workflows, evaluating — and writing code to test the judgment.",
+      "lede": "Product-minded AI builder in Chengdu. Ten years turning ambiguous problems into shipped products. The last two years: taking a multi-agent system from zero to production.",
       "email": "Email me",
       "notes": "Read the writing"
     },
@@ -259,29 +259,29 @@
   "AboutPage": {
     "title": "About - Max Zhang",
     "heading": "About",
-    "location": "Shenzhen / Shanghai, China",
-    "status": "AI Product Manager · Shenzhen / Shanghai",
+    "location": "Chengdu, China",
+    "status": "Product-minded AI builder · Chengdu, China",
     "intro": [
-      "I'm Max — an AI product manager with ten years of building products. I turn model capability into products people trust.",
+      "I'm Max — a product-minded AI builder based in Chengdu. I turn model capability into products people trust.",
       "The last two years: took a multi-agent system from zero to production. I focus on agents, RAG, evaluation — and the product judgment around them."
     ],
     "factsTitle": "INFO",
     "facts": [
       {
         "label": "ROLE",
-        "value": "AI Product Manager"
+        "value": "Product-minded AI builder"
       },
       {
         "label": "BASE",
-        "value": "Shenzhen / Shanghai"
+        "value": "Chengdu, China"
       },
       {
         "label": "FOCUS",
-        "value": "Agent · RAG · Evaluation"
+        "value": "AI products · Agent · RAG"
       },
       {
         "label": "STATUS",
-        "value": "Open for select AI product work"
+        "value": "Open to AI product collaborations"
       },
       {
         "label": "EMAIL",
@@ -292,7 +292,7 @@
     "timeline": [
       {
         "period": "Feb 2021 - Dec 2025",
-        "role": "AI Product Manager",
+        "role": "AI Product Builder",
         "company": "Chengdu Ruisheng Tianhe Media",
         "note": "Multi-agent systems, ad platform, AI-native product delivery"
       },
@@ -315,15 +315,15 @@
         "note": "Hospital device data and SaaS delivery"
       }
     ],
-    "contactTitle": "Let's talk AI products.",
-    "contactText": "If you're building AI products, email me.",
+    "contactTitle": "Let's build something useful.",
+    "contactText": "If you're building AI products, let's talk.",
     "contactEmail": "Email me",
     "contactGithub": "GitHub"
   },
   "PostsPage": {
     "title": "Writing",
-    "description": "Engineering notes, and AI product writing.",
-    "note": "Methods, case breakdowns and evaluation notes will be published as a series.",
+    "description": "Field notes from building AI products — methods, cases, and evaluation.",
+    "note": "Written from Chengdu, published as a series.",
     "seriesTitle": "Writing plan",
     "series": [
       {
@@ -346,7 +346,6 @@
     "noTags": "No tags",
     "aiAssisted": "AI-assisted",
     "aiAssistedHint": "Written with AI assistance and reviewed by the author",
-    "back": "Back to Writing",
     "metrics": {
       "entries": "Entries",
       "entriesNote": "Published field notes and essays",

@@ -16,9 +16,9 @@
       "contact": "联系"
     },
     "footer": {
-      "status": "OPEN TO AI PRODUCT ROLES",
-      "location": "深圳 · 上海",
-      "tagline": "把模型能力，翻译成人们愿意用的产品。",
+      "status": "开放 AI 产品合作",
+      "location": "成都 · 中国",
+      "tagline": "把 AI 能力做成真正可用的产品。",
       "github": "GitHub",
       "email": "Email"
     },
@@ -132,10 +132,10 @@
   },
   "HomePage": {
     "hero": {
-      "eyebrow": "AI PRODUCT MANAGER / 10+ YEARS FULL-STACK",
-      "headline1": "把模型能力，",
-      "headline2": "翻译成人们愿意用的产品。",
-      "lede": "十年全栈工程，两年把多智能体系统从 0 带到生产。现在做 AI 产品：定义任务、设计工作流、定评测，也自己写代码验证判断。",
+      "eyebrow": "PRODUCT-MINDED AI BUILDER / 成都",
+      "headline1": "把 AI 能力，",
+      "headline2": "做成真正可用的产品。",
+      "lede": "常驻成都的 Product-minded AI builder。十年把模糊问题做成真正上线的产品，最近两年把一个多智能体系统从零带到生产。",
       "email": "写邮件",
       "notes": "阅读写作"
     },
@@ -259,29 +259,29 @@
   "AboutPage": {
     "title": "关于 - Max Zhang",
     "heading": "关于",
-    "location": "中国 深圳 / 上海",
-    "status": "AI 产品经理 · 深圳 / 上海",
+    "location": "中国 成都",
+    "status": "Product-minded AI builder · 成都",
     "intro": [
-      "我是 Max——一名 AI 产品经理，十年产品构建经验。把模型能力，做成用户真正信任的产品。",
-      "过去两年，把多智能体系统从 0 带到生产。关注 Agent、RAG、评测，以及围绕它们的产品判断。"
+      "我是 Max——一名 Product-minded AI builder，常驻成都。把模型能力，做成用户真正信任的产品。",
+      "最近两年，把一个多智能体系统从零带到生产。关注 Agent、RAG、评测，以及它们背后的产品判断。"
     ],
     "factsTitle": "INFO",
     "facts": [
       {
         "label": "ROLE",
-        "value": "AI 产品经理"
+        "value": "Product-minded AI builder"
       },
       {
         "label": "BASE",
-        "value": "深圳 / 上海"
+        "value": "成都"
       },
       {
         "label": "FOCUS",
-        "value": "Agent · RAG · 评测"
+        "value": "AI 产品 · Agent · RAG"
       },
       {
         "label": "STATUS",
-        "value": "开放少量 AI 产品合作"
+        "value": "开放 AI 产品合作"
       },
       {
         "label": "EMAIL",
@@ -292,7 +292,7 @@
     "timeline": [
       {
         "period": "2021.02 - 2025.12",
-        "role": "AI 产品经理",
+        "role": "AI 产品 Builder",
         "company": "成都睿晟天和传媒科技",
         "note": "多智能体系统、广告数字化平台、AI Native 产品交付"
       },
@@ -315,15 +315,15 @@
         "note": "医院设备数据与 SaaS 交付"
       }
     ],
-    "contactTitle": "聊聊 AI 产品。",
-    "contactText": "如果你们在做 AI 产品，欢迎直接邮件。",
+    "contactTitle": "一起做点真正有用的东西。",
+    "contactText": "如果你在做 AI 产品，欢迎聊聊。",
     "contactEmail": "发邮件",
     "contactGithub": "GitHub"
   },
   "PostsPage": {
     "title": "写作",
-    "description": "工程手记，和 AI 产品笔记。",
-    "note": "AI 产品方法、案例拆解与评测记录，会以系列文章陆续更新。",
+    "description": "从 AI 产品构建现场写下的方法、案例与评测。",
+    "note": "常驻成都，按系列持续更新。",
     "seriesTitle": "写作计划",
     "series": [
       {
@@ -346,7 +346,6 @@
     "noTags": "暂无标签",
     "aiAssisted": "AI 辅助写作",
     "aiAssistedHint": "本文由作者与 AI 协作完成，内容经过人工审校",
-    "back": "返回写作",
     "metrics": {
       "entries": "文章",
       "entriesNote": "已发布的技术笔记与产品写作",

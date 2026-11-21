@@ -22,4 +22,14 @@ describe('resolveInitialTheme', () => {
     expect(resolveInitialTheme('sepia')).toBe('dark')
     expect(resolveInitialTheme('light', 'sepia')).toBe('light')
   })
+
+  it('follows the device preference when nothing is stored', () => {
+    expect(resolveInitialTheme(null, null, true)).toBe('light')
+    expect(resolveInitialTheme(null, null, false)).toBe('dark')
+  })
+
+  it('lets a stored choice override the device preference', () => {
+    expect(resolveInitialTheme('dark', null, true)).toBe('dark')
+    expect(resolveInitialTheme('light', null, false)).toBe('light')
+  })
 })
