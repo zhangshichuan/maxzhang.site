@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { FingerprintRegistrar } from '@/src/features/engagement'
-import { getFeaturedPosts, HomePage } from '@/src/features/home'
+import { getFeaturedPosts, NightHome } from '@/src/features/home'
 
 export const Route = createFileRoute('/_en/')({
   loader: ({ context }) => getFeaturedPosts(context.locale),
@@ -22,7 +22,7 @@ function HomeComponent() {
   return (
     <>
       <FingerprintRegistrar />
-      <HomePage posts={posts} />
+      <NightHome posts={posts} />
     </>
   )
 }

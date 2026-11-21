@@ -8,10 +8,15 @@ import { Navbar } from './navbar'
  *
  * zh 与 en 两个布局路由共用：导航 + 正文 + 页脚。
  * 语言由各自布局路由的 beforeLoad 注入路由上下文。
+ * 首页已迁移到 Night Instrument，自带 rail / meta / footer。
  */
 export function SiteLayout() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
-  const isChat = stripLocale(pathname) === '/chat'
+  const internalPath = stripLocale(pathname)
+  const isChat = internalPath === '/chat'
+  const isHome = internalPath === '/'
+
+  if (isHome) return <Outlet />
 
   return (
     <>
