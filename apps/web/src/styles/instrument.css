@@ -71,6 +71,7 @@ html.ni-active[data-theme='light'] {
   line-height: 1.55;
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
 }
 
 html[data-theme='light'] .ni-body {
@@ -146,20 +147,26 @@ html[lang='zh'] .ni-mono {
    Shell + rail
    -------------------------------------------------------------------------- */
 .ni-shell {
-  display: grid;
-  grid-template-columns: 216px minmax(0, 1fr);
+  display: block;
+  width: 100%;
+  max-width: 1440px;
   min-height: 100vh;
-  background: var(--ni-bg);
+  margin: 0 auto;
+  padding-left: 216px;
   color: var(--ni-ink);
 }
 
 .ni-rail {
-  position: sticky;
+  position: fixed;
   top: 0;
+  bottom: 0;
+  left: max(0px, calc(50% - 720px));
+  z-index: 30;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  width: 216px;
   padding: 26px 20px 22px;
+  overflow-y: auto;
   border-right: 1px solid var(--ni-line);
   background: var(--ni-panel-2);
 }
@@ -203,6 +210,7 @@ html[lang='zh'] .ni-rail-sub {
 }
 
 .ni-rail-nav a {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -233,6 +241,24 @@ html[lang='zh'] .ni-rail-nav a {
 .ni-rail-nav a:hover,
 .ni-rail-nav a:focus-visible {
   color: var(--ni-mint);
+}
+
+.ni-rail-nav a.is-active {
+  color: var(--ni-mint);
+}
+
+.ni-rail-nav a.is-active span {
+  color: var(--ni-mint);
+}
+
+.ni-rail-nav a.is-active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -10px;
+  width: 2px;
+  background: var(--ni-mint);
 }
 
 .ni-rail-status {
@@ -1198,12 +1224,14 @@ html[lang='zh'] .ni-contact h2 {
    -------------------------------------------------------------------------- */
 @media (max-width: 1120px) {
   .ni-shell {
-    grid-template-columns: 1fr;
+    padding-left: 0;
   }
 
   .ni-rail {
     position: static;
+    width: auto;
     height: auto;
+    overflow-y: visible;
     flex-direction: row;
     align-items: center;
     flex-wrap: wrap;
@@ -1230,6 +1258,10 @@ html[lang='zh'] .ni-contact h2 {
     min-height: 44px;
     border: 0;
     padding: 4px 0;
+  }
+
+  .ni-rail-nav a.is-active::before {
+    display: none;
   }
 
   .ni-rail-nav a:last-child {

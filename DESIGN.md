@@ -161,7 +161,7 @@ Rules:
 
 - Page max width: 1440px.
 - Content inner max width: 1160px.
-- Desktop rail: 216px, sticky, full viewport height.
+- Desktop rail: 216px, fixed to the viewport, full viewport height.
 - Gutters: `clamp(22px, 4vw, 58px)`.
 - Grid: 12 columns on desktop, gap 24–44px.
 - Breakpoints: `1120px` (rail collapses), `900px` (hero and case stack), `700px` (single column, compact meta).
