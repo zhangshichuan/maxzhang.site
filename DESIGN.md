@@ -184,7 +184,7 @@ Rules:
 - Radius: `0` everywhere.
 - Borders: `1px` hairlines. The contact panel and rail may use a `3px` mint edge.
 - Shadows: none. Depth comes from contrast and spacing.
-- Background: page-level 72px grid lines at very low opacity, no noise, no gradients.
+- Background: page-level 72px grid lines at very low opacity in dark mode. Light mode uses a clean, grid-free canvas.
 - Rail on mobile: becomes a top bar; hide vertical nav, keep brand and theme toggle in the meta row.
 
 ---

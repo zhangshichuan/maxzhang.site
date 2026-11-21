@@ -76,6 +76,7 @@ html.ni-active[data-theme='light'] {
 
 html[data-theme='light'] .ni-body {
   color-scheme: light;
+  background-image: none;
 }
 
 .ni-body::before,
