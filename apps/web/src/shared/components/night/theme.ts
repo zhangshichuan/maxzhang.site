@@ -20,7 +20,7 @@ export function systemPrefersLight(): boolean {
 
 export function applyTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#fafcfb' : '#0a0e11')
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#ffffff' : '#0a0e11')
 }
 
 export const THEME_BOOT_SCRIPT = `(function(){try{
@@ -34,5 +34,5 @@ export const THEME_BOOT_SCRIPT = `(function(){try{
   var theme=forced==='light'||forced==='dark'?forced:(stored==='light'||stored==='dark'?stored:system);
   root.dataset.theme=theme;
   var meta=document.querySelector('meta[name="theme-color"]');
-  if(meta){meta.setAttribute('content',theme==='light'?'#fafcfb':'#0a0e11')}
+  if(meta){meta.setAttribute('content',theme==='light'?'#ffffff':'#0a0e11')}
 }catch(e){document.documentElement.dataset.theme='dark'}})()`

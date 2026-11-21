@@ -46,7 +46,7 @@ export default function Mermaid({ chart }: MermaidProps) {
           primaryBorderColor: '#9aa6a0',
           lineColor: '#6b7772',
           secondaryColor: '#f1f4f2',
-          tertiaryColor: '#fafcfb',
+          tertiaryColor: '#ffffff',
           clusterBkg: '#ffffff',
           clusterBorder: '#9aa6a0',
         }

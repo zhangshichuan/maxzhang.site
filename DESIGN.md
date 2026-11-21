@@ -81,9 +81,9 @@ the interface only points attention at the right place.
 
 | Role       | Dark                    | Light                 | Use                                     |
 | ---------- | ----------------------- | --------------------- | --------------------------------------- |
-| Background | `#0a0e11`               | `#fafcfb`             | Page canvas                             |
+| Background | `#0a0e11`               | `#ffffff`             | Page canvas                             |
 | Panel      | `#10161b`               | `#ffffff`             | Case panel, personnel card, contact     |
-| Panel 2    | `#0d1318`               | `#edf0ee`             | Rail, secondary surface                 |
+| Panel 2    | `#0d1318`               | `#f5f7f6`             | Rail, secondary surface                 |
 | Ink        | `#e9e5dc`               | `#101613`             | Primary text                            |
 | Muted      | `rgba(233,229,220,.52)` | `rgba(16,22,19,.60)`  | Secondary text, labels                  |
 | Muted 2    | `rgba(233,229,220,.34)` | `rgba(16,22,19,.36)`  | Meta, indices, disabled                 |
@@ -128,9 +128,9 @@ the interface only points attention at the right place.
 }
 
 html[data-theme='light'] {
-  --ni-bg: #fafcfb;
+  --ni-bg: #ffffff;
   --ni-panel: #ffffff;
-  --ni-panel-2: #edf0ee;
+  --ni-panel-2: #f5f7f6;
   --ni-ink: #101613;
   --ni-muted: rgba(16, 22, 19, 0.6);
   --ni-muted-2: rgba(16, 22, 19, 0.36);
@@ -414,6 +414,17 @@ separate visual systems.
   `aria-current`.
 - Text contrast targets WCAG AA in both modes.
 - Images always carry meaningful `alt`; decorative rules are `aria-hidden`.
+
+### Mobile interaction
+
+- The rail becomes a top bar: brand, Day/Night pair, locale, and a 44px menu
+  button. The menu expands the same seven links as a vertical hairline list.
+- Every primary control is at least 44×44px; text inputs and textareas are at
+  least 16px to prevent iOS zoom.
+- Composer, menu, and back-to-top respect `env(safe-area-inset-bottom/top)`.
+- The tree hole page subtracts the measured rail height from `100dvh`, so the
+  page itself never scrolls and the composer stays visible.
+- Wide-screen back-to-top aligns to the content column, not the viewport edge.
 
 ---
 

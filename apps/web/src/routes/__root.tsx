@@ -57,7 +57,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     const meta = document.querySelector('meta[name="theme-color"]')
     if (!meta) return
     const theme = document.documentElement.dataset.theme
-    meta.setAttribute('content', theme === 'light' ? '#fafcfb' : '#0a0e11')
+    meta.setAttribute('content', theme === 'light' ? '#ffffff' : '#0a0e11')
   }, [locale])
 
   return (
