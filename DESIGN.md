@@ -1,61 +1,77 @@
 # Design System: Max Zhang
 
-> **Status:** Homepage migrated. `/` and `/zh` run Night Instrument with the Day/Night toggle; inner pages keep the Fashion Editorial shell until they are migrated.
+> **Source of truth:** the two approved homepage renders
+> `variant-night.png` (Night) and `variant-night-light.png` (Day).
+> Everything in this document is derived from those two images first;
+> inner-page patterns are the same primitives applied to new content.
 >
-> **Current direction:** Night Instrument (2026-11). Dark is the signature mode; light is a first-class mode, not an inversion.
+> **Status:** Night Instrument is the site-wide theme. `/` and `/zh` are the
+> reference implementation; every other route uses the same shell, rail, meta
+> row, hairlines, type scale, and Day/Night tokens.
 >
-> **Replaces:** Fashion Editorial, AI Native, Flow Field, MZ/OS, Kinetic Index, Liquid Glass.
+> **Replaces:** Fashion Editorial, AI Native, Flow Field, MZ/OS, Kinetic Index,
+> Glitch Core, Liquid Glass.
 
 ---
 
 ## 1. Product Context
 
-- **What this is:** Max Zhang 的个人网站，基于 TanStack Start 的单体应用。包含首页、写作、摄影、关于、搜索、树洞、后台与登录。
-- **Who it is for:** 招聘方、AI 产品同行、产品写作读者、摄影与设计同行。
-- **Brand position:** AI 产品经理。把模型能力，做成用户真正信任的产品。
-- **Job of the homepage:** 30 秒内让人知道你是谁、做成过什么、怎么工作，并愿意继续读一篇文章或发一封邮件。
-- **Content language:** 英文默认，中文在 `/zh`。两种语言共用同一套排版规则，中文不缩小字号来硬塞。
+- **What this is:** Max Zhang's personal site, a TanStack Start monolith with
+  writing, photography, about, search, tree hole, admin, and login.
+- **Who it is for:** hiring teams, AI product peers, readers of product writing,
+  and photography/design peers.
+- **Brand position:** AI product manager. Turning model capability into products
+  people actually trust.
+- **Job of the homepage:** within 30 seconds, show who you are, what you shipped,
+  how you work, and make the next step obvious: read a piece or send an email.
+- **Languages:** English by default, Chinese under `/zh`. Both share one type
+  system; Chinese never shrinks its type just to fit a Latin layout.
 
 ---
 
-## 2. Design Direction
-
-### One sentence
+## 2. Direction
 
 **A quiet instrument panel for a person who ships AI products.**
 
-不是“AI 公司官网”，也不是“个人作品集模板”。它像一台被长期使用的仪器：有刻度、有状态、有数据，但不喧哗。人物和判断仍然是主角，界面只是把注意力引到正确的位置。
+The page behaves like a well-used instrument: numbered sections, status lights,
+measured bars, and hairline rules. The person and the judgment stay in front;
+the interface only points attention at the right place.
 
-### Five principles
+### Principles visible in the demos
 
-1. **Instrument, not dashboard.** 数据条、状态点和编号是叙事工具，不是装饰。每个数字都要能回答问题。
-2. **Person before system.** 肖像、姓名、主张和判断优先于网格。系统感服务于人，不取代人。
-3. **Hairlines, not cards.** 用 1px 线、留白和对比建立层级。不用阴影、玻璃、圆角来假装层级。
-4. **Data as narrative.** 案例先讲约束和决策，再给 before/after。数字必须带上下文。
-5. **Two lights, one instrument.** 深色和浅色是同一台仪器的两种照明，不是两套设计。所有 token、组件和状态必须成对定义。
+1. **Person before system.** The portrait, name, and claim dominate the hero.
+2. **Instrument, not dashboard.** Bars, indices, and status dots explain
+   something. They are never decoration.
+3. **Hairlines, not cards.** Hierarchy comes from 1px rules, whitespace, and
+   contrast. No shadows, glass, or large radii.
+4. **Two lights, one instrument.** Day and Night share one layout and one set
+   of roles. Light is not a color inversion.
+5. **Hold still.** Motion is limited to color, rule drawing, and short reveals.
 
 ### Non-negotiables
 
-- 不用紫色、极光渐变、玻璃拟态、霓虹发光、扫描线、故障艺术。
-- 不用 Bodoni、时装刊头、朱红细线、杂志期号。
-- 不用卡片阴影、大圆角、悬浮玻璃工具栏。
-- 不用假实时数据、假终端、假监控墙。
-- 浅色模式不是简单反色：照片、图表、面板和状态色都要单独调。
-- 任何动效都必须有 `prefers-reduced-motion` 降级。
+- No purple, aurora gradients, glassmorphism, neon glow, scanlines, or glitch.
+- No Bodoni, fashion mastheads, vermilion rules, or magazine issue numbers.
+- No card shadows, large rounded corners, or floating glass toolbars.
+- No fake live data, fake terminals, or fake monitoring walls.
+- Photography stays in full color. Never grayscale or invert it.
+- Every animation has a `prefers-reduced-motion` fallback.
 
 ---
 
-## 3. Theme Model
+## 3. Modes and Tokens
 
 ### Modes
 
-- `html[data-theme="dark"]`：默认，品牌签名模式。
-- `html[data-theme="light"]`：完整支持的日常模式。
-- 每个模式都设置对应的 `color-scheme`。
-- 主题切换按钮放在页面右上角的 meta bar，标签在 `Day` 和 `Night` 之间切换，使用 `aria-pressed`。
-- 选择写入 `localStorage`，键名 `mz-theme`。
-- 首屏防闪烁：在 `<head>` 里用内联脚本在绘制前设置 `data-theme`。
-- 首次访问默认深色。是否跟随系统 `prefers-color-scheme` 仍是一个开放决策，见第 11 节。
+- `html[data-theme="dark"]` is the signature mode and the first-visit default.
+- `html[data-theme="light"]` is a first-class daily mode.
+- Each mode sets its own `color-scheme`.
+- The Day/Night control sits at the right end of the meta row. The visible label
+  is the destination mode (`Day` in dark mode, `Night` in light mode) and
+  `aria-pressed` reflects whether light is active.
+- The choice is stored in `localStorage` under `mz-theme`.
+- An inline boot script sets `data-theme` before first paint, so there is no
+  flash. `?theme=light|dark` is supported for screenshots.
 
 ### Color roles
 
@@ -65,27 +81,29 @@
 | Panel      | `#10161b`               | `#ffffff`             | Case panel, personnel card, contact     |
 | Panel 2    | `#0d1318`               | `#edf0ee`             | Rail, secondary surface                 |
 | Ink        | `#e9e5dc`               | `#101613`             | Primary text                            |
-| Muted      | `rgba(233,229,220,.52)` | `rgba(16,22,19,.58)`  | Body secondary, labels                  |
-| Muted 2    | `rgba(233,229,220,.34)` | `rgba(16,22,19,.36)`  | Meta, disabled, notes                   |
+| Muted      | `rgba(233,229,220,.52)` | `rgba(16,22,19,.60)`  | Secondary text, labels                  |
+| Muted 2    | `rgba(233,229,220,.34)` | `rgba(16,22,19,.36)`  | Meta, indices, disabled                 |
 | Line       | `rgba(233,229,220,.13)` | `rgba(16,22,19,.12)`  | Hairline borders                        |
-| Line 2     | `rgba(233,229,220,.06)` | `rgba(16,22,19,.06)`  | Inner rules, tracks                     |
-| Mint       | `#8fe3c0`               | `#0b7a63`             | Active, positive, links, primary action |
-| Mint dim   | `rgba(143,227,192,.16)` | `rgba(11,122,99,.13)` | Pulse halo, fills                       |
+| Line 2     | `rgba(233,229,220,.06)` | `rgba(16,22,19,.06)`  | Inner rules, bar tracks                 |
+| Mint       | `#8fe3c0`               | `#0b7a63`             | Primary accent, links, active, positive |
+| Mint dim   | `rgba(143,227,192,.16)` | `rgba(11,122,99,.13)` | Halo, fills, tags                       |
 | Amber      | `#ffb35c`               | `#8a5a00`             | Cost, attention, caution                |
 | Amber dim  | `rgba(255,179,92,.14)`  | `rgba(138,90,0,.12)`  | Amber fills                             |
 | Red        | `#ff6b5a`               | `#b42318`             | Errors only                             |
+| On mint    | `#07100c`               | `#f9fbfa`             | Text on a mint-filled button            |
 
-Rules:
+### Rules
 
-- Mint is the only primary accent. Amber is reserved for cost or attention. Red is for errors, never decoration.
-- Text on mint-filled buttons uses the page background color. In light mode, that is `#f9fbfa`, not pure white.
-- Portraits and photography stay in color. Do not force grayscale. Light mode may lift brightness slightly; never invert.
-- Light mode uses a neutral white canvas and cool gray panels. Do not use warm cream, beige, or terracotta as the base; that reads as Claude-style editorial, not an instrument.
-- Charts, bars and track fills must use the same role tokens, not one-off colors.
+- Mint is the only primary accent. Amber marks cost or attention. Red is for
+  errors and never decoration.
+- Buttons filled with mint use the page background as their text color.
+- Light mode uses a neutral canvas and cool gray surfaces. Do not introduce warm
+  cream, beige, or terracotta.
+- Dark mode shows the 72px page grid at very low opacity; light mode uses a
+  clean, grid-free canvas so it reads as paper white.
+- Charts, bars, and track fills use role tokens, never one-off colors.
 
-### Tokens
-
-All production tokens use the `--ni-` prefix to avoid colliding with the old theme during migration:
+### Token block
 
 ```css
 :root {
@@ -102,6 +120,7 @@ All production tokens use the `--ni-` prefix to avoid colliding with the old the
   --ni-amber: #ffb35c;
   --ni-amber-dim: rgba(255, 179, 92, 0.14);
   --ni-red: #ff6b5a;
+  --ni-on-mint: #07100c;
 }
 
 html[data-theme='light'] {
@@ -109,7 +128,7 @@ html[data-theme='light'] {
   --ni-panel: #ffffff;
   --ni-panel-2: #edf0ee;
   --ni-ink: #101613;
-  --ni-muted: rgba(16, 22, 19, 0.58);
+  --ni-muted: rgba(16, 22, 19, 0.6);
   --ni-muted-2: rgba(16, 22, 19, 0.36);
   --ni-line: rgba(16, 22, 19, 0.12);
   --ni-line-2: rgba(16, 22, 19, 0.06);
@@ -118,6 +137,7 @@ html[data-theme='light'] {
   --ni-amber: #8a5a00;
   --ni-amber-dim: rgba(138, 90, 0, 0.12);
   --ni-red: #b42318;
+  --ni-on-mint: #f9fbfa;
 }
 ```
 
@@ -127,31 +147,31 @@ html[data-theme='light'] {
 
 ### Families
 
-- **Latin body and display:** Inter Variable, already self-hosted via `@fontsource-variable/inter`.
-- **Labels and data:** JetBrains Mono Variable, already self-hosted via `@fontsource-variable/jetbrains-mono`.
-- **Chinese:** Noto Sans SC or the system CJK fallback (`WenQuanYi Zen Hei`, `PingFang SC`, `Microsoft YaHei`). Do not shrink Chinese to fit an English line.
-- **No serif display faces.** No Bodoni, Didot, or fashion mastheads.
+- **Body and display:** Inter Variable, self-hosted through
+  `@fontsource-variable/inter`.
+- **Labels, indices, and data:** JetBrains Mono Variable, self-hosted through
+  `@fontsource-variable/jetbrains-mono`.
+- **Chinese:** the same stacks, falling back to PingFang SC / Noto Sans SC.
+  Chinese headings keep normal letter-spacing and a slightly looser line height.
 
-### Scale
+### Scale in use
 
-| Role          | Size                       | Weight | Line height | Tracking            |
-| ------------- | -------------------------- | ------ | ----------- | ------------------- |
-| Hero h1       | `clamp(48px, 6vw, 78px)`   | 480    | 1.01        | `-0.055em`          |
-| Section h2    | `clamp(22px, 2.3vw, 29px)` | 470    | 1.1         | `-0.035em`          |
-| Case title    | `clamp(34px, 3.8vw, 50px)` | 450    | 1.02        | `-0.055em`          |
-| Contact title | `clamp(34px, 4vw, 54px)`   | 440    | 1           | `-0.055em`          |
-| Body          | `15.5px`                   | 400    | 1.65        | `0`                 |
-| Small body    | `12.5–13px`                | 400    | 1.55        | `0`                 |
-| Mono label    | `9–10px`                   | 400    | 1.5         | `0.12em`, uppercase |
-| Metric value  | `clamp(34px, 3.3vw, 50px)` | 430    | 1           | `-0.06em`           |
+| Role           | Size                       | Weight | Tracking   | Notes                        |
+| -------------- | -------------------------- | ------ | ---------- | ---------------------------- |
+| Hero H1        | `clamp(48px, 6vw, 78px)`   | 480    | `-0.055em` | Max 12.5ch, line-height 1.01 |
+| Page H1        | `clamp(40px, 5vw, 64px)`   | 470    | `-0.05em`  | Inner pages, same rhythm     |
+| Section title  | `clamp(22px, 2.3vw, 29px)` | 470    | `-0.035em` | Section header               |
+| Case H3        | `clamp(34px, 3.8vw, 50px)` | 450    | `-0.055em` | Max 10ch                     |
+| Metric value   | `clamp(34px, 3.3vw, 50px)` | 430    | `-0.06em`  | Tabular numerals             |
+| Body           | `15.5px`                   | 400    | `-0.012em` | Line-height 1.55             |
+| Secondary body | `12.5–13px`                | 400    | 0          | Line-height 1.55             |
+| Mono label     | `9–10px`                   | 400    | `0.1em`    | Uppercase, JetBrains Mono    |
+| Article prose  | `17px`                     | 400    | `0`        | Line-height 1.7, max 720px   |
 
-Rules:
-
-- Numbers use `font-variant-numeric: tabular-nums`.
-- Mono labels never go below 9px. If a label cannot fit, shorten the copy, don't shrink the type.
-- Body line length: 45–55 characters. Headline line length: 10–13 characters.
-- Chinese text uses normal tracking, not the wide mono tracking.
-- Links use mint and an underline or persistent bottom border. Hover never removes the affordance.
+- Mono labels are always uppercase in English and keep `0.04em` tracking in
+  Chinese.
+- Numbers use tabular figures (`font-variant-numeric: tabular-nums`).
+- Do not use more than two weights per block.
 
 ---
 
@@ -159,281 +179,265 @@ Rules:
 
 ### Shell
 
-- Page max width: 1440px.
-- Content inner max width: 1160px.
-- Desktop rail: 216px, fixed to the viewport, full viewport height.
-- Gutters: `clamp(22px, 4vw, 58px)`.
-- Grid: 12 columns on desktop, gap 24–44px.
-- Breakpoints: `1120px` (rail collapses), `900px` (hero and case stack), `700px` (single column, compact meta).
+- **Page max width:** 1440px, centered.
+- **Content inner max width:** 1160px.
+- **Desktop rail:** 216px, fixed to the viewport, full viewport height.
+- **Rail background:** `--ni-panel-2`; right border `1px solid --ni-line`.
+- **Main column:** starts after the rail; inner content centered inside the
+  1160px column with `clamp(22px, 4vw, 58px)` gutters.
+- **Meta row:** 34px top padding, bottom hairline; path on the left, status and
+  Day/Night control on the right.
+- **Footer:** hairline top, mono links, always at the end of the content column.
+- **Breakpoints:** `1120px` rail collapses to a top bar; `900px` hero and case
+  stack; `700px` single column, compact meta, rail nav hidden.
 
-### Homepage rhythm
+### Rail contents (top to bottom)
 
-1. Rail: brand, vertical nav, availability, locale, issue number.
-2. Meta row: portfolio path, system status, Day/Night toggle.
-3. Hero: 7/4 grid, h1, Chinese line, lede, actions, personnel card.
-4. Metrics: four instrument panels with values and 2px bars.
-5. Selected signal: case narrative + panel with before/after bars and workflow.
-6. Operating principles: three rows, amber index.
-7. Method: four steps on a shared line.
-8. Writing: four-column rows, category and date.
-9. Contact: bordered panel with a 3px mint left edge.
-10. Footer: mono meta, muted, 1px top border.
+1. `MZ®` wordmark.
+2. Role and year: `AI Product Manager` / `Portfolio / 2026`.
+3. Primary navigation, each row numbered `01–05` and separated by hairlines.
+4. Availability block: live dot, location, working scope, last update.
+5. Locale switch and issue number pinned to the bottom.
 
-### Surfaces
+On inner pages the primary nav becomes:
+`01 Selected work → /#work`, `02 Writing → /posts`,
+`03 Photography → /photos`, `04 About → /about`, `05 Contact → /#contact`.
+The active destination uses `--ni-mint` and `aria-current="page"`.
 
-- Radius: `0` everywhere.
-- Borders: `1px` hairlines. The contact panel and rail may use a `3px` mint edge.
-- Shadows: none. Depth comes from contrast and spacing.
-- Background: page-level 72px grid lines at very low opacity in dark mode. Light mode uses a clean, grid-free canvas.
-- Rail on mobile: becomes a top bar; hide vertical nav, keep brand and theme toggle in the meta row.
+### Meta row copy
 
----
+| Page        | Left label                          |
+| ----------- | ----------------------------------- |
+| Home        | `Portfolio / 2026 / System nominal` |
+| Writing     | `Writing / 2026 / Index`            |
+| Article     | `Writing / 2026 / File`             |
+| About       | `File / 2026 / About`               |
+| Photography | `Archive / 2026 / Photography`      |
+| Search      | `Index / 2026 / Search`             |
+| Tree hole   | `Channel / 2026 / Tree hole`        |
+| Admin       | `Private / 2026 / Admin`            |
+| Login       | `Private / 2026 / Access`           |
 
-## 6. Components
-
-### Rail nav
-
-- Index number + label, mono.
-- 1px top border per item, 1px bottom border on the group.
-- Hover: mint text. Active: mint text plus a 2px mint left marker.
-- Mobile: hidden, replaced by the top bar and a "More" sheet.
-
-### Theme toggle
-
-- Small bordered control in the meta row.
-- Dot uses mint. Label is `Day` in dark mode and `Night` in light mode.
-- `aria-pressed` reflects light mode.
-- Persists to `localStorage`; no layout shift on toggle.
-- Keyboard focus: 2px mint outline with 2px offset.
-
-### Personnel card
-
-- Panel surface, 1px border, no shadow.
-- Image aspect ratio `4 / 4.5`, full color. Do not desaturate portraits.
-- Top row: live indicator, "Fig. 01".
-- Caption: name, role, location, availability tag.
-- On mobile, card goes full width below the hero copy.
-
-### Metric instrument
-
-- Four columns on desktop, two at 900px, one at 700px.
-- Label row: name + index (mono).
-- Value: large, tabular.
-- Track: 2px line; fill uses mint, or amber for cost/attention.
-- Note: 7.5–9px mono, muted 2. Never use a metric without a note.
-
-### Section header
-
-- Index in mint, title in ink, action link on the right.
-- Bottom hairline. On mobile, stack the link below the title.
-
-### Case panel
-
-- Panel surface, 1px border.
-- Header row: case number and year.
-- Bar rows: label, value, 5px track.
-- Workflow: four nodes with mint dots and a shared top line.
-- No screenshots required; the diagram is the evidence.
-- Results: before/after with amber for cost and mint for improvement.
-
-### Principles
-
-- Three rows or three columns depending on width.
-- Amber index, title 19–24px, body 13px.
-- Top hairline per row. No cards, no icons.
-
-### Method
-
-- Four steps across one line on desktop.
-- Mint dot on the line, index, title, body.
-- On mobile, stack with a vertical line.
-
-### Writing row
-
-- Index, title, category, date, arrow.
-- Hover: mint title and 8px left shift.
-- On mobile, hide category/date and keep title + arrow.
-
-### Contact
-
-- Panel surface with a 3px mint left border.
-- Title, email, status line.
-- Email is a real `mailto:` link, not a button.
-
-### Footer
-
-- Mono, muted, 1px top border.
-- Brand, navigation, social, copyright.
-- No oversized marquee.
+The right side is always `Available for select projects` plus the Day/Night
+control. On small screens the status text hides; the control stays.
 
 ---
 
-## 7. Page Templates
+## 6. Homepage Anatomy (reference implementation)
 
-### Homepage `/` and `/zh`
+1. **Hero** — 7/4 grid.
+   - Left: mint rule + mono kicker, H1 with mint final phrase, Chinese line,
+     lede, primary mint button `Inspect the work ↗`, ghost button `Open channel`.
+   - Right: personnel card. Panel border, 11px inset, top row with live dot and
+     `Fig. 01`, full-color portrait (4:4.5 crop), caption with name, role,
+     location, and a mint `OPEN / 2026` tag.
+2. **Metrics** — four equal panels separated by hairlines.
+   - Mono label and mint index, large value with mono unit, 2px bar, mono note.
+   - The retention metric uses amber.
+3. **Section header** — mint index, title, right-aligned underlined mono link.
+   Used unchanged by every following section.
+4. **Selected signal** — 1.05/0.95 grid.
+   - Left: large H3 with mint phrase, lede, two fact columns (`Context`,
+     `Decision`) with amber labels.
+   - Right: panel with header (`Case 01 / AI video pipeline`, year), three
+     measured bars, and a four-step flow with mint dots.
+5. **Operating principles** — three rows: amber index, 19–24px title, muted body.
+6. **Method** — four columns with mint dots on the top rule, index, title, body.
+7. **Writing** — list rows: index, title, category, date, mint arrow. Hover
+   shifts the row 8px and turns the title mint.
+8. **Contact** — panel with 3px mint left edge. Large two-line statement,
+   underlined email, status and short body on the right.
+9. **Footer** — mono row with brand, page links, GitHub/email/tree hole, and
+   copyright/location.
 
-The approved prototype. Dark and light modes. This is the first implementation target.
+---
 
-### Writing `/posts`, `/posts/$slug`
+## 7. Shared Components
 
-- Keep the rail on desktop; article column max 720px.
-- Article header: title, date, category, reading time.
-- Body: 16px, line-height 1.7, max 68ch.
-- Code blocks: panel surface, 1px border, no rounded corners, Shiki dark theme in dark mode and a light theme token set in light mode.
-- Comments and view counts keep their current behavior; only the visual layer changes.
+### Kicker
 
-### Photography `/photos`
+Mono, uppercase, muted; preceded by a 28px mint rule. Used at the top of every
+page and major section intro.
 
-- Contact-sheet index: 3 columns desktop, 2 tablet, 1 mobile.
-- Image frames: 1px border, no shadow, mono captions.
-- Lightbox: panel background, mint close control, keyboard navigation.
-- Upload sheet: same tokens, not a separate admin style.
+### Button
 
-### About `/about`
+- Primary: mint fill, `--ni-on-mint` text, mono 10px uppercase, 44px minimum
+  height, square corners.
+- Ghost: 1px `--ni-line` border, ink text; hover turns mint.
+- Text link: mono label with a 1px bottom border; hover turns mint.
 
-- Personnel file layout: portrait, facts, experience, principles.
-- Portrait stays in full color in both modes.
-- Facts use a two-column definition list; no cards.
+### Panel
 
-### Search `/search`
+1px hairline border, `--ni-panel` background, square corners. Used for the
+personnel card, case panel, contact block, lightbox rail, chat shell, and admin
+surfaces. Padding is 20px unless the contents are a table or image.
 
-- Command-palette style panel with a large input.
-- Focus ring mint. Results are rows with title, category, date.
-- Empty state: one sentence and a link back to writing.
+### Index
 
-### Chat `/chat`
+Mono numerals in `--ni-muted-2` by default, mint for section indices and amber
+for principle rows.
 
-- Fixed conversation panel with a clear input at the bottom.
-- User messages: mint fill, dark text.
-- Assistant messages: panel surface, 1px border.
-- Streaming indicator: mint pulse, reduced-motion safe.
+### Tag / chip
+
+Mono 9px, 1px border, square. Mint border/text for the active state; neutral
+hairline for inactive. On light mode the active chip may use `--ni-mint-dim`.
+
+### Bar / track
+
+- 2px for metrics, 5px for case bars.
+- Track: `--ni-line-2`.
+- Fill: `--ni-mint`; amber for cost/caution.
+- Width comes from a `--w` custom property.
+
+### Status dot
+
+6px circle in mint with a 4px `--ni-mint-dim` halo. Availability rows use a
+static dot; streaming chat uses a pulse that is disabled under reduced motion.
+
+---
+
+## 8. Page Templates
+
+These are the same primitives applied to the rest of the site. They are not
+separate visual systems.
+
+### Writing index (`/posts`)
+
+1. Page head: kicker `Personnel file / Writing`, H1 `Writing`, description and
+   note in the right column.
+2. Metrics row: entries, categories, tags, latest update.
+3. `01 Writing plan`: three-column series grid, same as Method.
+4. `02 Index`: filter chips for categories and tags, then list rows.
+   Each row: index, title, summary, date · reading time · views · comments,
+   category, tags, mint arrow.
+5. Empty state: panel with mono code `000`, a short line, and a clear action.
+
+### Article (`/posts/$slug`)
+
+1. Back link in mono with a left chevron.
+2. Kicker: category / reading time.
+3. H1 in page-title scale, max 18ch.
+4. Meta row: date, author, views, comments, AI-assisted tag.
+5. Tools row: audio player on the left, tags on the right.
+6. Prose column max 720px: 17px body, 1.7 line height, hairline code blocks,
+   mint links, tables with hairline borders, figures with mono captions.
+7. Comments section below a section header; comment cards use hairline
+   separators, mono fingerprints, and mint reply actions.
+8. Back-to-top as a square hairline button, bottom right.
+
+### About (`/about`)
+
+1. Page head: kicker `Profile`, H1 `About`, status and location on the right.
+2. `01 Intro`: two-column, copy left, full-color portrait panel right with
+   `Plate 01` caption.
+3. `02 Record`: facts list on the left (mono labels, ink values), experience
+   timeline on the right (period, role, company, note). Hairline rows.
+4. `03 Contact`: the homepage contact panel, reused verbatim.
+
+### Photography (`/photos`)
+
+1. Page head: kicker `Archive`, H1 `Photography`, description and facts
+   (works, frames, author, year) on the right.
+2. Metrics row: works, frames, author, range.
+3. Grid: 3 columns on desktop, 2 on tablet, 1 on mobile. Each tile is a
+   1px-bordered panel with a full-color image, index `01`, optional frame
+   count, caption, date/location, tags, and comment count.
+4. Lightbox: portal overlay, image left and instrument rail right. Close button
+   top right, arrow keys, swipe, ESC. EXIF is a collapsed details row.
+5. Empty state: `000` panel with a short line.
+
+### Search (`/search`)
+
+1. Page head: H1 `Search` and a full-width hairline search field with a mint
+   focus ring.
+2. Filter panels: Category and Tag chip rows, each with a count.
+3. Status row: result count on the left, active filters and `Clear all` on the
+   right.
+4. Results: the same list row as Writing, with title, meta, summary, and tags.
+5. Empty states: `Enter a keyword` and `No results`, both in a panel.
+
+### Tree hole (`/chat`)
+
+- Full-height app page inside the shell; no footer.
+- Header: live dot, session date, round count, title, subtitle, status pill,
+  and a menu for clearing history.
+- Body: local-only message thread. User messages align right with a mint-dim
+  surface; assistant messages align left with a panel surface. Mono labels
+  `You`, `Tree Hole`, `Listening`.
+- Composer docked at the bottom: textarea, mint send button, keyboard hint,
+  character count.
+- Empty state explains the experiment and privacy in one short block.
 
 ### Admin and login
 
-- Same tokens, denser spacing.
-- Admin defaults to dark even if the public site was toggled light; document this in the admin header.
-- Login: one panel, one primary action, no illustration.
+- Admin: page head, four metric panels, and a hairline table of works with
+  cover thumb, caption, date, photo count, and delete action. Upload is a mint
+  primary button.
+- Login: centered panel, left stamp column with `Private archive` and access
+  state, right form with a single passphrase field and mint submit button.
+- Both use the same shell, rail, and meta row; no separate admin theme.
 
 ### 404
 
-- Large mono `404`, one sentence, one link back home.
+- Large `404` in display scale, mono kicker, one sentence, and a mint
+  `Back to homepage` button. Rendered inside the same shell.
 
 ---
 
-## 8. Interaction and Accessibility
+## 9. Motion
 
-### Motion
-
-- Theme toggle: 150–200ms color and border transition.
-- Hover: 150–200ms color, 8px shift for writing rows.
-- Live dot: 2.6s pulse, opacity and halo only.
-- No parallax, particles, scanlines, glitch, auto-playing video.
-- `prefers-reduced-motion: reduce` disables the pulse, shift and any transform.
-
-### Accessibility
-
-- Body text contrast: at least 4.5:1 in both modes.
-- Mono labels: at least 4.5:1; do not rely on size alone.
-- Focus: visible 2px mint outline or 1px mint underline on every interactive element.
-- Touch targets: at least 44×44px on mobile.
-- Theme toggle: real `<button>`, `aria-pressed`, keyboard operable.
-- Rail nav: real `<nav>` with `aria-label`.
-- Do not use color alone to signal state. Pair mint with a label or icon.
-- Test with keyboard, 200% zoom, and reduced motion.
+- Theme changes transition background, border, and color over 200ms.
+- Section links and list rows may shift 8px on hover; titles turn mint.
+- Bars draw from 0 to their width once on first paint, 500ms, ease-out.
+- No parallax, no scroll-jacking, no looping background animation.
+- Under `prefers-reduced-motion: reduce`, all transforms and reveals are
+  disabled; content is fully visible immediately.
+- Focus states are always visible: 2px mint outline, 2px offset, square corners.
 
 ---
 
-## 9. Implementation Map
+## 10. Accessibility
 
-### New files
-
-- `apps/web/src/styles/instrument.css`: the new source of truth. All selectors use the `ni-` prefix or are nested under `.ni-shell` / `.ni-home` during migration.
-- `apps/web/src/shared/components/night/night-shell.tsx`
-- `apps/web/src/shared/components/night/night-rail.tsx`
-- `apps/web/src/shared/components/night/theme-toggle.tsx`
-- `apps/web/src/shared/components/night/night-meta.tsx`
-- `apps/web/src/features/home/components/night-home.tsx`
-
-### Loading order
-
-- Add `instrument.css` after `fashion.css` in `src/routes/__root.tsx` during migration.
-- The `ni-` prefix prevents collisions with `fashion.css`, `final.css`, `flow.css` and the `paper-*` files.
-- After the homepage is verified, migrate posts, photos, about, search, chat and admin, then remove the old theme files.
-
-### Theme boot
-
-- Set `data-theme` in an inline script in the document head before first paint.
-- Read `localStorage.getItem('mz-theme')`.
-- Fallback to `dark`.
-- Set `color-scheme` in CSS per theme.
-- Expose `window.__setTheme` only if needed for tests; prefer a React context.
-
-### Data and behavior
-
-- No changes to queries, services, server functions, Prisma schema or API contracts.
-- Keep the existing locale routing: English has no prefix, Chinese is `/zh`.
-- Keep comments, views, audio, photography and chat behavior unchanged.
-- Do not change article content or metadata.
-
-### Verification
-
-- Run `pnpm --filter web lint:tsc`, `pnpm --filter web test`, `pnpm --filter web build`.
-- Check dark and light at 1440, 1024, 768 and 390 widths.
-- Check keyboard focus, reduced motion, and first-paint theme.
-- Screenshot both themes for the approved record.
+- Skip link to `#ni-content` on every page.
+- Rail nav is a real `<nav>` with `aria-label`; active page uses
+  `aria-current="page"`.
+- Theme toggle is a real `<button>` with `aria-pressed` and a destination label.
+- Minimum 44px touch targets on mobile.
+- Color is never the only signal: active states also use weight, border, or
+  `aria-current`.
+- Text contrast targets WCAG AA in both modes.
+- Images always carry meaningful `alt`; decorative rules are `aria-hidden`.
 
 ---
 
-## 10. Migration Plan
+## 11. Implementation Map
 
-1. Create a branch for the homepage migration.
-2. Add `instrument.css` and the `Night*` components.
-3. Replace the homepage composition only; keep the old navbar/footer on inner pages for now.
-4. Verify dark/light, mobile, keyboard and build.
-5. Migrate writing and article pages.
-6. Migrate photography, about, search, chat, admin and login.
-7. Remove `fashion.css`, `paper-*.css`, and the old theme tokens after all pages pass.
-8. Update this document with the final token names and any decisions made during implementation.
+| Concern                 | File                                                           |
+| ----------------------- | -------------------------------------------------------------- |
+| Tokens, shell, homepage | `apps/web/src/styles/instrument.css`                           |
+| Inner-page primitives   | `apps/web/src/styles/instrument-pages.css`                     |
+| Theme boot + toggle     | `apps/web/src/shared/components/night/theme.ts`                |
+| Rail                    | `apps/web/src/shared/components/night/night-rail.tsx`          |
+| Meta row                | `apps/web/src/shared/components/night/night-meta.tsx`          |
+| Shell + footer          | `apps/web/src/shared/components/night/night-shell.tsx`         |
+| Homepage                | `apps/web/src/features/home/components/night-home.tsx`         |
+| Writing index           | `apps/web/src/features/posts/components/posts-client.tsx`      |
+| Article                 | `apps/web/src/features/posts/components/post-page.tsx`         |
+| About                   | `apps/web/src/features/about/components/about-page.tsx`        |
+| Photography             | `apps/web/src/features/photos/components/photos-index.tsx`     |
+| Search                  | `apps/web/src/features/posts/components/search-client.tsx`     |
+| Tree hole               | `apps/web/src/features/chat/components/chat-interface.tsx`     |
+| Admin                   | `apps/web/src/features/photos/components/admin-console.tsx`    |
+| Login                   | `apps/web/src/features/photos/components/admin-login-page.tsx` |
+| 404                     | `apps/web/src/shared/components/not-found.tsx`                 |
 
----
+### Rules for migration
 
-## 11. Open Decisions
-
-- **First-visit theme:** dark only, or follow `prefers-color-scheme` when no stored choice? Current recommendation: dark, because it is the signature mode.
-- **Rail on article pages:** keep the rail for navigation, or collapse to a top bar for reading focus? Current recommendation: keep the rail on desktop, hide on mobile.
-- **Photography layout:** contact sheet vs single column. Current recommendation: contact sheet, because the work is the content.
-- **Admin default:** follow the public theme or always dark? Current recommendation: always dark for the admin surface.
-- **Chinese font:** load Noto Sans SC, or rely on the platform CJK stack? Current recommendation: platform stack first, add Noto Sans SC only if the rendering is inconsistent.
-
----
-
-## 12. Do / Don't
-
-### Do
-
-- Use hairlines, spacing and type scale for hierarchy.
-- Use mint for active/positive and amber for cost/attention.
-- Keep the instrument frame around the person, not the other way around.
-- Show before/after with context.
-- Write labels in plain language. Short, concrete, no hype.
-- Test both themes before calling a page done.
-
-### Don't
-
-- Don't use purple, aurora, glass, neon, scanlines or glitch.
-- Don't use Bodoni, serif display faces or vermilion magazine rules.
-- Don't add card shadows, rounded corners or floating glass toolbars.
-- Don't use fake live data or a dashboard that pretends to monitor something.
-- Don't invert images for light mode.
-- Don't shrink mono labels below 9px to make a layout work.
-- Don't ship a page in only one theme.
-
----
-
-## 13. Reference
-
-- Approved direction: **C / Night Instrument**.
-- Prototype: `~/.gstack/projects/zhangshichuan-maxzhang.site/designs/homepage-theme-20261121/night-instrument.html`
-- Dark screenshot: `variant-night.png`
-- Light screenshot: `variant-night-light.png`
-- Approved record: `approved.json`
+1. Every page renders inside `NightShell`; no page keeps the old navbar or
+   footer.
+2. All page markup uses `ni-` classes and tokens. Legacy `fx-`, `pp-`, `se-`,
+   `ph-`, `ab-`, `ch-`, `ad-` classes are removed as each page moves.
+3. New colors or sizes are added to this document before they are added to CSS.
+4. Light mode is verified on every page, not just the homepage.
+5. No page ships without a `prefers-reduced-motion` check and a 44px mobile
+   touch target.
