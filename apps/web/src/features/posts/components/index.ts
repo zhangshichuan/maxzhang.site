@@ -1,4 +1,3 @@
-export { FeaturedPosts } from './featured-posts'
 export { PostItem } from './post-item'
 export { PostMdx } from './post-mdx'
 export { PostPage } from './post-page'

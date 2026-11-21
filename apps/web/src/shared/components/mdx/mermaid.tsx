@@ -24,26 +24,50 @@ export default function Mermaid({ chart }: MermaidProps) {
   const [error, setError] = useState<string | null>(null)
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
   const [zoom, setZoom] = useState(1)
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
 
   useEffect(() => {
-    const themeVariables = {
-      fontFamily: 'var(--font-sans)',
-      fontSize: '14px',
-      primaryColor: '#111522',
-      primaryTextColor: '#eef1f7',
-      primaryBorderColor: '#2a3040',
-      lineColor: '#98a1b3',
-      secondaryColor: '#171c2b',
-      tertiaryColor: '#0b0d13',
-      clusterBkg: '#10141f',
-      clusterBorder: '#2a3040',
-    }
+    const root = document.documentElement
+    const sync = () => setTheme(root.dataset.theme === 'light' ? 'light' : 'dark')
+    sync()
+    const observer = new MutationObserver(sync)
+    observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const light = theme === 'light'
+    const themeVariables = light
+      ? {
+          fontFamily: 'var(--ni-sans)',
+          fontSize: '14px',
+          primaryColor: '#ffffff',
+          primaryTextColor: '#101613',
+          primaryBorderColor: '#9aa6a0',
+          lineColor: '#6b7772',
+          secondaryColor: '#f1f4f2',
+          tertiaryColor: '#fafcfb',
+          clusterBkg: '#ffffff',
+          clusterBorder: '#9aa6a0',
+        }
+      : {
+          fontFamily: 'var(--ni-sans)',
+          fontSize: '14px',
+          primaryColor: '#10161b',
+          primaryTextColor: '#e9e5dc',
+          primaryBorderColor: '#2a343d',
+          lineColor: '#7c8a91',
+          secondaryColor: '#0d1318',
+          tertiaryColor: '#0a0e11',
+          clusterBkg: '#10161b',
+          clusterBorder: '#2a343d',
+        }
 
     mermaid.initialize({
       startOnLoad: false,
-      theme: 'dark',
+      theme: light ? 'base' : 'dark',
       securityLevel: 'loose',
-      fontFamily: 'var(--font-sans)',
+      fontFamily: 'var(--ni-sans)',
       themeVariables,
       flowchart: {
         htmlLabels: true,
@@ -67,7 +91,7 @@ export default function Mermaid({ chart }: MermaidProps) {
     }
 
     renderChart()
-  }, [chart])
+  }, [chart, theme])
 
   const toggleLightbox = () => {
     if (!isLightboxOpen) {
@@ -105,7 +129,7 @@ export default function Mermaid({ chart }: MermaidProps) {
 
   if (error) {
     return (
-      <div className="alert alert-error" style={{ margin: '16px 0', padding: 16, fontSize: 13 }}>
+      <div className="ni-dialog-error" style={{ margin: '16px 0', padding: 16, fontSize: 13 }}>
         {error}
       </div>
     )

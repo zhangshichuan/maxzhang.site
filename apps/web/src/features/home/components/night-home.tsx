@@ -2,7 +2,6 @@ import type { PostSummaryWithViews } from '@/src/features/posts/model'
 import { Link, useLocale } from '@/src/i18n/client'
 import Avatar from '@/src/features/about/avatar.jpg'
 import type { CSSProperties } from 'react'
-import { NightShell } from '@/src/shared/components/night'
 
 interface NightHomeProps {
   posts: PostSummaryWithViews[]
@@ -145,18 +144,6 @@ const copy = {
       status: 'Status: open for select projects',
       body: 'AI product management, advisory, and the occasional impossible workflow. Shenzhen / Shanghai, working globally.',
     },
-    footer: {
-      brand: 'MZ® / Max Zhang / AI Product Manager',
-      writing: 'Writing',
-      photos: 'Photography',
-      about: 'About',
-      search: 'Search',
-      chat: 'Tree Hole',
-      github: 'GitHub',
-      email: 'Email',
-      location: 'Shenzhen / Shanghai',
-      copyright: `© ${new Date().getFullYear()} · Max Zhang`,
-    },
   },
   zh: {
     hero: {
@@ -294,18 +281,6 @@ const copy = {
       status: '状态：开放少量合作',
       body: 'AI 产品管理、顾问，以及偶尔不可能的工作流。深圳 / 上海，面向全球协作。',
     },
-    footer: {
-      brand: 'MZ® / Max Zhang / AI 产品经理',
-      writing: '写作',
-      photos: '摄影',
-      about: '关于',
-      search: '搜索',
-      chat: '树洞',
-      github: 'GitHub',
-      email: '邮件',
-      location: '深圳 / 上海',
-      copyright: `© ${new Date().getFullYear()} · Max Zhang`,
-    },
   },
 } as const
 
@@ -322,7 +297,7 @@ export function NightHome({ posts }: NightHomeProps) {
   const contactHref = '#contact'
 
   return (
-    <NightShell>
+    <>
       <section className="ni-hero" aria-labelledby="ni-hero-title">
         <div>
           <p className="ni-kicker ni-mono">{t.hero.kicker}</p>
@@ -530,27 +505,6 @@ export function NightHome({ posts }: NightHomeProps) {
           <p>{t.contact.body}</p>
         </div>
       </section>
-
-      <footer className="ni-footer">
-        <div className="ni-foot ni-mono">
-          <span>{t.footer.brand}</span>
-          <nav className="ni-foot-nav" aria-label="Footer">
-            <Link href="/posts">{t.footer.writing}</Link>
-            <Link href="/photos">{t.footer.photos}</Link>
-            <Link href="/about">{t.footer.about}</Link>
-            <Link href="/search">{t.footer.search}</Link>
-          </nav>
-          <span>
-            <a href="https://github.com/zhangshichuan" target="_blank" rel="noreferrer">
-              {t.footer.github} ↗
-            </a>{' '}
-            · <a href="mailto:zsc.guru@qq.com">{t.footer.email}</a> · <Link href="/chat">{t.footer.chat}</Link>
-          </span>
-          <span>
-            {t.footer.copyright} · {t.footer.location}
-          </span>
-        </div>
-      </footer>
-    </NightShell>
+    </>
   )
 }

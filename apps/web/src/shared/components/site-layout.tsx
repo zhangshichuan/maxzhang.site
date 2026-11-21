@@ -1,30 +1,37 @@
 import { Outlet, useRouterState } from '@tanstack/react-router'
 import { stripLocale } from '@/i18n/routing'
-import { Footer } from './footer'
-import { Navbar } from './navbar'
+import { NightShell } from './night'
 
 /**
  * 站点布局
  *
- * zh 与 en 两个布局路由共用：导航 + 正文 + 页脚。
+ * zh 与 en 两个布局路由共用：Night Instrument shell + 正文。
  * 语言由各自布局路由的 beforeLoad 注入路由上下文。
- * 首页已迁移到 Night Instrument，自带 rail / meta / footer。
+ * 所有页面共用同一套 rail / meta / footer；chat 使用全高变体。
  */
 export function SiteLayout() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const internalPath = stripLocale(pathname)
-  const isChat = internalPath === '/chat'
-  const isHome = internalPath === '/'
 
-  if (isHome) return <Outlet />
+  if (internalPath === '/chat') {
+    return (
+      <NightShell variant="chat">
+        <Outlet />
+      </NightShell>
+    )
+  }
+
+  if (internalPath === '/login') {
+    return (
+      <NightShell variant="auth">
+        <Outlet />
+      </NightShell>
+    )
+  }
 
   return (
-    <>
-      <Navbar />
-      <main className="site-main" id="site-main">
-        <Outlet />
-      </main>
-      {!isChat && <Footer />}
-    </>
+    <NightShell>
+      <Outlet />
+    </NightShell>
   )
 }

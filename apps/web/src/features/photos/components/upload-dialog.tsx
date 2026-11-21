@@ -1,5 +1,3 @@
-import '@/src/styles/paper-photos.css'
-
 import { AnimatePresence, motion } from 'framer-motion'
 import { ImagePlus, Loader2, Lock, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -136,7 +134,7 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.15 } }}
           transition={{ duration: 0.2 }}
-          className="ph-upload-backdrop ph-surface"
+          className="ni-dialog-backdrop"
           onClick={close}
           aria-hidden="true"
         />
@@ -144,7 +142,7 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
       {open && (
         <motion.div
           key="upload-shell"
-          className="ph-upload-shell ph-surface"
+          className="ni-dialog-shell"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.16 } }}
@@ -154,36 +152,36 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
             role="dialog"
             aria-modal="true"
             aria-label={t('title')}
-            className="ph-upload ph-surface"
+            className="ni-dialog"
             initial={{ opacity: 0, y: 20, scale: 0.992 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 14, scale: 0.994, transition: { duration: 0.16 } }}
             transition={{ type: 'spring', stiffness: 380, damping: 34 }}
           >
-            <div className="ph-upload-head">
-              <div className="ph-upload-head-main">
-                <p className="ph-label">Upload — Photo Work</p>
-                <h2 className="ph-upload-title">{t('title')}</h2>
+            <div className="ni-dialog-head">
+              <div>
+                <p className="ni-kicker ni-mono">Upload — Photo Work</p>
+                <h2 className="ni-dialog-title">{t('title')}</h2>
               </div>
-              <button type="button" className="ph-upload-close" onClick={close} aria-label={t('close')}>
+              <button type="button" className="ni-dialog-close" onClick={close} aria-label={t('close')}>
                 <X className="size-4" />
               </button>
             </div>
 
-            <div className="ph-upload-body">
+            <div className="ni-dialog-body">
               <button
                 type="button"
-                className="ph-dropzone"
+                className="ni-dropzone"
                 onClick={() => fileRef.current?.click()}
                 disabled={submitting}
               >
-                <span className="ph-dropzone-icon">
+                <span className="ni-dropzone-icon">
                   <ImagePlus className="size-4" strokeWidth={1.75} />
                 </span>
-                <span className="ph-dropzone-text">
+                <span className="ni-dropzone-text">
                   {picked.length > 0 ? `${picked.length} ${t('selected')}` : t('pickFiles')}
                 </span>
-                <span className="ph-dropzone-hint">Max 10 files</span>
+                <span className="ni-dropzone-hint">Max 10 files</span>
               </button>
               <input
                 ref={fileRef}
@@ -206,13 +204,13 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
               />
 
               {picked.length > 0 && (
-                <div className="ph-previews">
+                <div className="ni-picked">
                   {picked.map((item, index) => (
-                    <div key={item.preview} className="ph-preview">
+                    <div key={item.preview} className="ni-picked-item">
                       <img src={item.preview} alt="" />
                       <button
                         type="button"
-                        className="ph-preview-remove"
+                        className="ni-picked-remove"
                         onClick={() => removeFile(index)}
                         disabled={submitting}
                         aria-label={t('remove')}
@@ -224,9 +222,9 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
                 </div>
               )}
 
-              <div className="ph-fields">
+              <div className="ni-fields">
                 <input
-                  className="ph-input"
+                  className="ni-input"
                   placeholder={t('captionZh')}
                   aria-label={t('captionZh')}
                   value={captionZh}
@@ -234,7 +232,7 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
                   disabled={submitting}
                 />
                 <input
-                  className="ph-input"
+                  className="ni-input"
                   placeholder={t('captionEn')}
                   aria-label={t('captionEn')}
                   value={captionEn}
@@ -242,7 +240,7 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
                   disabled={submitting}
                 />
                 <input
-                  className="ph-input"
+                  className="ni-input"
                   placeholder={t('location')}
                   aria-label={t('location')}
                   value={location}
@@ -250,7 +248,7 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
                   disabled={submitting}
                 />
                 <input
-                  className="ph-input"
+                  className="ni-input"
                   placeholder={t('tags')}
                   aria-label={t('tags')}
                   value={tags}
@@ -260,13 +258,13 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
               </div>
 
               {needsLogin && (
-                <div className="ph-login">
-                  <span className="ph-login-label">
+                <div className="ni-field">
+                  <span className="ni-field-label">
                     <Lock className="size-3" />
                     Admin
                   </span>
                   <input
-                    className="ph-input"
+                    className="ni-input"
                     type="password"
                     placeholder={t('password')}
                     aria-label={t('password')}
@@ -277,16 +275,16 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
                 </div>
               )}
 
-              {error && <div className="ph-alert">{error}</div>}
+              {error && <div className="ni-dialog-error">{error}</div>}
             </div>
 
-            <div className="ph-upload-foot">
-              <p className="ph-upload-note">
+            <div className="ni-dialog-actions">
+              <p className="ni-dialog-note">
                 {picked.length} / 10 · {t('selected')}
               </p>
               <button
                 type="button"
-                className="ph-btn-primary"
+                className="ni-btn"
                 onClick={submit}
                 disabled={submitting || picked.length === 0 || !captionZh.trim()}
               >

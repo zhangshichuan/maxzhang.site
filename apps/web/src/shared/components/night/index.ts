@@ -1,3 +1,4 @@
+export { NightFooter } from './night-footer'
 export { NightMeta } from './night-meta'
 export { NightRail } from './night-rail'
 export { NightShell } from './night-shell'

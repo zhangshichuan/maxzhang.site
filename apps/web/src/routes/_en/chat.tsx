@@ -12,9 +12,5 @@ export const Route = createFileRoute('/_en/chat')({
 })
 
 function ChatComponent() {
-  return (
-    <div className="chat-route">
-      <ChatInterface />
-    </div>
-  )
+  return <ChatInterface />
 }

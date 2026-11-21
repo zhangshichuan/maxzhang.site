@@ -1,4 +1,3 @@
-import '@/src/styles/paper-chat.css'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { chatStream } from '@/src/features/chat/server-functions'
 import type { ChatErrorCode } from '@/src/features/chat/services/chat-stream.server'
@@ -391,13 +390,13 @@ export function ChatInterface() {
         : { key: 'ready', label: 'READY', className: 'ch-status--ready' }
 
   return (
-    <div className="ch-page">
+    <div className="ni-chat">
       <div className="ch-shell">
         <header className="ch-head">
           <div className="ch-head-ident">
             <div className="ch-session">
               <span className="ch-session-dot" aria-hidden="true" />
-              <span className="ch-mono">Tree Hole</span>
+              <span className="ch-mono">{t('title')}</span>
               <span className="ch-mono ch-session-sep ch-meta-session" aria-hidden="true">
                 /
               </span>

@@ -21,7 +21,7 @@ export function BackToTop() {
   if (!isVisible) return null
 
   return (
-    <button onClick={scrollToTop} aria-label="Back to top" className="back-to-top glass-panel">
+    <button onClick={scrollToTop} aria-label="Back to top" className="ni-backtop">
       <ArrowUp className="size-4" />
     </button>
   )

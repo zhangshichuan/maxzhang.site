@@ -1,4 +1,3 @@
-export { FeaturedPosts } from './components'
 export { PostItem } from './components'
 export { PostPage } from './components'
 export { PostsClient } from './components'

@@ -30,16 +30,9 @@ export function ViewCounter({ slug, locale }: ViewCounterProps) {
   }, [slug, locale])
 
   return (
-    <span className="stat-pill">
-      <Eye className="text-primary size-3.5" />
-      {views === null ? (
-        <span
-          className="inline-block h-3 w-7 animate-pulse rounded-full"
-          style={{ background: 'var(--label-tertiary)' }}
-        ></span>
-      ) : (
-        <span>{views}</span>
-      )}
+    <span className="ni-view-count">
+      <Eye aria-hidden="true" />
+      {views === null ? '—' : views}
     </span>
   )
 }

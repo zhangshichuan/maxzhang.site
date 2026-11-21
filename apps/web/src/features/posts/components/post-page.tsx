@@ -2,9 +2,8 @@ import { Comment, ViewCounter } from '@/src/features/engagement'
 import type { Post } from '@/src/features/posts/model'
 import { AudioPlayer, BackToPosts, BackToTop } from '@/src/shared/components'
 import { useTranslations } from '@/src/i18n/client'
-import { MessageCircle, Sparkles } from 'lucide-react'
+import { MessageCircle } from 'lucide-react'
 import { Suspense } from 'react'
-import '@/src/styles/paper-posts.css'
 import { PostMdx } from './post-mdx'
 
 interface PostPageProps {
@@ -19,38 +18,35 @@ export function PostPage({ post, commentCount, locale }: PostPageProps) {
   const readingTime = Math.ceil(post.readTime.minutes)
 
   return (
-    <div className="pp-page pp-article">
+    <div className="ni-page ni-article">
       <article>
-        <div className="pp-article-top">
-          <BackToPosts label={tPosts('back')} />
-          <span className="pp-kicker">{post.category}</span>
-        </div>
+        <BackToPosts label={tPosts('back')} />
 
-        <header className="pp-article-head">
-          <h1 className="pp-article-title">{post.title}</h1>
+        <header className="ni-article-head">
+          <div className="ni-article-kicker">
+            <b>{post.category}</b>
+            <span aria-hidden="true">/</span>
+            <span>{t('readingTime', { minutes: readingTime })}</span>
+            {post.aiAssisted && <span className="ni-article-ai">{tPosts('aiAssisted')}</span>}
+          </div>
 
-          <div className="pp-meta">
-            {post.aiAssisted && (
-              <span className="pp-ai" title={tPosts('aiAssistedHint')}>
-                <Sparkles aria-hidden="true" />
-                {tPosts('aiAssisted')}
-              </span>
-            )}
-            <span className="pp-meta-item">{post.date}</span>
-            <span className="pp-meta-item">{t('readingTime', { minutes: readingTime })}</span>
-            <span className="pp-meta-item">{post.author}</span>
+          <h1 className="ni-article-title">{post.title}</h1>
+
+          <div className="ni-article-meta">
+            <span>{post.date}</span>
+            <span>{post.author}</span>
             <ViewCounter slug={post.slug} locale={locale} />
-            <a href="#comments" className="pp-meta-link">
+            <a href="#comments">
               <MessageCircle aria-hidden="true" />
               {commentCount}
             </a>
           </div>
 
-          <div className="pp-tools">
+          <div className="ni-article-tools">
             <AudioPlayer slug={post.slug} lang={locale} />
-            <div className="pp-tags">
+            <div className="ni-tag-row">
               {post.tags.map((tag) => (
-                <span key={tag} className="pp-tag">
+                <span key={tag} className="ni-tag">
                   {tag}
                 </span>
               ))}
@@ -58,10 +54,10 @@ export function PostPage({ post, commentCount, locale }: PostPageProps) {
           </div>
         </header>
 
-        <div className="pp-prose">
+        <div className="ni-prose">
           <Suspense
             fallback={
-              <div className="pp-loading" style={{ marginTop: 0 }}>
+              <div className="ni-loading" style={{ marginTop: 0 }}>
                 Loading article...
               </div>
             }
@@ -71,7 +67,7 @@ export function PostPage({ post, commentCount, locale }: PostPageProps) {
         </div>
       </article>
 
-      <section id="comments" className="pp-comments" aria-label="Comments">
+      <section id="comments" className="ni-comments" aria-label="Comments">
         <Comment slug={post.slug} locale={locale} />
       </section>
 

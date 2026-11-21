@@ -13,8 +13,8 @@ interface ViewDisplayProps {
 
 export function ViewDisplay({ views }: ViewDisplayProps) {
   return (
-    <span className="stat-pill">
-      <Eye className="text-primary size-3.5" />
+    <span className="ni-view-count">
+      <Eye aria-hidden="true" />
       <span>{views}</span>
     </span>
   )

@@ -1,7 +1,6 @@
 import { PostItem } from '@/src/features/posts/components'
 import type { PostSummaryWithViews } from '@/src/features/posts/model'
-import { Link, useTranslations } from '@/src/i18n/client'
-import '@/src/styles/paper-posts.css'
+import { Link, useLocale, useTranslations } from '@/src/i18n/client'
 
 interface PostsClientProps {
   posts: PostSummaryWithViews[]
@@ -16,96 +15,137 @@ interface WritingSeries {
 
 export function PostsClient({ posts, allTags, allCategories }: PostsClientProps) {
   const t = useTranslations('PostsPage')
+  const locale = useLocale()
   const series = t.raw<WritingSeries[]>('series') ?? []
+  const latest = posts[0]?.date ?? '—'
 
   return (
-    <div className="pp-page pp-posts">
-      <header className="pp-head">
-        <p className="pp-eyebrow">
-          <span className="pp-tick" aria-hidden="true" />
-          MAX ZHANG<span className="pp-slash">/</span>WRITING
+    <div className="ni-page">
+      <header className="ni-page-head">
+        <p className="ni-kicker ni-mono ni-page-kicker">
+          {locale === 'zh' ? '人员档案 004 / 写作' : 'Personnel file 004 / Writing'}
         </p>
-        <div className="pp-head-grid">
-          <h1 className="pp-title">{t('title')}</h1>
-          <div className="pp-head-aside">
-            <p className="pp-head-desc">{t('description')}</p>
-            <p className="pp-head-note">{t('note')}</p>
+        <div className="ni-page-head-grid">
+          <h1 className="ni-page-title">{t('title')}</h1>
+          <div className="ni-page-aside">
+            <p className="ni-page-desc">{t('description')}</p>
+            <p className="ni-page-note">{t('note')}</p>
           </div>
         </div>
       </header>
 
-      {series.length > 0 && (
-        <section className="pp-series" aria-labelledby="pp-series-title">
-          <div className="pp-section-head">
-            <p className="pp-label" id="pp-series-title">
-              <span className="pp-tick" aria-hidden="true" />
-              {t('seriesTitle')}
-            </p>
-            <span className="pp-section-no">{String(series.length).padStart(2, '0')}</span>
+      <section className="ni-metrics" aria-label={t('metrics.entries')}>
+        <div className="ni-metric">
+          <div className="ni-metric-label ni-mono">
+            <span>{t('metrics.entries')}</span>
+            <i aria-hidden="true">01</i>
           </div>
-          <div className="pp-series-grid">
+          <span className="ni-metric-value">{String(posts.length).padStart(2, '0')}</span>
+          <span className="ni-metric-note">{t('metrics.entriesNote')}</span>
+        </div>
+        <div className="ni-metric">
+          <div className="ni-metric-label ni-mono">
+            <span>{t('metrics.categories')}</span>
+            <i aria-hidden="true">02</i>
+          </div>
+          <span className="ni-metric-value">{String(allCategories.length).padStart(2, '0')}</span>
+          <span className="ni-metric-note">{t('metrics.categoriesNote')}</span>
+        </div>
+        <div className="ni-metric">
+          <div className="ni-metric-label ni-mono">
+            <span>{t('metrics.tags')}</span>
+            <i aria-hidden="true">03</i>
+          </div>
+          <span className="ni-metric-value">{String(allTags.length).padStart(2, '0')}</span>
+          <span className="ni-metric-note">{t('metrics.tagsNote')}</span>
+        </div>
+        <div className="ni-metric">
+          <div className="ni-metric-label ni-mono">
+            <span>{t('metrics.latest')}</span>
+            <i aria-hidden="true">04</i>
+          </div>
+          <span className="ni-metric-value ni-metric-value--date">{latest}</span>
+          <span className="ni-metric-note">{t('metrics.latestNote')}</span>
+        </div>
+      </section>
+
+      {series.length > 0 && (
+        <section className="ni-section" aria-labelledby="ni-series-title">
+          <header className="ni-section-head">
+            <span className="ni-index ni-mono">01</span>
+            <h2 id="ni-series-title">{t('seriesTitle')}</h2>
+            <span className="ni-section-link" aria-hidden="true">
+              {String(series.length).padStart(2, '0')} {t('metrics.entries')}
+            </span>
+          </header>
+
+          <div className="ni-method">
             {series.map((item, index) => (
-              <article key={item.title} className="pp-series-item">
-                <span className="pp-series-no">{String(index + 1).padStart(2, '0')}</span>
-                <h2 className="pp-series-title">{item.title}</h2>
-                <p className="pp-series-body">{item.body}</p>
-              </article>
+              <div className="ni-method-step" key={item.title}>
+                <span className="ni-index ni-mono" aria-hidden="true">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <h3>{item.title}</h3>
+                <p>{item.body}</p>
+              </div>
             ))}
           </div>
         </section>
       )}
 
-      <div className="pp-layout">
-        <section className="pp-results" aria-label={t('title')}>
+      <section className="ni-section" aria-labelledby="ni-index-title">
+        <header className="ni-section-head">
+          <span className="ni-index ni-mono">02</span>
+          <h2 id="ni-index-title">{t('indexTitle')}</h2>
+          <span className="ni-section-link" aria-hidden="true">
+            {String(posts.length).padStart(2, '0')} {t('metrics.entries')}
+          </span>
+        </header>
+
+        <div className="ni-filter-grid">
+          <div>
+            <p className="ni-filter-label">
+              <span>{t('categories')}</span>
+              <b>{String(allCategories.length).padStart(2, '0')}</b>
+            </p>
+            <div className="ni-chips">
+              {allCategories.map((category) => (
+                <Link key={category} href={`/search?category=${encodeURIComponent(category)}`} className="ni-chip">
+                  {category}
+                </Link>
+              ))}
+              {allCategories.length === 0 && <span className="ni-page-note">{t('noCategories')}</span>}
+            </div>
+          </div>
+
+          <div>
+            <p className="ni-filter-label">
+              <span>{t('tags')}</span>
+              <b>{String(allTags.length).padStart(2, '0')}</b>
+            </p>
+            <div className="ni-chips">
+              {allTags.map((tag) => (
+                <Link key={tag} href={`/search?tag=${encodeURIComponent(tag)}`} className="ni-chip">
+                  {tag}
+                </Link>
+              ))}
+              {allTags.length === 0 && <span className="ni-page-note">{t('noTags')}</span>}
+            </div>
+          </div>
+        </div>
+
+        <div className="ni-list">
           {posts.map((post, idx) => (
-            <PostItem key={post.slug} post={post} idx={idx} variant="paper" />
+            <PostItem key={post.slug} post={post} idx={idx} />
           ))}
-          {posts.length === 0 && <div className="pp-empty">{t('noPosts')}</div>}
-        </section>
-
-        <aside className="pp-side">
-          <div className="pp-side-block">
-            <div className="pp-section-head">
-              <p className="pp-label">{t('categories')}</p>
-              <span className="pp-section-no">{String(allCategories.length).padStart(2, '0')}</span>
+          {posts.length === 0 && (
+            <div className="ni-empty">
+              <span className="ni-empty-code">000 / Empty</span>
+              <p className="ni-empty-title">{t('noPosts')}</p>
             </div>
-            <ul className="pp-cat-list">
-              {allCategories.map((category) => {
-                const href = `/search?category=${encodeURIComponent(category)}`
-                return (
-                  <li key={category}>
-                    <Link href={href} className="pp-cat-link">
-                      <span>{category}</span>
-                      <span className="pp-cat-mark" aria-hidden="true">
-                        ↗
-                      </span>
-                    </Link>
-                  </li>
-                )
-              })}
-              {allCategories.length === 0 && <li className="pp-side-empty">{t('noCategories')}</li>}
-            </ul>
-          </div>
-
-          <div className="pp-side-block">
-            <div className="pp-section-head">
-              <p className="pp-label">{t('tags')}</p>
-              <span className="pp-section-no">{String(allTags.length).padStart(2, '0')}</span>
-            </div>
-            <div className="pp-tag-row">
-              {allTags.map((tag) => {
-                const href = `/search?tag=${encodeURIComponent(tag)}`
-                return (
-                  <Link key={tag} href={href} className="pp-chip">
-                    {tag}
-                  </Link>
-                )
-              })}
-              {allTags.length === 0 && <span className="pp-side-empty">{t('noTags')}</span>}
-            </div>
-          </div>
-        </aside>
-      </div>
+          )}
+        </div>
+      </section>
     </div>
   )
 }

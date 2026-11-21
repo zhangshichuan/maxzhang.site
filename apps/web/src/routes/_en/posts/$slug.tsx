@@ -11,11 +11,13 @@ export const Route = createFileRoute('/_en/posts/$slug')({
     }
   },
   head: ({ loaderData }) => ({
-    meta: [
-      { title: `${loaderData!.post.title} - Max Zhang` },
-      { name: 'description', content: loaderData!.post.summary },
-      { name: 'keywords', content: loaderData!.post.tags.join(', ') },
-    ],
+    meta: loaderData
+      ? [
+          { title: `${loaderData.post.title} - Max Zhang` },
+          { name: 'description', content: loaderData.post.summary },
+          { name: 'keywords', content: loaderData.post.tags.join(', ') },
+        ]
+      : [{ title: 'Page not found - Max Zhang' }],
   }),
   component: PostComponent,
   notFoundComponent: NotFoundPage,

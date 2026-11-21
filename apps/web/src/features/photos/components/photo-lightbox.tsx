@@ -1,5 +1,3 @@
-import '@/src/styles/paper-photos.css'
-
 import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -63,6 +61,11 @@ export function PhotoLightbox({ slug, locale, onClose }: PhotoLightboxProps) {
     getPhotoWorkFn({ data: { slug, locale } })
       .then((data) => {
         if (cancelled) return
+        if (!data) {
+          setError(true)
+          setLoading(false)
+          return
+        }
         setWork(data)
         setLoading(false)
       })
@@ -132,7 +135,7 @@ export function PhotoLightbox({ slug, locale, onClose }: PhotoLightboxProps) {
       {slug && (
         <motion.div
           key="backdrop"
-          className="ph-lb-backdrop ph-surface"
+          className="ni-lb-backdrop"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.2 } }}
@@ -147,7 +150,7 @@ export function PhotoLightbox({ slug, locale, onClose }: PhotoLightboxProps) {
           key="close"
           ref={closeRef}
           type="button"
-          className="ph-lb-close ph-surface"
+          className="ni-lb-close"
           aria-label={t('close')}
           onClick={onClose}
           initial={{ opacity: 0 }}
@@ -165,14 +168,14 @@ export function PhotoLightbox({ slug, locale, onClose }: PhotoLightboxProps) {
           role="dialog"
           aria-modal="true"
           aria-label={work?.caption ?? t('loading')}
-          className="ph-lightbox ph-surface"
+          className="ni-lb"
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 10, transition: { duration: 0.2 } }}
           transition={dialogTransition}
         >
           <div
-            className={cn('ph-lb-stage', fullImage && 'is-full')}
+            className={cn('ni-lb-stage', fullImage && 'is-full')}
             onTouchStart={(event) => {
               const touch = event.touches[0]
               if (touch) touchStart.current = { x: touch.clientX, y: touch.clientY }
@@ -194,16 +197,16 @@ export function PhotoLightbox({ slug, locale, onClose }: PhotoLightboxProps) {
             }}
           >
             {loading && (
-              <div className="ph-lb-status">
+              <div className="ni-lb-status">
                 <Loader2 className="size-5 animate-spin" />
                 <span>{t('loading')}</span>
               </div>
             )}
-            {!loading && error && <div className="ph-lb-status">{t('error')}</div>}
+            {!loading && error && <div className="ni-lb-status">{t('error')}</div>}
             {!loading && !error && work && photo && (
               <motion.img
                 key={`${work.slug}-${index}`}
-                className="ph-lb-image"
+                className="ni-lb-image"
                 src={photo.largeUrl}
                 alt={work.caption}
                 initial={{ opacity: 0 }}
@@ -217,7 +220,7 @@ export function PhotoLightbox({ slug, locale, onClose }: PhotoLightboxProps) {
               <>
                 <button
                   type="button"
-                  className="ph-lb-nav ph-lb-nav--prev"
+                  className="ni-lb-nav ni-lb-nav--prev"
                   aria-label={t('prev')}
                   onClick={() => setIndex((current) => (current - 1 + count) % count)}
                 >
@@ -225,7 +228,7 @@ export function PhotoLightbox({ slug, locale, onClose }: PhotoLightboxProps) {
                 </button>
                 <button
                   type="button"
-                  className="ph-lb-nav ph-lb-nav--next"
+                  className="ni-lb-nav ni-lb-nav--next"
                   aria-label={t('next')}
                   onClick={() => setIndex((current) => (current + 1) % count)}
                 >
@@ -235,62 +238,62 @@ export function PhotoLightbox({ slug, locale, onClose }: PhotoLightboxProps) {
             )}
 
             {!loading && !error && work && (
-              <div className="ph-lb-stagebar">
-                <span className="ph-lb-count">
+              <div className="ni-lb-stagebar">
+                <span className="ni-lb-count">
                   {pad(index + 1)} / {pad(count)}
                 </span>
-                <div className="ph-lb-dots">
+                <div className="ni-lb-dots">
                   {count > 1 &&
                     work.photos.map((item, photoIndex) => (
                       <button
                         key={item.largeUrl}
                         type="button"
-                        className={cn('ph-lb-dot', photoIndex === index && 'is-active')}
+                        className={cn('ni-lb-dot', photoIndex === index && 'is-active')}
                         aria-label={`${photoIndex + 1}`}
                         onClick={() => setIndex(photoIndex)}
                       />
                     ))}
                 </div>
-                <button type="button" className="ph-lb-expand" onClick={() => setFullImage((current) => !current)}>
+                <button type="button" className="ni-lb-expand" onClick={() => setFullImage((current) => !current)}>
                   {fullImage ? t('collapse') : t('viewFull')}
                 </button>
               </div>
             )}
           </div>
 
-          <aside className="ph-lb-rail">
-            {loading && <div className="ph-lb-rail-loading">{t('loading')}</div>}
-            {!loading && error && <div className="ph-lb-rail-loading">{t('error')}</div>}
+          <aside className="ni-lb-rail">
+            {loading && <div className="ni-lb-status">{t('loading')}</div>}
+            {!loading && error && <div className="ni-lb-status">{t('error')}</div>}
             {!loading && !error && work && (
               <>
-                <div className="ph-lb-rail-head">
-                  <p className="ph-label">Work — {pad(index + 1)}</p>
-                  <h2 className="ph-lb-title">{work.caption}</h2>
+                <div className="ni-lb-rail-head">
+                  <p className="ni-kicker ni-mono">Work — {pad(index + 1)}</p>
+                  <h2 className="ni-lb-title">{work.caption}</h2>
                 </div>
 
-                <div className="ph-lb-meta">
-                  <div className="ph-lb-meta-row">
-                    <span className="ph-lb-meta-label">Date</span>
-                    <span className="ph-lb-meta-value">{formatDate(work.takenAt, locale)}</span>
+                <div className="ni-lb-meta">
+                  <div className="ni-lb-meta-row">
+                    <span className="ni-lb-meta-label">Date</span>
+                    <span className="ni-lb-meta-value">{formatDate(work.takenAt, locale)}</span>
                   </div>
                   {work.location && (
-                    <div className="ph-lb-meta-row">
-                      <span className="ph-lb-meta-label">Place</span>
-                      <span className="ph-lb-meta-value">{work.location}</span>
+                    <div className="ni-lb-meta-row">
+                      <span className="ni-lb-meta-label">Place</span>
+                      <span className="ni-lb-meta-value">{work.location}</span>
                     </div>
                   )}
-                  <div className="ph-lb-meta-row">
-                    <span className="ph-lb-meta-label">Frames</span>
-                    <span className="ph-lb-meta-value">
+                  <div className="ni-lb-meta-row">
+                    <span className="ni-lb-meta-label">Frames</span>
+                    <span className="ni-lb-meta-value">
                       {pad(index + 1)} / {pad(count)}
                     </span>
                   </div>
                 </div>
 
                 {work.tags.length > 0 && (
-                  <div className="ph-lb-tags">
+                  <div className="ni-lb-tags">
                     {work.tags.map((tag) => (
-                      <span className="ph-lb-tag" key={tag}>
+                      <span className="ni-tag" key={tag}>
                         #{tag}
                       </span>
                     ))}
@@ -298,10 +301,10 @@ export function PhotoLightbox({ slug, locale, onClose }: PhotoLightboxProps) {
                 )}
 
                 {params.length > 0 && (
-                  <details className="ph-lb-exif">
+                  <details className="ni-lb-exif">
                     <summary>{t('exif')}</summary>
                     {params.map(([label, value]) => (
-                      <div key={label} className="ph-lb-exif-row">
+                      <div key={label} className="ni-lb-exif-row">
                         <span>{label}</span>
                         <b>{value}</b>
                       </div>
@@ -309,12 +312,12 @@ export function PhotoLightbox({ slug, locale, onClose }: PhotoLightboxProps) {
                   </details>
                 )}
 
-                <div className="ph-lb-comments">
+                <div className="ni-lb-comments">
                   <Comment slug={work.slug} locale={locale} />
                 </div>
 
-                <p className="ph-lb-gesture">Swipe ← → · Down to close</p>
-                <p className="ph-lb-share">
+                <p className="ni-lb-foot">Swipe ← → · Down to close</p>
+                <p className="ni-lb-foot">
                   <span>{t('shortcuts')}</span>
                   <span>
                     {t('share')} · #photo/{work.slug}

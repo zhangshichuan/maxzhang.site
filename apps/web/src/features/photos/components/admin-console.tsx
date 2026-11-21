@@ -1,5 +1,3 @@
-import '@/src/styles/paper-admin.css'
-
 import { Loader2, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import type { PhotoWorkSummary } from '@/src/features/photos/model'
@@ -63,10 +61,11 @@ export function AdminConsole() {
 
   if (checking) {
     return (
-      <div className="ad-page">
-        <div className="ad-check">
-          <span className="ad-dot" aria-hidden="true" />
-          {t('checking')}
+      <div className="ni-page">
+        <div className="ni-status">
+          <span className="ni-status-count">
+            <b>●</b> {t('checking')}
+          </span>
         </div>
       </div>
     )
@@ -76,93 +75,121 @@ export function AdminConsole() {
   const latest = works[0]
 
   return (
-    <div className="ad-page">
-      <header className="ad-console-head">
-        <div className="ad-console-intro">
-          <p className="ad-kicker">
-            <span className="ad-dot" aria-hidden="true" />
-            Archive / Photo index
-          </p>
-          <h1 className="ad-title">{t('title')}</h1>
-          <p className="ad-sub">{t('description')}</p>
+    <div className="ni-page">
+      <header className="ni-page-head">
+        <p className="ni-kicker ni-mono ni-page-kicker">
+          {locale === 'zh' ? '私有 006 / 照片索引' : 'Private 006 / Photo index'}
+        </p>
+        <div className="ni-admin-head" style={{ borderBottom: 0, paddingBottom: 0 }}>
+          <div>
+            <h1>{t('title')}</h1>
+            <p>{t('description')}</p>
+          </div>
+          <button type="button" className="ni-btn" onClick={() => setUploadOpen(true)}>
+            <Plus className="size-4" strokeWidth={2} aria-hidden="true" />
+            {t('upload')}
+          </button>
         </div>
-
-        <button type="button" className="ad-upload-btn" onClick={() => setUploadOpen(true)}>
-          <Plus className="size-4" strokeWidth={2} aria-hidden="true" />
-          {t('upload')}
-        </button>
       </header>
 
-      <div className="ad-stats">
-        <div className="ad-stat">
-          <span className="ad-stat-label">Works</span>
-          <span className="ad-stat-value">{pad(works.length)}</span>
-        </div>
-        <div className="ad-stat">
-          <span className="ad-stat-label">Storage</span>
-          <span className="ad-stat-value">
-            {pad(totalPhotos)}
-            <span className="ad-stat-unit">Files</span>
-          </span>
-        </div>
-        <div className="ad-stat">
-          <span className="ad-stat-label">Latest</span>
-          <span className="ad-stat-value">{latest ? formatDate(latest.takenAt, locale) : '—'}</span>
-        </div>
-        <div className="ad-stat">
-          <span className="ad-stat-label">Session</span>
-          <span className="ad-stat-value ad-stat-value--session">
-            <span className="ad-dot" aria-hidden="true" />
-            Admin
-          </span>
-        </div>
-      </div>
-
-      {works.length === 0 ? (
-        <div className="ad-empty">
-          <p className="ad-empty-kicker">No records / 000</p>
-          <p className="ad-empty-title">{t('empty')}</p>
-        </div>
-      ) : (
-        <div className="ad-index">
-          <div className="ad-thead" aria-hidden="true">
-            <span>No.</span>
-            <span>Cover</span>
-            <span>Caption</span>
-            <span>Date / Photos</span>
-            <span />
+      <section className="ni-metrics" aria-label={t('title')}>
+        <div className="ni-metric">
+          <div className="ni-metric-label ni-mono">
+            <span>Works</span>
+            <i aria-hidden="true">01</i>
           </div>
-          <ul>
-            {works.map((work, index) => (
-              <li className="ad-row" key={work.slug}>
-                <span className="ad-row-no">{pad(index + 1)}</span>
-                <div className="ad-thumb">{work.thumbUrl && <img src={work.thumbUrl} alt="" loading="lazy" />}</div>
-                <div className="ad-row-cap">
-                  <p className="ad-row-caption">{work.caption}</p>
-                  <p className="ad-row-sub">{[work.location, ...work.tags].filter(Boolean).join(' · ')}</p>
-                </div>
-                <div className="ad-row-meta">
-                  <span className="ad-row-date">{formatDate(work.takenAt, locale)}</span>
-                  <span className="ad-row-count">{t('photosCount', { count: work.photoCount })}</span>
-                </div>
-                <button
-                  type="button"
-                  className="ad-del"
-                  onClick={() => remove(work.slug)}
-                  disabled={deleting === work.slug}
-                  aria-label={t('delete')}
-                >
-                  {deleting === work.slug ? (
-                    <Loader2 className="ad-spin size-4" aria-hidden="true" />
-                  ) : (
-                    <Trash2 className="size-4" strokeWidth={1.75} aria-hidden="true" />
-                  )}
-                </button>
-              </li>
-            ))}
-          </ul>
+          <span className="ni-metric-value">{pad(works.length)}</span>
+          <span className="ni-metric-note">Indexed sets</span>
         </div>
-      )}
+        <div className="ni-metric">
+          <div className="ni-metric-label ni-mono">
+            <span>Storage</span>
+            <i aria-hidden="true">02</i>
+          </div>
+          <span className="ni-metric-value">
+            {pad(totalPhotos)}
+            <small>files</small>
+          </span>
+          <span className="ni-metric-note">Published frames</span>
+        </div>
+        <div className="ni-metric">
+          <div className="ni-metric-label ni-mono">
+            <span>Latest</span>
+            <i aria-hidden="true">03</i>
+          </div>
+          <span className="ni-metric-value ni-metric-value--date">
+            {latest ? formatDate(latest.takenAt, locale) : '—'}
+          </span>
+          <span className="ni-metric-note">Most recent upload</span>
+        </div>
+        <div className="ni-metric">
+          <div className="ni-metric-label ni-mono">
+            <span>Session</span>
+            <i aria-hidden="true">04</i>
+          </div>
+          <span className="ni-metric-value ni-metric-value--date">Admin</span>
+          <span className="ni-metric-note">Authenticated</span>
+        </div>
+      </section>
+
+      <section className="ni-section" aria-labelledby="ni-admin-index">
+        <header className="ni-section-head">
+          <span className="ni-index ni-mono">01</span>
+          <h2 id="ni-admin-index">Works</h2>
+          <span className="ni-section-link" aria-hidden="true">
+            {pad(works.length)} Records
+          </span>
+        </header>
+
+        {works.length === 0 ? (
+          <div className="ni-empty" style={{ marginTop: 20 }}>
+            <span className="ni-empty-code">000 / No records</span>
+            <p className="ni-empty-title">{t('empty')}</p>
+          </div>
+        ) : (
+          <div className="ni-admin-table">
+            <div className="ni-admin-thead" aria-hidden="true">
+              <span>No.</span>
+              <span>Cover</span>
+              <span>Caption</span>
+              <span>Date / Photos</span>
+              <span />
+            </div>
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+              {works.map((work, index) => (
+                <li className="ni-admin-row" key={work.slug}>
+                  <span className="ni-entry-index ni-mono">{pad(index + 1)}</span>
+                  <span>
+                    {work.thumbUrl && <img className="ni-admin-thumb" src={work.thumbUrl} alt="" loading="lazy" />}
+                  </span>
+                  <div>
+                    <p className="ni-admin-caption">{work.caption}</p>
+                    <p className="ni-admin-sub">{[work.location, ...work.tags].filter(Boolean).join(' · ')}</p>
+                  </div>
+                  <div className="ni-admin-meta">
+                    <span>{formatDate(work.takenAt, locale)}</span>
+                    <br />
+                    {t('photosCount', { count: work.photoCount })}
+                  </div>
+                  <button
+                    type="button"
+                    className="ni-admin-delete"
+                    onClick={() => remove(work.slug)}
+                    disabled={deleting === work.slug}
+                    aria-label={t('delete')}
+                  >
+                    {deleting === work.slug ? (
+                      <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Trash2 className="size-4" strokeWidth={1.75} aria-hidden="true" />
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
 
       <UploadDialog
         open={uploadOpen}

@@ -13,7 +13,7 @@ export function BackToPosts({ label }: { label: string }) {
   }
 
   return (
-    <Link href="/posts" onClick={handleClick} className="back-link">
+    <Link href="/posts" onClick={handleClick} className="ni-article-back">
       <ChevronLeft className="size-4" />
       {label}
     </Link>

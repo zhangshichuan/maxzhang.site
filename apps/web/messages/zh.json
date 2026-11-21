@@ -346,7 +346,18 @@
     "noTags": "暂无标签",
     "aiAssisted": "AI 辅助写作",
     "aiAssistedHint": "本文由作者与 AI 协作完成，内容经过人工审校",
-    "back": "返回写作"
+    "back": "返回写作",
+    "metrics": {
+      "entries": "文章",
+      "entriesNote": "已发布的技术笔记与产品写作",
+      "categories": "分类",
+      "categoriesNote": "前端 · 后端 · 运维",
+      "tags": "标签",
+      "tagsNote": "覆盖全部主题",
+      "latest": "最近更新",
+      "latestNote": "最新发布时间"
+    },
+    "indexTitle": "索引"
   },
   "SearchPage": {
     "title": "搜索",
@@ -359,7 +370,8 @@
     "found": "找到 {count} 篇相关文章",
     "noResults": "没有找到匹配的文章",
     "startSearch": "输入关键词或选择标签开始搜索",
-    "clearFilters": "清除筛选条件"
+    "clearFilters": "清除筛选条件",
+    "results": "结果"
   },
   "Mermaid": {
     "clickToZoom": "点击查看高清大图",

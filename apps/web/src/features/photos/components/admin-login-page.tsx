@@ -1,12 +1,10 @@
-import '@/src/styles/paper-admin.css'
-
 import { ArrowRight, Loader2, Lock } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLocale, useTranslations } from '@/src/i18n/client'
 import { localizePath } from '@/i18n/routing'
 
 /**
- * 管理登录页 — 深色档案卡
+ * 管理登录页 — Night Instrument 私有入口
  *
  * 已登录：显示“前往摄影页”与“退出登录”（保留跳转逻辑）；
  * 未登录：口令表单，失败次数过多时展示锁定倒计时。
@@ -69,95 +67,88 @@ export function AdminLoginPage() {
 
   if (checking) {
     return (
-      <div className="ad-page ad-page--auth">
-        <div className="ad-check">
-          <span className="ad-dot" aria-hidden="true" />
-          {t('checking')}
-        </div>
+      <div className="ni-status" style={{ margin: 'auto 0' }}>
+        <span className="ni-status-count">
+          <b>●</b> {t('checking')}
+        </span>
       </div>
     )
   }
 
   return (
-    <div className="ad-page ad-page--auth">
-      <div className="ad-login">
-        <div className="ad-login-aside">
-          <div className="ad-login-aside-top">
-            <span className="ad-login-stamp">
-              <Lock className="size-3.5" strokeWidth={1.75} aria-hidden="true" />
-              MZ / Private archive
-            </span>
-            <span className="ad-login-stamp" aria-hidden="true">
-              ( 01 )
-            </span>
-          </div>
-
-          <span className="ad-login-figure" aria-hidden="true">
-            01
+    <div className="ni-auth">
+      <aside className="ni-auth-aside">
+        <div className="ni-auth-stamp">
+          <span>
+            <Lock className="size-3.5" strokeWidth={1.75} aria-hidden="true" /> MZ / Private archive
           </span>
-
-          <div className="ad-login-aside-foot" aria-hidden="true">
-            <div className="ad-login-aside-row">
-              <span>Access</span>
-              <span className="is-red">Restricted</span>
-            </div>
-            <div className="ad-login-aside-row">
-              <span>Index</span>
-              <span>Admin / 01</span>
-            </div>
-          </div>
+          <span aria-hidden="true">( 01 )</span>
         </div>
 
-        <form className="ad-login-form" onSubmit={submit}>
-          <p className="ad-kicker">
-            <span className="ad-dot" aria-hidden="true" />
-            Admin access
-          </p>
+        <span className="ni-auth-figure" aria-hidden="true">
+          01
+        </span>
 
-          <h1 className="ad-login-title">{t('title')}</h1>
-
-          <div className="ad-login-rule" aria-hidden="true" />
-
-          <label className="ad-field" htmlFor="ad-password">
-            <span className="ad-field-label">
-              <span>Passphrase</span>
-              <span className="ad-field-hint">Required</span>
-            </span>
-            <input
-              id="ad-password"
-              className="ad-input"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder={t('password')}
-              autoComplete="current-password"
-              autoFocus
-              disabled={submitting}
-            />
-          </label>
-
-          {error && (
-            <div className="ad-alert" role="alert">
-              {error}
-              {retryAfter !== null && ` ${t('retryAfter', { seconds: Math.ceil(retryAfter) })}`}
-            </div>
-          )}
-
-          <button type="submit" className="ad-submit" disabled={!password || submitting}>
-            {submitting ? (
-              <Loader2 className="ad-spin size-4" aria-hidden="true" />
-            ) : (
-              <ArrowRight className="size-4" aria-hidden="true" />
-            )}
-            {submitting ? t('submitting') : t('submit')}
-          </button>
-
-          <div className="ad-login-foot" aria-hidden="true">
-            <span>Max Zhang</span>
-            <span>Private archive / 2026</span>
+        <div className="ni-auth-rows" aria-hidden="true">
+          <div>
+            <span>Access</span>
+            <span className="is-red">Restricted</span>
           </div>
-        </form>
-      </div>
+          <div>
+            <span>Index</span>
+            <span>Admin / 01</span>
+          </div>
+          <div>
+            <span>Locale</span>
+            <span>{locale.toUpperCase()}</span>
+          </div>
+        </div>
+      </aside>
+
+      <form className="ni-auth-form" onSubmit={submit}>
+        <p className="ni-kicker ni-mono">{locale === 'zh' ? '管理员入口' : 'Admin access'}</p>
+        <h1>{t('title')}</h1>
+        <div className="ni-auth-rule" aria-hidden="true" />
+
+        <label className="ni-field" htmlFor="ni-password">
+          <span className="ni-field-label">
+            <span>Passphrase</span>
+            <span>Required</span>
+          </span>
+          <input
+            id="ni-password"
+            className="ni-input"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder={t('password')}
+            autoComplete="current-password"
+            autoFocus
+            disabled={submitting}
+          />
+        </label>
+
+        {error && (
+          <div className="ni-dialog-error" role="alert">
+            {error}
+            {retryAfter !== null && ` ${t('retryAfter', { seconds: Math.ceil(retryAfter) })}`}
+          </div>
+        )}
+
+        <button type="submit" className="ni-auth-submit" disabled={!password || submitting}>
+          {submitting ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <ArrowRight className="size-4" aria-hidden="true" />
+          )}
+          {submitting ? t('submitting') : t('submit')}
+        </button>
+
+        <div className="ni-auth-foot" aria-hidden="true">
+          <span>Max Zhang</span>
+          <span>Private archive / 2026</span>
+        </div>
+      </form>
     </div>
   )
 }

@@ -625,7 +625,7 @@ html[lang='zh'] .ni-cn-line {
   text-transform: uppercase;
 }
 
-html[data-theme='light'] .ni-tag {
+.ni-personnel .ni-tag {
   background: var(--ni-mint-dim);
 }
 
@@ -744,8 +744,11 @@ html[lang='zh'] .ni-section-head h2 {
 
 .ni-section-link {
   padding-bottom: 2px;
+  border: 0;
   border-bottom: 1px solid var(--ni-line);
+  background: transparent;
   margin-left: auto;
+  cursor: pointer;
   color: var(--ni-muted);
   font-family: var(--ni-mono);
   font-size: 9px;

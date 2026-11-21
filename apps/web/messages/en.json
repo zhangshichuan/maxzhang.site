@@ -346,7 +346,18 @@
     "noTags": "No tags",
     "aiAssisted": "AI-assisted",
     "aiAssistedHint": "Written with AI assistance and reviewed by the author",
-    "back": "Back to Writing"
+    "back": "Back to Writing",
+    "metrics": {
+      "entries": "Entries",
+      "entriesNote": "Published field notes and essays",
+      "categories": "Categories",
+      "categoriesNote": "Frontend · Backend · DevOps",
+      "tags": "Tags",
+      "tagsNote": "Topics across the archive",
+      "latest": "Latest",
+      "latestNote": "Most recent update"
+    },
+    "indexTitle": "Index"
   },
   "SearchPage": {
     "title": "Search",
@@ -359,7 +370,8 @@
     "found": "Found {count} articles",
     "noResults": "No articles found matching your criteria",
     "startSearch": "Enter keywords or select tags to start searching",
-    "clearFilters": "Clear search filters"
+    "clearFilters": "Clear search filters",
+    "results": "Results"
   },
   "Mermaid": {
     "clickToZoom": "Click to view full image",
