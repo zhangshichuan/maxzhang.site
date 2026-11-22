@@ -1,7 +1,7 @@
 /* ==========================================================================
    NIGHT INSTRUMENT — inner pages
    Shared primitives for writing, article, about, photography, search,
-   tree hole, admin, login, and 404. Homepage lives in instrument.css.
+   night banquet, admin, login, and 404. Homepage lives in instrument.css.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -1899,7 +1899,7 @@ html[lang='zh'] .ni-prose h4 {
 }
 
 /* --------------------------------------------------------------------------
-   Tree hole
+   Night Banquet
    -------------------------------------------------------------------------- */
 .ni-main--chat {
   height: calc(var(--chat-vh, 100dvh) - var(--ni-rail-height, 0px));
@@ -1943,6 +1943,7 @@ html[lang='zh'] .ni-prose h4 {
 
 .ch-head-ident {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: 10px;
 }
@@ -1987,6 +1988,67 @@ html[lang='zh'] .ni-prose h4 {
 .ch-sub {
   color: var(--ni-muted);
   font-size: 13.5px;
+}
+
+.ch-table {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ch-table-guest {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 7px 3px 4px;
+  border: 1px solid var(--ni-line);
+  background: var(--ni-panel);
+  color: var(--ni-ink);
+  font-size: 11px;
+}
+
+.ch-table-guest.is-speaking {
+  border-color: var(--ni-mint);
+  background: var(--ni-mint-dim);
+}
+
+.ch-table-index {
+  color: var(--ni-muted-2);
+  font-family: var(--ni-mono);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+}
+
+.ch-table-quota {
+  display: none;
+  color: var(--ni-muted-2);
+  font-size: 9px;
+}
+
+.ch-table-change {
+  margin-left: auto;
+  padding: 3px 0;
+  border: 0;
+  border-bottom: 1px solid var(--ni-line);
+  background: transparent;
+  color: var(--ni-muted);
+  font-family: var(--ni-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ch-table-change:hover,
+.ch-table-change:focus-visible {
+  border-color: var(--ni-mint);
+  color: var(--ni-mint);
+}
+
+.ch-table-change:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .ch-head-meta {
@@ -2046,6 +2108,17 @@ html[lang='zh'] .ni-prose h4 {
   cursor: pointer;
 }
 
+.ch-menu-btn:hover,
+.ch-menu-btn:focus-visible {
+  border-color: var(--ni-mint);
+  color: var(--ni-mint);
+}
+
+.ch-menu-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .ch-menu-panel {
   position: absolute;
   right: 0;
@@ -2090,15 +2163,360 @@ html[lang='zh'] .ni-prose h4 {
   scrollbar-width: thin;
 }
 
+.ch-loading {
+  color: var(--ni-muted-2);
+  padding: 26px 0;
+}
+
+/* Lobby: guest list ------------------------------------------------------- */
+.ch-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  max-width: 980px;
+}
+
+.ch-picker-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ch-picker-eyebrow {
+  margin: 0;
+  color: var(--ni-mint);
+}
+
+.ch-picker-title {
+  max-width: 18ch;
+  margin: 0;
+  font-size: clamp(26px, 3.4vw, 42px);
+  font-weight: 470;
+  line-height: 1.05;
+  letter-spacing: -0.05em;
+}
+
+.ch-picker-desc {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--ni-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.ch-picker-note {
+  margin: 0;
+  color: var(--ni-muted-2);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.ch-presets {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding-top: 4px;
+}
+
+.ch-presets-label {
+  margin-right: 2px;
+  color: var(--ni-muted-2);
+}
+
+.ch-preset {
+  padding: 6px 9px;
+  border: 1px solid var(--ni-line);
+  background: transparent;
+  color: var(--ni-muted);
+  font-family: var(--ni-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ch-preset:hover,
+.ch-preset:focus-visible {
+  border-color: var(--ni-mint);
+  color: var(--ni-mint);
+}
+
+.ch-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  padding-top: 14px;
+  border-top: 1px solid var(--ni-line-2);
+}
+
+.ch-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+  border: 1px solid var(--ni-line);
+  background: transparent;
+  color: var(--ni-muted);
+  font-family: var(--ni-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ch-filter span {
+  color: var(--ni-muted-2);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+}
+
+.ch-filter:hover,
+.ch-filter:focus-visible {
+  border-color: var(--ni-mint);
+  color: var(--ni-mint);
+}
+
+.ch-filter.is-active {
+  border-color: var(--ni-mint);
+  background: var(--ni-mint-dim);
+  color: var(--ni-mint);
+}
+
+.ch-filter.is-active span {
+  color: var(--ni-mint);
+}
+
+.ch-picker-hint {
+  margin: 0;
+  color: var(--ni-amber);
+  font-size: 9px;
+}
+
+.ch-guest-grid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ch-guest-card {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--ni-line);
+  background: var(--ni-panel);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.ch-guest-card:hover:not(:disabled) {
+  border-color: var(--ni-muted-2);
+}
+
+.ch-guest-card.is-selected {
+  border-color: var(--ni-mint);
+  background: var(--ni-mint-dim);
+}
+
+.ch-guest-card.is-selected:hover:not(:disabled) {
+  border-color: var(--ni-mint);
+}
+
+.ch-guest-card.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ch-guest-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.ch-guest-index {
+  color: var(--ni-muted-2);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+}
+
+.ch-guest-state {
+  margin-left: auto;
+  color: var(--ni-muted-2);
+  font-size: 9px;
+}
+
+.ch-guest-card.is-selected .ch-guest-state {
+  color: var(--ni-mint);
+}
+
+.ch-guest-name {
+  color: var(--ni-ink);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.ch-guest-field {
+  color: var(--ni-muted-2);
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+}
+
+.ch-guest-tagline {
+  margin-top: 2px;
+  color: var(--ni-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ch-disclaimer {
+  width: 100%;
+  margin: 4px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--ni-line-2);
+  color: var(--ni-muted-2);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.ch-disclaimer a {
+  border-bottom: 1px solid var(--ni-mint-dim);
+  color: var(--ni-mint);
+}
+
+/* Selection tray ---------------------------------------------------------- */
+.ch-tray {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 0 2px;
+}
+
+.ch-tray-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.ch-tray-count {
+  color: var(--ni-muted-2);
+  font-size: 9px;
+}
+
+.ch-tray-cost {
+  margin-left: 8px;
+  color: var(--ni-amber);
+  font-size: 9px;
+}
+
+.ch-tray-quota {
+  margin-left: 8px;
+  color: var(--ni-muted-2);
+  font-size: 9px;
+}
+
+.ch-tray-limit {
+  display: block;
+  margin-top: 6px;
+  color: var(--ni-amber);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.ch-tray-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 26px;
+  margin-top: 6px;
+}
+
+.ch-tray-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 7px;
+  border: 1px solid var(--ni-line);
+  background: var(--ni-panel);
+  color: var(--ni-ink);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.ch-tray-chip span {
+  color: var(--ni-muted-2);
+  font-family: var(--ni-mono);
+  font-size: 8px;
+}
+
+.ch-tray-chip:hover,
+.ch-tray-chip:focus-visible {
+  border-color: var(--ni-red);
+  color: var(--ni-red);
+}
+
+.ch-tray-empty {
+  color: var(--ni-muted-2);
+  font-size: 11px;
+}
+
+.ch-start {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  flex: none;
+  padding: 0 18px;
+  border: 1px solid var(--ni-mint);
+  background: var(--ni-mint);
+  color: var(--ni-on-mint);
+  font-family: var(--ni-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ch-start:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.ch-start:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Empty table ------------------------------------------------------------- */
 .ch-empty {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 14px;
-  max-width: 560px;
+  max-width: 620px;
   padding: 26px;
   border: 1px solid var(--ni-line);
   background: var(--ni-panel);
+}
+
+.ch-empty--table {
+  max-width: 720px;
+  gap: 16px;
 }
 
 .ch-empty-top {
@@ -2129,6 +2547,30 @@ html[lang='zh'] .ni-prose h4 {
   line-height: 1.6;
 }
 
+.ch-starters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+}
+
+.ch-starter {
+  padding: 6px 9px;
+  border: 1px solid var(--ni-line);
+  background: transparent;
+  color: var(--ni-muted);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ch-starter:hover,
+.ch-starter:focus-visible {
+  border-color: var(--ni-mint);
+  color: var(--ni-mint);
+}
+
 .ch-empty-meta {
   display: flex;
   justify-content: space-between;
@@ -2139,10 +2581,11 @@ html[lang='zh'] .ni-prose h4 {
   color: var(--ni-muted-2);
 }
 
+/* Thread ------------------------------------------------------------------ */
 .ch-thread {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 22px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -2172,6 +2615,36 @@ html[lang='zh'] .ni-prose h4 {
   text-transform: uppercase;
 }
 
+.ch-msg-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.ch-msg-name {
+  color: var(--ni-ink);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ch-msg-field {
+  color: var(--ni-muted-2);
+  font-size: 8px;
+}
+
+.ch-msg-ai {
+  padding: 1px 4px;
+  border: 1px solid var(--ni-line);
+  color: var(--ni-muted-2);
+  font-size: 8px;
+}
+
+.ch-msg-live {
+  color: var(--ni-mint);
+  font-size: 8px;
+}
+
 .ch-bubble {
   padding: 12px 14px;
   border: 1px solid var(--ni-line);
@@ -2186,6 +2659,15 @@ html[lang='zh'] .ni-prose h4 {
 .ch-msg--user .ch-bubble {
   border-color: var(--ni-mint);
   background: var(--ni-mint-dim);
+}
+
+.ch-msg--pending .ch-bubble {
+  border-style: dashed;
+  background: transparent;
+}
+
+.ch-msg--pending .ch-msg-label {
+  color: var(--ni-muted-2);
 }
 
 .ch-typing {
@@ -2230,9 +2712,47 @@ html[lang='zh'] .ni-prose h4 {
   }
 }
 
+/* Guest marks ------------------------------------------------------------- */
+.ch-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border: 1px solid var(--ni-line);
+  background: var(--ni-panel-2);
+  color: var(--ni-mint);
+  font-family: var(--ni-mono);
+  letter-spacing: 0.04em;
+}
+
+.ch-mark--sm {
+  width: 22px;
+  height: 22px;
+  font-size: 7px;
+}
+
+.ch-mark--md {
+  width: 30px;
+  height: 30px;
+  font-size: 9px;
+}
+
+.ch-mark--lg {
+  width: 40px;
+  height: 40px;
+  font-size: 11px;
+}
+
+.ch-guest-card.is-selected .ch-mark {
+  border-color: var(--ni-mint);
+  background: var(--ni-panel);
+}
+
+/* Dock -------------------------------------------------------------------- */
 .ch-dock {
   flex: none;
   padding-top: 12px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--ni-line);
 }
 
@@ -2245,6 +2765,11 @@ html[lang='zh'] .ni-prose h4 {
   padding: 10px 12px;
   border: 1px solid var(--ni-amber);
   background: var(--ni-amber-dim);
+}
+
+.ch-notice-main {
+  display: flex;
+  flex-direction: column;
 }
 
 .ch-notice-label {
@@ -2273,6 +2798,11 @@ html[lang='zh'] .ni-prose h4 {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
+}
+
+.ch-retry:hover,
+.ch-retry:focus-visible {
+  background: var(--ni-amber-dim);
 }
 
 .ch-privacy {
@@ -2365,6 +2895,10 @@ html[lang='zh'] .ni-prose h4 {
   .ch-caret,
   .ch-send-busy {
     animation: none;
+  }
+
+  .ch-guest-card {
+    transition: none;
   }
 }
 
@@ -2509,6 +3043,80 @@ html[lang='zh'] .ni-prose h4 {
 
   .ni-chat .ch-msg {
     max-width: 94%;
+  }
+
+  /* 移动端的 meta 行和聊天头重复，让给消息区。 */
+  .ni-inner--chat .ni-meta {
+    display: none;
+  }
+
+  .ni-chat {
+    padding-top: 12px;
+  }
+
+  .ni-chat .ch-head {
+    gap: 12px;
+  }
+
+  .ni-chat .ch-session {
+    display: none;
+  }
+
+  .ni-chat .ch-menu-btn,
+  .ni-chat .ch-send {
+    width: 44px;
+    height: 44px;
+  }
+
+  .ni-chat .ch-filter,
+  .ni-chat .ch-preset {
+    min-height: 36px;
+  }
+
+  .ni-chat .ch-input {
+    font-size: 16px;
+  }
+
+  .ni-chat .ch-table-quota {
+    display: inline;
+  }
+
+  .ni-chat .ch-table-change {
+    margin-left: 0;
+  }
+
+  .ni-chat .ch-picker-title {
+    font-size: 30px;
+  }
+
+  .ni-chat .ch-picker-desc {
+    font-size: 13px;
+  }
+
+  .ni-chat .ch-guest-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ni-chat .ch-tray {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .ni-chat .ch-start {
+    width: 100%;
+  }
+
+  .ni-chat .ch-msg-field {
+    display: none;
+  }
+
+  .ni-chat .ch-empty {
+    padding: 18px;
+  }
+
+  .ni-chat .ch-notice {
+    flex-wrap: wrap;
   }
 }
 

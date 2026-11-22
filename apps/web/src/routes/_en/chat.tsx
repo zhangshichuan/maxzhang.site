@@ -5,8 +5,12 @@ export const Route = createFileRoute('/_en/chat')({
   component: ChatComponent,
   head: () => ({
     meta: [
-      { title: 'Tree Hole - Max Zhang' },
-      { name: 'description', content: 'An AI listening experiment built with DeepSeek: no judgment, just listening.' },
+      { title: 'Night Banquet - Max Zhang' },
+      {
+        name: 'description',
+        content:
+          'Dinner with fourteen great minds: talk one-on-one or open a round table. AI perspectives distilled from public material.',
+      },
     ],
   }),
 })

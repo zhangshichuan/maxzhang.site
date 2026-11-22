@@ -3,7 +3,7 @@
 ## 当前服务
 
 - `tts/` — 流式语音合成服务（FastAPI + edge-tts，依赖用 uv 管理）
-- `chat/` — 树洞聊天服务（Go 标准库，转发 DeepSeek，端口 9000）
+- `chat/` — 夜宴聊天服务（Go 标准库，转发 DeepSeek，端口 9000；人物提示词在 `chat/personas/`）
 
 ## 约定
 

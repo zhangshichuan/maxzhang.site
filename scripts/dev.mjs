@@ -5,7 +5,7 @@
  * 默认同时拉起：
  *   - Web 开发服务器（Vite + TanStack Start，:3000）
  *   - TTS 服务（uv + uvicorn，:8001，自动热重载）
- *   - 树洞聊天服务（go run .，:9000）
+ *   - 夜宴聊天服务（go run .，:9000）
  *
  * 环境变量按服务放在各自目录的 .env（均被 gitignore），
  * 示例文件见各服务目录下的 .env.example。

@@ -1,2 +1,7 @@
 .git
 *.test.go
+.env
+.env.*
+!.env.example
+chat
+chat-state.json

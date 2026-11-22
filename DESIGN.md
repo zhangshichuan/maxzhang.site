@@ -17,7 +17,7 @@
 ## 1. Product Context
 
 - **What this is:** Max Zhang's personal site, a TanStack Start monolith with
-  writing, photography, about, search, tree hole, admin, and login.
+  writing, photography, about, search, night banquet, admin, and login.
 - **Who it is for:** hiring teams, AI product peers, readers of product writing,
   and photography/design peers.
 - **Brand position:** Product-minded AI builder in Chengdu. Turning model
@@ -202,7 +202,7 @@ html[data-theme='light'] {
 2. Role and year: `Product-minded AI builder` / `Portfolio / 2026`.
 3. Primary navigation, each row numbered `01–07` and separated by hairlines:
    `01 Overview → /`, `02 Writing → /posts`, `03 Photography → /photos`,
-   `04 About → /about`, `05 Search → /search`, `06 Tree hole → /chat`,
+   `04 About → /about`, `05 Search → /search`, `06 Night Banquet → /chat`,
    `07 Contact → /#contact`. The active destination uses `--ni-mint` and
    `aria-current="page"`.
 4. Availability block: live dot, location (`Chengdu, China`), working scope,
@@ -221,7 +221,7 @@ html[data-theme='light'] {
 | About       | `File / 2026 / About`                        |
 | Photography | `Archive / 2026 / Photography`               |
 | Search      | `Index / 2026 / Search`                      |
-| Tree hole   | `Channel / 2026 / Tree hole`                 |
+| Night Banquet | `Channel / 2026 / Night Banquet`           |
 | Admin       | `Private / 2026 / Admin`                     |
 | Login       | `Private / 2026 / Access`                    |
 
@@ -254,7 +254,7 @@ status hides; the Day/Night control lives in the rail/top bar instead.
    shifts the row 8px and turns the title mint.
 8. **Contact** — panel with 3px mint left edge. Large two-line statement,
    underlined email, status and short body on the right.
-9. **Footer** — mono row with brand, page links, GitHub/email/tree hole, and
+9. **Footer** — mono row with brand, page links, GitHub/email/night banquet, and
    copyright/location.
 
 ---
@@ -363,17 +363,32 @@ separate visual systems.
 4. Results: the same list row as Writing, with title, meta, summary, and tags.
 5. Empty states: `Enter a keyword` and `No results`, both in a panel.
 
-### Tree hole (`/chat`)
+### Night Banquet (`/chat`)
 
 - Full-height app page inside the shell; no footer.
-- Header: live dot, session date, round count, title, subtitle, status pill,
-  and a menu for clearing history.
+- Lobby: guest list (14 distilled minds) with field filters, curated tables,
+  selection tray, and a mint `Take a seat` button. A 1px hairline and a
+  monogram identify each guest; selected cards use a mint border and
+  `--ni-mint-dim` surface.
+- Header: live dot, table date, round count, title `Night Banquet`, subtitle,
+  status pill, and a menu for changing/clearing the table.
+- Table strip: selected guests as compact numbered hairlines; the current
+  speaker's monogram is mint.
 - Body: local-only message thread. User messages align right with a mint-dim
-  surface; assistant messages align left with a panel surface. Mono labels
-  `You`, `Tree Hole`, `Listening`.
+  surface; guest messages align left with a panel surface and a mono name/field
+  header. The streaming guest uses typing dots or a mint caret.
 - Composer docked at the bottom: textarea, mint send button, keyboard hint,
   character count.
-- Empty state explains the experiment and privacy in one short block.
+- Empty state: `Table · date`, one short line, three starter questions, and
+  privacy labels.
+- Group chat runs guests in selection order, one after another. A round is one
+  user message plus one reply from each guest; the table seats at most three.
+- Every guest is an AI perspective distilled from public material, not the
+  person; this disclaimer is always visible in the lobby.
+- Security/limits are visible, not hidden: the header (and the mobile table
+  strip) shows `Quota used / 100`; the lobby tray shows `N credits per round`
+  (one per guest); `BUSY`, `SERVICE_BUSY`, `DAILY_LIMIT`, and
+  `SERVICE_DAILY_LIMIT` use the existing amber notice or the red limit state.
 
 ### Admin and login
 
@@ -422,8 +437,8 @@ separate visual systems.
 - Every primary control is at least 44×44px; text inputs and textareas are at
   least 16px to prevent iOS zoom.
 - Composer, menu, and back-to-top respect `env(safe-area-inset-bottom/top)`.
-- The tree hole page subtracts the measured rail height from `100dvh`, so the
-  page itself never scrolls and the composer stays visible.
+- The night banquet page subtracts the measured rail height from `100dvh`, so
+  the page itself never scrolls and the composer stays visible.
 - Wide-screen back-to-top aligns to the content column, not the viewport edge.
 
 ---
@@ -445,7 +460,7 @@ separate visual systems.
 | About                   | `apps/web/src/features/about/components/about-page.tsx`        |
 | Photography             | `apps/web/src/features/photos/components/photos-index.tsx`     |
 | Search                  | `apps/web/src/features/posts/components/search-client.tsx`     |
-| Tree hole               | `apps/web/src/features/chat/components/chat-interface.tsx`     |
+| Night Banquet           | `apps/web/src/features/chat/components/chat-interface.tsx`     |
 | Admin                   | `apps/web/src/features/photos/components/admin-console.tsx`    |
 | Login                   | `apps/web/src/features/photos/components/admin-login-page.tsx` |
 | 404                     | `apps/web/src/shared/components/not-found.tsx`                 |

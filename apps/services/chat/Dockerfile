@@ -13,6 +13,8 @@ RUN addgroup -S app && adduser -S -G app app
 
 WORKDIR /app
 COPY --from=builder /out/chat /app/chat
+COPY --from=builder /src/THIRD_PARTY_NOTICES.md /app/THIRD_PARTY_NOTICES.md
+RUN mkdir -p /app/data && chown -R app:app /app/data
 
 USER app
 

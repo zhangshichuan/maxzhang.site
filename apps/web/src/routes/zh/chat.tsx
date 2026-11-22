@@ -5,8 +5,11 @@ export const Route = createFileRoute('/zh/chat')({
   component: ChatComponent,
   head: () => ({
     meta: [
-      { title: '树洞 - Max Zhang' },
-      { name: 'description', content: '一个 AI 倾听实验：用 DeepSeek 做的小实验，不评判，只倾听。' },
+      { title: '夜宴 - Max Zhang' },
+      {
+        name: 'description',
+        content: '和十四位伟大头脑吃一顿晚饭：选一位对谈，或选多位开一桌。基于公开资料提炼的 AI 视角。',
+      },
     ],
   }),
 })

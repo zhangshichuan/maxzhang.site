@@ -78,3 +78,6 @@ node_modules
 
 # 摄影模块：上传照片的运行时副本（由存储服务写入，不入库）
 /apps/web/public/photos/
+
+# Go 服务本地构建产物
+/apps/services/chat/chat

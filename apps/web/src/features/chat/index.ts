@@ -6,4 +6,7 @@
 
 export { ChatInterface } from './components'
 export { chatStream } from './server-functions'
+export { GUESTS, GUEST_IDS, MAX_TABLE_GUESTS } from './model/guests'
+export type { Guest, GuestId } from './model/guests'
+export type { ChatMessage } from './model/message'
 export type { ChatErrorCode } from './services/chat-stream.server'
