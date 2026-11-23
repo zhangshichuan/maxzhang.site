@@ -299,14 +299,20 @@ export function ChatInterface() {
     lastAttemptRef.current = null
   }, [guests, isStreaming])
 
-  // 入席前的退出口：优先回到来时的页面，没有站内历史时回首页。
+  // 名录的退出口：换桌只是切换视图，不产生历史记录，
+  // 所以有桌子时先回这一桌；还没入席时才离开夜宴。
   const goBack = useCallback(() => {
+    if (guests.length > 0) {
+      setDraftGuests(guests)
+      setView('chat')
+      return
+    }
     if (typeof window !== 'undefined' && window.history.length > 1) {
       router.history.back()
       return
     }
     router.navigate({ href: localizePath('/', locale) })
-  }, [locale, router])
+  }, [guests, locale, router])
 
   /**
    * 发送一轮对话：把事件流里的 guest_start / delta / guest_end 翻译成
