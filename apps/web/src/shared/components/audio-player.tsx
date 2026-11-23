@@ -24,6 +24,7 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [rate, setRate] = useState(1)
+  const [hasError, setHasError] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
   const durationSet = useRef(false)
   const retriedRef = useRef(false)
@@ -35,6 +36,7 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
     setIsLoading(false)
     setCurrentTime(0)
     setDuration(0)
+    setHasError(false)
     durationSet.current = false
     retriedRef.current = false
   }, [slug, lang])
@@ -43,6 +45,7 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
     // TTS 首次生成较慢/服务重启会中断流，不隐藏播放器，允许用户重试
     setIsPlaying(false)
     setIsLoading(false)
+    setHasError(true)
   }, [])
   const handleLoadedMetadata = useCallback(() => {
     const audio = audioRef.current
@@ -77,6 +80,7 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
     if (audio.paused) {
       audio.playbackRate = rate
       setIsLoading(true)
+      setHasError(false)
       retriedRef.current = false
       try {
         await audio.play()
@@ -93,10 +97,12 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
           } catch (retryError) {
             console.error('Audio play failed after retry:', retryError)
             setIsPlaying(false)
+            setHasError(true)
           }
         } else {
           console.error('Audio play failed:', error)
           setIsPlaying(false)
+          setHasError(true)
         }
       } finally {
         setIsLoading(false)
@@ -137,6 +143,12 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
         )}
         <span className="hidden sm:inline">{isLoading ? t('loading') : isPlaying ? t('pause') : t('listen')}</span>
       </button>
+
+      {hasError && (
+        <span className="audio-error" role="status">
+          {t('failed')}
+        </span>
+      )}
 
       {duration > 0 && (
         <div className="audio-progress">
@@ -182,7 +194,7 @@ export function AudioPlayer({ slug, lang, className }: AudioPlayerProps) {
       <audio
         ref={audioRef}
         key={`${slug}-${lang}`}
-        src={`/api/tts/${lang}/${slug}.mp3`}
+        src={`/api/tts/${lang}/${slug}`}
         preload="none"
         onError={handleError}
         onLoadedMetadata={handleLoadedMetadata}

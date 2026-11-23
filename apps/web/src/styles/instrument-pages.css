@@ -953,6 +953,13 @@ html[lang='zh'] .ni-prose h4 {
   color: var(--ni-mint);
 }
 
+.audio-error {
+  color: var(--ni-amber);
+  font-family: var(--ni-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
 .audio-progress {
   display: flex;
   align-items: center;

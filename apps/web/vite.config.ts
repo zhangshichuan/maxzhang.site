@@ -45,6 +45,27 @@ function hotlinkProtectionPlugin(): Plugin {
 }
 
 /**
+ * TTS 音频的 dev 兼容
+ *
+ * `<audio>` 请求会带 `Sec-Fetch-Dest: audio`，Vite dev 的静态资源中间件会
+ * 把它当静态文件处理并返回 404，根本到不了 TanStack 的 server route。
+ * 生产环境（Nitro）没有这个问题；这里只在 dev 去掉该请求头。
+ */
+function ttsDevAudioPlugin(): Plugin {
+  return {
+    name: 'tts-dev-audio',
+    configureServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        if (req.url?.startsWith('/api/tts/') && req.headers['sec-fetch-dest'] === 'audio') {
+          delete req.headers['sec-fetch-dest']
+        }
+        next()
+      })
+    },
+  }
+}
+
+/**
  * TanStack Start（Vite + Nitro）配置
  *
  * - MDX 由 scripts/generate-mdx.mjs 在构建期编译为 TSX 模块，
@@ -66,6 +87,7 @@ export default defineConfig({
   },
   plugins: [
     hotlinkProtectionPlugin(),
+    ttsDevAudioPlugin(),
     tailwindcss(),
     tanstackStart({
       srcDirectory: 'src',

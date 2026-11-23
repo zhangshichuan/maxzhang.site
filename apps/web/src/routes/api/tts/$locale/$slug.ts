@@ -11,7 +11,7 @@ const VOICES: Record<string, string> = {
 /**
  * 文章音频代理路由
  *
- * /api/tts/{locale}/{slug}.mp3
+ * /api/tts/{locale}/{slug}（.mp3 后缀可选）
  *
  * 1. 从 MDX 提取纯文本并计算内容哈希（内容更新 → hash 变化 → 自动重新生成）
  * 2. 优先命中 TTS 缓存（支持 Range）；未命中时把文本 POST 给 TTS 服务实时合成

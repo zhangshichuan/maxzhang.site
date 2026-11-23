@@ -6,7 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.115",
   "uvicorn[standard]>=0.34",
-  "edge-tts>=7.0",
+  "edge-tts>=7.3.1",
 ]
 
 [tool.uv]

@@ -418,6 +418,7 @@
     "seek": "Seek",
     "back10": "Back 10 seconds",
     "forward10": "Forward 10 seconds",
-    "rate": "Playback speed"
+    "rate": "Playback speed",
+    "failed": "Audio failed. Please try again."
   }
 }
