@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useRouter } from '@tanstack/react-router'
 import { getThumbmark } from '@thumbmarkjs/thumbmarkjs'
 import { MoreVertical, Send } from 'lucide-react'
+import { localizePath } from '@/i18n/routing'
 import { Link, useLocale, useTranslations } from '@/src/i18n/client'
 import { cn } from '@/src/shared/utils/cn'
 import { chatStream } from '@/src/features/chat/server-functions'
@@ -99,6 +101,7 @@ function Typing({ label }: { label: string }) {
 export function ChatInterface() {
   const t = useTranslations('Chat')
   const locale = useLocale()
+  const router = useRouter()
 
   const [hydrated, setHydrated] = useState(false)
   const [view, setView] = useState<'lobby' | 'chat'>('lobby')
@@ -295,6 +298,15 @@ export function ChatInterface() {
     setConfirmClear(false)
     lastAttemptRef.current = null
   }, [guests, isStreaming])
+
+  // 入席前的退出口：优先回到来时的页面，没有站内历史时回首页。
+  const goBack = useCallback(() => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.history.back()
+      return
+    }
+    router.navigate({ href: localizePath('/', locale) })
+  }, [locale, router])
 
   /**
    * 发送一轮对话：把事件流里的 guest_start / delta / guest_end 翻译成
@@ -588,7 +600,14 @@ export function ChatInterface() {
           {!hydrated ? (
             <p className="ch-loading ch-mono">SETTING THE TABLE…</p>
           ) : view === 'lobby' ? (
-            <GuestPicker selected={draftGuests} onToggle={toggleGuest} onPreset={choosePreset} t={t} locale={locale} />
+            <GuestPicker
+              selected={draftGuests}
+              onToggle={toggleGuest}
+              onPreset={choosePreset}
+              onBack={goBack}
+              t={t}
+              locale={locale}
+            />
           ) : (
             <>
               {messages.length === 0 && (

@@ -100,7 +100,7 @@ export function AboutPage() {
         </div>
       </section>
 
-      <section className="ni-section" aria-labelledby="ni-about-contact-title">
+      <section className="ni-section" id="contact" aria-labelledby="ni-about-contact-title">
         <header className="ni-section-head">
           <span className="ni-index ni-mono">03</span>
           <h2 id="ni-about-contact-title">{tn('contact')}</h2>

@@ -2183,6 +2183,22 @@ html[lang='zh'] .ni-prose h4 {
   gap: 8px;
 }
 
+.ch-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ni-muted);
+  cursor: pointer;
+}
+
+.ch-back:hover,
+.ch-back:focus-visible {
+  color: var(--ni-mint);
+}
+
 .ch-picker-eyebrow {
   margin: 0;
   color: var(--ni-mint);
@@ -2203,13 +2219,6 @@ html[lang='zh'] .ni-prose h4 {
   color: var(--ni-muted);
   font-size: 14px;
   line-height: 1.6;
-}
-
-.ch-picker-note {
-  margin: 0;
-  color: var(--ni-muted-2);
-  font-size: 11px;
-  line-height: 1.5;
 }
 
 .ch-presets {
@@ -2827,6 +2836,13 @@ html[lang='zh'] .ni-prose h4 {
   font-size: 14px;
   line-height: 1.5;
   resize: none;
+  outline: none;
+}
+
+/* The field border is the single focus indicator; the global focus-visible
+   outline would draw a second line inside it. */
+.ni-chat .ch-input:focus,
+.ni-chat .ch-input:focus-visible {
   outline: none;
 }
 
@@ -3499,12 +3515,6 @@ html[data-theme='light'] .ni-prose pre code span[style] {
 
 /* Mobile interaction pass: 44px targets and 16px form text (no iOS zoom). */
 @media (max-width: 700px) {
-  .ni-mobile-actions .ni-locale {
-    min-width: 44px;
-    min-height: 44px;
-    justify-content: center;
-  }
-
   .ni-clear,
   .ni-active-filter,
   .ni-section-link,

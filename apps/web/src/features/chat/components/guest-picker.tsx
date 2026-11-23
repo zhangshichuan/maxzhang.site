@@ -18,6 +18,7 @@ type GuestPickerProps = {
   selected: GuestId[]
   onToggle: (id: GuestId) => void
   onPreset: (guests: GuestId[]) => void
+  onBack: () => void
   t: Translator
   locale: Locale
 }
@@ -26,7 +27,7 @@ type GuestPickerProps = {
  * 宾客名录：选一位对谈，或选两三位开一桌。
  * 宾客卡只负责选择，开席按钮在底部的托盘里。
  */
-export function GuestPicker({ selected, onToggle, onPreset, t, locale }: GuestPickerProps) {
+export function GuestPicker({ selected, onToggle, onPreset, onBack, t, locale }: GuestPickerProps) {
   const [filter, setFilter] = useState<GuestGroupFilter>('all')
   const visibleGuests = filter === 'all' ? GUESTS : GUESTS.filter((guest) => guest.group === filter)
   const atLimit = selected.length >= MAX_TABLE_GUESTS
@@ -34,10 +35,12 @@ export function GuestPicker({ selected, onToggle, onPreset, t, locale }: GuestPi
   return (
     <div className="ch-picker">
       <div className="ch-picker-intro">
+        <button type="button" className="ch-back ch-mono" onClick={onBack}>
+          <span aria-hidden="true">←</span> {t('back')}
+        </button>
         <p className="ch-mono ch-picker-eyebrow">{t('lobbyEyebrow')}</p>
         <h2 className="ch-picker-title">{t('lobbyTitle')}</h2>
         <p className="ch-picker-desc">{t('lobbyDesc')}</p>
-        <p className="ch-picker-note">{t('shortDisclaimer')}</p>
       </div>
 
       <div className="ch-presets">

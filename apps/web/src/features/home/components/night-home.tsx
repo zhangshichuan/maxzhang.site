@@ -137,13 +137,6 @@ const copy = {
       link: 'All writing',
       empty: 'Field notes are being written.',
     },
-    contact: {
-      index: '06 / Open channel',
-      titleLead: 'Let’s build something ',
-      titleAccent: 'intelligent.',
-      status: 'Status: open to AI product collaborations',
-      body: 'Building AI products, prototypes, and the occasional impossible workflow. Based in Chengdu, working globally.',
-    },
   },
   zh: {
     hero: {
@@ -274,13 +267,6 @@ const copy = {
       link: '全部文章',
       empty: '现场笔记正在写。',
     },
-    contact: {
-      index: '06 / 开放沟通',
-      titleLead: '一起做点',
-      titleAccent: '真正智能的事。',
-      status: '状态：开放 AI 产品合作',
-      body: 'AI 产品构建、原型，以及偶尔不可能的工作流。常驻成都，面向全球协作。',
-    },
   },
 } as const
 
@@ -294,7 +280,6 @@ export function NightHome({ posts }: NightHomeProps) {
   const locale = useLocale()
   const t = copy[locale === 'zh' ? 'zh' : 'en']
   const featured = posts.slice(0, 3)
-  const contactHref = '#contact'
 
   return (
     <>
@@ -364,9 +349,9 @@ export function NightHome({ posts }: NightHomeProps) {
         <header className="ni-section-head">
           <span className="ni-index ni-mono">{t.work.index}</span>
           <h2 id="ni-work-title">{t.work.title}</h2>
-          <a className="ni-section-link" href={contactHref}>
+          <Link className="ni-section-link" href="/about#contact">
             {t.work.link} ↗
-          </a>
+          </Link>
         </header>
 
         <div className="ni-case">
@@ -439,9 +424,9 @@ export function NightHome({ posts }: NightHomeProps) {
         <header className="ni-section-head">
           <span className="ni-index ni-mono">{t.method.index}</span>
           <h2 id="ni-method-title">{t.method.title}</h2>
-          <a className="ni-section-link" href={contactHref}>
+          <Link className="ni-section-link" href="/about#contact">
             {t.method.link} ↗
-          </a>
+          </Link>
         </header>
         <div className="ni-method">
           {t.method.steps.map((step, index) => (
@@ -484,25 +469,6 @@ export function NightHome({ posts }: NightHomeProps) {
           ) : (
             <p className="ni-lede">{t.writing.empty}</p>
           )}
-        </div>
-      </section>
-
-      <section className="ni-contact" id="contact" aria-labelledby="ni-contact-title">
-        <div>
-          <p className="ni-mono" style={{ margin: '0 0 14px', color: 'var(--ni-muted)' }}>
-            {t.contact.index}
-          </p>
-          <h2 id="ni-contact-title">
-            {t.contact.titleLead}
-            <span>{t.contact.titleAccent}</span>
-          </h2>
-          <a className="ni-email" href="mailto:zsc.guru@qq.com">
-            zsc.guru@qq.com
-          </a>
-        </div>
-        <div className="ni-contact-side">
-          <span className="ni-mono">{t.contact.status}</span>
-          <p>{t.contact.body}</p>
         </div>
       </section>
     </>

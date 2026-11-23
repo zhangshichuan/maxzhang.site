@@ -6,7 +6,8 @@ import { useLocale } from '@/src/i18n/client'
 import { THEME_STORAGE_KEY, type Theme, applyTheme, resolveInitialTheme } from './theme'
 
 /**
- * Two-position Day/Night control. Sun selects light, Moon selects dark.
+ * Single Day/Night toggle, sized and styled like the locale switch.
+ * The icon shows the destination: Moon in light mode, Sun in dark mode.
  * Until the visitor chooses explicitly we follow prefers-color-scheme and
  * keep following live system changes.
  */
@@ -53,31 +54,21 @@ export function ThemeToggle() {
 
   const labels =
     locale === 'zh'
-      ? { group: '主题', light: '浅色模式', dark: '深色模式' }
-      : { group: 'Theme', light: 'Light mode', dark: 'Dark mode' }
+      ? { toLight: '切换到浅色模式', toDark: '切换到深色模式' }
+      : { toLight: 'Switch to light mode', toDark: 'Switch to dark mode' }
+
+  const next: Theme = theme === 'light' ? 'dark' : 'light'
+  const label = next === 'light' ? labels.toLight : labels.toDark
 
   return (
-    <div className="ni-theme-group" role="group" aria-label={labels.group}>
-      <button
-        type="button"
-        className="ni-theme-option"
-        aria-pressed={theme === 'light'}
-        aria-label={labels.light}
-        title={labels.light}
-        onClick={() => choose('light')}
-      >
-        <Sun size={15} aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        className="ni-theme-option"
-        aria-pressed={theme === 'dark'}
-        aria-label={labels.dark}
-        title={labels.dark}
-        onClick={() => choose('dark')}
-      >
-        <Moon size={15} aria-hidden="true" />
-      </button>
-    </div>
+    <button
+      type="button"
+      className="ni-locale ni-theme-toggle"
+      aria-label={label}
+      title={label}
+      onClick={() => choose(next)}
+    >
+      {next === 'light' ? <Sun size={14} aria-hidden="true" /> : <Moon size={14} aria-hidden="true" />}
+    </button>
   )
 }

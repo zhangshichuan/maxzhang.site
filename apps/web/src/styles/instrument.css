@@ -365,8 +365,14 @@ html[lang='zh'] .ni-rail-nav a {
   text-transform: uppercase;
 }
 
-.ni-locale {
-  padding: 4px 6px;
+.ni-locale,
+.ni-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 26px;
+  padding: 0;
   border: 1px solid var(--ni-line);
   background: transparent;
   color: var(--ni-muted);
@@ -380,7 +386,10 @@ html[lang='zh'] .ni-rail-nav a {
     border-color 0.2s ease;
 }
 
-.ni-locale:hover {
+.ni-locale:hover,
+.ni-locale:focus-visible,
+.ni-theme-toggle:hover,
+.ni-theme-toggle:focus-visible {
   border-color: var(--ni-mint);
   color: var(--ni-mint);
 }
@@ -445,42 +454,6 @@ html[lang='zh'] .ni-rail-nav a {
   height: 5px;
   border-radius: 50%;
   background: var(--ni-mint);
-}
-
-.ni-theme-group {
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid var(--ni-line);
-}
-
-.ni-theme-option {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--ni-muted);
-  cursor: pointer;
-  transition:
-    color 0.2s ease,
-    background-color 0.2s ease;
-}
-
-.ni-theme-option + .ni-theme-option {
-  border-left: 1px solid var(--ni-line);
-}
-
-.ni-theme-option:hover,
-.ni-theme-option:focus-visible {
-  color: var(--ni-mint);
-}
-
-.ni-theme-option[aria-pressed='true'] {
-  background: var(--ni-mint-dim);
-  color: var(--ni-mint);
 }
 
 .ni-rail-prefs {
@@ -1237,7 +1210,7 @@ html[lang='zh'] .ni-contact h2 {
   .ni-personnel,
   .ni-contact,
   .ni-btn,
-  .ni-theme-option,
+  .ni-theme-toggle,
   .ni-locale {
     transition:
       background-color 0.2s ease,
@@ -1253,7 +1226,7 @@ html[lang='zh'] .ni-contact h2 {
 
   .ni-post,
   .ni-skip,
-  .ni-theme-option,
+  .ni-theme-toggle,
   .ni-locale,
   .ni-rail-nav a,
   .ni-btn,
@@ -1271,7 +1244,8 @@ html[lang='zh'] .ni-contact h2 {
    Responsive
    -------------------------------------------------------------------------- */
 @media (max-width: 1120px) {
-  .ni-theme-option {
+  .ni-locale,
+  .ni-theme-toggle {
     width: 44px;
     height: 44px;
   }
@@ -1428,11 +1402,6 @@ html[lang='zh'] .ni-contact h2 {
 
   .ni-system {
     display: none;
-  }
-
-  .ni-theme-option {
-    width: 44px;
-    height: 44px;
   }
 
   .ni-meta-actions {

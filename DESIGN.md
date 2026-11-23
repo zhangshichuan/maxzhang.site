@@ -70,8 +70,9 @@ the interface only points attention at the right place.
 - On a first visit the device's `prefers-color-scheme` decides the mode. A
   stored `mz-theme` choice wins, and a manual toggle writes that override.
 - Each mode sets its own `color-scheme`.
-- The Day/Night control sits next to the locale switch, with two icon buttons:
-  sun = light, moon = dark. The active mode uses a mint fill and `aria-pressed`.
+- The Day/Night toggle sits next to the locale switch and uses the same box,
+  size, and hover treatment. It is a single button whose icon shows the
+  destination: moon in light mode, sun in dark mode.
 - The choice is stored in `localStorage` under `mz-theme`.
 - An inline boot script sets `data-theme` before first paint, so there is no
   flash. `?theme=light|dark` is supported for screenshots and overrides storage.
@@ -200,16 +201,15 @@ html[data-theme='light'] {
 
 1. `MZ®` wordmark.
 2. Role and year: `Product-minded AI builder` / `Portfolio / 2026`.
-3. Primary navigation, each row numbered `01–07` and separated by hairlines:
+3. Primary navigation, each row numbered `01–06` and separated by hairlines:
    `01 Overview → /`, `02 Writing → /posts`, `03 Photography → /photos`,
-   `04 About → /about`, `05 Search → /search`, `06 Night Banquet → /chat`,
-   `07 Contact → /#contact`. The active destination uses `--ni-mint` and
-   `aria-current="page"`.
+   `04 Night Banquet → /chat`, `05 About → /about`, `06 Search → /search`.
+   The active destination uses `--ni-mint` and `aria-current="page"`.
 4. Availability block: live dot, location (`Chengdu, China`), working scope,
    last update.
-5. Locale switch, Day/Night icon pair, and issue number pinned to the bottom.
-6. At `700px` and below: brand, Day/Night pair, locale, and a 44px menu button;
-   the same seven links expand below the top bar as a vertical hairline list.
+5. Locale switch, Day/Night toggle, and issue number pinned to the bottom.
+6. At `700px` and below: brand, Day/Night toggle, locale, and a 44px menu button;
+   the same six links expand below the top bar as a vertical hairline list.
 
 ### Meta row copy
 
@@ -252,9 +252,7 @@ status hides; the Day/Night control lives in the rail/top bar instead.
 6. **Method** — four columns with mint dots on the top rule, index, title, body.
 7. **Writing** — list rows: index, title, category, date, mint arrow. Hover
    shifts the row 8px and turns the title mint.
-8. **Contact** — panel with 3px mint left edge. Large two-line statement,
-   underlined email, status and short body on the right.
-9. **Footer** — mono row with brand, page links, GitHub/email/night banquet, and
+8. **Footer** — mono row with brand, page links, GitHub/email/night banquet, and
    copyright/location.
 
 ---
@@ -339,7 +337,9 @@ separate visual systems.
    `Plate 01` caption.
 3. `02 Record`: facts list on the left (mono labels, ink values), experience
    timeline on the right (period, role, company, note). Hairline rows.
-4. `03 Contact`: the homepage contact panel, reused verbatim.
+4. `03 Contact`: the site's contact panel — large statement, underlined email,
+   status and short body on the right, with a GitHub link. Contact lives here
+   now, not on the homepage.
 
 ### Photography (`/photos`)
 
@@ -384,7 +384,7 @@ separate visual systems.
 - Group chat runs guests in selection order, one after another. A round is one
   user message plus one reply from each guest; the table seats at most three.
 - Every guest is an AI perspective distilled from public material, not the
-  person; a short note in the lobby intro says so.
+  person.
 - Security/limits are visible, not hidden: the header (and the mobile table
   strip) shows `Quota used / 100`; the lobby tray shows `N credits per round`
   (one per guest); `BUSY`, `SERVICE_BUSY`, `DAILY_LIMIT`, and
@@ -423,7 +423,8 @@ separate visual systems.
 - Skip link to `#ni-content` on every page.
 - Rail nav is a real `<nav>` with `aria-label`; active page uses
   `aria-current="page"`.
-- Theme toggle is a real `<button>` with `aria-pressed` and a destination label.
+- Theme toggle is a single real `<button>` with a destination label; it shares
+  the locale switch's size and interaction.
 - Minimum 44px touch targets on mobile.
 - Color is never the only signal: active states also use weight, border, or
   `aria-current`.
@@ -432,8 +433,8 @@ separate visual systems.
 
 ### Mobile interaction
 
-- The rail becomes a top bar: brand, Day/Night pair, locale, and a 44px menu
-  button. The menu expands the same seven links as a vertical hairline list.
+- The rail becomes a top bar: brand, Day/Night toggle, locale, and a 44px menu
+  button. The menu expands the same six links as a vertical hairline list.
 - Every primary control is at least 44×44px; text inputs and textareas are at
   least 16px to prevent iOS zoom.
 - Composer, menu, and back-to-top respect `env(safe-area-inset-bottom/top)`.
