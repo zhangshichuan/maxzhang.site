@@ -384,7 +384,7 @@ separate visual systems.
 - Group chat runs guests in selection order, one after another. A round is one
   user message plus one reply from each guest; the table seats at most three.
 - Every guest is an AI perspective distilled from public material, not the
-  person; this disclaimer is always visible in the lobby.
+  person; a short note in the lobby intro says so.
 - Security/limits are visible, not hidden: the header (and the mobile table
   strip) shows `Quota used / 100`; the lobby tray shows `N credits per round`
   (one per guest); `BUSY`, `SERVICE_BUSY`, `DAILY_LIMIT`, and

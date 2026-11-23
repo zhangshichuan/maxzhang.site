@@ -22,8 +22,6 @@ type GuestPickerProps = {
   locale: Locale
 }
 
-const SOURCE_URL = 'https://github.com/alchaincyf/nuwa-skill'
-
 /**
  * 宾客名录：选一位对谈，或选两三位开一桌。
  * 宾客卡只负责选择，开席按钮在底部的托盘里。
@@ -112,13 +110,6 @@ export function GuestPicker({ selected, onToggle, onPreset, t, locale }: GuestPi
           )
         })}
       </ul>
-
-      <p className="ch-disclaimer">
-        {t('disclaimer')}{' '}
-        <a href={SOURCE_URL} target="_blank" rel="noreferrer">
-          {t('source')} ↗
-        </a>
-      </p>
     </div>
   )
 }

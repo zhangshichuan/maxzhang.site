@@ -110,7 +110,7 @@ Web 默认访问 `http://localhost:8001` 的 TTS 服务、`http://localhost:9000
 
 - `/chat` 是「夜宴」：选 1 位名人对谈，或选 2–3 位开一桌；群聊按选择顺序逐位发言，每位宾客都能看到前面宾客说过什么。
 - 14 位宾客的提示词在 `apps/services/chat/personas/*.md`，改编自 [alchaincyf/nuwa-skill](https://github.com/alchaincyf/nuwa-skill) 的公开示例（MIT）；授权与免责声明见 `apps/services/chat/THIRD_PARTY_NOTICES.md`。
-- 所有宾客都是基于公开资料提炼的 AI 视角，不是本人，也不代表本站立场；页面内始终展示这条声明。
+- 所有宾客都是基于公开资料提炼的 AI 视角，不是本人，也不代表本站立场。
 - 每张桌子（宾客组合）的会话按日期独立保存在浏览器 localStorage，只保留最近 3 天。
 - 群聊的编排在 chat 服务内完成：一位宾客一次 DeepSeek 调用，最多 3 位；单次请求的总超时 180 秒。
 

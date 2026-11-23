@@ -2383,21 +2383,6 @@ html[lang='zh'] .ni-prose h4 {
   line-height: 1.45;
 }
 
-.ch-disclaimer {
-  width: 100%;
-  margin: 4px 0 0;
-  padding-top: 12px;
-  border-top: 1px solid var(--ni-line-2);
-  color: var(--ni-muted-2);
-  font-size: 11px;
-  line-height: 1.6;
-}
-
-.ch-disclaimer a {
-  border-bottom: 1px solid var(--ni-mint-dim);
-  color: var(--ni-mint);
-}
-
 /* Selection tray ---------------------------------------------------------- */
 .ch-tray {
   display: flex;
