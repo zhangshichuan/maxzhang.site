@@ -656,6 +656,10 @@ html[lang='zh'] .ni-cn-line {
   border-bottom: 1px solid var(--ni-line);
 }
 
+.ni-metrics--pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .ni-metric {
   padding: 18px 18px 20px;
   border-right: 1px solid var(--ni-line);
@@ -1051,7 +1055,7 @@ html[lang='zh'] .ni-method-step h3 {
 
 .ni-post {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) 110px 92px 18px;
+  grid-template-columns: 34px minmax(0, 1fr) 92px 18px;
   gap: 16px;
   align-items: center;
   padding: 16px 0;

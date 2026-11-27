@@ -33,6 +33,12 @@ export function composePostsWithMetrics(
     }))
 }
 
+function normalizeDate(value: unknown): string | undefined {
+  if (!value) return undefined
+  const date = new Date(String(value))
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString().split('T')[0]
+}
+
 /**
  * 获取指定语言下的文章文件名列表。
  * 如果对应语言目录不存在，则回退到文章根目录，兼容旧的非多语言结构。
@@ -87,15 +93,16 @@ export function getPostBySlug(
 
   // 统一整理 frontmatter，给缺失字段补默认值，方便上层直接消费。
   const postBase = {
+    ...data,
     slug: realSlug,
     title: data.title,
-    date: data.date ? new Date(data.date).toISOString().split('T')[0] : '',
+    date: normalizeDate(data.date) ?? '',
     summary: data.summary || '',
     readTime: stats,
     tags: data.tags || [],
     author: data.author || 'Max Zhang',
     category: data.category || 'Uncategorized',
-    ...data,
+    updated: normalizeDate(data.updated),
   }
 
   if (includeContent) {

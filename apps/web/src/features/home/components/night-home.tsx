@@ -270,12 +270,6 @@ const copy = {
   },
 } as const
 
-const categoryLabels: Record<string, string> = {
-  Frontend: '前端',
-  Backend: '后端',
-  DevOps: '运维',
-}
-
 export function NightHome({ posts }: NightHomeProps) {
   const locale = useLocale()
   const t = copy[locale === 'zh' ? 'zh' : 'en']
@@ -457,9 +451,6 @@ export function NightHome({ posts }: NightHomeProps) {
                   {String(index + 1).padStart(2, '0')}
                 </span>
                 <h3>{post.title}</h3>
-                <span className="ni-post-cat ni-mono">
-                  {locale === 'zh' ? (categoryLabels[post.category] ?? post.category) : post.category}
-                </span>
                 <span className="ni-post-date ni-mono">{post.date}</span>
                 <span className="ni-post-go" aria-hidden="true">
                   ↗

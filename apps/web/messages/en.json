@@ -354,53 +354,27 @@
   "PostsPage": {
     "title": "Writing",
     "description": "Field notes from building AI products — methods, cases, and evaluation.",
-    "note": "Written from Chengdu, published as a series.",
-    "seriesTitle": "Writing plan",
-    "series": [
-      {
-        "title": "AI product methods",
-        "body": "Task definition, prompting, evaluation, and the trade-offs behind RAG and agents."
-      },
-      {
-        "title": "Case breakdowns",
-        "body": "Support, meeting notes, education, healthcare, travel."
-      },
-      {
-        "title": "Engineering practice",
-        "body": "Multi-agent systems, observability, AI-native delivery."
-      }
-    ],
-    "categories": "Categories",
-    "tags": "Tags",
+    "note": "Written from Chengdu.",
+    "updated": "Updated {date}",
     "noPosts": "No writing yet.",
-    "noCategories": "No categories",
-    "noTags": "No tags",
     "aiAssisted": "AI-assisted",
     "aiAssistedHint": "Written with AI assistance and reviewed by the author",
     "metrics": {
       "entries": "Entries",
       "entriesNote": "Published field notes and essays",
-      "categories": "Categories",
-      "categoriesNote": "Frontend · Backend · DevOps",
-      "tags": "Tags",
-      "tagsNote": "Topics across the archive",
       "latest": "Latest",
       "latestNote": "Most recent update"
-    },
-    "indexTitle": "Index"
+    }
   },
   "SearchPage": {
     "title": "Search",
     "loading": "Loading...",
-    "placeholder": "Search by title, content, or tags...",
-    "category": "Category",
-    "tag": "Tag",
-    "currentFilter": "Filters",
+    "placeholder": "Search by title or summary...",
     "clearAll": "Clear All",
     "found": "Found {count} articles",
-    "noResults": "No articles found matching your criteria",
-    "startSearch": "Enter keywords or select tags to start searching",
-    "clearFilters": "Clear search filters",
+    "noResults": "No articles found matching your query",
+    "startSearch": "Enter keywords to start searching",
+    "clearFilters": "Clear search",
     "results": "Results"
   },
   "Mermaid": {

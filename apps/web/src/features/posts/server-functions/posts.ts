@@ -18,11 +18,4 @@ export const loadPostPageFn = createServerFn({ method: 'GET' })
 
 export const loadPostsIndexFn = createServerFn({ method: 'GET' })
   .validator((data: { locale: string }) => data)
-  .handler(async ({ data }) => {
-    const posts = await getAllPostsWithViews(data.locale)
-    return {
-      posts,
-      allTags: Array.from(new Set(posts.flatMap((post) => post.tags))),
-      allCategories: Array.from(new Set(posts.map((post) => post.category).filter(Boolean))),
-    }
-  })
+  .handler(async ({ data }) => getAllPostsWithViews(data.locale))

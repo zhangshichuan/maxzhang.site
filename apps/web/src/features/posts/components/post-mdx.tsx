@@ -1,4 +1,15 @@
 import { Mermaid } from '@/src/shared/components'
+import {
+  ArticleFlow,
+  ArticleLayers,
+  ArticleLoop,
+  SignalFusionAnimation,
+} from '@/src/shared/components/mdx/article-animations'
+import {
+  RagEvaluationLoopAnimation,
+  RagFailureModesAnimation,
+  RagPipelineAnimation,
+} from '@/src/shared/components/mdx/rag-animations'
 import * as React from 'react'
 import { getMdxModule } from '../mdx'
 
@@ -37,6 +48,13 @@ export function PostMdx({ locale, slug }: PostMdxProps) {
   return (
     <MdxContent
       components={{
+        ArticleFlow,
+        ArticleLayers,
+        ArticleLoop,
+        RagPipelineAnimation,
+        RagFailureModesAnimation,
+        RagEvaluationLoopAnimation,
+        SignalFusionAnimation,
         pre: ({ children, ...props }: React.ComponentPropsWithoutRef<'pre'>) => {
           const codeProps =
             React.isValidElement(children) && typeof children.props === 'object' && children.props !== null

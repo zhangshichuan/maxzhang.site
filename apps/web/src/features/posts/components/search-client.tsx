@@ -8,9 +8,7 @@ import { useEffect, useMemo, useState } from 'react'
 interface SearchClientProps {
   posts: PostSummaryWithViews[]
   initialSearch: {
-    q: string
-    tag: string
-    category: string
+    q?: string
   }
 }
 
@@ -18,55 +16,36 @@ export function SearchClient({ posts, initialSearch }: SearchClientProps) {
   const t = useTranslations('SearchPage')
   const locale = useLocale()
 
-  const [query, setQuery] = useState(initialSearch.q)
-  const [selectedTag, setSelectedTag] = useState(initialSearch.tag)
-  const [selectedCategory, setSelectedCategory] = useState(initialSearch.category)
+  const [query, setQuery] = useState(initialSearch.q ?? '')
 
   const fuse = useMemo(() => {
     return new Fuse(posts, {
-      keys: ['title', 'summary', 'tags', 'category'],
+      keys: ['title', 'summary'],
       threshold: 0.3,
       includeScore: true,
     })
   }, [posts])
 
-  const { allTags, allCategories } = useMemo(() => {
-    const tags = Array.from(new Set(posts.flatMap((post) => post.tags))).sort()
-    const categories = Array.from(new Set(posts.map((post) => post.category).filter(Boolean))).sort()
-    return { allTags: tags, allCategories: categories }
-  }, [posts])
-
   const filteredPosts = useMemo(() => {
-    if (!query && !selectedTag && !selectedCategory) return []
-    let results = posts
-    if (query) {
-      const fuseResults = fuse.search(query)
-      results = fuseResults.map((result) => result.item)
-    }
-    if (selectedTag) results = results.filter((post) => post.tags.includes(selectedTag))
-    if (selectedCategory) results = results.filter((post) => post.category === selectedCategory)
-    return results
-  }, [posts, query, selectedTag, selectedCategory, fuse])
+    if (!query) return []
+    return fuse.search(query).map((result) => result.item)
+  }, [query, fuse])
 
   useEffect(() => {
     const timer = setTimeout(() => {
       const params = new URLSearchParams()
       if (query) params.set('q', query)
-      if (selectedTag) params.set('tag', selectedTag)
-      if (selectedCategory) params.set('category', selectedCategory)
       const queryString = params.toString()
       const newUrl = queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname
       window.history.replaceState(null, '', newUrl)
     }, 300)
     return () => clearTimeout(timer)
-  }, [query, selectedTag, selectedCategory])
+  }, [query])
 
   const clearFilters = () => {
     setQuery('')
-    setSelectedTag('')
-    setSelectedCategory('')
   }
-  const hasFilters = Boolean(query || selectedTag || selectedCategory)
+  const hasFilters = Boolean(query)
 
   return (
     <div className="ni-page">
@@ -95,60 +74,9 @@ export function SearchClient({ posts, initialSearch }: SearchClientProps) {
         </div>
       </header>
 
-      <section className="ni-section" aria-labelledby="ni-search-filters">
-        <header className="ni-section-head">
-          <span className="ni-index ni-mono">01</span>
-          <h2 id="ni-search-filters">{t('currentFilter')}</h2>
-        </header>
-
-        <div className="ni-filter-grid">
-          <div>
-            <p className="ni-filter-label">
-              <span>{t('category')}</span>
-              <b>{String(allCategories.length).padStart(2, '0')}</b>
-            </p>
-            <div className="ni-chips">
-              {allCategories.map((category) => (
-                <button
-                  key={category}
-                  type="button"
-                  onClick={() => setSelectedCategory((prev) => (prev === category ? '' : category))}
-                  aria-pressed={selectedCategory === category}
-                  className="ni-chip"
-                >
-                  {category}
-                </button>
-              ))}
-              {allCategories.length === 0 && <span className="ni-page-note">—</span>}
-            </div>
-          </div>
-
-          <div>
-            <p className="ni-filter-label">
-              <span>{t('tag')}</span>
-              <b>{String(allTags.length).padStart(2, '0')}</b>
-            </p>
-            <div className="ni-chips">
-              {allTags.map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => setSelectedTag((prev) => (prev === tag ? '' : tag))}
-                  aria-pressed={selectedTag === tag}
-                  className="ni-chip"
-                >
-                  {tag}
-                </button>
-              ))}
-              {allTags.length === 0 && <span className="ni-page-note">—</span>}
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section className="ni-section" aria-labelledby="ni-search-results">
         <header className="ni-section-head">
-          <span className="ni-index ni-mono">02</span>
+          <span className="ni-index ni-mono">01</span>
           <h2 id="ni-search-results">{t('results')}</h2>
           <span className="ni-section-link" aria-hidden="true">
             {String(filteredPosts.length).padStart(2, '0')}
@@ -161,18 +89,6 @@ export function SearchClient({ posts, initialSearch }: SearchClientProps) {
               {t('found', { count: filteredPosts.length })}
             </p>
             <div className="ni-active-filters">
-              {selectedCategory && (
-                <button type="button" onClick={() => setSelectedCategory('')} className="ni-active-filter">
-                  {t('category')}: {selectedCategory}
-                  <X aria-hidden="true" className="size-3" />
-                </button>
-              )}
-              {selectedTag && (
-                <button type="button" onClick={() => setSelectedTag('')} className="ni-active-filter">
-                  {t('tag')}: {selectedTag}
-                  <X aria-hidden="true" className="size-3" />
-                </button>
-              )}
               <button type="button" onClick={clearFilters} className="ni-clear">
                 {t('clearAll')}
               </button>

@@ -354,53 +354,27 @@
   "PostsPage": {
     "title": "写作",
     "description": "从 AI 产品构建现场写下的方法、案例与评测。",
-    "note": "常驻成都，按系列持续更新。",
-    "seriesTitle": "写作计划",
-    "series": [
-      {
-        "title": "AI 产品方法",
-        "body": "任务定义、提示词、评测，以及 RAG 与 Agent 的取舍。"
-      },
-      {
-        "title": "案例拆解",
-        "body": "客服、会议纪要、教育、医疗、旅游的工作流。"
-      },
-      {
-        "title": "工程实践",
-        "body": "多智能体、可观测性与 AI Native 研发流程。"
-      }
-    ],
-    "categories": "分类",
-    "tags": "标签",
+    "note": "常驻成都，持续更新。",
+    "updated": "更新于 {date}",
     "noPosts": "还没有文章。",
-    "noCategories": "暂无分类",
-    "noTags": "暂无标签",
     "aiAssisted": "AI 辅助写作",
     "aiAssistedHint": "本文由作者与 AI 协作完成，内容经过人工审校",
     "metrics": {
       "entries": "文章",
       "entriesNote": "已发布的技术笔记与产品写作",
-      "categories": "分类",
-      "categoriesNote": "前端 · 后端 · 运维",
-      "tags": "标签",
-      "tagsNote": "覆盖全部主题",
       "latest": "最近更新",
       "latestNote": "最新发布时间"
-    },
-    "indexTitle": "索引"
+    }
   },
   "SearchPage": {
     "title": "搜索",
     "loading": "加载中...",
-    "placeholder": "搜索文章标题、内容、标签...",
-    "category": "分类",
-    "tag": "标签",
-    "currentFilter": "当前筛选",
-    "clearAll": "清除所有",
+    "placeholder": "搜索文章标题或摘要...",
+    "clearAll": "清除",
     "found": "找到 {count} 篇相关文章",
     "noResults": "没有找到匹配的文章",
-    "startSearch": "输入关键词或选择标签开始搜索",
-    "clearFilters": "清除筛选条件",
+    "startSearch": "输入关键词开始搜索",
+    "clearFilters": "清除搜索",
     "results": "结果"
   },
   "Mermaid": {

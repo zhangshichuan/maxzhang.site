@@ -83,4 +83,16 @@ describe('文章查询', () => {
     expect(post.slug).toBe(slug)
     expect(post.content.length).toBeGreaterThan(0)
   })
+
+  it('会解析并归一化 updated 字段', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'articles', 'en', 'updated-post.mdx'),
+      fixtureMdx.replace("date: '2026-01-01'", "date: '2026-01-01'\nupdated: '2026-02-03'"),
+    )
+
+    const { getPostBySlug } = await import('@/src/features/posts/queries')
+    const post = getPostBySlug('updated-post', 'en', false)
+
+    expect(post.updated).toBe('2026-02-03')
+  })
 })

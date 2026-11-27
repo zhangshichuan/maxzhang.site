@@ -12,6 +12,7 @@ export interface Post {
   tags: string[]
   author: string
   category: string
+  updated?: string
   aiAssisted?: boolean
 }
 

@@ -22,8 +22,6 @@ export function PostPage({ post, commentCount, locale }: PostPageProps) {
       <article>
         <header className="ni-article-head">
           <div className="ni-article-kicker">
-            <b>{post.category}</b>
-            <span aria-hidden="true">/</span>
             <span>{t('readingTime', { minutes: readingTime })}</span>
             {post.aiAssisted && <span className="ni-article-ai">{tPosts('aiAssisted')}</span>}
           </div>
@@ -32,6 +30,7 @@ export function PostPage({ post, commentCount, locale }: PostPageProps) {
 
           <div className="ni-article-meta">
             <span>{post.date}</span>
+            {post.updated && post.updated !== post.date && <span>{tPosts('updated', { date: post.updated })}</span>}
             <span>{post.author}</span>
             <ViewCounter slug={post.slug} locale={locale} />
             <a href="#comments">
@@ -42,13 +41,6 @@ export function PostPage({ post, commentCount, locale }: PostPageProps) {
 
           <div className="ni-article-tools">
             <AudioPlayer slug={post.slug} lang={locale} />
-            <div className="ni-tag-row">
-              {post.tags.map((tag) => (
-                <span key={tag} className="ni-tag">
-                  {tag}
-                </span>
-              ))}
-            </div>
           </div>
         </header>
 

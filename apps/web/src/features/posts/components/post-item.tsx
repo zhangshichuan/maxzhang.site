@@ -20,7 +20,6 @@ export function PostItem({ post, idx }: PostItemProps) {
       <div>
         <div className="ni-entry-head">
           <h3 className="ni-entry-title">{post.title}</h3>
-          {post.category && <span className="ni-entry-cat">{post.category}</span>}
         </div>
         <p className="ni-entry-summary">{post.summary}</p>
         <div className="ni-entry-meta">
@@ -43,15 +42,6 @@ export function PostItem({ post, idx }: PostItemProps) {
           )}
           {post.aiAssisted && <span>{t('aiAssisted')}</span>}
         </div>
-        {post.tags.length > 0 && (
-          <div className="ni-entry-tags">
-            {post.tags.map((tag) => (
-              <span key={tag} className="ni-entry-tag">
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
       <span className="ni-entry-arrow" aria-hidden="true">
         ↗
